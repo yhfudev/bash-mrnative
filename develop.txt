@@ -1,0 +1,22 @@
+
+* 存放路径 results/$PREFIX/
+* 配置路径 configs/config-proj-xxxx.sh
+* 输出图片 figures/$PREFIX/
+* 系统配置 config-sys.sh, HDFF_NUM_CLONE
+* 执行库  lib/
+* 工具    utils/, 如提交脚本等
+* 项目文件 proj/, 如各种处理脚本, map reduce
+
+
+
+
+map-reduce
+
+1. generating project files, such TCL scripts
+use $PREFIX as key
+
+2 (map) run simulation
+darw each flow figures
+
+3. (reduce) draw aggregate figures, such as JFI, avg, agg
+

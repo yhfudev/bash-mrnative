@@ -1,0 +1,227 @@
+%# -*- coding: utf-8 -*-
+% !TeX encoding = UTF-8 Unicode
+% !TeX spellcheck = en_US
+% !TeX TS-program = xelatex
+%~ \XeTeXinputencoding "UTF-8"
+% vim:ts=4:sw=4
+%
+% 以上设定默认使用 XeLaTex 编译，并指定 Unicode 编码，供 TeXShop 自动识别
+
+%\documentclass[a4paper,10pt,twocolumn]{article}
+\documentclass[letter,11pt,onecolumn]{book}
+%\documentclass[letter,11pt,onecolumn,adobefonts]{ctexbook}
+
+\newcommand{\doctitle}{Simulation framework}
+\newcommand{\docauthor}{傅允辉}
+\newcommand{\dockeywords}{Linux, Debian, Ubuntu, Networking, Home}
+\newcommand{\docsubject}{}
+
+\newcommand{\usedefaultTWO}[2]{
+\if\relax\detokenize{#2}\relax
+  #1
+\else
+  #2
+\fi
+}
+
+\newcommand{\usedefaultTHREE}[3]{
+\if\relax\detokenize{#3}\relax
+  \usedefaultTWO{#1}{#2}
+\else
+  #3
+\fi
+}
+
+% 用于接受从 xelatex/pdflatex 通过参数 -jobname 传入的参数来判定编译何种语言的版本。
+% \cnt 的三个参数分别为 en/zh/tw 的内容
+\newcommand{\cnt}[3]{{#1}{#2}{#3}}
+%\newcommand{\cnt}[3]{#1} % default en
+\usepackage{ifthen}
+\ifthenelse{\equal{\detokenize{lang-zh}}{\jobname}}{
+  \renewcommand{\cnt}[3]{\usedefaultTWO{#1}{#2}}
+}{
+  \ifthenelse{\equal{\detokenize{lang-tw}}{\jobname}}{
+    \renewcommand{\cnt}[3]{\usedefaultTHREE{#1}{#2}{#3}}
+  }{
+    % default en
+    \renewcommand{\cnt}[3]{#1}
+    %\renewcommand{\cnt}[3]{#2}
+  }
+}
+
+\newcommand{\cnts}[3]{{#1} {#2}}
+
+% 根据配置来设置中文环境
+\newcommand\usefontspeczh[1]{#1} % use fontspec for zh_CN
+\newcommand\charsetzhcn[1]{#1} % the charset encoding for zh_CN
+\newcommand\formatzhcn[1]{#1} % the page format for zh_CN
+\cnt{
+\renewcommand\usefontspeczh[1]{}
+\renewcommand\charsetzhcn[1]{}
+\renewcommand\formatzhcn[1]{}
+}{
+%\renewcommand\usefontspeczh[1]{}
+%\renewcommand\charsetzhcn[1]{}
+%\renewcommand\formatzhcn[1]{}
+}{
+%\renewcommand\usefontspeczh[1]{}
+%\renewcommand\charsetzhcn[1]{}
+%\renewcommand\formatzhcn[1]{}
+}
+\input{cndoc.tex}
+
+
+\newcommand\comments[1]{#1}
+\renewcommand\comments[1]{}
+
+\usepackage{xcolor}
+
+\usepackage{amssymb}
+%\usepackage{amsmath,amsfonts,amsthm}
+
+\usepackage{array}
+% table's multirow and multicolumn
+\usepackage{multirow}
+
+\usepackage{chapterbib}
+\usepackage[sectionbib,super,square,sort&compress]{natbib}
+
+%\usepackage[margin=1.8cm,nohead]{geometry}
+\usepackage[margin=0.8in,nohead]{geometry}
+%\usepackage[top=1in,bottom=1in,left=1.25in,right=1.25in]{geometry} % 设置页边距
+%\setlength{\belowcaptionskip}{1em} % 设置caption之后的距离
+
+%opening
+\title{\doctitle}
+\author{\docauthor}
+%\date{2014-03}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\input{chap-design.tex}
+%\input{chap-implementation.tex}
+
+\appendix
+
+\chapter{References}
+
+Google MapReduce for C: Run Native Code in Hadoop
+\url{http://google-opensource.blogspot.com/2015/02/mapreduce-for-c-run-native-code-in.html}
+
+
+
+Cloud MapReduce -- A MapReduce implementation on Amazon Cloud OS
+\url{https://code.google.com/p/cloudmapreduce/}
+
+
+Apache Storm is a free and open source distributed realtime computation system.
+\url{http://storm.apache.org/}
+
+Apache Spark is a fast and general engine for large-scale data processing.
+\url{http://spark.apache.org/}
+
+
+\section{C/C++}
+
+
+\href{http://hypertable.com/}{Hypertable} is a high performance, open source, massively scalable database modeled after Bigtable, Google's proprietary, massively scalable database.
+
+\section{python}
+
+
+\href{https://github.com/mfisk/filemap.git}{FileMap} is a file-based map-reduce system for data-parallel computation. (python)
+
+\href{https://code.google.com/p/octopy/}{octopy} Easy MapReduce for Python
+
+\href{https://github.com/michaelfairley/mincemeatpy.git}{mincemeatpy} Lightweight MapReduce in python (2013)
+
+\href{http://heynemann.github.io/r3/}{r³} is a map reduce engine written in python using a redis backend. It's purpose is to be simple.
+
+
+\href{http://discoproject.org/}{Disco} is a lightweight, open-source framework for distributed computing based on the MapReduce paradigm.
+
+
+
+\url{https://wiki.python.org/moin/ParallelProcessing}
+python Parallel Processing
+
+\href{http://ipython.org/}{IPython} provides tools for interactive and parallel computing that are widely used in scientific computing, but can benefit any Python developer.
+
+\section{Bash}
+
+bashreduce (origin) \url{https://github.com/erikfrey/bashreduce.git}
+
+improved bashreduce \url{https://github.com/dakusui/bredxbred.git},
+or \url{https://github.com/rcrowley/bashreduce.git}. others, \href{https://github.com/jweslley/bashreduce.git}{jweslley}.
+
+
+
+others:
+\href{https://github.com/jasonMatney/BashMapReduce.git}{BashMapReduce},
+\href{https://github.com/sorhus/bash-reduce.git}{bash-reduce},
+\href{https://github.com/colestanfield/map-reduce.git}{map-reduce},
+\href{https://github.com/argent0/mr-tools.git}{mr-tools},
+
+
+\section{others}
+
+
+
+\url{http://quantcast.github.io/qfs/}
+Quantcast File System (QFS) is a high-performance, fault-tolerant, distributed file system developed to support MapReduce processing, or other applications reading and writing large files sequentially.
+
+\href{https://rubygems.org/gems/mapredus}{mapredus}, simple mapreduce framework using redis and resque
+
+\href{http://projects.camlcity.org/projects/plasma.html}{Plasma}: Distributed filesystem, key/value db, and map/reduce system. 2011
+
+
+\href{http://mapreduce.sandia.gov/}{MapReduce-MPI Library} includes C++ and C interfaces callable from most hi-level languages, and also a Python wrapper
+
+
+\href{http://sector.sourceforge.net/}{Sector/Sphere} is a system for distributed data storage, distribution, and processing. The system works on clusters of commodity computers. Sector provides client tools to access data stored in the system and API for the development of distributed data processing applications.
+
+\href{http://skynet.rubyforge.org/}{Skynet} is an open source Ruby implementation of Google’s MapReduce framework
+
+
+\href{https://code.google.com/p/httpmr/}{httpmr} A scalable data processing framework for people with web clusters
+
+
+\href{https://code.google.com/p/qizmt/}{qizmt} is a mapreduce framework for executing and developing distributed computation applications on large clusters of Windows servers.
+
+
+
+
+\href{https://code.google.com/p/cloudmapreduce/}{Cloud MapReduce} -- A MapReduce implementation on Amazon Cloud OS
+
+\url{https://github.com/googlecloudplatform/appengine-mapreduce}
+A library for running MapReduce jobs on App Engine
+
+
+
+
+\url{https://github.com/documentcloud/cloud-crowd}
+Write your scripts in Ruby, Works with Amazon EC2 and S3
+
+
+
+\url{http://www.cse.ust.hk/gpuqp/Mars.html}
+A MapReduce Framework on Graphics Processors
+
+
+\url{https://github.com/ryanmcgrath/maprejuice}
+javascript, node.js
+
+\chapter{Source Code}
+
+\begin{lstlisting}[language=bash]
+ffprobe -show_streams
+\end{lstlisting}
+
+
+\end{document}
+
+
+
