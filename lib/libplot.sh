@@ -300,6 +300,8 @@ gplot_draw_statfig () {
     shift
     PARAM_FN_OUTFIG=$1
     shift
+    PARAM_DN_OUTFIG=$1
+    shift
 
     # plot figure
     FN_TMPGP=tmp-statsfig-$PARAM_FN_OUTFIG.gplot
@@ -327,7 +329,7 @@ EOF
         if [ ! "${PLOT_LINE}" = "" ] ; then PLOT_LINE="${PLOT_LINE},"; fi
         PLOT_LINE="${PLOT_LINE} '${FN}' index 0 using 1:2 t '$TTT' with lp"
     done
-    gplot_settail "${FN_TMPGP}" "${PARAM_FN_OUTFIG}"
+    gplot_settail "${FN_TMPGP}" "${PARAM_DN_OUTFIG}/${PARAM_FN_OUTFIG}"
 
     echo "ploting ${PARAM_FN_OUTFIG} ..." 1>&2
     plot_script "${FN_TMPGP}"

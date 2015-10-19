@@ -57,7 +57,6 @@ DN_PARENT="$(my_getpath ".")"
 
 EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
 FN_LOG="/dev/null"
-FN_LOG="mylog.txt"
 
 #read_config_file "${DN_PARENT}/config.conf"
 source ${DN_TOP}/config-sys.sh

@@ -61,7 +61,7 @@ generate_throughput_stats_file () {
             TP_SUM=0
             CNT=0
             if [ ! -d "${DN_TEST}/" ]; then
-                echo "Warning: skip ${DN_TEST}"
+                echo "Warning: skip ${DN_TEST}" 1>&2
                 continue
             fi
             cd "${DN_TEST}/"
@@ -72,7 +72,7 @@ generate_throughput_stats_file () {
             if [ "${LST}" = "" ]; then
                 LST=$(find . -maxdepth 1 -type f -name "${PARAM_FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
                 if [ "${LST}" = "" ]; then
-                    echo "Error: Not found data file: ${PARAM_FN_TPFLOW}"
+                    echo "Error: Not found data file: ${PARAM_FN_TPFLOW}" 1>&2
                     exit 1
                 fi
                 FN_AWK_TPAVG=tmp-avgtp-stats.awk
@@ -96,7 +96,7 @@ END{
 }
 EOF
                 for i in $LST ; do
-                    echo "DEBUG == process flow throughput (stat tcp) $i ..."
+                    echo "DEBUG == process flow throughput (stat tcp) $i ..." 1>&2
                     V=$(cat "${i}" | awk -v STARTTIME=${TIME_START} -v STOPTIME=${TIME_STOP} -f ${FN_AWK_TPAVG})
                     echo "${V}" >> "${FN_DAT_STATS}"
                 done
@@ -116,16 +116,16 @@ EOF
                 done
             fi
             VALS=$(calculate_stats 10000000000 0 < "${FN_DAT_STATS}")
-            echo "DEBUG == throughput stats data for ${DN_TEST} (cnt, min, max, sum, mean, stddev, mmr, jfi, cfi)=${VALS}"
+            echo "DEBUG == throughput stats data for ${DN_TEST} (cnt, min, max, sum, mean, stddev, mmr, jfi, cfi)=${VALS}" 1>&2
             cd - > /dev/null
             if [ "${VALS}" = "" ]; then
-                echo "Warning: not found throughput stat file for ${DN_TEST}: ${PARAM_FN_STAT}; tpflow=${PARAM_FN_TPFLOW}"
+                echo "Warning: not found throughput stat file for ${DN_TEST}: ${PARAM_FN_STAT}; tpflow=${PARAM_FN_TPFLOW}" 1>&2
                 continue
             fi
             TP_SUM=$(echo ${VALS} | awk '{print $4}' )
             CNT=$(echo ${VALS} | awk '{print $1}')
             TP_AVG=$(echo ${VALS} | awk '{print $5}')
-            echo "DEBUG == ${DN_TEST}: sum=${TP_SUM}; avg=${TP_AVG}; cnt=$CNT"
+            echo "DEBUG == ${DN_TEST}: sum=${TP_SUM}; avg=${TP_AVG}; cnt=$CNT" 1>&2
             echo "$num $sched ${VALS}" >> ${PARAM_FN_OUT_TPSTATS}
         done
     done
@@ -134,7 +134,7 @@ EOF
 
 #####################################################################
 
-#plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "title" "DSUDP*.out"
+#plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${DN_TEST}" "title" "DSUDP*.out"
 
 # plot the flows' throughput
 plot_eachflow_throughput () {
@@ -143,6 +143,8 @@ plot_eachflow_throughput () {
     shift
     # the dir stores figures
     PARAM_DN_DEST=$1
+    shift
+    PARAM_FN_TEST=$1
     shift
     # the figure title
     PARAM_TITLE=$1
@@ -155,9 +157,10 @@ plot_eachflow_throughput () {
     YLABEL="Throughput (bps)"
 
     if [ ! -d "${PARAM_DN_TEST}/" ]; then
-        echo "skip ${PARAM_DN_TEST}" 1>&2
+        echo "Error, not found dir: ${PARAM_DN_TEST}" 1>&2
         return
     fi
+echo "[DBG] cd ${PARAM_DN_TEST}" 1>&2
     cd "${PARAM_DN_TEST}/"
 
     # GNUPLOT - the arguments for gnuplot plot command
@@ -172,7 +175,7 @@ plot_eachflow_throughput () {
         PLOT_LINE="${PLOT_LINE} '${i}' index 0 using 1:2 t 'CM #${idx}' with lp"
     done
     echo "DEBUG == PLOT_LINE=${PLOT_LINE}" 1>&2
-    FN_TMPGP="tmp-worker_plot_eachflowtp-${PARAM_DN_TEST}.gplot"
+    FN_TMPGP="tmp-worker_plot_eachflowtp-${PARAM_FN_TEST}.gplot"
     gplot_setheader "${FN_TMPGP}"
 
     # GNUPLOT - set the labels
@@ -181,7 +184,7 @@ set title "${PARAM_TITLE}"
 set xlabel "${XLABEL}"
 set ylabel "${YLABEL}"
 EOF
-    gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST}/fig-nodetp-${PARAM_DN_TEST}"
+    gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST}/fig-nodetp-${PARAM_FN_TEST}"
     plot_script "${FN_TMPGP}"
     cd - > /dev/null
 }

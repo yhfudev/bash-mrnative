@@ -78,10 +78,11 @@ worker_flow_throughput () {
     shift
     PARAM_SCHEDULE="$1"
     shift
-    PARAM_NUM="$1"
+    PARAM_NODE="$1"
     shift
 
-    ${DN_PARENT}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NUM}"
+    #echo "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" 1>&2
+    ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -97,7 +98,8 @@ worker_stats_throughput () {
     PARAM_TYPE="$1"
     shift
 
-    ${DN_PARENT}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
+    #echo ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" 1>&2
+    ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -118,8 +120,7 @@ worker_stats_packet () {
     PARAM_NODE="$1"
     shift
 
-    #DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
-    ${DN_PARENT}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+    ${DN_EXEC}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -139,7 +140,8 @@ worker_trans_packet () {
     PARAM_NODE="$1"
     shift
 
-    ${DN_PARENT}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+    #echo ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" 1>&2
+    ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -161,12 +163,13 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
   GROUP_STATS="${MR_PREFIX}|${MR_TYPE}"
 
+  ERR=0
   case "${MR_CMD}" in
   throughput)
     # REDUCE: read until reach to a different key, then reduce it
 
     # plot figure for each flow
-    worker_flow_throughput "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    worker_flow_throughput "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
 
@@ -202,6 +205,7 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
 
   *)
     echo "e2red [DBG] Err: unknown command: ${MR_CMD}" 1>&2
+    ERR=1
     continue
     ;;
   esac

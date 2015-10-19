@@ -36,9 +36,9 @@ DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 PROGNAME=$(basename "$0")
 
 #####################################################################
-DN_INPUT=${DN_TOP}/data/input
+DN_INPUT=${DN_TOP}/tmp/input
 
-DN_PREFIX=${DN_TOP}/data/output
+DN_PREFIX=${DN_TOP}/tmp/output
 
 DN_OUTPUT1=${DN_PREFIX}/1
 DN_OUTPUT2=${DN_PREFIX}/2
@@ -49,10 +49,10 @@ TM_START=$(date +%s)
 
 # genrate input file:
 mkdir -p ${DN_INPUT}
-#find ../projconfigs/ -name "config-*" | xargs -n 1 echo "config" | ./e1map.sh | sort > e1out.txt
+#find ../projconfigs/ -maxdepth 1 -name "config-*" | xargs -n 1 echo "config" | ./e1map.sh | sort > e1out.txt
 #cat e1out.txt | ./e2map.sh | sort | ./e2red.sh > e2out.txt
-#find ../projconfigs/ -name "config-*" | xargs -n 1 echo "config" > ${DN_INPUT}/a.txt
-find ../tmp/ -name "config-*" | while read a; do echo "config $(my_getpath ${a})" > ${DN_INPUT}/a.txt; done
+#find ../projconfigs/ -maxdepth 1 -name "config-*" | xargs -n 1 echo "config" > ${DN_INPUT}/a.txt
+find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo "config $(my_getpath ${a})" > ${DN_INPUT}/a.txt; done
 
 if [ 1 = 1 ]; then
 echo "[${PROGNAME}] Stage 1 ..."

@@ -57,16 +57,18 @@ ARG_NUM=$1
 shift
 
 DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
+mkdir -p "${DN_TOP}/figures/${ARG_PREFIX}"
+
 case "${ARG_CMD}" in
 "tpflow")
     TTT="$(sed 's/[\"\`_]/ /g' <<<${ARG_SCHE})"
     TITLE="Throughput of ${ARG_NUM} $TTT ${ARG_TYPE} flows"
     case "${ARG_FLOW_TYPE}" in
     "tcp")
-        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
+        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
         ;;
     "udp")
-        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
+        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
         ;;
     esac
     ;;
@@ -80,26 +82,23 @@ case "${ARG_CMD}" in
     FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
     source ${FN_CONFIG_PROJ2}
 
-    FN_TP="tmp-avgtp-stats-udp-${PARAM_PREFIX}-${PARAM_TYPE}.dat"
-    case "${ARG_FLOW_TYPE}" in
-    "tcp")
-        generate_throughput_stats_file "${PARAM_PREFIX}" "${PARAM_TYPE}" "tcp" "DSFTPTCPstats*.out" "CMTCPDS*.out" "${FN_TP}"
-        ;;
-    "udp")
-        generate_throughput_stats_file "${PARAM_PREFIX}" "${PARAM_TYPE}" "udp" "DSUDPstats*.out"    "CMUDPDS*.out" "${FN_TP}"
-        ;;
-    esac
-    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${PARAM_PREFIX}-${PARAM_TYPE}"
+    cd "${DN_TOP}/results/"
+    FN_TP="$(pwd)/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}.dat"
+    generate_throughput_stats_file "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
+
+    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
+    #rm -f "${FN_TP}"
+    cd -
     ;;
 
 "pktstat")
-    plot_pktdelay_queue "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${DN_TEST}"
+    plot_pktdelay_queue "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}"
     ;;
 "pkttrans")
-    plot_pktdelay_trans "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${DN_TEST}"
+    plot_pktdelay_trans "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}"
     ;;
 *)
     echo "Error: unknown command: ${ARG_CMD}" 1>&2
