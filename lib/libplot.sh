@@ -2,7 +2,7 @@
 #
 # This test case is for comparing DRR and PF
 # single channel for downsreaming
-# 
+#
 # Copyright 2014 Yunhui Fu
 # License: GPL v3.0 or later
 #####################################################################
@@ -15,39 +15,39 @@ PNGSIZE="1024,768"
 PNGSIZE="800,600"
 
 if [ ! -x "${EXEC_AWK}" ]; then
-  #echo "Try to install gawk." >> "/dev/stderr"
+  #echo "Try to install gawk." 1>&2
   #install_package gawk
-  echo "Please install gawk." >> "/dev/stderr"
+  echo "Please install gawk." 1>&2
   exit 1
 fi
 
 EXEC_AWK=$(which gawk)
 if [ ! -x "${EXEC_AWK}" ]; then
-  echo "Error: Not exist awk!" >> "/dev/stderr"
+  echo "Error: Not exist awk!" 1>&2
   exit 1
 fi
 
 which gnuplot > /dev/null 2>&1
 if [ "$?" = "1" ]; then
   #install_package gnuplot
-  echo "Please install gnuplot." >> "/dev/stderr"
+  echo "Please install gnuplot." 1>&2
   exit 1
 fi
 FLG_HAS_GNUPLOT=0
 which gnuplot > /dev/null 2>&1
 if [ "$?" = "1" ]; then
-  echo "WARNING: Not exist gnuplot" >> "/dev/stderr"
+  echo "WARNING: Not exist gnuplot" 1>&2
   FLG_HAS_GNUPLOT=0
 else
   FLG_GNUPLOT_LESS_43=`${EXEC_PLOT} --version | ${EXEC_AWK} '{print $2 < 4.3}'`
   if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
-    echo "WARNING: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly." >> "/dev/stderr"
+    echo "WARNING: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly." 1>&2
   fi
   FLG_HAS_GNUPLOT=1
 fi
 
 test_gawk_switch () {
-    echo "[DBG] patch gawk to support 'switch'" >> "/dev/stderr"
+    echo "[DBG] patch gawk to support 'switch'" 1>&2
     echo | awk '{a = 1; switch(a) { case 0: break; } }'
     echo "$?"
 }
@@ -145,7 +145,7 @@ fi
 
 RET1=$(test_gawk_switch 2>/dev/null)
 if [ ! "$RET1" = "0" ]; then
-    echo "Warning: gawk don't support switch!"
+    echo "Warning: gawk don't support switch!" 1>&2
     #exit 1
 fi
 
@@ -156,37 +156,18 @@ plot_script () {
 
     if [ ${FLG_HAS_GNUPLOT} = 1 ]; then
         if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
-            echo "WARNING: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly" >> "/dev/stderr"
+            echo "WARNING: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly" 1>&2
         fi
         "${EXEC_PLOT}" "${FN_TMPGP}"
         if [ "$?" = "1" ]; then
             NEWNAME="${FN_TMPGP}$(date +%s)"
-            echo "Error: in process file ${FN_TMPGP}, changed to ${NEWNAME}" >> "/dev/stderr"
+            echo "Error: in process file ${FN_TMPGP}, changed to ${NEWNAME}" 1>&2
             mv "${FN_TMPGP}" "${NEWNAME}"
         fi
     else
-        echo "Unable to find the gnuplot!" >> "/dev/stderr"
+        echo "Unable to find the gnuplot!" 1>&2
         exit 1
     fi
-}
-
-
-# return the simulation directory name
-simulation_directory () {
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-    # the scheduler, such as "PF", "DRR"
-    PARAM_SCHE=$1
-    shift
-    # the number of flows
-    PARAM_NUM=$1
-    shift
-    DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
-    echo "${DN_TEST}"
 }
 
 # calculate the values min,max,sum,mean,stddev,jfi for average throughput of N nodes
@@ -348,7 +329,7 @@ EOF
     done
     gplot_settail "${FN_TMPGP}" "${PARAM_FN_OUTFIG}"
 
-    echo "ploting ${PARAM_FN_OUTFIG} ..."
+    echo "ploting ${PARAM_FN_OUTFIG} ..." 1>&2
     plot_script "${FN_TMPGP}"
 }
 
@@ -400,7 +381,7 @@ EOF
 }
 
 plotgen_pdf_cdf () {
-    #echo "DEBUG: ==== args: $@" >> "/dev/stderr"
+    #echo "DEBUG: ==== args: $@" 1>&2
     PARAM_NUMREC=$1
     shift
     PARAM_INTERVAL=$1
@@ -540,7 +521,7 @@ EOF
     fi
 
     if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
-        echo "Unable to plot CDF file: ${PARAM_FN_OUT_BASE}" >> "/dev/stderr"
+        echo "Unable to plot CDF file: ${PARAM_FN_OUT_BASE}" 1>&2
     else
 cat >> "${FN_TMPGP}" << EOF
 # save to eps
@@ -602,12 +583,12 @@ plotgen_pdf () {
     PARAM_FN_OUT_GNUPLOT="$1"
     shift
 
-    #echo "DEBUG: ==== interval file: ${PARAM_FN_INTERVALS}" >> "/dev/stderr"
+    #echo "DEBUG: ==== interval file: ${PARAM_FN_INTERVALS}" 1>&2
     # get the min interval
     # extend the box width by x3
     MIN_INTERVAL=$( _get_interval_gz "${PARAM_FN_INTERVALS}" )
 
-    echo "DEBUG: ==== ${PARAM_TITLE}: min/max/avg = ${MIN_INTERVAL}; fn=${PARAM_FN_INTERVALS}" >> "/dev/stderr"
+    echo "DEBUG: ==== ${PARAM_TITLE}: min/max/avg = ${MIN_INTERVAL}; fn=${PARAM_FN_INTERVALS}" 1>&2
 
     # get the max interval
     MAX_INTERVAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $2}'`
@@ -620,17 +601,17 @@ plotgen_pdf () {
     #NUM_REC=`${EXEC_AWK} 'END {print NR}' ${PARAM_FN_INTERVALS_2}`
     NUM_REC=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $4}'`
     if [ "${NUM_REC}" = "" ]; then
-        echo "ERROR: unable to get the num of record" >> "/dev/stderr"
+        echo "ERROR: unable to get the num of record" 1>&2
         return
     fi
     if [ "${NUM_REC}" = "0" ]; then
-        echo "ERROR: Num of record = 0" >> "/dev/stderr"
+        echo "ERROR: Num of record = 0" 1>&2
         return
     fi
     TOTAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $5}'`
 
     MIN_INTERVAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $1}'`
-    echo "DEBUG: ==== maxinterval=${MAX_INTERVAL}; mininterval=${MIN_INTERVAL}; avg interval=${INTERVAL}; " >> "/dev/stderr"
+    echo "DEBUG: ==== maxinterval=${MAX_INTERVAL}; mininterval=${MIN_INTERVAL}; avg interval=${INTERVAL}; " 1>&2
 
 if [ 0 = 1 ]; then
     MAX_INTERVAL_BAK=${MAX_INTERVAL}
@@ -638,51 +619,51 @@ if [ 0 = 1 ]; then
     # get W1, the range of 90% data; the width to be used in plotting is 2*W1
     N=$(echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${INTERVAL} '{print int(A*150/B + 1)}')
     MAX_INTERVAL=$( ${EXEC_AWK} -v N=${N} -v MAX=${MAX_INTERVAL} 'BEGIN{W=MAX/N} {i=int(($1+0.5)/W); a[i]=a[i]+1;} END {wl=MAX*0.9; sum=0; for (i = 0; i < N; i ++) {sum=sum+a[i]; if (sum > wl) {break}} print W*i*2 }' ${PARAM_FN_INTERVALS_2} )
-    #echo "DEBUG: ==== 0 MAX_INTERVAL=${MAX_INTERVAL}" >> "/dev/stderr"
-    echo "DEBUG: ==== 0 MIN_INTERVAL=${MIN_INTERVAL}" >> "/dev/stderr"
+    #echo "DEBUG: ==== 0 MAX_INTERVAL=${MAX_INTERVAL}" 1>&2
+    echo "DEBUG: ==== 0 MIN_INTERVAL=${MIN_INTERVAL}" 1>&2
 
     # TCP LAN ACK should be in 0.3 second
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{if (A < 0.035) {print 1} else {print 0}}'`" = "1" ]; then
         MAX_INTERVAL=0.035
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        echo "DEBUG: ==== 1 MIN_INTERVAL=${MIN_INTERVAL}" >> "/dev/stderr"
+        echo "DEBUG: ==== 1 MIN_INTERVAL=${MIN_INTERVAL}" 1>&2
     fi
 
     # 如果调整后的 MAX_INTERVAL 大于最大值，则调整成最大值，同时相应设置MIN_INTERVAL
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${MAX_INTERVAL_BAK} '{if (A > B) {print 1} else {print 0}}'`" = "1" ]; then
-        #echo "DEBUG: ==== 2 MAX_INTERVAL change from ${MAX_INTERVAL} to ${MAX_INTERVAL_BAK}" >> "/dev/stderr"
+        #echo "DEBUG: ==== 2 MAX_INTERVAL change from ${MAX_INTERVAL} to ${MAX_INTERVAL_BAK}" 1>&2
         MAX_INTERVAL=${MAX_INTERVAL_BAK}
-        echo "DEBUG: ==== 2 adjusted MAX_INTERVAL=${MAX_INTERVAL}" >> "/dev/stderr"
+        echo "DEBUG: ==== 2 adjusted MAX_INTERVAL=${MAX_INTERVAL}" 1>&2
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        echo "DEBUG: ==== 2 adjusted MIN_INTERVAL=${MIN_INTERVAL}" >> "/dev/stderr"
+        echo "DEBUG: ==== 2 adjusted MIN_INTERVAL=${MIN_INTERVAL}" 1>&2
     fi
 
     # 如果调整后的 MAX_INTERVAL 大于平均值的3倍，则设置成平均值的3倍，同时相应设置MIN_INTERVAL
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${INTERVAL} '{if (A > B*5) {print 1} else {print 0}}'`" = "1" ]; then
         MAX_INTERVAL=`echo | ${EXEC_AWK} -v A=${INTERVAL} '{print A*3}'`
-        echo "DEBUG: ==== 3 MAX_INTERVAL= ${MAX_INTERVAL}" >> "/dev/stderr"
+        echo "DEBUG: ==== 3 MAX_INTERVAL= ${MAX_INTERVAL}" 1>&2
 
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        echo "DEBUG: ==== 3 MIN_INTERVAL= ${MIN_INTERVAL}" >> "/dev/stderr"
+        echo "DEBUG: ==== 3 MIN_INTERVAL= ${MIN_INTERVAL}" 1>&2
     fi
 
     # check the values
     if [ "${MAX_INTERVAL}" = "" ]; then
-       echo "Error: unable to get MAX_INTERVAL" >> "/dev/stderr"
+       echo "Error: unable to get MAX_INTERVAL" 1>&2
        exit 1
     fi
     if [ "${MIN_INTERVAL}" = "" ]; then
-       echo "Error: unable to get MIN_INTERVAL" >> "/dev/stderr"
+       echo "Error: unable to get MIN_INTERVAL" 1>&2
        exit 1
     fi
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${MIN_INTERVAL} '{if (A < B*5) {print 1} else {print 0}}'`" = "1" ]; then
-       echo "Error: MAX MIN INTERVAL" >> "/dev/stderr"
+       echo "Error: MAX MIN INTERVAL" 1>&2
        exit 1
     fi
 fi
 
     V=$(echo | awk -v A=${MIN_INTERVAL} -v B=${INTERVAL} '{print (199.0*A + 1.0*B) / 200.0;}')
-    echo "INFO: Number of Record=${NUM_REC}, Interval=${INTERVAL}, min_interval=${MIN_INTERVAL}, max_interval=${MAX_INTERVAL}, use interval $V" >> "/dev/stderr"
+    echo "INFO: Number of Record=${NUM_REC}, Interval=${INTERVAL}, min_interval=${MIN_INTERVAL}, max_interval=${MAX_INTERVAL}, use interval $V" 1>&2
 
     plotgen_pdf_with_minmax "${PARAM_TITLE}" "${PARAM_XLABEL}" "${PARAM_YLABEL}" "${PARAM_FN_INTERVALS}" "${PARAM_FN_BASE}" "${PARAM_FN_OUT_GNUPLOT}" "${NUM_REC}" "${V}" "${MAX_INTERVAL}"
 }

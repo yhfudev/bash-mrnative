@@ -48,14 +48,16 @@ fi
 #####################################################################
 
 DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-source ${DN_COMM}/libbash.sh
-source ${DN_COMM}/libshrt.sh
-source ${DN_COMM}/libplot.sh
+DN_LIB="$(my_getpath "${DN_TOP}/lib")"
+
+source ${DN_LIB}/libbash.sh
+source ${DN_LIB}/libshrt.sh
+source ${DN_LIB}/libplot.sh
 
 DN_PARENT="$(my_getpath ".")"
 
 #read_config_file "${DN_PARENT}/config.conf"
-source ${DN_PARENT}/config.sh
+source ${DN_TOP}/config-sys.sh
 
 check_global_config
 
@@ -72,15 +74,14 @@ worker_create_tcl_config () {
     PARAM_CONFIG_FILE="$1"
     shift
 
-    # run the work here:
-    # ...
+    ${DN_PARENT}/createconf.sh "${PARAM_CONFIG_FILE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-#<type> <config_file>
+#<command> <config_file>
 # config "/path/to/config.sh"
-while read MR_TYPE MR_CONFIG_FILE
+while read MR_TYPE MR_CONFIG_FILE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
 
   case "${MR_TYPE}" in

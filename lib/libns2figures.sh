@@ -6,6 +6,24 @@
 # License: GPL v3.0 or later
 #####################################################################
 
+# return the simulation directory name
+simulation_directory () {
+    # the prefix of the test
+    PARAM_PREFIX=$1
+    shift
+    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
+    PARAM_TYPE=$1
+    shift
+    # the scheduler, such as "PF", "DRR"
+    PARAM_SCHE=$1
+    shift
+    # the number of flows
+    PARAM_NUM=$1
+    shift
+    DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
+    echo "${DN_TEST}"
+}
+
 generate_throughput_stats_file () {
     # the prefix of the test
     PARAM_PREFIX=$1
@@ -115,175 +133,16 @@ EOF
 
 
 #####################################################################
-# multiple process version of plotting
-worker_plot_statsfig_tcp () {
-    PARAM_SESSION_ID="$1"
-    shift
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-    # stats file name template
-    PARAM_FN_STAT=$1
-    shift
-    # flow throughput file name template
-    PARAM_FN_TPFLOW=$1
-    shift
 
-    FN_TP="tmp-avgtp-stats-tcp-${PARAM_PREFIX}-${PARAM_TYPE}.dat"
-    generate_throughput_stats_file "${PARAM_PREFIX}" "${PARAM_TYPE}" "tcp" "${PARAM_FN_STAT}" "${PARAM_FN_TPFLOW}" "${FN_TP}"
+#plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "title" "DSUDP*.out"
 
-    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${PARAM_PREFIX}-${PARAM_TYPE}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-#####################################################################
-# multiple process version of plotting
-worker_plot_eachflowtp_tcp () {
-    PARAM_SESSION_ID="$1"
-    shift
+# plot the flows' throughput
+plot_eachflow_throughput () {
     # the test dir
     PARAM_DN_TEST=$1
     shift
-    # the figure title
-    PARAM_TITLE=$1
-    shift
-    # flow throughput file name template
-    PARAM_FN_TPFLOW=$1
-    shift
-
-    XLABEL="Time"
-    YLABEL="Throughput (bps)"
-
-    if [ ! -d "${PARAM_DN_TEST}/" ]; then
-        echo "skip ${PARAM_DN_TEST}"
-        mp_notify_child_exit ${PARAM_SESSION_ID}
-        return
-    fi
-    cd "${PARAM_DN_TEST}/"
-
-    FN_TMPGP="tmp-nodetp-tcp-${PARAM_DN_TEST}.gplot"
-    gplot_setheader "${FN_TMPGP}"
-
-    # GNUPLOT - the arguments for gnuplot plot command
-    PLOT_LINE=
-
-    # GNUPLOT - set the labels
-    cat << EOF >> "${FN_TMPGP}"
-set title "${PARAM_TITLE}"
-set xlabel "${XLABEL}"
-set ylabel "${YLABEL}"
-EOF
-    LST=$(find . -maxdepth 1 -type f -name "${PARAM_FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
-    for i in $LST ; do
-        echo "process flow throughput (tcp) $i ..."
-        idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
-        echo "DEBUG == idx=$idx"
-        if [ ! "${PLOT_LINE}" = "" ]; then PLOT_LINE="${PLOT_LINE},"; fi
-        PLOT_LINE="${PLOT_LINE} '${i}' index 0 using 1:2 t 'TCP #${idx}' with lp"
-    done
-
-    gplot_settail "${FN_TMPGP}" "../fig-nodetp-${PARAM_DN_TEST}"
-
-    echo "ploting fig-nodetp-${PARAM_DN_TEST} 2 ..."
-    plot_script "${FN_TMPGP}"
-    cd - > /dev/null
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-#generate_tcp_figures "bpp" "tcp" "TCPstats*.out" "thru*.out"
-generate_tcp_figures () {
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-    # stats file name template
-    PARAM_FN_STAT=$1
-    shift
-    # flow throughput file name template
-    PARAM_FN_TPFLOW=$1
-    shift
-
-    worker_plot_statsfig_tcp "$(mp_get_session_id)" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FN_STAT}" "${PARAM_FN_TPFLOW}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-
-    # plot figures -- flows of each test
-    for num in ${list_nodes_num[*]} ; do
-        for sched in ${list_schedules[*]} ; do
-
-            #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
-            DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${sched}" "${num}")
-            echo "ploting fig-nodetp-${DN_TEST} 1 ..."
-
-            TTT="$(sed 's/[\"\`_]/ /g' <<<$sched)"
-            TITLE="Throughput of $num $TTT TCP flows"
-
-            worker_plot_eachflowtp_tcp "$(mp_get_session_id)" "${DN_TEST}" "${TITLE}" "${PARAM_FN_TPFLOW}" &
-            PID_CHILD=$!
-            mp_add_child_check_wait ${PID_CHILD}
-
-        done
-    done
-    # plot figures -- flows of each test
-    for num in ${list_nodes_num[*]} ; do
-        for sched in ${list_schedules[*]} ; do
-            #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
-            DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${sched}" "${num}")
-
-            cd "${DN_TEST}/"
-            #../../plotscripts/plot-cm-queue.sh $(($num - 1)) "../fig-cmqueue-${PARAM_TYPE}-${num}-${sched}"
-            #../../plotscripts/plot-cm-tp.sh    $(($num - 1)) "../fig-cmtp-${PARAM_TYPE}-${num}-${sched}"
-            cd - > /dev/null
-        done
-    done
-}
-
-#####################################################################
-# multiple process version of plotting
-worker_plot_statsfig_udp () {
-    PARAM_SESSION_ID="$1"
-    shift
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-    # stats file name template
-    PARAM_FN_STAT=$1
-    shift
-    # flow throughput file name template
-    PARAM_FN_TPFLOW=$1
-    shift
-
-    FN_TP="tmp-avgtp-stats-udp-${PARAM_PREFIX}-${PARAM_TYPE}.dat"
-    generate_throughput_stats_file "${PARAM_PREFIX}" "${PARAM_TYPE}" "udp" "${PARAM_FN_STAT}" "${PARAM_FN_TPFLOW}" "${FN_TP}"
-
-    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${PARAM_PREFIX}-${PARAM_TYPE}"
-    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${PARAM_PREFIX}-${PARAM_TYPE}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-#####################################################################
-# multiple process version of plotting
-worker_plot_eachflowtp_udp () {
-    PARAM_SESSION_ID="$1"
-    shift
-    # the test dir
-    PARAM_DN_TEST=$1
+    # the dir stores figures
+    PARAM_DN_DEST=$1
     shift
     # the figure title
     PARAM_TITLE=$1
@@ -296,8 +155,7 @@ worker_plot_eachflowtp_udp () {
     YLABEL="Throughput (bps)"
 
     if [ ! -d "${PARAM_DN_TEST}/" ]; then
-        echo "skip ${PARAM_DN_TEST}"
-        mp_notify_child_exit ${PARAM_SESSION_ID}
+        echo "skip ${PARAM_DN_TEST}" 1>&2
         return
     fi
     cd "${PARAM_DN_TEST}/"
@@ -307,14 +165,14 @@ worker_plot_eachflowtp_udp () {
 
     LST=$(find . -maxdepth 1 -type f -name "${PARAM_FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
     for i in $LST ; do
-        echo "process flow throughput (udp) $i ..."
+        echo "process flow throughput $i ..." 1>&2
         idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
-        echo "DEBUG == idx=$idx"
+        echo "DEBUG == idx=$idx" 1>&2
         if [ ! "${PLOT_LINE}" = "" ]; then PLOT_LINE="${PLOT_LINE},"; fi
         PLOT_LINE="${PLOT_LINE} '${i}' index 0 using 1:2 t 'CM #${idx}' with lp"
     done
-    echo "DEBUG == PLOT_LINE=${PLOT_LINE}"
-    FN_TMPGP="tmp-worker_plot_eachflowtp_udp-${PARAM_DN_TEST}.gplot"
+    echo "DEBUG == PLOT_LINE=${PLOT_LINE}" 1>&2
+    FN_TMPGP="tmp-worker_plot_eachflowtp-${PARAM_DN_TEST}.gplot"
     gplot_setheader "${FN_TMPGP}"
 
     # GNUPLOT - set the labels
@@ -323,60 +181,25 @@ set title "${PARAM_TITLE}"
 set xlabel "${XLABEL}"
 set ylabel "${YLABEL}"
 EOF
-    gplot_settail "${FN_TMPGP}" "../fig-nodetp-${PARAM_DN_TEST}"
+    gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST}/fig-nodetp-${PARAM_DN_TEST}"
     plot_script "${FN_TMPGP}"
     cd - > /dev/null
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-#generate_udp_figures "dpp" "udp" "DSUDPstats*.out" "CMUDPDS*.out"
-generate_udp_figures () {
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-    # stats file name template
-    PARAM_FN_STAT=$1
-    shift
-    # flow throughput file name template
-    PARAM_FN_TPFLOW=$1
-    shift
-
-    worker_plot_statsfig_udp "$(mp_get_session_id)" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FN_STAT}" "${PARAM_FN_TPFLOW}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-
-    # plot figures -- flows of each test
-    for num in ${list_nodes_num[*]} ; do
-        for sched in ${list_schedules[*]} ; do
-            #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
-            DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${sched}" "${num}")
-
-            TTT="$(sed 's/[\"\`_]/ /g' <<<$sched)"
-            TITLE="Throughput of $num $TTT UDP flows"
-
-            worker_plot_eachflowtp_udp "$(mp_get_session_id)" "${DN_TEST}" "${TITLE}" "${PARAM_FN_TPFLOW}" &
-            PID_CHILD=$!
-            mp_add_child_check_wait ${PID_CHILD}
-
-        done
-    done
 }
 
 #####################################################################
-# multiple process version of plotting
-worker_plot_pktdelay_queue () {
-    PARAM_SESSION_ID="$1"
-    shift
+
+plot_pktdelay_queue () {
     PARAM_DN_TEST="$1"
     shift
+    PARAM_DN_DEST="$1"
+    shift
+    PARAM_DN_NAME="$1"
+    shift
 
+    cd "${PARAM_DN_TEST}"
     # the packets queue service time distribution
-    FNDAT="tmp-pktdelay-queue-${PARAM_DN_TEST}.dat.gz"
-    FNGP="tmp-pktdelay-queue-${PARAM_DN_TEST}.gp"
+    FNDAT="tmp-pktdelay-queue-${PARAM_DN_NAME}.dat.gz"
+    FNGP="tmp-pktdelay-queue-${PARAM_DN_NAME}.gp"
     if [ ! -f "${FNDAT}" ]; then
         if [ -f "mediumpacket.out.gz" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' nodemac.out <(gzip -dc mediumpacket.out.gz) | gzip > "${FNDAT}"
@@ -384,22 +207,24 @@ worker_plot_pktdelay_queue () {
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' nodemac.out mediumpacket.out | gzip > "${FNDAT}"
         fi
     fi
-    plotgen_pdf "Downstream MAC Packets" "Queue Service Time (sec)" "Denseness" "${FNDAT}" "../fig-pktqueue-${PARAM_DN_TEST}" "${FNGP}"
+    plotgen_pdf "Downstream MAC Packets" "Queue Service Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pktqueue-${PARAM_DN_NAME}" "${FNGP}"
     plot_script "${FNGP}"
     #rm -f "${FNDAT}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
+    cd - > /dev/null
 }
 
-worker_plot_pktdelay_trans () {
-    PARAM_SESSION_ID="$1"
-    shift
+plot_pktdelay_trans () {
     PARAM_DN_TEST="$1"
     shift
+    PARAM_DN_DEST="$1"
+    shift
+    PARAM_DN_NAME="$1"
+    shift
 
+    cd "${PARAM_DN_TEST}"
     # the packets translation time distribution
-    FNDAT="tmp-pktdelay-trans-${PARAM_DN_TEST}.dat.gz"
-    FNGP="tmp-pktdelay-trans-${PARAM_DN_TEST}.gp"
+    FNDAT="tmp-pktdelay-trans-${PARAM_DN_NAME}.dat.gz"
+    FNGP="tmp-pktdelay-trans-${PARAM_DN_NAME}.gp"
     if [ ! -f "${FNDAT}" ]; then
         if [ -f "mediumpacket.out.gz" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' nodemac.out <(gzip -dc mediumpacket.out.gz) | gzip > "${FNDAT}"
@@ -408,49 +233,8 @@ worker_plot_pktdelay_trans () {
         fi
     fi
 
-    plotgen_pdf "Downstream MAC Packets" "Transfer Time (sec)" "Denseness" "${FNDAT}" "../fig-pkttrans-${PARAM_DN_TEST}" "${FNGP}"
+    plotgen_pdf "Downstream MAC Packets" "Transfer Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pkttrans-${PARAM_DN_NAME}" "${FNGP}"
     plot_script "${FNGP}"
     #rm -f "${FNDAT}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-generate_pkt_delay_figures () {
-    # the prefix of the test
-    PARAM_PREFIX=$1
-    shift
-    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
-    PARAM_TYPE=$1
-    shift
-
-    if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
-        echo "Warning: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly."
-        echo "skip CDF/PDF figures ..."
-        return
-    fi
-    for num in ${list_nodes_num[*]} ; do
-        for sched in ${list_schedules[*]} ; do
-            #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
-            DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${sched}" "${num}")
-
-            if [ ! -d "${DN_TEST}/" ]; then
-                echo "Warning: skip ${DN_TEST}"
-                continue
-            fi
-            cd "${DN_TEST}/"
-
-            # get the packets sent from CMTS
-            #awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) print $0; } } }' nodeid.out mediumpacket.out
-
-            worker_plot_pktdelay_queue "$(mp_get_session_id)" "${DN_TEST}" &
-            PID_CHILD=$!
-            mp_add_child_check_wait ${PID_CHILD}
-
-            worker_plot_pktdelay_trans "$(mp_get_session_id)" "${DN_TEST}" &
-            PID_CHILD=$!
-            mp_add_child_check_wait ${PID_CHILD}
-
-            cd - > /dev/null
-        done
-    done
+    cd - > /dev/null
 }

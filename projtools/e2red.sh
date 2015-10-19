@@ -46,14 +46,17 @@ fi
 #####################################################################
 
 DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-source ${DN_COMM}/libbash.sh
-source ${DN_COMM}/libshrt.sh
-source ${DN_COMM}/libplot.sh
+DN_LIB="$(my_getpath "${DN_TOP}/lib")"
+source ${DN_LIB}/libbash.sh
+source ${DN_LIB}/libshrt.sh
+source ${DN_LIB}/libplot.sh
+source ${DN_LIB}/libns2figures.sh
+source ${DN_EXEC}/libapp.sh
 
 DN_PARENT="$(my_getpath ".")"
 
 #read_config_file "${DN_PARENT}/config.conf"
-source ${DN_PARENT}/config.sh
+source ${DN_TOP}/config-sys.sh
 
 check_global_config
 
@@ -63,6 +66,26 @@ check_global_config
 mp_new_session
 
 #####################################################################
+# process flow throughput figure
+worker_flow_throughput () {
+    PARAM_SESSION_ID="$1"
+    shift
+    PARAM_PREFIX="$1"
+    shift
+    PARAM_TYPE="$1"
+    shift
+    PARAM_FLOW_TYPE="$1"
+    shift
+    PARAM_SCHEDULE="$1"
+    shift
+    PARAM_NUM="$1"
+    shift
+
+    ${DN_PARENT}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NUM}"
+
+    mp_notify_child_exit ${PARAM_SESSION_ID}
+}
+
 # process throughput stats
 worker_stats_throughput () {
     PARAM_SESSION_ID="$1"
@@ -73,13 +96,8 @@ worker_stats_throughput () {
     shift
     PARAM_TYPE="$1"
     shift
-    PARAM_SCHEDULE="$1"
-    shift
-    PARAM_NODE="$1"
-    shift
 
-    # run the work here:
-    # ...
+    ${DN_PARENT}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -89,19 +107,39 @@ worker_stats_throughput () {
 worker_stats_packet () {
     PARAM_SESSION_ID="$1"
     shift
-    PARAM_CONFIG_FILE="$1"
-    shift
     PARAM_PREFIX="$1"
     shift
     PARAM_TYPE="$1"
+    shift
+    PARAM_FLOW_TYPE="$1"
     shift
     PARAM_SCHEDULE="$1"
     shift
     PARAM_NODE="$1"
     shift
 
-    # run the work here:
-    # ...
+    #DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
+    ${DN_PARENT}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+
+    mp_notify_child_exit ${PARAM_SESSION_ID}
+}
+
+# process packet time stats
+worker_trans_packet () {
+    PARAM_SESSION_ID="$1"
+    shift
+    PARAM_PREFIX="$1"
+    shift
+    PARAM_TYPE="$1"
+    shift
+    PARAM_FLOW_TYPE="$1"
+    shift
+    PARAM_SCHEDULE="$1"
+    shift
+    PARAM_NODE="$1"
+    shift
+
+    ${DN_PARENT}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -110,40 +148,41 @@ worker_stats_packet () {
 # destination file name is the key of the data
 PICGROUP_T_TAG=
 PICGROUP_T_PREFIX=
-PICGROUP_T_TYPE_FLOW=
+PICGROUP_T_TYPE=
 PICGROUP_T_SCHEDULER=
 PICGROUP_T_CONFIG_FILE=
 
-PICGROUP_P_TAG=
-PICGROUP_P_PREFIX=
-PICGROUP_P_TYPE_FLOW=
-PICGROUP_P_SCHEDULER=
-PICGROUP_P_CONFIG_FILE=
-
-#<type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-#throughput <config_file> <prefix> <type> <scheduler> <number_of_node>
-#packet <config_file> <prefix> <type> <scheduler> <number_of_node>
-# throughput "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-# packet "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-while read MR_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE_FLOW MR_SCHEDULER MR_NUM_NODE ; do
+#<command> <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
+#throughput <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
+#packet <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
+# throughput "tcp" "config-xx.sh" "jjmbase"  "tcp" "PF" 24
+# packet "tcp" "config-xx.sh" "jjmbase"  "tcp+has" "PF" 24
+while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
-  GROUP_STATS="${MR_PREFIX}|${MR_TYPE_FLOW}|${MR_SCHEDULER}|${FN_CONFIG_FILE}|"
+  GROUP_STATS="${MR_PREFIX}|${MR_TYPE}"
 
-  case "${MR_TYPE}" in
+  case "${MR_CMD}" in
   throughput)
     # REDUCE: read until reach to a different key, then reduce it
+
+    # plot figure for each flow
+    worker_flow_throughput "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    PID_CHILD=$!
+    mp_add_child_check_wait ${PID_CHILD}
+
+    # plot stats
     if [ ! "${PICGROUP_T_TAG}" = "${GROUP_STATS}" ] ; then
       # new file set
       # save previous
       if [ ! "${PICGROUP_T_TAG}" = "" ] ; then
-        worker_stats_throughput "$(mp_get_session_id)" "${PICGROUP_T_CONFIG_FILE}" "${PICGROUP_T_PREFIX}" "${PICGROUP_T_TYPE_FLOW}" "${PICGROUP_T_SCHEDULER}" &
+        worker_stats_throughput "$(mp_get_session_id)" "${PICGROUP_T_CONFIG_FILE}" "${PICGROUP_T_PREFIX}" "${PICGROUP_T_TYPE}" &
         PID_CHILD=$!
         mp_add_child_check_wait ${PID_CHILD}
       fi
 
       PICGROUP_T_TAG="${GROUP_STATS}"
       PICGROUP_T_PREFIX="${MR_PREFIX}"
-      PICGROUP_T_TYPE_FLOW="${MR_TYPE_FLOW}"
+      PICGROUP_T_TYPE="${MR_TYPE}"
       PICGROUP_T_SCHEDULER="${MR_SCHEDULER}"
       PICGROUP_T_CONFIG_FILE="${FN_CONFIG_FILE}"
     fi
@@ -151,30 +190,23 @@ while read MR_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE_FLOW MR_SCHEDULER MR_NUM_NOD
 
   packet)
     # REDUCE: read until reach to a different key, then reduce it
-    if [ ! "${PICGROUP_P_TAG}" = "${GROUP_STATS}" ] ; then
-      # new file set
-      # save previous
-      if [ ! "${PICGROUP_P_TAG}" = "" ] ; then
-        worker_stats_packet "$(mp_get_session_id)" "${PICGROUP_P_CONFIG_FILE}" "${PICGROUP_P_PREFIX}" "${PICGROUP_P_TYPE_FLOW}" "${PICGROUP_P_SCHEDULER}" &
-        PID_CHILD=$!
-        mp_add_child_check_wait ${PID_CHILD}
-      fi
 
-      PICGROUP_P_TAG="${GROUP_STATS}"
-      PICGROUP_P_PREFIX="${MR_PREFIX}"
-      PICGROUP_P_TYPE_FLOW="${MR_TYPE_FLOW}"
-      PICGROUP_P_SCHEDULER="${MR_SCHEDULER}"
-      PICGROUP_P_CONFIG_FILE="${FN_CONFIG_FILE}"
-    fi
+    worker_stats_packet "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    PID_CHILD=$!
+    mp_add_child_check_wait ${PID_CHILD}
+
+    worker_trans_packet "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    PID_CHILD=$!
+    mp_add_child_check_wait ${PID_CHILD}
     ;;
 
   *)
-    echo "e1red [DBG] Err: unknown type: ${MR_TYPE}" 1>&2
+    echo "e2red [DBG] Err: unknown command: ${MR_CMD}" 1>&2
     continue
     ;;
   esac
   if [ ! "${ERR}" = "0" ] ; then
-    echo "e1red [DBG] ignore line: ${MR_TYPE} ${MR_VIDEO_IN} ${MR_AUDIO_FILE} ${MR_VIDEO_OUT} ${MR_SEGSEC} ${MR_VIDEO_FPS} ${MR_N_START}" 1>&2
+    echo "e2red [DBG] ignore line: ${MR_CMD} ${MR_FLOW_TYPE} ${MR_CONFIG_FILE} ${MR_PREFIX} ${MR_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE}" 1>&2
     continue
   fi
 
@@ -182,13 +214,7 @@ done
 
 if [ ! "${PICGROUP_T_TAG}" = "" ]; then
     # the rest of the files
-    worker_stats_throughput "$(mp_get_session_id)" "${PICGROUP_T_CONFIG_FILE}" "${PICGROUP_T_PREFIX}" "${PICGROUP_T_TYPE_FLOW}" "${PICGROUP_T_SCHEDULER}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-fi
-if [ ! "${PICGROUP_P_TAG}" = "" ]; then
-    # the rest of the files
-    worker_stats_packet "$(mp_get_session_id)" "${PICGROUP_P_CONFIG_FILE}" "${PICGROUP_P_PREFIX}" "${PICGROUP_P_TYPE_FLOW}" "${PICGROUP_P_SCHEDULER}" &
+    worker_stats_throughput "$(mp_get_session_id)" "${PICGROUP_T_CONFIG_FILE}" "${PICGROUP_T_PREFIX}" "${PICGROUP_T_TYPE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
 fi

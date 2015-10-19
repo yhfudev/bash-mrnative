@@ -47,16 +47,24 @@ fi
 #####################################################################
 
 DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-source ${DN_COMM}/libbash.sh
-source ${DN_COMM}/libshrt.sh
-source ${DN_COMM}/libplot.sh
+DN_LIB="$(my_getpath "${DN_TOP}/lib")"
+source ${DN_LIB}/libbash.sh
+source ${DN_LIB}/libshrt.sh
+source ${DN_LIB}/libplot.sh
+source ${DN_LIB}/libns2figures.sh
 
 DN_PARENT="$(my_getpath ".")"
 
+EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
+FN_LOG="/dev/null"
+FN_LOG="mylog.txt"
+
 #read_config_file "${DN_PARENT}/config.conf"
-source ${DN_PARENT}/config.sh
+source ${DN_TOP}/config-sys.sh
 
 check_global_config
+
+source ${DN_EXEC}/libapp.sh
 
 #####################################################################
 # generate session for this process and its children
@@ -70,29 +78,45 @@ worker_run_ns2() {
     shift
     PARAM_CONFIG_FILE="$1"
     shift
+    # the prefix of the test
+    PARAM_PREFIX=$1
+    shift
+    # the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
+    PARAM_TYPE=$1
+    shift
+    # the scheduler, such as "PF", "DRR"
+    PARAM_SCHE=$1
+    shift
+    # the number of flows
+    PARAM_NUM=$1
+    shift
 
-    # run the work here:
-    # ...
+    DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
+
+    run_one_ns2 "${DN_TOP}/results" "${DN_TEST}"
+
+    prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-#<type> <config_file> <prefix> <type> <scheduler> <number_of_node>
+
+#<command> <config_file> <prefix> <type> <scheduler> <number_of_node>
 #sim <config_file> <prefix> <type> <scheduler> <number_of_node>
 # sim "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-while read MR_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE_FLOW MR_SCHEDULER MR_NUM_NODE ; do
+while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
-  GROUP_STATS="${MR_PREFIX}|${MR_TYPE_FLOW}|${MR_SCHEDULER}|${FN_CONFIG_FILE}|"
+  GROUP_STATS="${MR_PREFIX}|${MR_TYPE}|${MR_SCHEDULER}|${FN_CONFIG_FILE}|"
 
-  case "${MR_TYPE}" in
+  case "${MR_CMD}" in
   sim)
-    worker_run_ns2 "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX} ${MR_TYPE_FLOW} ${MR_SCHEDULER} ${MR_NUM_NODE} &
+    worker_run_ns2 "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX} ${MR_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE} &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;
 
   *)
-    echo "e1map [DBG] Err: unknown type: ${MR_TYPE}" 1>&2
+    echo "e2map [DBG] Err: unknown type: ${MR_CMD}" 1>&2
     ERR=1
     ;;
   esac

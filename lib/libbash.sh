@@ -9,11 +9,11 @@
 # License: GPL v3.0 or later
 #####################################################################
 # detect if the ~/bin is included in environment variable $PATH
-echo $PATH | grep "~/bin"
-if [ ! "$?" = "0" ]; then
-    echo 'PATH=~/bin/:$PATH' >> ~/.bashrc
-    export PATH=~/bin:$PATH
-fi
+#echo $PATH | grep "~/bin"
+#if [ ! "$?" = "0" ]; then
+    #echo 'PATH=~/bin/:$PATH' >> ~/.bashrc
+    #export PATH=~/bin:$PATH
+#fi
 
 #####################################################################
 EXEC_SSH="$(which ssh) -oBatchMode=yes -CX"
@@ -35,8 +35,8 @@ detect_os_type () {
     grep Ubuntu /etc/lsb-release &> /dev/null && OSDIST="Ubuntu" && OSTYPE="Debian"
     test -e /etc/redhat-release && OSTYPE="RedHat"
     test -e /etc/fedora-release && OSTYPE="RedHat"
-    which pacman && OSTYPE="Arch"
-    which opkg && OSTYPE="OpenWrt"
+    which pacman &> /dev/null && OSTYPE="Arch"
+    which opkg &> /dev/null && OSTYPE="OpenWrt"
 
     OSDIST=
     OSVERSION=
@@ -73,7 +73,7 @@ detect_os_type () {
         fi
         ;;
     *)
-        echo "[ERR] Not supported OS: $OSTYPE"
+        echo "[ERR] Not supported OS: $OSTYPE" 1>&2
         exit 0
         ;;
     esac
@@ -84,9 +84,9 @@ detect_os_type () {
         OSNAME=$(lsb_release -cs)
     fi
     if [ "${OSDIST}" = "" ]; then
-        echo "Error: Not found lsb_release!"
+        echo "Error: Not found lsb_release!" 1>&2
     fi
-    echo "[INFO] Detected $OSTYPE system: $OSDIST $OSVERSION $OSNAME"
+    echo "[INFO] Detected $OSTYPE system: $OSDIST $OSVERSION $OSNAME" 1>&2
     export OSTYPE
     export OSDIST
     export OSVERSION
@@ -246,14 +246,14 @@ download_extract_2tmp_syslinux () {
     FN_SYSLI=$(basename ${URL_REAL})
     if [ ! -f "${FN_SYSLI}" ]; then
         if [ ! -f index.html ]; then
-            echo "[ERR] not found downloaded file from ${URL_ORIG}(${URL_REAL})"
+            echo "[ERR] not found downloaded file from ${URL_ORIG}(${URL_REAL})" 1>&2
         else
-            echo "[DBG] rename index.html to ${FN_SYSLI}"
+            echo "[DBG] rename index.html to ${FN_SYSLI}" 1>&2
             mv index.html "${FN_SYSLI}"
         fi
     fi
     if [ ! -f "${FN_SYSLI}" ]; then
-        echo "[ERR] not found file ${FN_SYSLI}"
+        echo "[ERR] not found file ${FN_SYSLI}" 1>&2
         exit 0
     fi
     tar -xf "${FN_SYSLI}"
@@ -272,10 +272,10 @@ install_package () {
         if [ "${PKG}" = "" ]; then
             PKG="$i"
         fi
-        echo "try to install package: $PKG($i)"
+        echo "try to install package: $PKG($i)" 1>&2
         if [ "$i" = "gawk" ]; then
             if [ "$OSTYPE" = "RedHat" ]; then
-                echo "[DBG] patch gawk to support 'switch'"
+                echo "[DBG] patch gawk to support 'switch'" 1>&2
                 echo | awk '{a = 1; switch(a) { case 0: break; } }'
                 if [ $? = 1 ]; then
                     FLG_GAWK_RH=1
@@ -284,22 +284,22 @@ install_package () {
             fi
         fi
 
-        echo "[DBG] OSTYPE = $OSTYPE"
+        echo "[DBG] OSTYPE = $OSTYPE" 1>&2
         if [ "$OSTYPE" = "Arch" ]; then
             if [ "$i" = "portmap" ]; then
-                echo "[DBG] Ignore $i"
+                echo "[DBG] Ignore $i" 1>&2
                 PKG=""
             fi
             if [ "$i" = "syslinux" ]; then
                 MACH=$(uname -m)
                 case "$MACH" in
                 x86_64|i386|i686)
-                    echo "[DBG] use standard method"
+                    echo "[DBG] use standard method" 1>&2
                     ;;
 
                 *)
-                    echo "[DBG] Arch $MACH yet another installation of $i"
-                    echo "[DBG] Download package for $MACH"
+                    echo "[DBG] Arch $MACH yet another installation of $i" 1>&2
+                    echo "[DBG] Download package for $MACH" 1>&2
                     download_extract_2tmp_syslinux
                     ;;
                 esac
@@ -332,7 +332,7 @@ install_package () {
         fi
         ;;
     *)
-        echo "[ERR] Not supported OS: $OSTYPE"
+        echo "[ERR] Not supported OS: $OSTYPE" 1>&2
         exit 0
         ;;
     esac
@@ -354,7 +354,7 @@ check_install_package () {
     fi
 }
 
-detect_os_type
+detect_os_type 1>&2
 
 #for h in ${!hash*}; do indirect=$hash$h; echo ${!indirect}; done
 #hiter hash
@@ -364,26 +364,26 @@ detect_os_type
 ######################################################################
 EXEC_SSH="$(which ssh)"
 if [ ! -x "${EXEC_SSH}" ]; then
-  echo "[DBG] Try to install ssh." >> "/dev/stderr"
+  echo "[DBG] Try to install ssh." 1>&2
   install_package openssh-client
 fi
 
 EXEC_SSH="$(which ssh)"
 if [ ! -x "${EXEC_SSH}" ]; then
-  echo "[ERR] Not exist ssh!" >> "/dev/stderr"
+  echo "[ERR] Not exist ssh!" 1>&2
   exit 1
 fi
 EXEC_SSH="$(which ssh) -oBatchMode=yes -CX"
 
 EXEC_AWK="$(which gawk)"
 if [ ! -x "${EXEC_AWK}" ]; then
-  echo "[DBG] Try to install gawk." >> "/dev/stderr"
+  echo "[DBG] Try to install gawk." 1>&2
   install_package gawk
 fi
 
 EXEC_AWK="$(which gawk)"
 if [ ! -x "${EXEC_AWK}" ]; then
-  echo "[ERR] Not exist awk!" >> "/dev/stderr"
+  echo "[ERR] Not exist awk!" 1>&2
   exit 1
 fi
 
@@ -400,7 +400,7 @@ fi
 # generate the cert of localhost
 ssh_check_id_file () {
     if [ ! -f ~/.ssh/id_rsa.pub ]; then
-        echo "generate id ..."
+        echo "generate id ..." 1>&2
         mkdir -p ~/.ssh/
         ssh-keygen
     fi
@@ -410,13 +410,13 @@ ssh_check_id_file () {
 # 确保本地 id_rsa.pub 复制到远程机器
 ssh_ensure_connection () {
     PARAM_SSHURL="${1}"
-    echo "[DBG] test host: ${PARAM_SSHURL}"
+    echo "[DBG] test host: ${PARAM_SSHURL}" 1>&2
     $EXEC_SSH "${PARAM_SSHURL}" "ls > /dev/null"
     if [ ! "$?" = "0" ]; then
-        echo "[DBG] copy id to ${PARAM_SSHURL} ..."
+        echo "[DBG] copy id to ${PARAM_SSHURL} ..." 1>&2
         ssh-copy-id -i ~/.ssh/id_rsa.pub "${PARAM_SSHURL}"
     else
-        echo "[DBG] pass id : ${PARAM_SSHURL}."
+        echo "[DBG] pass id : ${PARAM_SSHURL}." 1>&2
     fi
     if [ "$?" = "0" ]; then
         $EXEC_SSH "${PARAM_SSHURL}" "yum -y install xauth libcanberra-gtk2 dejavu-lgc-sans-fonts"
@@ -459,7 +459,7 @@ gcd () {
 ############################################################
 # IPv4 address Lib:
 die() {
-    echo "Error: $@" >&2
+    echo "Error: $@" 1>&2
     exit 1
 }
 
