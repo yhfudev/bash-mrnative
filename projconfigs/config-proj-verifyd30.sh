@@ -2,13 +2,13 @@
 # config file for the simulations
 
 # the test information to be showed
-MSG_TITLE="Verify the DOCSIS 3.1 implementation"
+MSG_TITLE="Verify the DOCSIS 3.0 implementation"
 MSG_DESCRIPTION="This test suit use gongbing's test cases to verify the new implemented functions."
 PREFIX="verifyd30"
 
 # the message log file
-FN_LOG="log.txt"
-#FN_LOG="/dev/null"
+#FN_LOG="log.txt"
+FN_LOG="/dev/null"
 
 # the stop time for the test
 TIME_STOP=160.2
@@ -19,23 +19,33 @@ TIME_START=5
 # the maximum bitrate of the channel
 # default 3.0
 #BW_CHANNEL=42880000
-# 42.88m/7=6125714; use profiles_4k_async to get the 1,1.5,...,7 ratio
-BW_CHANNEL=6125714
+# 42.88m/7=6125714; use profiles_4k_async_192m to get the 1,1.5,...,7 ratio
+# 42.88m/6=7146667
+BW_CHANNEL=7146667
 
-# use the highest bitrate 16384QAM(8K FFT sync) as the base bitrate
+# use the highest bitrate 16384QAM(8K FFT sync) as the base bitrate (192MHz channel)
 ##BW_CHANNEL=2158700000
-# use the lowest bitrate QPSK(4K FFT async) as the base bitrate
+# use the lowest bitrate QPSK(4K FFT async) as the base bitrate (192MHz channel)
 #BW_CHANNEL=282800000
+
+# use the lowest bitrate QPSK(4K FFT async) as the base bitrate (97MHz channel)
+#BW_CHANNEL=135800000
+
+# use the lowest bitrate QPSK(4K FFT async) as the base bitrate (49.5MHz channel)
+#BW_CHANNEL=62300000
+
+# use the lowest bitrate QPSK(4K FFT async) as the base bitrate (24.5MHz channel)
+#BW_CHANNEL=23600000
 
 # the number of profiles (1 profile means PF == DRR)
 NUMBER_PROFILES=2
 
 # the profile set
-#NS2_PROFILE="profiles_4k_async"
-#NS2_PROFILE="profiles_4k_sync"
-#NS2_PROFILE="profiles_8k_async"
-#NS2_PROFILE="profiles_8k_sync"
-NS2_PROFILE="profiles_4k_async"
+#NS2_PROFILE="profiles_4k_async_192m"
+#NS2_PROFILE="profiles_4k_sync_192m"
+#NS2_PROFILE="profiles_8k_async_192m"
+#NS2_PROFILE="profiles_8k_sync_192m"
+NS2_PROFILE="profiles_4k_async_192m"
 
 # init the profiles to low profiles
 FLG_INIT_PROFILE_LOW=0
@@ -63,3 +73,7 @@ list_nodes_num=(1 3 6 12 24 48 96)
 list_schedules=("PF" "DRR" "FCFS" "ARED" "CODEL" "PIE" "FSAQM" "FSAQMDC" "SFQCODEL" "BBAQM" )
 
 list_types=("udp" "tcp" "has" "udp+has" "tcp+has")
+
+#list_schedules=("DRR")
+#list_nodes_num=(1 3)
+#list_types=("tcp" "udp")
