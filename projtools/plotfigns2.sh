@@ -47,9 +47,8 @@ source ${DN_EXEC}/libapp.sh
 convert_eps2png () {
     for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
         FN_BASE=$(echo "${FN_FULL}" | gawk -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
-        echo "eps: ${FN_FULL}"
-        #echo "png: ${FN_BASE}.png"
         if [ ! -f "${FN_BASE}.png" ]; then
+            echo "eps 2 png: ${FN_FULL}  -->  ${FN_BASE}.png" 1>&2
             convert -density 300 "${FN_FULL}" "${FN_BASE}.png"
         fi
     done
