@@ -218,26 +218,34 @@ check_global_config () {
 }
 
 read_config_file () {
-### Read in some system-wide configurations (if applicable) but do not override
-### the user's environment
-PARAM_FN_CONF="$1"
-echo "parse config file $1" 1>&2
-if [ -e "$PARAM_FN_CONF" ]; then
-  while read LINE; do
-    REX='^[^# ]*='
-    if [[ ${LINE} =~ ${REX} ]]; then
-      VARIABLE=$(echo "${LINE}" | awk -F= '{print $1}' )
-      VALUE0=$(echo "${LINE}" | awk -F= '{print $2}' )
-      VALUE=$( unquote_filename "${VALUE0}" )
-      #echo "[DBG] VARIABLE=${VARIABLE}; VALUE=${VALUE}" 1>&2
-      if [ "z${!VARIABLE}" == "z" ]; then
-        eval "${VARIABLE}=\"${VALUE}\""
-        echo "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF" 1>&2
-      #else echo "Keeping $VARIABLE=${!VARIABLE} from user environment" 1>&2
-      fi
+    ### Read in some system-wide configurations (if applicable) but do not override
+    ### the user's environment
+    PARAM_FN_CONF="$1"
+    echo "parse config file $1" 1>&2
+    if [ -e "$PARAM_FN_CONF" ]; then
+        while read LINE; do
+            REX='^[^# ]*='
+            if [[ ${LINE} =~ ${REX} ]]; then
+                VARIABLE=$(echo "${LINE}" | awk -F= '{print $1}' )
+                VALUE0=$(echo "${LINE}" | awk -F= '{print $2}' )
+                VALUE=$( unquote_filename "${VALUE0}" )
+                V0="RCFLAST_VAR_${VARIABLE}"
+                if [ "z${!V0}" == "z" ]; then
+                    if [ "z${!VARIABLE}" == "z" ]; then
+                        eval "${V0}=\"${VALUE}\""
+                        eval "${VARIABLE}=\"${VALUE}\""
+                        #echo "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF" 1>&2
+                    #else echo "Keeping $VARIABLE=${!VARIABLE} from user environment" 1>&2
+                    fi
+                else
+                    eval "${V0}=\"${VALUE}\""
+                    eval "${VARIABLE}=\"${VALUE}\""
+                    #echo "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF" 1>&2
+                fi
+                #echo "[DBG] VARIABLE=${VARIABLE}; VALUE=${VALUE}" 1>&2
+            fi
+        done < "$PARAM_FN_CONF"
     fi
-  done < "$PARAM_FN_CONF"
-fi
 }
 
 generate_default_config () {

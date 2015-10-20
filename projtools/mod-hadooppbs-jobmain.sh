@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -N myhadoop-0.2
+#PBS -N ns2docsis
 #PBS -l select=5:ncpus=16:mem=61gb
 #PBS -o pbs_hadoop_run.stdout
 #PBS -e pbs_hadoop_run.stderr
@@ -17,20 +17,20 @@ module add java
 
 cd $PBS_O_WORKDIR
 
-export PROJ_HOME=/home/$USER/software/src/furnace
+export PROJ_HOME=/home/$USER/mapreduce-ns2docsis
 if [ ! -d "${PROJ_HOME}" ]; then
-  export PROJ_HOME=/home/$USER/temp/furnace
+    export PROJ_HOME=/home/$USER/temp/mapreduce-ns2docsis
 fi
-DN_EXEC1="${PROJ_HOME}/bin"
+DN_EXEC1="${PROJ_HOME}/projtools"
 
 ### Run the myHadoop environment script to set the appropriate variables
 #
 # Note: ensure that the variables are set correctly in bin/mod-hadooppbs-setenv.sh
 if [ -f "${DN_EXEC1}/mod-hadooppbs-setenv.sh" ]; then
-. ${DN_EXEC1}/mod-hadooppbs-setenv.sh
+.   ${DN_EXEC1}/mod-hadooppbs-setenv.sh
 else
-echo "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
-exit 1
+    echo "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
+    exit 1
 fi
 #### Set this to the directory where Hadoop configs should be generated
 # Don't change the name of this variable (HADOOP_CONF_DIR) as it is
@@ -47,36 +47,36 @@ echo "Set up the configurations for myHadoop"
 
 FLG_FMT_HDFS=0
 if [ "${FLG_HDFS_PERSISTENT}" = "1" ]; then
-  # this is the non-persistent mode
-  ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR}
-  FLG_FMT_HDFS=1
-else
-  # this is the persistent mode
-  ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR} -p -d "${HDFF_HADOOP_HDFS}"
-  if [ ! -d "${HDFF_HADOOP_HDFS}" ]; then
+    # this is the non-persistent mode
+    ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR}
     FLG_FMT_HDFS=1
-  fi
+else
+    # this is the persistent mode
+    ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR} -p -d "${HDFF_HADOOP_HDFS}"
+    if [ ! -d "${HDFF_HADOOP_HDFS}" ]; then
+        FLG_FMT_HDFS=1
+    fi
 fi
 echo
 
 #### Format HDFS, if this is the first time or not a persistent instance
 if [ "${FLG_FMT_HDFS}" = "1" ]; then
-  echo "Format HDFS"
-  ${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} namenode -format
-  echo
+    echo "Format HDFS"
+    ${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} namenode -format
+    echo
 fi
 
 #### Start the Hadoop cluster
 echo "Start all Hadoop daemons"
 if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
-  ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
+    ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
 
 elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
-  ${HADOOP_HOME}/bin/start-all.sh
+    ${HADOOP_HOME}/bin/start-all.sh
 
 else
-  echo "Not found ${HADOOP_HOME}/bin/start-all.sh"
-  exit 1
+    echo "Not found ${HADOOP_HOME}/bin/start-all.sh"
+    exit 1
 fi
 #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
 echo
@@ -99,14 +99,14 @@ echo
 echo "Stop all Hadoop daemons"
 jps
 if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
-  ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
+    ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
 
 elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
-  ${HADOOP_HOME}/bin/stop-all.sh
+    ${HADOOP_HOME}/bin/stop-all.sh
 
 else
-  echo "Not found ${HADOOP_HOME}/bin/stop-all.sh"
-  exit 1
+    echo "Not found ${HADOOP_HOME}/bin/stop-all.sh"
+    exit 1
 fi
 echo
 jps

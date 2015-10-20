@@ -52,6 +52,7 @@ if [ 1 = 1 ]; then
     # genrate input file:
     mkdir -p ${DN_INPUT}
     rm -f ${DN_INPUT}/*.txt
+    #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
     find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
 fi
 
