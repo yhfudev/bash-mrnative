@@ -43,6 +43,20 @@ source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
 
+#####################################################################
+convert_eps2png () {
+    for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
+        FN_BASE=$(echo "${FN_FULL}" | gawk -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
+        echo "eps: ${FN_FULL}"
+        #echo "png: ${FN_BASE}.png"
+        if [ ! -f "${FN_BASE}.png" ]; then
+            convert -density 300 "${FN_FULL}" "${FN_BASE}.png"
+        fi
+    done
+}
+
+
+#####################################################################
 ARG_CMD=$1
 shift
 ARG_PREFIX=$1
@@ -80,7 +94,7 @@ case "${ARG_CMD}" in
         exit 1
     fi
     FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
-    source ${FN_CONFIG_PROJ2}
+    read_config_file "${FN_CONFIG_PROJ2}"
 
     cd "${DN_TOP}/results/"
     FN_TP="$(pwd)/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}.dat"
@@ -91,7 +105,10 @@ case "${ARG_CMD}" in
     gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
     gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
     #rm -f "${FN_TP}"
-    cd -
+    cd - > /dev/null
+    cd "${DN_TOP}/figures/${ARG_PREFIX}"
+    convert_eps2png
+    cd - > /dev/null
     ;;
 
 "pktstat")
@@ -99,6 +116,9 @@ case "${ARG_CMD}" in
     ;;
 "pkttrans")
     plot_pktdelay_trans "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}"
+    cd "${DN_TOP}/figures/${ARG_PREFIX}"
+    convert_eps2png
+    cd - > /dev/null
     ;;
 *)
     echo "Error: unknown command: ${ARG_CMD}" 1>&2

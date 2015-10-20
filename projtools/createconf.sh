@@ -44,24 +44,25 @@ source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
+MR_COMMAND=$1
+shift
 FN_CONFIG_PROJ=$1
+shift
 if [ ! -f "${FN_CONFIG_PROJ}" ]; then
     echo "Error: not found file: $FN_CONFIG_PROJ" 1>&2
     exit 1
 fi
 FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
-source ${FN_CONFIG_PROJ2}
-
-check_global_config
+#source ${FN_CONFIG_PROJ2}
+read_config_file "${FN_CONFIG_PROJ2}"
 
 #####################################################################
 
-for idx_num in ${list_nodes_num[*]} ; do
-    for idx_type in ${list_types[*]} ; do
-        for idx_sche in ${list_schedules[*]} ; do
-            #prepare_one_tcl_scripts "${PREFIX}" "${list_types[$idx_type]}" "${list_schedules[$idx_sche]}" "${list_nodes_num[$idx_num]}"
+for idx_num in $LIST_NODE_NUM ; do
+    for idx_type in $LIST_TYPES ; do
+        for idx_sche in $LIST_SCHEDULERS ; do
             prepare_one_tcl_scripts "${PREFIX}" "$idx_type" "$idx_sche" "$idx_num" "${DN_EXEC}" "${DN_COMM}" "${DN_TOP}/results"
-            echo "sim \"${FN_CONFIG_PROJ2}\" ${PREFIX} $idx_type $idx_sche $idx_num"
+            echo -e "${MR_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type}\"\t\"${idx_sche}\"\t${idx_num}"
         done
     done
 done

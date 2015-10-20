@@ -154,14 +154,19 @@ PICGROUP_T_TYPE=
 PICGROUP_T_SCHEDULER=
 PICGROUP_T_CONFIG_FILE=
 
-#<command> <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-#throughput <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-#packet <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-# throughput "tcp" "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-# packet "tcp" "config-xx.sh" "jjmbase"  "tcp+has" "PF" 24
-while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
+#<command> <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+#throughput <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+#packet <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+# throughput "config-xx.sh" "jjmbase"  "tcp" "tcp" "PF" 24
+# packet "config-xx.sh" "jjmbase"  "tcp+has" "tcp" "PF" 24
+while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_NUM_NODE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
-  GROUP_STATS="${MR_PREFIX}|${MR_TYPE}"
+  MR_PREFIX1=$( unquote_filename "${MR_PREFIX}" )
+  MR_TYPE1=$( unquote_filename "${MR_TYPE}" )
+  MR_FLOW_TYPE1=$( unquote_filename "${MR_FLOW_TYPE}" )
+  MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
+
+  GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}"
 
   ERR=0
   case "${MR_CMD}" in
@@ -169,7 +174,7 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
     # REDUCE: read until reach to a different key, then reduce it
 
     # plot figure for each flow
-    worker_flow_throughput "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    worker_flow_throughput "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
 
@@ -184,9 +189,9 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
       fi
 
       PICGROUP_T_TAG="${GROUP_STATS}"
-      PICGROUP_T_PREFIX="${MR_PREFIX}"
-      PICGROUP_T_TYPE="${MR_TYPE}"
-      PICGROUP_T_SCHEDULER="${MR_SCHEDULER}"
+      PICGROUP_T_PREFIX="${MR_PREFIX1}"
+      PICGROUP_T_TYPE="${MR_TYPE1}"
+      PICGROUP_T_SCHEDULER="${MR_SCHEDULER1}"
       PICGROUP_T_CONFIG_FILE="${FN_CONFIG_FILE}"
     fi
     ;;
@@ -194,11 +199,11 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
   packet)
     # REDUCE: read until reach to a different key, then reduce it
 
-    worker_stats_packet "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    worker_stats_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
 
-    worker_trans_packet "$(mp_get_session_id)" "${MR_PREFIX}" "${MR_TYPE}" "${MR_FLOW_TYPE}" "${MR_SCHEDULER}" "${MR_NUM_NODE}" &
+    worker_trans_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;
@@ -210,7 +215,7 @@ while read MR_CMD MR_FLOW_TYPE MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_
     ;;
   esac
   if [ ! "${ERR}" = "0" ] ; then
-    echo "e2red [DBG] ignore line: ${MR_CMD} ${MR_FLOW_TYPE} ${MR_CONFIG_FILE} ${MR_PREFIX} ${MR_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE}" 1>&2
+    echo "e2red [DBG] ignore line: ${MR_CMD} ${MR_CONFIG_FILE} ${MR_PREFIX} ${MR_TYPE} ${MR_FLOW_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE}" 1>&2
     continue
   fi
 

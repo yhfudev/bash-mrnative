@@ -322,7 +322,7 @@ set title "${TITLE}"
 set xlabel "${XLABEL}"
 set ylabel "${YLABEL}"
 EOF
-    for sched in ${list_schedules[*]} ; do
+    for sched in $LIST_SCHEDULERS ; do
         FN="tmp-stats-$sched-col-${PARAM_COL}.dat"
         cat ${PARAM_FN_DATA} | grep $sched | awk "{print \$1 \" \" \$${PARAM_COL};}" > "${FN}"
         TTT="$(sed 's/[\"\`_]/ /g' <<<$sched)"

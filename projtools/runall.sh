@@ -23,25 +23,4 @@ my_getpath () {
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
-source ${DN_COMM}/libbash.sh
-
-DN_PARENT="$(my_getpath ".")"
-
-list_folders=(
-    "proj-verify-d30"
-    "proj-verify-d31"
-    "proj-base-prof-high2low"
-    "proj-base-prof-low2high"
-)
-
-for idx_folder in ${list_folders[*]} ; do
-    cd "$idx_folder"
-    ../checkproj.sh > /dev/null
-    ../runproj.sh "testfailed.txt" > /dev/null
-    #../plotproj.sh &
-    echo "leave $idx_folder"
-    cd ..
-    #exit 0 # debug
-done
-
-echo "$(date) DONE: ALL" >> "${FN_LOG}"
+HDFF_FUNCTION="sim" run-sh1.sh

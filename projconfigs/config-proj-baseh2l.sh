@@ -61,23 +61,17 @@ FLG_CHANGE_PROFILE_HIGH=0
 FLG_CHANGE_PROFILE_LOW=1
 
 # the # of nodes in the simulations
-#list_nodes_num=(2 4 8 16 256)
-#list_nodes_num=(1 2 4 8 16 32 64 128)
-#list_nodes_num=(1 3 6 12 24 48 96 192 384)
-#list_nodes_num=(1 3 5 7 9 11)
-list_nodes_num=(1 3 6 12 24 48 96)
+LIST_NODE_NUM="2 4 8 16 256"
+LIST_NODE_NUM="1 2 4 8 16 32 64 128"
+LIST_NODE_NUM="1 3 6 12 24 48 96 192 384"
+LIST_NODE_NUM="1 3 5 7 9 11"
+LIST_NODE_NUM="1 3 6 12 24 48 96"
 
 # the scheduler list
-list_schedules=("PF")
-list_schedules=("PF" "DRR")
-#list_schedules=("PF" "DRR" "FCFS" "ARED" "CODEL" "PIE" "FSAQM" "FSAQMDC" "SFQCODEL" "BBAQM" )
-list_schedules=("PF" "DRR" "FCFS" "ARED" "CODEL" "PIE" )
+LIST_SCHEDULERS="PF DRR FCFS ARED CODEL PIE FSAQM FSAQMDC SFQCODEL BBAQM"
+LIST_SCHEDULERS="PF"
+LIST_SCHEDULERS="PF DRR"
+LIST_SCHEDULERS="PF DRR FCFS ARED CODEL PIE"
 
-list_types=("udp" "tcp" "has" "udp+has" "tcp+has")
-
-# the outfile directory
-HDFF_DN_OUTPUT=.
-
-# how many running processes in each node
-# 0 -- auto detect the CPU cores, use about 5/7 of them
-HDFF_NUM_CLONE=0
+# list of flow types
+LIST_TYPES="udp tcp has udp+has tcp+has"

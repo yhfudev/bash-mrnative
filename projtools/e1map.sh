@@ -74,7 +74,13 @@ worker_create_tcl_config () {
     PARAM_CONFIG_FILE="$1"
     shift
 
-    ${DN_PARENT}/createconf.sh "${PARAM_CONFIG_FILE}"
+    if [ "HDFF_FUNCTION" = "plot" ]; then
+        ${DN_EXEC}/createconf.sh "plot" "${PARAM_CONFIG_FILE}"
+    elif [ "HDFF_FUNCTION" = "clean" ]; then
+        ${DN_EXEC}/createconf.sh "clean" "${PARAM_CONFIG_FILE}"
+    else
+        ${DN_EXEC}/createconf.sh "sim" "${PARAM_CONFIG_FILE}"
+    fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }

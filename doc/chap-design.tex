@@ -85,7 +85,7 @@ Output:
 \begin{lstlisting}[language=bash]
 <command> <config_file> <prefix> <type> <scheduler> <number_of_node>
 sim <config_file> <prefix> <type> <scheduler> <number_of_node>
-# sim  "jjmbase"  "tcp" "PF" 24
+# sim "config-xxx.sh" "jjmbase"  "tcp" "PF" 24
 \end{lstlisting}
 
 There should exist the directory contains the TCL scripts and data files for the simulation.
@@ -114,11 +114,11 @@ sim <config_file> <prefix> <type> <scheduler> <number_of_node>
 
 Output:
 \begin{lstlisting}[language=bash]
-<command> <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-throughput <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-packet <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-# throughput "tcp" "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-# packet "tcp" "config-xx.sh" "jjmbase"  "tcp+has" "PF" 24
+<command> <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+throughput <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+packet <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+# throughput "config-xx.sh" "jjmbase"  "tcp" "tcp" "PF" 24
+# packet "config-xx.sh" "jjmbase"  "tcp+has" "tcp" "PF" 24
 \end{lstlisting}
 
 The routine should run ns2 and process stats, figures of throughput/packet.
@@ -132,11 +132,11 @@ Function: plot JFI figures
 
 Input: (all of the columns are keys)
 \begin{lstlisting}[language=bash]
-<command> <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-throughput <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-packet <flow_type> <config_file> <prefix> <type> <scheduler> <number_of_node>
-# throughput "tcp" "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-# packet "tcp" "config-xx.sh" "jjmbase"  "tcp+has" "PF" 24
+<command> <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+throughput <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+packet <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
+# throughput "config-xx.sh" "jjmbase"  "tcp" "tcp" "PF" 24
+# packet "config-xx.sh" "jjmbase"  "tcp+has" "tcp" "PF" 24
 \end{lstlisting}
 
 Output: figures

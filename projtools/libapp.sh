@@ -246,25 +246,98 @@ prepare_figure_commands_for_one_stats () {
 
     case $PARAM_TYPE in
     "udp")
-        echo "packet any \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput udp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"udp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
     "tcp")
-        echo "packet any \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput tcp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
     "has")
-        echo "packet any \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput tcp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
     "udp+has")
-        echo "packet any \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput udp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput tcp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"udp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
     "tcp+has")
-        echo "packet any \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
-        echo "throughput tcp \"${PARAM_CONFIG_FILE}\"" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
+        echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
     esac
 }
+
+clean_one_tcldir () {
+    # the prefix of the test
+    PARAM_DN_DEST=$1
+    shift
+
+    FLG_ERR=1
+    if [ -d "${PARAM_DN_DEST}" ]; then
+        FLG_ERR=0
+        FLG_NONE=1
+        cd       "${DN_TEST}"
+        find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 10 rm -f
+        cd - > /dev/null
+    fi
+
+    if [ "${FLG_ERR}" = "1" ]; then
+        #echo "save ${PARAM_FN_LOG_ERROR}: ${DN_TEST}" >> "/dev/stderr"
+        echo "${DN_TEST}" >> "${PARAM_FN_LOG_ERROR}"
+    fi
+}
+
+check_one_tcldir () {
+    PARAM_DN_DEST=$1
+    shift
+    # output file save the failed directories
+    PARAM_FN_LOG_ERROR=$1
+    shift
+
+    FLG_ERR=1
+    if [ -d "${PARAM_DN_DEST}" ]; then
+        FLG_ERR=0
+        FLG_NONE=1
+        cd       "${PARAM_DN_DEST}"
+        FN_TPFLOW="CMTCPDS*.out"
+        LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
+        for i in $LST ; do
+            FLG_NONE=0
+            echo "process flow throughput (tcp) $i ..."
+            idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
+            #echo "curr dir=$(pwd), tail i=$i" >> /dev/stderr
+            TM1=$(tail -n 1 "$i" | awk '{print $1}')
+            if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
+                FLG_ERR=1
+            fi
+        done
+        FN_TPFLOW="CMUDPDS*.out"
+        LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
+        for i in $LST ; do
+            FLG_NONE=0
+            echo "process flow throughput (tcp) $i ..."
+            idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
+            TM1=$(tail -n 1 "$i" | awk '{print $1}')
+            if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
+                FLG_ERR=1
+            fi
+        done
+        if [ "$FLG_NONE" = "1" ]; then
+            FLG_ERR=1
+        fi
+        cd - > /dev/null
+    fi
+
+    if [ "${FLG_ERR}" = "1" ]; then
+        #echo "save ${PARAM_FN_LOG_ERROR}: ${PARAM_DN_DEST}" >> "/dev/stderr"
+        echo "${PARAM_DN_DEST}" >> "${PARAM_FN_LOG_ERROR}"
+    fi
+}
+
+if [ ! -f "${DN_TOP}/config-sys.sh" ]; then
+  generate_default_config > "${DN_TOP}/config-sys.sh"
+fi
+read_config_file "${DN_TOP}/config-sys.sh"
+check_global_config

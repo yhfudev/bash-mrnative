@@ -53,8 +53,8 @@ generate_throughput_stats_file () {
     #
     #FN_TMP=tmp-$(uuidgen).txt
     rm -f "${PARAM_FN_OUT_TPSTATS}"
-    for num in ${list_nodes_num[*]} ; do
-        for sched in ${list_schedules[*]} ; do
+    for num in $LIST_NODE_NUM ; do
+        for sched in $LIST_SCHEDULERS ; do
             #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
             DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${sched}" "${num}")
 

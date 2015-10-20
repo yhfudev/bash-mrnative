@@ -251,6 +251,12 @@ HDFF_DN_OUTPUT=data/output
 # how many running processes in each node
 # 0 -- auto detect the CPU cores, use about 5/7 of them
 HDFF_NUM_CLONE=0
+
+# sim, clean, plot
+#HDFF_FUNCTION="plot"
+
+FN_LOG="/dev/null"
+
 EOF
 }
 
