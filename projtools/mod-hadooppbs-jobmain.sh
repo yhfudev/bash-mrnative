@@ -9,7 +9,9 @@
 #PBS -m ea
 
 # the number of nodes: select=xxx
-export PBS_NUM_NODES=`cat $PBS_NODEFILE | uniq | wc -l`
+export PBS_NUM_NODES=$(cat $PBS_NODEFILE | uniq | wc -l)
+
+echo "$(basename $0) [DBG] PBS_NUM_NODES=$PBS_NUM_NODES" 1>&2
 
 source /etc/profile.d/modules.sh
 module purge

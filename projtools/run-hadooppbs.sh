@@ -146,8 +146,103 @@ whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
     > tmp-avail.txt
 
 A=$(cat tmp-avail.txt | get_optimized_settings $NEEDED_CORES $NEEDED_MEM_PER_CORE )
+if [ "$A" = "" ]; then
+    echo "Error in get # of nodes."
+    exit 1
+fi
 REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 2) "gb";}')
 CORES=$(echo $A | awk '{print $3;}')
+MEM=$(echo $A | awk '{print ($2-2)*1024;}')
+
+# in this block, you need set two files in the hadoop 2.x config files
+# mapred-site.xml.template
+# <property>
+#     <name>mapreduce.map.memory.mb</name>
+#     <value>512</value>
+# </property>
+# <property>
+#     <name>mapreduce.reduce.memory.mb</name>
+#     <value>1024</value>
+# </property>
+# <property>
+#     <name>mapreduce.map.java.opts</name>
+#     <value>-Xmx384m</value>
+# </property>
+# <property>
+#     <name>mapreduce.reduce.java.opts</name>
+#     <value>-Xmx768m</value>
+# </property>
+#
+# yarn-site.xml.template
+# <property>
+#     <name>yarn.nodemanager.resource.memory-mb</name>
+#     <value>3072</value>
+# </property>
+# <property>
+#     <name>yarn.scheduler.minimum-allocation-mb</name>
+#     <value>256</value>
+# </property>
+# <property>
+#     <name>yarn.nodemanager.vmem-check-enabled</name>
+#     <value>false</value>
+#     <description>Whether virtual memory limits will be enforced for containers</description>
+# </property>
+# <property>
+#     <name>yarn.nodemanager.vmem-pmem-ratio</name>
+#     <value>4</value>
+#     <description>Ratio between virtual memory to physical memory when setting memory limits for containers</description>
+# </property>
+#
+# or hadoop 1.x config files mapred-site.xml.template
+# <property>
+#     <name>mapred.job.map.memory.mb</name>
+#     <value>512</value>
+# </property>
+# <property>
+#     <name>mapred.job.reduce.memory.mb</name>
+#     <value>1024</value>
+# </property>
+# <property>
+#     <name>mapred.map.child.java.opts</name>
+#     <value>-Xmx384m</value>
+# </property>
+# <property>
+#     <name>mapred.reduce.child.java.opts</name>
+#     <value>-Xmx768m</value>
+# </property>
+
+source mod-hadooppbs-setenv.sh
+if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
+    cd "${HADOOP_HOME}/conf"
+    cp mapred-site.xml.template mapred-site.xml
+    sed -i \
+        -e "s|512|$((${MEM}/${CORES}))|" \
+        -e "s|1024|$((${MEM}/${CORES}))|" \
+        -e "s|384|$((${MEM}/${CORES}*3/4))|" \
+        -e "s|768|$((${MEM}/${CORES}*3/4))|" \
+        mapred-site.xml
+    cd -
+
+elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
+    cd "${HADOOP_HOME}/etc/hadoop"
+    cp mapred-site.xml.template mapred-site.xml
+    cp   yarn-site.xml.template   yarn-site.xml
+    sed -i \
+        -e "s|3072|${MEM}|" \
+        -e "s|256|$((${MEM}/${CORES}/2))|" \
+        yarn-site.xml
+
+    sed -i \
+        -e "s|512|$((${MEM}/${CORES}))|" \
+        -e "s|1024|$((${MEM}/${CORES}))|" \
+        -e "s|384|$((${MEM}/${CORES}*3/4))|" \
+        -e "s|768|$((${MEM}/${CORES}*3/4))|" \
+        mapred-site.xml
+    cd -
+else
+    echo "unknown hadoop version"
+    exit 1
+fi
 
 echo "$(basename $0) [DBG] needed cores=$NEEDED_CORES" 1>&2
 
