@@ -245,9 +245,9 @@ if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
     cd "${HADOOP_HOME}/conf"
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
-        -e  "s|512|$(( ${MR_JOB_MEM}*2 ))|" \
+        -e  "s|512|$(( ${MR_JOB_MEM}     ))|" \
         -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
-        -e  "s|384|$(( ${MR_JOB_MEM}*3/2 ))|" \
+        -e  "s|384|$(( ${MR_JOB_MEM}*3/4 ))|" \
         -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
         mapred-site.xml
     cd -
@@ -265,9 +265,9 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
         yarn-site.xml
 
     sed -i \
-        -e  "s|512|$(( ${MR_JOB_MEM}*2 ))|" \
+        -e  "s|512|$(( ${MR_JOB_MEM}     ))|" \
         -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
-        -e  "s|384|$(( ${MR_JOB_MEM}*3/2 ))|" \
+        -e  "s|384|$(( ${MR_JOB_MEM}*3/4 ))|" \
         -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
         mapred-site.xml
     cd -
