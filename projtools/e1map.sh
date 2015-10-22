@@ -87,10 +87,10 @@ worker_create_tcl_config () {
 
 #<command> <config_file>
 # config "/path/to/config.sh"
-while read MR_TYPE MR_CONFIG_FILE ; do
+while read MR_CMD MR_CONFIG_FILE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
 
-  case "${MR_TYPE}" in
+  case "${MR_CMD}" in
   config)
     worker_create_tcl_config "$(mp_get_session_id)" "${FN_CONFIG_FILE}" &
     PID_CHILD=$!
@@ -98,8 +98,7 @@ while read MR_TYPE MR_CONFIG_FILE ; do
     ;;
 
   *)
-    echo "e1map [DBG] Err: unknown type: ${MR_TYPE}" 1>&2
-    ERR=1
+    echo "$(basename $0) [DBG] Warning: unknown command '${MR_CMD}'." 1>&2
     ;;
   esac
 

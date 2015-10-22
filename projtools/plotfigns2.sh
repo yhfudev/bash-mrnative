@@ -42,7 +42,6 @@ source ${DN_LIB}/libplot.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
-
 #####################################################################
 convert_eps2png () {
     for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
@@ -56,32 +55,45 @@ convert_eps2png () {
 
 
 #####################################################################
-ARG_CMD=$1
+ARG_CMD1=$1
 shift
-ARG_PREFIX=$1
+ARG_PREFIX1=$1
 shift
-ARG_TYPE=$1
+ARG_TYPE1=$1
 shift
-ARG_FLOW_TYPE=$1
+ARG_FLOW_TYPE1=$1
 shift
-ARG_SCHE=$1
+ARG_SCHE1=$1
 shift
-ARG_NUM=$1
+ARG_NUM1=$1
 shift
+
+ARG_CMD=$( unquote_filename "${ARG_CMD1}" )
+ARG_PREFIX=$( unquote_filename "${ARG_PREFIX1}" )
+ARG_TYPE=$( unquote_filename "${ARG_TYPE1}" )
+ARG_FLOW_TYPE=$( unquote_filename "${ARG_FLOW_TYPE1}" )
+ARG_SCHE=$( unquote_filename "${ARG_SCHE1}" )
+ARG_NUM=$( unquote_filename "${ARG_NUM1}" )
 
 DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
 mkdir -p "${DN_TOP}/figures/${ARG_PREFIX}"
+
+echo "$(basename $0) ARG_CMD=${ARG_CMD}" 1>&2
 
 case "${ARG_CMD}" in
 "tpflow")
     TTT="$(sed 's/[\"\`_]/ /g' <<<${ARG_SCHE})"
     TITLE="Throughput of ${ARG_NUM} $TTT ${ARG_TYPE} flows"
+
     case "${ARG_FLOW_TYPE}" in
     "tcp")
         plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
         ;;
     "udp")
         plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
+        ;;
+    *)
+        echo "$(basename $0) Error: Unknown flow type: ${ARG_FLOW_TYPE}" 1>&2
         ;;
     esac
     ;;
