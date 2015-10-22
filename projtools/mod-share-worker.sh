@@ -42,6 +42,7 @@ if [ ! -d "${PROJ_HOME}" ]; then
   PROJ_HOME="${DN_TOP}"
 fi
 mkdir -p "${PROJ_HOME}"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $PROJ_HOME" 1>&2 ; fi
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
 echo "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
@@ -86,6 +87,7 @@ generate_script_4hadoop () {
   DN_EXEOUT9=$(dirname "${PARAM_OUTPUT}")
   if [ ! -d "${DN_EXEOUT9}" ]; then
     mkdir -p "${DN_EXEOUT9}"
+    if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $DN_EXEOUT9" 1>&2 ; fi
   fi
 
   echo '#!/bin/bash' > "${PARAM_OUTPUT}"
@@ -121,6 +123,7 @@ DN_INPUT="${PROJ_HOME}/data/input/"
 if [ 1 = 1 ]; then
     # genrate input file:
     mkdir -p ${DN_INPUT}
+    if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $DN_INPUT" 1>&2 ; fi
     rm -f ${DN_INPUT}/*
     #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
     find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
@@ -142,7 +145,7 @@ DN_OUTPUT=/hadoopffmpeg_out${STAGE}
 ${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT}"
 ${EXEC_HADOOP} fs -mkdir "${DN_INPUT}"
 if [ ! "$?" = "0" ]; then
-    echo "Error in mkdir: ${DN_INPUT}" 1>&2
+    echo "$(basename $0) Error in hadoop  mkdir ${DN_INPUT}" 1>&2
     exit 1
 fi
 ${EXEC_HADOOP} fs -put "${PROJ_HOME}/data/input/"* "${DN_INPUT}"
@@ -166,12 +169,14 @@ ${EXEC_HADOOP} jar ${HDJAR} \
     -D num.key.fields.for.partition=6 \
     -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
     -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
-    -mapper /bin/cat
+    -mapper /bin/cat \
+    $(NULL)
 fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT}/part-00000"
 mkdir -p "${PROJ_HOME}/data/output/${STAGE}/"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${PROJ_HOME}/data/output/${STAGE}/" 1>&2 ; fi
 ${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STAGE}/redout.txt"
 
 echo
@@ -216,12 +221,14 @@ ${EXEC_HADOOP} jar ${HDJAR} \
     -D stream.num.map.output.key.fields=4 \
     -D num.key.fields.for.partition=2 \
     -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
-    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}")
-    -file "${FN_RED}" -reducer $(basename "${FN_RED}")
+    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
+    -file "${FN_RED}" -reducer $(basename "${FN_RED}") \
+    $(NULL)
 fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT}"
 mkdir -p "${PROJ_HOME}/data/output/${STAGE}/"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${PROJ_HOME}/data/output/${STAGE}/" 1>&2 ; fi
 ${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STAGE}/redout.txt"
 
 echo

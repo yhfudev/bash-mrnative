@@ -93,24 +93,28 @@ get_sim_tasks_each_file () {
     NUM_SCHE=0
     NUM_NODES=0
     NUM_TYPE=0
-    while read a; do
-        A=$( echo $a | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
+    while read get_sim_tasks_each_file_tmp_a; do
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
         if [ ! "$A" = "" ]; then
             arr=($A)
             NUM_TYPE=${#arr[@]}
+            #echo "$(basename $0) [DBG] got type=$NUM_TYPE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
-        A=$( echo $a | sed -e 's|LIST_NODE_NUM="\(.*\)"$|\1|' )
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_NODE_NUM | sed -e 's|LIST_NODE_NUM="\(.*\)"$|\1|' )
         if [ ! "$A" = "" ]; then
             arr=($A)
             NUM_NODES=${#arr[@]}
+            #echo "$(basename $0) [DBG] got node=$NUM_NODES, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
-        A=$( echo $a | sed -e 's|LIST_SCHEDULERS="\(.*\)"$|\1|' )
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_SCHEDULERS | sed -e 's|LIST_SCHEDULERS="\(.*\)"$|\1|' )
         if [ ! "$A" = "" ]; then
             arr=($A)
             NUM_SCHE=${#arr[@]}
+            #echo "$(basename $0) [DBG] got sch=$NUM_SCHE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
     done
     #echo "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
+    echo "$(basename $0) [DBG] got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES" 1>&2
     echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
 }
 
@@ -120,15 +124,17 @@ get_sim_tasks () {
     shift
 
     if [ ! -d "${PARAM_DN_CONF}" ]; then
+        echo "$(basename $0) [DBG] not exit file $PARAM_DN_CONF" 1>&2
         echo 0
         return
     fi
     TASKS=0
     find "${PARAM_DN_CONF}" -maxdepth 1 -name "config*" \
         | (TASKS=0;
-        while read a; do
-            A=$(cat $a | get_sim_tasks_each_file)
+        while read get_sim_tasks_tmp_a; do
+            A=$(cat $get_sim_tasks_tmp_a | get_sim_tasks_each_file)
             TASKS=$(( $TASKS + $A ))
+            echo "$(basename $0) [DBG] got $A cores for file $a" 1>&2
         done;
         echo $TASKS)
 }
@@ -138,20 +144,31 @@ NEEDED_CORES=$(get_sim_tasks ../mytest)
 NEEDED_MEM_PER_CORE=1
 
 echo "$(basename $0) [DBG] needed cores=$NEEDED_CORES" 1>&2
+#debug:
+#NEEDED_CORES=3000
+#exit 0 # debug
 
+echo "$(basename $0) [DBG] checking cores quota ..." 1>&2
+checkqueuecfg > tmp-checkqueuecfg.txt
+MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (b[2]) max=b[2]; } }END{print max;}')
+if (( $NEEDED_CORES > $MAX_CORES )) ; then
+    NEEDED_CORES=$MAX_CORES
+fi
+
+echo "$(basename $0) [DBG] checking avail cores ..." 1>&2
 # get the free nodes list: (cores, mem, num)
 whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
     | awk 'BEGIN{cnt=0;}{nodes=$8; cores=$19; mem=$21; if (nodes > 0) print cores " " (0+mem) " " nodes;}END{}' \
     | grep -v "  0" | sort -n -r -k1 -k2 -k3 \
-    > tmp-avail.txt
+    > tmp-whatsfree.txt
 
-A=$(cat tmp-avail.txt | get_optimized_settings $NEEDED_CORES $NEEDED_MEM_PER_CORE )
+A=$(cat tmp-whatsfree.txt | get_optimized_settings $NEEDED_CORES $NEEDED_MEM_PER_CORE )
 if [ "$A" = "" ]; then
     echo "Error in get # of nodes."
     exit 1
 fi
 REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 2) "gb";}')
-CORES=$(echo $A | awk '{print $3;}')
+CORES=$(echo $A | awk '{print $1;}')
 MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 
 # in this block, you need set two files in the hadoop 2.x config files
@@ -183,6 +200,10 @@ MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 #     <value>256</value>
 # </property>
 # <property>
+#     <name>yarn.scheduler.maximum-allocation-mb</name>
+#     <value>3072</value>
+# </property>
+# <property>
 #     <name>yarn.nodemanager.vmem-check-enabled</name>
 #     <value>false</value>
 #     <description>Whether virtual memory limits will be enforced for containers</description>
@@ -210,33 +231,44 @@ MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 #     <name>mapred.reduce.child.java.opts</name>
 #     <value>-Xmx768m</value>
 # </property>
+MR_JOB_MEM=2048
+if (( ${MR_JOB_MEM} < ${MEM}/${CORES} )) ; then
+    MR_JOB_MEM=$(( ${MEM}/${CORES} ))
+fi
+if (( ${MR_JOB_MEM} > ${MEM} )) ; then
+    MR_JOB_MEM=${MEM}
+fi
 
-source mod-hadooppbs-setenv.sh
+. ./mod-hadooppbs-setenv.sh
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
+    echo "$(basename $0) [DBG] set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))" 1>&2
     cd "${HADOOP_HOME}/conf"
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
-        -e "s|512|$((${MEM}/${CORES}))|" \
-        -e "s|1024|$((${MEM}/${CORES}))|" \
-        -e "s|384|$((${MEM}/${CORES}*3/4))|" \
-        -e "s|768|$((${MEM}/${CORES}*3/4))|" \
+        -e  "s|512|$(( ${MR_JOB_MEM}*2 ))|" \
+        -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
+        -e  "s|384|$(( ${MR_JOB_MEM}*3/2 ))|" \
+        -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
         mapred-site.xml
     cd -
 
 elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
+
+    echo "$(basename $0) [DBG] set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))" 1>&2
     cd "${HADOOP_HOME}/etc/hadoop"
     cp mapred-site.xml.template mapred-site.xml
     cp   yarn-site.xml.template   yarn-site.xml
     sed -i \
         -e "s|3072|${MEM}|" \
-        -e "s|256|$((${MEM}/${CORES}/2))|" \
+        -e "s|256|$(( ${MEM}/${CORES} ))|" \
+        -e "s|24|${CORES}|" \
         yarn-site.xml
 
     sed -i \
-        -e "s|512|$((${MEM}/${CORES}))|" \
-        -e "s|1024|$((${MEM}/${CORES}))|" \
-        -e "s|384|$((${MEM}/${CORES}*3/4))|" \
-        -e "s|768|$((${MEM}/${CORES}*3/4))|" \
+        -e  "s|512|$(( ${MR_JOB_MEM}*2 ))|" \
+        -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
+        -e  "s|384|$(( ${MR_JOB_MEM}*3/2 ))|" \
+        -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
         mapred-site.xml
     cd -
 else
@@ -253,4 +285,7 @@ sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "../config-sys.sh"
 echo qsub -N ns2ds31 -l $REQ "mod-hadooppbs-jobmain.sh"
 qsub -N ns2ds31 -l $REQ "mod-hadooppbs-jobmain.sh"
 
+
+echo "$(basename $0) [DBG] waitting for queueing ..." 1>&2
+sleep 8
 qstat -anu ${USER}

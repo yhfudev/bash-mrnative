@@ -45,9 +45,11 @@ export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
 # where your personal cluster's configuration will be located
 export HADOOP_CONF_DIR=${PBS_O_WORKDIR}/hadoopconfigs-$PBS_JOBID
 mkdir -p "${HADOOP_CONF_DIR}"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${HADOOP_CONF_DIR}" 1>&2 ; fi
 
 rm -rf ${HADOOP_HOME}/logs/*
-mkdir -p "${HADOOP_LOG_DIR}"
+#mkdir -p "${HADOOP_LOG_DIR}"
+#if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${HADOOP_LOG_DIR}" 1>&2 ; fi
 
 #### Set up the configuration
 # Make sure number of nodes is the same as what you have requested from PBS
@@ -83,6 +85,8 @@ echo "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 . ${DN_EXEC1}/mod-share-worker.sh
 echo
+
+sleep $(( 10 * 60 ))
 
 #### Stop the Hadoop cluster
 echo "Stop all Hadoop daemons"
