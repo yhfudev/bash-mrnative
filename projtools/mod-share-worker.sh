@@ -30,6 +30,8 @@ else
     export DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
+DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+#####################################################################
 
 PROGNAME=$(basename "$0")
 
@@ -106,6 +108,7 @@ generate_script_4hadoop () {
     | grep -v "libplot.sh" \
     | grep -v "libns2figures.sh" \
     | grep -v "libapp.sh" \
+    | sed -e 's|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|' \
     >> "${PARAM_OUTPUT}"
 }
 #####################################################################
@@ -158,6 +161,7 @@ if [ 1 = 1 ]; then
 echo "[${PROGNAME}] Stage 1 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT}"
 ${EXEC_HADOOP} jar ${HDJAR} \
+    -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
     -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
@@ -173,7 +177,19 @@ ${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STA
 echo
 TM_STAGE1=$(date +%s)
 
+
+# use hundreds of files instead of one small file:
+cd "${PROJ_HOME}/data/output/${STAGE}/"
+cat "redout.txt" \
+    | awk 'BEGIN{cnt=0;}{cnt ++; print $0 > "file" cnt ".txt"}'
+cd -
+
+${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT}/part-00000"
+${EXEC_HADOOP} fs -put "${PROJ_HOME}/data/output/${STAGE}/file"* "${DN_OUTPUT}"
+
+
 #####################################################################
+
 FN_MAP="${PROJ_HOME}/data/output/tmp/tmpe2map.sh"
 FN_RED="${PROJ_HOME}/data/output/tmp/tmpe2red.sh"
 generate_script_4hadoop "${DN_EXEC}/e2map.sh" "${FN_MAP}"
@@ -182,14 +198,13 @@ generate_script_4hadoop "${DN_EXEC}/e2red.sh" "${FN_RED}"
 DN_INPUT=${DN_OUTPUT}
 
 STAGE=2
-#DN_INPUT=/hadoopffmpeg_in${STAGE}
 DN_OUTPUT=/hadoopffmpeg_out${STAGE}
 
 ${EXEC_HADOOP} fs -ls "${DN_INPUT}"
 
 if [ 1 = 1 ]; then
 echo "[${PROGNAME}] Stage 2 ..."
-${EXEC_HADOOP} fs -rm -r "${DN_OUTPUT}"
+${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT}"
 #-D mapred.reduce.tasks=1
 #-D mapred.reduce.tasks=0
 #-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT0} | tail -n +2 | wc -l)
@@ -197,10 +212,11 @@ ${EXEC_HADOOP} fs -rm -r "${DN_OUTPUT}"
 #-mapper /bin/cat
 #-reducer org.apache.hadoop.mapred.lib.IdentityReducer
 ${EXEC_HADOOP} jar ${HDJAR} \
+    -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=4 \
     -D num.key.fields.for.partition=2 \
     -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
-    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
+    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}")
     -file "${FN_RED}" -reducer $(basename "${FN_RED}")
 fi
 
@@ -211,6 +227,7 @@ ${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STA
 echo
 TM_STAGE2=$(date +%s)
 
+#####################################################################
 # end time
 TM_END=$(date +%s)
 TMCOST=$(echo | awk -v A=${TM_START} -v B=${TM_END} '{print B-A;}' )

@@ -112,11 +112,13 @@ if { $NUM_FTPs > 0 } {
 	set cm_index [expr $cm_index + $NUM_FTPs]
 }
 
+set MAXCHANNELBW 2158700000
+
 # Build a bad UDP flow
 if { $NUM_UDPs > 0 } {
     #create_DS_UDP_sessions $NUM_UDPs $cm_index
     for {set i 0} {$i < $NUM_UDPs} {incr i} {
-        create_DS_UDP_bad_flow $n2 [expr $cm_index + $i] $PACKETSIZE [expr 2158700000 * 6 / 5 / $NUM_UDPs]
+        create_DS_UDP_bad_flow $n2 [expr $cm_index + $i] $PACKETSIZE [expr $MAXCHANNELBW * 7 / 5 / $NUM_UDPs]
     }
     set cm_index [expr $cm_index + $NUM_UDPs]
 }

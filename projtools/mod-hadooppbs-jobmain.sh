@@ -9,11 +9,11 @@
 #PBS -m ea
 
 # the number of nodes: select=xxx
-NUM_NODES=5
+export PBS_NUM_NODES=`cat $PBS_NODEFILE | uniq | wc -l`
 
 source /etc/profile.d/modules.sh
 module purge
-module add java
+#module add java
 
 cd $PBS_O_WORKDIR
 
@@ -32,39 +32,26 @@ else
     echo "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
     exit 1
 fi
+
+export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
+
 #### Set this to the directory where Hadoop configs should be generated
 # Don't change the name of this variable (HADOOP_CONF_DIR) as it is
 # required by Hadoop - all config files will be picked up from here
 #
 # Make sure that this is accessible to all nodes
-export HADOOP_CONF_DIR="${DN_EXEC1}/hadoopconfig-$PBS_JOBID"
+# where your personal cluster's configuration will be located
+export HADOOP_CONF_DIR=${PBS_O_WORKDIR}/hadoopconfigs-$PBS_JOBID
 mkdir -p "${HADOOP_CONF_DIR}"
+
+rm -rf ${HADOOP_HOME}/logs/*
+mkdir -p "${HADOOP_LOG_DIR}"
 
 #### Set up the configuration
 # Make sure number of nodes is the same as what you have requested from PBS
-# usage: ${MY_HADOOP_HOME}/bin/pbs-configure.sh -h
+# usage: ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -h
 echo "Set up the configurations for myHadoop"
-
-FLG_FMT_HDFS=0
-if [ "${FLG_HDFS_PERSISTENT}" = "1" ]; then
-    # this is the non-persistent mode
-    ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR}
-    FLG_FMT_HDFS=1
-else
-    # this is the persistent mode
-    ${MY_HADOOP_HOME}/bin/pbs-configure.sh -n ${NUM_NODES} -c ${HADOOP_CONF_DIR} -p -d "${HDFF_HADOOP_HDFS}"
-    if [ ! -d "${HDFF_HADOOP_HDFS}" ]; then
-        FLG_FMT_HDFS=1
-    fi
-fi
-echo
-
-#### Format HDFS, if this is the first time or not a persistent instance
-if [ "${FLG_FMT_HDFS}" = "1" ]; then
-    echo "Format HDFS"
-    ${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} namenode -format
-    echo
-fi
+${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -n ${PBS_NUM_NODES} -c ${HADOOP_CONF_DIR} -s /local_scratch/$USER/$PBS_JOBID
 
 #### Start the Hadoop cluster
 echo "Start all Hadoop daemons"
@@ -82,8 +69,8 @@ fi
 echo
 jps
 
-echo "wait for hadoop ready, sleep 30 ..."
-sleep 30
+echo "wait for hadoop ready, sleep 50 ..."
+sleep 50
 
 #### Run your jobs here
 echo "Run some test Hadoop jobs"
@@ -113,5 +100,5 @@ jps
 
 #### Clean up the working directories after job completion
 echo "Clean up"
-${MY_HADOOP_HOME}/bin/pbs-cleanup.sh -n ${NUM_NODES}
+${MY_HADOOP_HOME}/bin/myhadoop-cleanup.sh -n ${PBS_NUM_NODES}
 echo

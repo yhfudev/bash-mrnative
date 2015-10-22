@@ -10,6 +10,9 @@ PREFIX="verifyd31"
 #FN_LOG="log.txt"
 FN_LOG="/dev/null"
 
+# control if plot packet scheduling time figures
+USE_MEDIUMPACKET=1
+
 # the stop time for the test
 TIME_STOP=160.2
 
@@ -75,3 +78,4 @@ LIST_SCHEDULERS="PF DRR FCFS ARED CODEL PIE"
 
 # list of flow types
 LIST_TYPES="udp tcp has udp+has tcp+has"
+

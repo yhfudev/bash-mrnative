@@ -206,13 +206,17 @@ plot_pktdelay_queue () {
     if [ ! -f "${FNDAT}" ]; then
         if [ -f "mediumpacket.out.gz" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' nodemac.out <(gzip -dc mediumpacket.out.gz) | gzip > "${FNDAT}"
-        else
+        elif [ -f "mediumpacket.out" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' nodemac.out mediumpacket.out | gzip > "${FNDAT}"
         fi
     fi
-    plotgen_pdf "Downstream MAC Packets" "Queue Service Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pktqueue-${PARAM_DN_NAME}" "${FNGP}"
-    plot_script "${FNGP}"
-    #rm -f "${FNDAT}"
+    if [ -f "${FNDAT}" ]; then
+        plotgen_pdf "Downstream MAC Packets" "Queue Service Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pktqueue-${PARAM_DN_NAME}" "${FNGP}"
+        plot_script "${FNGP}"
+        #rm -f "${FNDAT}"
+    else
+        echo "Error: unable to find the generated data: ${FNDAT}" 1>&2
+    fi
     cd - > /dev/null
 }
 
@@ -231,13 +235,17 @@ plot_pktdelay_trans () {
     if [ ! -f "${FNDAT}" ]; then
         if [ -f "mediumpacket.out.gz" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' nodemac.out <(gzip -dc mediumpacket.out.gz) | gzip > "${FNDAT}"
-        else
+        elif [ -f "mediumpacket.out" ]; then
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' nodemac.out mediumpacket.out | gzip > "${FNDAT}"
         fi
     fi
 
-    plotgen_pdf "Downstream MAC Packets" "Transfer Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pkttrans-${PARAM_DN_NAME}" "${FNGP}"
-    plot_script "${FNGP}"
-    #rm -f "${FNDAT}"
+    if [ -f "${FNDAT}" ]; then
+        plotgen_pdf "Downstream MAC Packets" "Transfer Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pkttrans-${PARAM_DN_NAME}" "${FNGP}"
+        plot_script "${FNGP}"
+        #rm -f "${FNDAT}"
+    else
+        echo "Error: unable to find the generated data: ${FNDAT}" 1>&2
+    fi
     cd - > /dev/null
 }

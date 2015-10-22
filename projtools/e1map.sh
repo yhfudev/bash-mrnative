@@ -35,7 +35,7 @@ else
     DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-#DN_EXEC="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
 if [ -f "${DN_EXEC}/libshall.sh" ]; then
 . ${DN_EXEC}/libshall.sh

@@ -36,9 +36,13 @@ run_one_ns2 () {
     echo ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}" 1>&2
     #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${FN_LOG}"
     ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${FN_LOG}" 2>&1
-    if [ -f mediumpacket.out ]; then
-        rm -f mediumpacket.out.gz
-        gzip mediumpacket.out
+    if [ "${USE_MEDIUMPACKET}" = "1" ]; then
+        if [ -f mediumpacket.out ]; then
+            rm -f mediumpacket.out.gz
+            gzip mediumpacket.out
+        fi
+    else
+        rm -f mediumpacket.out*
     fi
 
     cd - 1>&2 > /dev/null
@@ -183,6 +187,10 @@ prepare_one_tcl_scripts () {
             -e "s|^set[ \t[:space:]]\+DEFAULT_BUFFER_CAPACITY[ \t[:space:]]\+.*$|set DEFAULT_BUFFER_CAPACITY 32768|g" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
     fi
+    # set the UDP throughput to the maximum available bw; 6 is the QAM
+    sed -i \
+        -e "s|^set[ \t[:space:]]\+MAXCHANNELBW[ \t[:space:]]\+.*$|set MAXCHANNELBW [expr ${BW_CHANNEL} * 6]|g" \
+        "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/${FN_TCL}"
 
     # set profile for channels
     echo "setup profile ..." 1>&2
@@ -222,6 +230,11 @@ prepare_one_tcl_scripts () {
         sed -i \
             -e "s|set[ \t[:space:]]\+CHANGE_PROFILE_LOW[ \t[:space:]]\+.*$|set CHANGE_PROFILE_LOW 1|g" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
+    fi
+
+    rm -f "${DN_TEST}/mediumpacket.out*"
+    if [ ! "${USE_MEDIUMPACKET}" = "1" ]; then
+        ln -s /dev/null "${DN_TEST}/mediumpacket.out"
     fi
 }
 
@@ -269,6 +282,7 @@ prepare_figure_commands_for_one_stats () {
     esac
 }
 
+# clean temperary files with file name prefix "tmp-"
 clean_one_tcldir () {
     # the prefix of the test
     PARAM_DN_DEST=$1
@@ -289,6 +303,8 @@ clean_one_tcldir () {
     fi
 }
 
+# check the throughput log file, if the log time reach to the pre-set end time.
+# checked both for UDP and TCP packets, with file prefix CMTCPDS and CMUDPDS
 check_one_tcldir () {
     PARAM_DN_DEST=$1
     shift
