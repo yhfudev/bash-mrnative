@@ -90,7 +90,7 @@ worker_run_ns2() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}"
+    run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
     prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -119,7 +119,7 @@ worker_check_run() {
 
     RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
-        run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}"
+        run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
         prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
     fi
 

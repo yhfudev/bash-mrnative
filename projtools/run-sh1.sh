@@ -30,15 +30,19 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 #DN_EXEC="$(my_getpath "${DN_TOP}/bin/")"
+#####################################################################
 
 #echo "[DBG] $0 DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}" 1>&2
 
 PROGNAME=$(basename "$0")
 
-#####################################################################
-DN_INPUT=${DN_TOP}/data/input
+source "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
 
-DN_PREFIX=${DN_TOP}/data/output
+#####################################################################
+DN_INPUT=${DN_RESULTS}/mapred-data/input
+
+DN_PREFIX=${DN_RESULTS}/mapred-data/output
 
 DN_OUTPUT1=${DN_PREFIX}/1
 DN_OUTPUT2=${DN_PREFIX}/2

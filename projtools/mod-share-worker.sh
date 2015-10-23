@@ -35,6 +35,9 @@ DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 
 PROGNAME=$(basename "$0")
 
+source "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+
 echo "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 
 #####################################################################
@@ -110,16 +113,22 @@ generate_script_4hadoop () {
     | grep -v "libplot.sh" \
     | grep -v "libns2figures.sh" \
     | grep -v "libapp.sh" \
-    | sed -e 's|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|' \
+    | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
     >> "${PARAM_OUTPUT}"
 }
 #####################################################################
+
+
+mapred_main () {
 
 # start time
 TM_START=$(date +%s)
 
 # generate config lines
-DN_INPUT="${PROJ_HOME}/data/input/"
+#DN_INPUT="${PROJ_HOME}/data/input/"
+DN_INPUT=${DN_RESULTS}/mapred-data/input
+DN_PREFIX=${DN_RESULTS}/mapred-data/output
+
 if [ 1 = 1 ]; then
     # genrate input file:
     mkdir -p ${DN_INPUT}
@@ -129,90 +138,92 @@ if [ 1 = 1 ]; then
     find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
 fi
 
+#generate_script_4hadoop "${DN_EXEC}/plotfigns2.sh" "${DN_PREFIX}/tmp/plotfigns2.sh"
+#generate_script_4hadoop "${DN_EXEC}/createconf.sh" "${DN_PREFIX}/tmp/createconf.sh"
 
-#generate_script_4hadoop "${DN_EXEC}/plotfigns2.sh" "${PROJ_HOME}/data/output/tmp/plotfigns2.sh"
-#generate_script_4hadoop "${DN_EXEC}/createconf.sh" "${PROJ_HOME}/data/output/tmp/createconf.sh"
-
-FN_MAP="${PROJ_HOME}/data/output/tmp/tmpe1map.sh"
-#FN_RED="${PROJ_HOME}/data/output/tmp/tmpe1red.sh"
+FN_MAP="${DN_PREFIX}/tmp/tmpe1map.sh"
+#FN_RED="${DN_PREFIX}/tmp/tmpe1red.sh"
 generate_script_4hadoop "${DN_EXEC}/e1map.sh" "${FN_MAP}"
 #generate_script_4hadoop "${DN_EXEC}/e1red.sh" "${FN_RED}"
 
 STAGE=1
-DN_INPUT=/hadoopffmpeg_in${STAGE}
-DN_OUTPUT=/hadoopffmpeg_out${STAGE}
+DN_INPUT_HDFS=/hadoopffmpeg_in${STAGE}
+DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
 
-${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT}"
-${EXEC_HADOOP} fs -mkdir "${DN_INPUT}"
+${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT_HDFS}"
+${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
-    echo "$(basename $0) Error in hadoop  mkdir ${DN_INPUT}" 1>&2
-    exit 1
+    echo "$(basename $0) Error in hadoop mkdir ${DN_INPUT_HDFS}" 1>&2
+    return
 fi
-${EXEC_HADOOP} fs -put "${PROJ_HOME}/data/input/"* "${DN_INPUT}"
+${EXEC_HADOOP} fs -put "${DN_INPUT}/"* "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
-    echo "Error in put data: ${DN_INPUT}" 1>&2
-    exit 1
+    echo "Error in put data: ${DN_INPUT_HDFS}" 1>&2
+    return
 fi
-${EXEC_HADOOP} fs -ls "${DN_INPUT}"
-#${EXEC_HADOOP} fs -cat "${DN_INPUT}/test.txt"
+${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
+#${EXEC_HADOOP} fs -cat "${DN_INPUT_HDFS}/test.txt"
 
-${EXEC_HADOOP} fs -ls "${DN_OUTPUT}"
+${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 
-#${EXEC_HADOOP} fs -cat "${DN_OUTPUT}/part-00000"
+#${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
 
 if [ 1 = 1 ]; then
 echo "[${PROGNAME}] Stage 1 ..."
-${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT}"
+${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HDJAR} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
-    -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
+    -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
     -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
     -mapper /bin/cat \
     $(NULL)
 fi
 
-${EXEC_HADOOP} fs -ls "${DN_OUTPUT}"
-#${EXEC_HADOOP} fs -cat "${DN_OUTPUT}/part-00000"
-mkdir -p "${PROJ_HOME}/data/output/${STAGE}/"
-if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${PROJ_HOME}/data/output/${STAGE}/" 1>&2 ; fi
-${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STAGE}/redout.txt"
+${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
+#${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
+mkdir -p "${DN_PREFIX}/${STAGE}/"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${DN_PREFIX}/${STAGE}/" 1>&2 ; fi
+rm -f "${DN_PREFIX}/${STAGE}/"*
+${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
 echo
 TM_STAGE1=$(date +%s)
 
 
+#####################################################################
 # use hundreds of files instead of one small file:
-cd "${PROJ_HOME}/data/output/${STAGE}/"
+cd "${DN_PREFIX}/${STAGE}/"
+rm -f file*.txt
 cat "redout.txt" \
     | awk 'BEGIN{cnt=0;}{cnt ++; print $0 > "file" cnt ".txt"}'
 cd -
 
-${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT}/part-00000"
-${EXEC_HADOOP} fs -put "${PROJ_HOME}/data/output/${STAGE}/file"* "${DN_OUTPUT}"
+${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
+${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"
 
 
 #####################################################################
 
-FN_MAP="${PROJ_HOME}/data/output/tmp/tmpe2map.sh"
-FN_RED="${PROJ_HOME}/data/output/tmp/tmpe2red.sh"
+FN_MAP="${DN_PREFIX}/tmp/tmpe2map.sh"
+FN_RED="${DN_PREFIX}/tmp/tmpe2red.sh"
 generate_script_4hadoop "${DN_EXEC}/e2map.sh" "${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e2red.sh" "${FN_RED}"
 
-DN_INPUT=${DN_OUTPUT}
+DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
 
 STAGE=2
-DN_OUTPUT=/hadoopffmpeg_out${STAGE}
+DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
 
-${EXEC_HADOOP} fs -ls "${DN_INPUT}"
+${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
 if [ 1 = 1 ]; then
 echo "[${PROGNAME}] Stage 2 ..."
-${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT}"
+${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 #-D mapred.reduce.tasks=1
 #-D mapred.reduce.tasks=0
-#-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT0} | tail -n +2 | wc -l)
+#-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT_HDFS0} | tail -n +2 | wc -l)
 #-mapper  org.apache.hadoop.mapred.lib.IdentityMapper
 #-mapper /bin/cat
 #-reducer org.apache.hadoop.mapred.lib.IdentityReducer
@@ -220,16 +231,16 @@ ${EXEC_HADOOP} jar ${HDJAR} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=4 \
     -D num.key.fields.for.partition=2 \
-    -input "${DN_INPUT}" -output "${DN_OUTPUT}" \
+    -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
     -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
     -file "${FN_RED}" -reducer $(basename "${FN_RED}") \
     $(NULL)
 fi
 
-${EXEC_HADOOP} fs -ls "${DN_OUTPUT}"
-mkdir -p "${PROJ_HOME}/data/output/${STAGE}/"
-if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${PROJ_HOME}/data/output/${STAGE}/" 1>&2 ; fi
-${EXEC_HADOOP} fs -get "${DN_OUTPUT}/part-00000" "${PROJ_HOME}/data/output/${STAGE}/redout.txt"
+${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
+mkdir -p "${DN_PREFIX}/${STAGE}/"
+if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${DN_PREFIX}/${STAGE}/" 1>&2 ; fi
+${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
 echo
 TM_STAGE2=$(date +%s)
@@ -252,6 +263,7 @@ echo "Cost time: total=${TMCOST},stage1=${TMCOST1},stage2=${TMCOST2}, seconds" 1
 
 # if you don't use persistent mode
 FN_OUTPUT=part-00000
-${EXEC_HADOOP} fs -get "${DN_OUTPUT}/${FN_OUTPUT}"
+${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/${FN_OUTPUT}"
 
-echo
+}
+

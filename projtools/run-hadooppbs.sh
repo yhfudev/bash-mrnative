@@ -279,10 +279,10 @@ fi
 echo "$(basename $0) [DBG] needed cores=$NEEDED_CORES" 1>&2
 
 # set cores in config-sys.sh file
-sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "../config-sys.sh"
+sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
 
 # use scratch
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "../config-sys.sh"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
 
 #sed -i -e "s|#PBS -l select=1.*$|#PBS -l $REQ|" "mod-hadooppbs-jobmain.sh"
 echo qsub -N ns2ds31 -l $REQ "mod-hadooppbs-jobmain.sh"

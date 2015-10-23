@@ -30,18 +30,39 @@ run_one_ns2 () {
     shift
     PARAM_DN_TEST=$1
     shift
+    PARAM_FN_CONFIG_PROJ=$1
+    shift
+
+    # read in the config file for this test group
+    # in this case, is to read the config for USE_MEDIUMPACKET
+    if [ ! -f "${PARAM_FN_CONFIG_PROJ}" ]; then
+        echo "$(basename $0) Error: not found file: $PARAM_FN_CONFIG_PROJ" 1>&2
+        return
+    fi
+    PARAM_FN_CONFIG_PROJ2="$(my_getpath "${PARAM_FN_CONFIG_PROJ}")"
+    read_config_file "${PARAM_FN_CONFIG_PROJ2}"
 
     cd       "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
     rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
     echo ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}" 1>&2
-    #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${FN_LOG}"
-    ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${FN_LOG}" 2>&1
+    if [ ! -x "${EXEC_NS2}" ]; then
+        echo "$(basename $0) Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)" 1>&2
+    else
+        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${FN_LOG}" 2>&1
+    fi
+
+    echo "$(basename $0) [DBG] USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'" 1>&2
     if [ "${USE_MEDIUMPACKET}" = "1" ]; then
         if [ -f mediumpacket.out ]; then
+            echo "$(basename $0) [DBG] compressing mediumpacket.out ..." 1>&2
             rm -f mediumpacket.out.gz
             gzip mediumpacket.out
+        else
+            echo "$(basename $0) Warning: not found mediumpacket.out." 1>&2
         fi
     else
+        echo "$(basename $0) Warning: remove mediumpacket.out*!" 1>&2
         rm -f mediumpacket.out*
     fi
 

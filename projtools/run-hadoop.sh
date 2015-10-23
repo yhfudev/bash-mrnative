@@ -29,7 +29,12 @@ else
     export DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-#DN_EXEC="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+#####################################################################
+
+DN_RESULTS="$(my_getpath "${DN_EXEC}/results-mr/")"
+# use scratch
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${DN_RESULTS}|" "${DN_TOP}/config-sys.sh"
 
 #####################################################################
 jps | grep NameNode
@@ -63,6 +68,7 @@ echo "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 . ${DN_EXEC}/mod-share-worker.sh
 echo
+mapred_main
 
 jps | grep NameNode
 #if [ "$?" = "0" ]; then

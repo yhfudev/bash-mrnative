@@ -61,7 +61,7 @@ FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
 read_config_file "${FN_CONFIG_PROJ2}"
 
 #####################################################################
-DN_TMP_CREATECONF="$(my_getpath "./tmp-createconf")"
+DN_TMP_CREATECONF="$(my_getpath "${DN_RESULTS}/tmp-createconf")"
 rm -rf "${DN_TMP_CREATECONF}"
 mkdir -p "${DN_TMP_CREATECONF}"
 for idx_num in $LIST_NODE_NUM ; do
@@ -72,9 +72,7 @@ for idx_num in $LIST_NODE_NUM ; do
         done
     done
 done
-
 mkdir -p "${DN_RESULTS}/dataconf/"
-mv "${DN_TMP_CREATECONF}"/* "${DN_RESULTS}/dataconf/"
-rmdir "${DN_TMP_CREATECONF}"
+cp -rp "${DN_TMP_CREATECONF}"/* "${DN_RESULTS}/dataconf/"
 
 echo "$(date) DONE: ALL" >> "${FN_LOG}"

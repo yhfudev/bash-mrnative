@@ -113,6 +113,7 @@ echo "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 . ${DN_EXEC1}/mod-share-worker.sh
 echo
+mapred_main
 
 sleep $(( 10 * 60 ))
 
