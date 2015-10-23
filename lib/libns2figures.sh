@@ -134,7 +134,7 @@ EOF
 
 #####################################################################
 
-#plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${DN_TEST}" "${DN_TEST}" "title" "DSUDP*.out"
+#plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${DN_TEST}" "${DN_TEST}" "title" "DSUDP*.out"
 
 # plot the flows' throughput
 plot_eachflow_throughput () {

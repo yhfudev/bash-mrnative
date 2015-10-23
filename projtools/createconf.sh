@@ -44,6 +44,10 @@ source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
+source "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+
+#####################################################################
 MR_COMMAND=$1
 shift
 FN_CONFIG_PROJ=$1
@@ -61,7 +65,7 @@ read_config_file "${FN_CONFIG_PROJ2}"
 for idx_num in $LIST_NODE_NUM ; do
     for idx_type in $LIST_TYPES ; do
         for idx_sche in $LIST_SCHEDULERS ; do
-            prepare_one_tcl_scripts "${PREFIX}" "$idx_type" "$idx_sche" "$idx_num" "${DN_EXEC}" "${DN_COMM}" "${DN_TOP}/results"
+            prepare_one_tcl_scripts "${PREFIX}" "$idx_type" "$idx_sche" "$idx_num" "${DN_EXEC}" "${DN_COMM}" "${DN_RESULTS}/dataconf"
             echo -e "${MR_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type}\"\t\"${idx_sche}\"\t${idx_num}"
         done
     done

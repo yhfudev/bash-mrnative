@@ -53,13 +53,11 @@ source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libplot.sh
 source ${DN_LIB}/libns2figures.sh
 
-DN_PARENT="$(my_getpath ".")"
-
 EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
 FN_LOG="/dev/null"
 
-#read_config_file "${DN_PARENT}/config.conf"
-source ${DN_TOP}/config-sys.sh
+source "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
 
 check_global_config
 
@@ -92,7 +90,7 @@ worker_run_ns2() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    run_one_ns2 "${DN_TOP}/results" "${DN_TEST}"
+    run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}"
     prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -119,9 +117,9 @@ worker_check_run() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    RET=$(check_one_tcldir "${DN_TOP}/results/${DN_TEST}" "/dev/stdout")
+    RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
-        run_one_ns2 "${DN_TOP}/results" "${DN_TEST}"
+        run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}"
         prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
     fi
 
@@ -175,12 +173,12 @@ worker_clean() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    cd "${DN_TOP}/figures/${PARAM_PREFIX}"
+    cd "${DN_RESULTS}/figures/${PARAM_PREFIX}"
     find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 5 rm -f
     find . -maxdepth 1 -type f -name "fig-*" | xargs -n 5 rm -f
     cd -
 
-    clean_one_tcldir "${DN_TOP}/results/${DN_TEST}"
+    clean_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}"
 
     #prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 

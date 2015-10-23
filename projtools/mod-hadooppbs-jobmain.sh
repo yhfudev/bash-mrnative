@@ -7,6 +7,23 @@
 #PBS -l walltime=72:00:00
 #PBS -M yfu@clemson.edu
 #PBS -m ea
+#####################################################################
+my_getpath () {
+  PARAM_DN="$1"
+  shift
+  #readlink -f
+  DN="${PARAM_DN}"
+  FN=
+  if [ ! -d "${DN}" ]; then
+    FN=$(basename "${DN}")
+    DN=$(dirname "${DN}")
+  fi
+  cd "${DN}" > /dev/null 2>&1
+  DN=$(pwd)
+  cd - > /dev/null 2>&1
+  echo "${DN}/${FN}"
+}
+#####################################################################
 
 # the number of nodes: select=xxx
 export PBS_NUM_NODES=$(cat $PBS_NODEFILE | uniq | wc -l)
@@ -19,9 +36,20 @@ module purge
 
 cd $PBS_O_WORKDIR
 
-export PROJ_HOME=/home/$USER/mapreduce-ns2docsis
+DN_EXEC="$(my_getpath "$(pwd)")"
+DN_TOP="$(my_getpath "${DN_EXEC}/../")"
+DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+
+echo "$(basename $0) [DBG] PBS_O_WORKDIR=$PBS_O_WORKDIR" 1>&2
+echo "$(basename $0) [DBG] DN_TOP=$DN_TOP" 1>&2
+
+export PROJ_HOME=$DN_TOP
 if [ ! -d "${PROJ_HOME}" ]; then
-    export PROJ_HOME=/home/$USER/temp/mapreduce-ns2docsis
+    export PROJ_HOME=/home/$USER/mapreduce-ns2docsis
+fi
+if [ ! -d "${PROJ_HOME}" ]; then
+    echo "Error: not exit dir $PROJ_HOME" 1>&2
+    exit 1
 fi
 DN_EXEC1="${PROJ_HOME}/projtools"
 

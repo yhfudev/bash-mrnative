@@ -255,7 +255,7 @@ prepare_figure_commands_for_one_stats () {
     PARAM_NUM=$1
     shift
 
-    #${DN_PARENT}/plotfigns2.sh tpflow "${DN_TOP}/results/" "${DN_TOP}/figures/" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+    #${DN_PARENT}/plotfigns2.sh tpflow "${HDFF_DN_OUTPUT}/dataconf/" "${HDFF_DN_OUTPUT}/figures/" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     case $PARAM_TYPE in
     "udp")

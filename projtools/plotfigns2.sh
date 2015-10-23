@@ -42,6 +42,9 @@ source ${DN_LIB}/libplot.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
+source "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+
 #####################################################################
 convert_eps2png () {
     for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
@@ -52,7 +55,6 @@ convert_eps2png () {
         fi
     done
 }
-
 
 #####################################################################
 ARG_CMD1=$1
@@ -76,7 +78,8 @@ ARG_SCHE=$( unquote_filename "${ARG_SCHE1}" )
 ARG_NUM=$( unquote_filename "${ARG_NUM1}" )
 
 DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
-mkdir -p "${DN_TOP}/figures/${ARG_PREFIX}"
+
+mkdir -p "${DN_RESULTS}/figures/${ARG_PREFIX}"
 
 echo "$(basename $0) ARG_CMD=${ARG_CMD}" 1>&2
 
@@ -87,10 +90,10 @@ case "${ARG_CMD}" in
 
     case "${ARG_FLOW_TYPE}" in
     "tcp")
-        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
+        plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
         ;;
     "udp")
-        plot_eachflow_throughput "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
+        plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
         ;;
     *)
         echo "$(basename $0) Error: Unknown flow type: ${ARG_FLOW_TYPE}" 1>&2
@@ -107,27 +110,27 @@ case "${ARG_CMD}" in
     FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
     read_config_file "${FN_CONFIG_PROJ2}"
 
-    cd "${DN_TOP}/results/"
+    cd "${DN_RESULTS}/dataconf/"
     FN_TP="$(pwd)/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}.dat"
     generate_throughput_stats_file "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
 
-    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_TOP}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
     #rm -f "${FN_TP}"
     cd - > /dev/null
-    cd "${DN_TOP}/figures/${ARG_PREFIX}"
+    cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
     convert_eps2png
     cd - > /dev/null
     ;;
 
 "pktstat")
-    plot_pktdelay_queue "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}"
+    plot_pktdelay_queue "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}"
     ;;
 "pkttrans")
-    plot_pktdelay_trans "${DN_TOP}/results/${DN_TEST}" "${DN_TOP}/figures/${ARG_PREFIX}" "${DN_TEST}"
-    cd "${DN_TOP}/figures/${ARG_PREFIX}"
+    plot_pktdelay_trans "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}"
+    cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
     convert_eps2png
     cd - > /dev/null
     ;;
