@@ -245,34 +245,34 @@ fi
 
 . ./mod-hadooppbs-setenv.sh
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
-    mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))"
+    mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
     cd "${HADOOP_HOME}/conf"
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
-        -e  "s|512|$(( ${MR_JOB_MEM}     ))|" \
-        -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
-        -e  "s|384|$(( ${MR_JOB_MEM}*3/4 ))|" \
-        -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
+        -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
+        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*4   ))</value>|" \
+        -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
+        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
         mapred-site.xml
     cd -
 
 elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
 
-    mr_trace "set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))"
+    mr_trace "set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
     cd "${HADOOP_HOME}/etc/hadoop"
     cp mapred-site.xml.template mapred-site.xml
     cp   yarn-site.xml.template   yarn-site.xml
     sed -i \
-        -e "s|3072|${MEM}|" \
-        -e "s|256|$(( ${MEM}/${CORES} ))|" \
-        -e "s|24|${CORES}|" \
+        -e "s|<value>3072</value>|<value>${MEM}</value>|" \
+        -e  "s|<value>256</value>|<value>$(( ${MEM}/${CORES} ))</value>|" \
+        -e   "s|<value>24</value>|<value>${CORES}</value>|" \
         yarn-site.xml
 
     sed -i \
-        -e  "s|512|$(( ${MR_JOB_MEM}     ))|" \
-        -e "s|1024|$(( ${MR_JOB_MEM}*4   ))|" \
-        -e  "s|384|$(( ${MR_JOB_MEM}*3/4 ))|" \
-        -e  "s|768|$(( ${MR_JOB_MEM}*3   ))|" \
+        -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
+        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*4   ))</value>|" \
+        -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
+        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
         mapred-site.xml
     cd -
 else
@@ -288,7 +288,7 @@ sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh
 # use scratch
 #sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
 #sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results3/|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
 
 #ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
 mr_trace qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
