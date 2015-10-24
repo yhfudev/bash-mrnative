@@ -81,7 +81,7 @@ worker_flow_throughput () {
     PARAM_NODE="$1"
     shift
 
-    #echo "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" 1>&2
+    #mr_trace "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -98,7 +98,7 @@ worker_stats_throughput () {
     PARAM_TYPE="$1"
     shift
 
-    #echo ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" 1>&2
+    #mr_trace ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
     ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -140,7 +140,7 @@ worker_trans_packet () {
     PARAM_NODE="$1"
     shift
 
-    #echo ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" 1>&2
+    #mr_trace ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -209,13 +209,13 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
     ;;
 
   *)
-    echo "e2red [DBG] Err: unknown command: ${MR_CMD}" 1>&2
+    mr_trace "Error: unknown command: ${MR_CMD}"
     ERR=1
     continue
     ;;
   esac
   if [ ! "${ERR}" = "0" ] ; then
-    echo "e2red [DBG] ignore line: ${MR_CMD} ${MR_CONFIG_FILE} ${MR_PREFIX} ${MR_TYPE} ${MR_FLOW_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE}" 1>&2
+    mr_trace "ignore line: ${MR_CMD} ${MR_CONFIG_FILE} ${MR_PREFIX} ${MR_TYPE} ${MR_FLOW_TYPE} ${MR_SCHEDULER} ${MR_NUM_NODE}"
     continue
   fi
 

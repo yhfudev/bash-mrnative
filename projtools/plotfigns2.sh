@@ -50,7 +50,7 @@ convert_eps2png () {
     for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
         FN_BASE=$(echo "${FN_FULL}" | gawk -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
         if [ ! -f "${FN_BASE}.png" ]; then
-            echo "eps 2 png: ${FN_FULL}  -->  ${FN_BASE}.png" 1>&2
+            mr_trace "eps 2 png: ${FN_FULL}  -->  ${FN_BASE}.png"
             convert -density 300 "${FN_FULL}" "${FN_BASE}.png"
         fi
     done
@@ -81,7 +81,7 @@ DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${AR
 
 mkdir -p "${DN_RESULTS}/figures/${ARG_PREFIX}"
 
-echo "$(basename $0) ARG_CMD=${ARG_CMD}" 1>&2
+mr_trace "ARG_CMD=${ARG_CMD}"
 
 case "${ARG_CMD}" in
 "tpflow")
@@ -96,7 +96,7 @@ case "${ARG_CMD}" in
         plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
         ;;
     *)
-        echo "$(basename $0) Error: Unknown flow type: ${ARG_FLOW_TYPE}" 1>&2
+        mr_trace "Error: Unknown flow type: ${ARG_FLOW_TYPE}"
         ;;
     esac
     ;;
@@ -104,7 +104,7 @@ case "${ARG_CMD}" in
 "tpstat")
     FN_CONFIG_PROJ=$ARG_FLOW_TYPE
     if [ ! -f "${FN_CONFIG_PROJ}" ]; then
-        echo "Error: not found file: $FN_CONFIG_PROJ" 1>&2
+        mr_trace "Error: not found file: $FN_CONFIG_PROJ"
         exit 1
     fi
     FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
@@ -135,6 +135,6 @@ case "${ARG_CMD}" in
     cd - > /dev/null
     ;;
 *)
-    echo "Error: unknown command: ${ARG_CMD}" 1>&2
+    mr_trace "Error: unknown command: ${ARG_CMD}"
     ;;
 esac

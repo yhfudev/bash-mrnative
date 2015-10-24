@@ -98,7 +98,7 @@ while read MR_CMD MR_CONFIG_FILE ; do
     ;;
 
   *)
-    echo "$(basename $0) [DBG] Warning: unknown command '${MR_CMD}'." 1>&2
+    mr_trace "Warning: unknown command '${MR_CMD}'."
     ;;
   esac
 

@@ -36,7 +36,7 @@ run_one_ns2 () {
     # read in the config file for this test group
     # in this case, is to read the config for USE_MEDIUMPACKET
     if [ ! -f "${PARAM_FN_CONFIG_PROJ}" ]; then
-        echo "$(basename $0) Error: not found file: $PARAM_FN_CONFIG_PROJ" 1>&2
+        mr_trace "Error: not found file: $PARAM_FN_CONFIG_PROJ"
         return
     fi
     PARAM_FN_CONFIG_PROJ2="$(my_getpath "${PARAM_FN_CONFIG_PROJ}")"
@@ -44,25 +44,25 @@ run_one_ns2 () {
 
     cd       "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
     rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
-    echo ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}" 1>&2
+    mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}"
     if [ ! -x "${EXEC_NS2}" ]; then
-        echo "$(basename $0) Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)" 1>&2
+        mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
     else
         #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${FN_LOG}"
         ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${FN_LOG}" 2>&1
     fi
 
-    echo "$(basename $0) [DBG] USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'" 1>&2
+    mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
     if [ "${USE_MEDIUMPACKET}" = "1" ]; then
         if [ -f mediumpacket.out ]; then
-            echo "$(basename $0) [DBG] compressing mediumpacket.out ..." 1>&2
+            mr_trace "compressing mediumpacket.out ..."
             rm -f mediumpacket.out.gz
             gzip mediumpacket.out
         else
-            echo "$(basename $0) Warning: not found mediumpacket.out." 1>&2
+            mr_trace "Warning: not found mediumpacket.out."
         fi
     else
-        echo "$(basename $0) Warning: remove mediumpacket.out*!" 1>&2
+        mr_trace "Warning: remove mediumpacket.out*!"
         rm -f mediumpacket.out*
     fi
 
@@ -116,14 +116,14 @@ prepare_one_tcl_scripts () {
     case $PARAM_TYPE in
     "udp")
         # setup the number of flows
-        echo "setup udp ..." 1>&2
+        mr_trace "setup udp ..."
         sed -i \
             -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  0|" \
             -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  ${PARAM_NUM}|" \
             -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs 0|" \
             -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
-        echo "setup udp done!" 1>&2
+        mr_trace "setup udp done!"
         ;;
     "tcp")
         sed -i \
@@ -164,10 +164,10 @@ prepare_one_tcl_scripts () {
     if [ $(echo | awk -v V=$LOGINTERVAL '{if (V<0.5) print 1; else print 0;}') = 1 ] ; then
         LOGINTERVAL=0.5
     fi
-    echo "LOGINTERVAL=$LOGINTERVAL" 1>&2
+    mr_trace "LOGINTERVAL=$LOGINTERVAL"
 
     # set stop time
-    echo "setup stoptime, log interval ..." 1>&2
+    mr_trace "setup stoptime, log interval ..."
     sed -i \
         -e "s|set[ \t[:space:]]\+stoptime[ \t[:space:]]\+.*$|set stoptime ${TIME_STOP}|g" \
         -e 's|set[ \t[:space:]]\+TCPUDP_THROUGHPUT_MONITORS_ON[ \t[:space:]]\+.*$|set TCPUDP_THROUGHPUT_MONITORS_ON 1|g' \
@@ -177,13 +177,13 @@ prepare_one_tcl_scripts () {
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
 
     # set channel bandwidth
-    echo "setup channel bandwidth ..." 1>&2
+    mr_trace "setup channel bandwidth ..."
     sed -i \
         -e "s|42880000|${BW_CHANNEL}|g" \
         -e "s|1000000000|${BW_CHANNEL}|g" \
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/channels.dat"
     if (( ${BW_CHANNEL} > 42880000 )) ; then
-        echo "setup high speed channel ..." 1>&2
+        mr_trace "setup high speed channel ..."
         # fix the high speed problem
         sed -i \
             -e "s|\.00001|0.00000001|g" \
@@ -214,26 +214,26 @@ prepare_one_tcl_scripts () {
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/${FN_TCL}"
 
     # set profile for channels
-    echo "setup profile ..." 1>&2
+    mr_trace "setup profile ..."
     sed -i \
         -e "s|set curr_profile .*$|set curr_profile \$${NS2_PROFILE}|g" \
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
 
     # init the profile
     if [ "${FLG_INIT_PROFILE_LOW}" = "1" ]; then
-        echo "use init profile low ..." 1>&2
+        mr_trace "use init profile low ..."
         sed -i \
             -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_lower_profile $cm_node_start $cm_node_count }|' \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
     fi
     if [ "${FLG_INIT_PROFILE_HIGH}" = "1" ]; then
-        echo "use init profile high ..." 1>&2
+        mr_trace "use init profile high ..."
         sed -i \
             -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_high_profile $cm_node_start $cm_node_count }|' \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
     fi
     if [ "${FLG_INIT_PROFILE_INTERVAL}" = "1" ]; then
-        echo "use init profile interval ..." 1>&2
+        mr_trace "use init profile interval ..."
         sed -i \
             -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_interval_profiles $cm_node_start $cm_node_count }|' \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
@@ -241,13 +241,13 @@ prepare_one_tcl_scripts () {
 
     # change the profile in the middle of test
     if [ "${FLG_CHANGE_PROFILE_HIGH}" = "1" ]; then
-        echo "use change profile high ..." 1>&2
+        mr_trace "use change profile high ..."
         sed -i \
             -e "s|set[ \t[:space:]]\+CHANGE_PROFILE_HIGH[ \t[:space:]]\+.*$|set CHANGE_PROFILE_HIGH 1|g" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
     fi
     if [ "${FLG_CHANGE_PROFILE_LOW}" = "1" ]; then
-        echo "use change profile low ..." 1>&2
+        mr_trace "use change profile low ..."
         sed -i \
             -e "s|set[ \t[:space:]]\+CHANGE_PROFILE_LOW[ \t[:space:]]\+.*$|set CHANGE_PROFILE_LOW 1|g" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
@@ -319,7 +319,7 @@ clean_one_tcldir () {
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
-        #echo "save ${PARAM_FN_LOG_ERROR}: ${DN_TEST}" >> "/dev/stderr"
+        #mr_trace "save ${PARAM_FN_LOG_ERROR}: ${DN_TEST}"
         echo "${DN_TEST}" >> "${PARAM_FN_LOG_ERROR}"
     fi
 }
@@ -342,9 +342,9 @@ check_one_tcldir () {
         LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
         for i in $LST ; do
             FLG_NONE=0
-            echo "process flow throughput (tcp) $i ..."
+            mr_trace "process flow throughput (tcp) $i ..."
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
-            #echo "curr dir=$(pwd), tail i=$i" >> /dev/stderr
+            #mr_trace "curr dir=$(pwd), tail i=$i"
             TM1=$(tail -n 1 "$i" | awk '{print $1}')
             if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
                 FLG_ERR=1
@@ -354,7 +354,7 @@ check_one_tcldir () {
         LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
         for i in $LST ; do
             FLG_NONE=0
-            echo "process flow throughput (tcp) $i ..."
+            mr_trace "process flow throughput (tcp) $i ..."
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
             TM1=$(tail -n 1 "$i" | awk '{print $1}')
             if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
@@ -368,7 +368,7 @@ check_one_tcldir () {
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
-        #echo "save ${PARAM_FN_LOG_ERROR}: ${PARAM_DN_DEST}" >> "/dev/stderr"
+        #mr_trace "save ${PARAM_FN_LOG_ERROR}: ${PARAM_DN_DEST}"
         echo "${PARAM_DN_DEST}" >> "${PARAM_FN_LOG_ERROR}"
     fi
 }

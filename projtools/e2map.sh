@@ -215,7 +215,7 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
     ;;
 
   *)
-    echo "e2map [DBG] Err: unknown type: ${MR_CMD}" 1>&2
+    mr_trace "Error: unknown type: ${MR_CMD}" 1>&2
     ERR=1
     ;;
   esac

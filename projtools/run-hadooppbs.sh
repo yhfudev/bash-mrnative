@@ -34,7 +34,11 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+}
 
+#####################################################################
 rm -f pbs_hadoop_run.stderr
 rm -f pbs_hadoop_run.stdout
 rm -rf hadoopconfig-*
@@ -113,8 +117,8 @@ get_sim_tasks_each_file () {
             #echo "$(basename $0) [DBG] got sch=$NUM_SCHE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
     done
-    #echo "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
-    echo "$(basename $0) [DBG] got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES" 1>&2
+    #mr_trace "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
+    mr_trace "got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
     echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
 }
 
@@ -124,7 +128,7 @@ get_sim_tasks () {
     shift
 
     if [ ! -d "${PARAM_DN_CONF}" ]; then
-        echo "$(basename $0) [DBG] not exit file $PARAM_DN_CONF" 1>&2
+        mr_trace "not exit file $PARAM_DN_CONF"
         echo 0
         return
     fi
@@ -134,7 +138,7 @@ get_sim_tasks () {
         while read get_sim_tasks_tmp_a; do
             A=$(cat $get_sim_tasks_tmp_a | get_sim_tasks_each_file)
             TASKS=$(( $TASKS + $A ))
-            echo "$(basename $0) [DBG] got $A cores for file $a" 1>&2
+            mr_trace "got $A cores for file $a"
         done;
         echo $TASKS)
 }
@@ -143,19 +147,19 @@ get_sim_tasks () {
 NEEDED_CORES=$(get_sim_tasks ../mytest)
 NEEDED_MEM_PER_CORE=1
 
-echo "$(basename $0) [DBG] needed cores=$NEEDED_CORES" 1>&2
+mr_trace "needed cores=$NEEDED_CORES"
 #debug:
 #NEEDED_CORES=3000
 #exit 0 # debug
 
-echo "$(basename $0) [DBG] checking cores quota ..." 1>&2
+mr_trace "checking cores quota ..."
 checkqueuecfg > tmp-checkqueuecfg.txt
 MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (b[2]) max=b[2]; } }END{print max;}')
 if (( $NEEDED_CORES > $MAX_CORES )) ; then
     NEEDED_CORES=$MAX_CORES
 fi
 
-echo "$(basename $0) [DBG] checking avail cores ..." 1>&2
+mr_trace "checking avail cores ..."
 # get the free nodes list: (cores, mem, num)
 whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
     | awk 'BEGIN{cnt=0;}{nodes=$8; cores=$19; mem=$21; if (nodes > 0) print cores " " (0+mem) " " nodes;}END{}' \
@@ -164,7 +168,7 @@ whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
 
 A=$(cat tmp-whatsfree.txt | get_optimized_settings $NEEDED_CORES $NEEDED_MEM_PER_CORE )
 if [ "$A" = "" ]; then
-    echo "Error in get # of nodes."
+    mr_trace "Error in get # of nodes."
     exit 1
 fi
 REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 2) "gb";}')
@@ -241,7 +245,7 @@ fi
 
 . ./mod-hadooppbs-setenv.sh
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
-    echo "$(basename $0) [DBG] set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))" 1>&2
+    mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))"
     cd "${HADOOP_HOME}/conf"
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
@@ -254,7 +258,7 @@ if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
 
 elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
 
-    echo "$(basename $0) [DBG] set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))" 1>&2
+    mr_trace "set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), mem/cores/2=$((${MEM}/${CORES}/2)), 0.75mem/core=$((${MEM}/${CORES}*3/4))"
     cd "${HADOOP_HOME}/etc/hadoop"
     cp mapred-site.xml.template mapred-site.xml
     cp   yarn-site.xml.template   yarn-site.xml
@@ -272,22 +276,24 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
         mapred-site.xml
     cd -
 else
-    echo "unknown hadoop version"
+    mr_trace "unknown hadoop version"
     exit 1
 fi
 
-echo "$(basename $0) [DBG] needed cores=$NEEDED_CORES" 1>&2
+mr_trace "needed cores=$NEEDED_CORES"
 
 # set cores in config-sys.sh file
 sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
 
 # use scratch
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
+#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
+#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results3/|" "${DN_TOP}/config-sys.sh"
 
-#sed -i -e "s|#PBS -l select=1.*$|#PBS -l $REQ|" "mod-hadooppbs-jobmain.sh"
-echo qsub -N ns2ds31 -l $REQ "mod-hadooppbs-jobmain.sh"
-qsub -N ns2ds31 -l $REQ "mod-hadooppbs-jobmain.sh"
+#ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
+mr_trace qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
+qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
 
-echo "$(basename $0) [DBG] waitting for queueing ..." 1>&2
+mr_trace "waitting for queueing ..."
 sleep 8
 qstat -anu ${USER}

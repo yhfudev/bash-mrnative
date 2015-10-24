@@ -5,6 +5,11 @@
 # Copyright 2013 Yunhui Fu
 # License: GPL v3.0 or later
 #####################################################################
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+}
+
+#####################################################################
 
 # return the simulation directory name
 simulation_directory () {
@@ -61,7 +66,7 @@ generate_throughput_stats_file () {
             TP_SUM=0
             CNT=0
             if [ ! -d "${DN_TEST}/" ]; then
-                echo "Warning: skip ${DN_TEST}" 1>&2
+                mr_trace "Warning: skip ${DN_TEST}"
                 continue
             fi
             cd "${DN_TEST}/"
@@ -72,7 +77,7 @@ generate_throughput_stats_file () {
             if [ "${LST}" = "" ]; then
                 LST=$(find . -maxdepth 1 -type f -name "${PARAM_FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
                 if [ "${LST}" = "" ]; then
-                    echo "Error: Not found data file: ${PARAM_FN_TPFLOW}" 1>&2
+                    mr_trace "Error: Not found data file: ${PARAM_FN_TPFLOW}"
                     exit 1
                 fi
                 FN_AWK_TPAVG=tmp-avgtp-stats.awk
@@ -96,7 +101,7 @@ END{
 }
 EOF
                 for i in $LST ; do
-                    echo "DEBUG == process flow throughput (stat tcp) $i ..." 1>&2
+                    mr_trace "DEBUG == process flow throughput (stat tcp) $i ..."
                     V=$(cat "${i}" | awk -v STARTTIME=${TIME_START} -v STOPTIME=${TIME_STOP} -f ${FN_AWK_TPAVG})
                     echo "${V}" >> "${FN_DAT_STATS}"
                 done
@@ -116,16 +121,16 @@ EOF
                 done
             fi
             VALS=$(calculate_stats 10000000000 0 < "${FN_DAT_STATS}")
-            echo "DEBUG == throughput stats data for ${DN_TEST} (cnt, min, max, sum, mean, stddev, mmr, jfi, cfi)=${VALS}" 1>&2
+            mr_trace "DEBUG == throughput stats data for ${DN_TEST} (cnt, min, max, sum, mean, stddev, mmr, jfi, cfi)=${VALS}"
             cd - > /dev/null
             if [ "${VALS}" = "" ]; then
-                echo "Warning: not found throughput stat file for ${DN_TEST}: ${PARAM_FN_STAT}; tpflow=${PARAM_FN_TPFLOW}" 1>&2
+                mr_trace "Warning: not found throughput stat file for ${DN_TEST}: ${PARAM_FN_STAT}; tpflow=${PARAM_FN_TPFLOW}"
                 continue
             fi
             TP_SUM=$(echo ${VALS} | awk '{print $4}' )
             CNT=$(echo ${VALS} | awk '{print $1}')
             TP_AVG=$(echo ${VALS} | awk '{print $5}')
-            echo "DEBUG == ${DN_TEST}: sum=${TP_SUM}; avg=${TP_AVG}; cnt=$CNT" 1>&2
+            mr_trace "DEBUG == ${DN_TEST}: sum=${TP_SUM}; avg=${TP_AVG}; cnt=$CNT"
             echo "$num $sched ${VALS}" >> ${PARAM_FN_OUT_TPSTATS}
         done
     done
@@ -157,10 +162,10 @@ plot_eachflow_throughput () {
     YLABEL="Throughput (bps)"
 
     if [ ! -d "${PARAM_DN_TEST}/" ]; then
-        echo "Error, not found dir: ${PARAM_DN_TEST}" 1>&2
+        mr_trace "Error, not found dir: ${PARAM_DN_TEST}"
         return
     fi
-echo "[DBG] cd ${PARAM_DN_TEST}" 1>&2
+    mr_trace "cd ${PARAM_DN_TEST}"
     cd "${PARAM_DN_TEST}/"
 
     # GNUPLOT - the arguments for gnuplot plot command
@@ -168,13 +173,13 @@ echo "[DBG] cd ${PARAM_DN_TEST}" 1>&2
 
     LST=$(find . -maxdepth 1 -type f -name "${PARAM_FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
     for i in $LST ; do
-        echo "process flow throughput $i ..." 1>&2
+        mr_trace "process flow throughput $i ..."
         idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
-        echo "DEBUG == idx=$idx" 1>&2
+        #mr_trace "DEBUG == idx=$idx"
         if [ ! "${PLOT_LINE}" = "" ]; then PLOT_LINE="${PLOT_LINE},"; fi
         PLOT_LINE="${PLOT_LINE} '${i}' index 0 using 1:2 t 'CM #${idx}' with lp"
     done
-    echo "DEBUG == PLOT_LINE=${PLOT_LINE}" 1>&2
+    #mr_trace "DEBUG == PLOT_LINE=${PLOT_LINE}"
     FN_TMPGP="tmp-worker_plot_eachflowtp-${PARAM_FN_TEST}.gplot"
     gplot_setheader "${FN_TMPGP}"
 
@@ -215,7 +220,7 @@ plot_pktdelay_queue () {
         plot_script "${FNGP}"
         #rm -f "${FNDAT}"
     else
-        echo "Error: unable to find the generated data: ${FNDAT}" 1>&2
+        mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
     cd - > /dev/null
 }
@@ -245,7 +250,7 @@ plot_pktdelay_trans () {
         plot_script "${FNGP}"
         #rm -f "${FNDAT}"
     else
-        echo "Error: unable to find the generated data: ${FNDAT}" 1>&2
+        mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
     cd - > /dev/null
 }

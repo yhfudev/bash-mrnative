@@ -17,34 +17,26 @@ if [ "${DN_DATATMP}" = "" ]; then
 fi
 
 #####################################################################
-myexec_ignore () {
-    echo "[DBG] (skip) 6 $*" 1>&2
-    A=
-    while [ ! "$1" = "" ]; do
-        A="$A \"$1\""
-        shift
-    done
-    echo "[DBG] (skip) 5 $A" 1>&2
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
-myexec_trace () {
-    echo "[DBG] $*" 1>&2
-    A=
-    while [ ! "$1" = "" ]; do
-        A="$A \"$1\""
-        shift
-    done
-    echo "[DBG] $A" 1>&2
-    eval $A
+mr_exec_do () {
+    mr_trace "$@"
+    $@
 }
-MYEXEC=myexec_trace
+mr_exec_skip () {
+    mr_trace "DEBUG (skip) $@"
+}
+
+MYEXEC=mr_exec_do
 #MYEXEC=
 if [ "$FLG_SIMULATE" = "1" ]; then
-    MYEXEC=myexec_ignore
+    MYEXEC=mr_exec_skip
 fi
 
 fatal_error () {
   PARAM_MSG="$1"
-  echo "[DBG] (self=${BASHPID}) fatal error: ${PARAM_MSG}" 1>&2
+  mr_trace "Fatal error: ${PARAM_MSG}" 1>&2
   #exit 1
 }
 
@@ -59,7 +51,7 @@ mp_new_session () {
   CNTCHILD=0
   PID_CHILDREN=
   MP_SESSION_ID=$(uuidgen)
-  echo "[DBG] generated session id: ${MP_SESSION_ID}" 1>&2
+  mr_trace "generated session id: ${MP_SESSION_ID}"
 }
 mp_get_session_id () {
   echo "${MP_SESSION_ID}"
@@ -71,20 +63,20 @@ mp_remove_child_record () {
   PARAM_CHILD_ID=$1
   shift
 
-  echo "[DBG] (self=${BASHPID}) before remove child ${PARAM_CHILD_ID}, #=${CNTCHILD}, PID list='${PID_CHILDREN}'" 1>&2
+  #mr_trace "before remove child ${PARAM_CHILD_ID}, #=${CNTCHILD}, PID list='${PID_CHILDREN}'" 1>&2
   PID_CHILDREN=$(echo ${PID_CHILDREN} | awk -v ID=${PARAM_CHILD_ID} '{for (i = 1; i <= NF; i ++) {if ($i != ID) printf(" %d", $i); } }' )
   CNTCHILD=$(echo ${PID_CHILDREN} | awk '{print NF}' )
-  echo "[DBG] (self=${BASHPID}) after remove child ${PARAM_CHILD_ID}, #=${CNTCHILD}, PID list='${PID_CHILDREN}'" 1>&2
+  mr_trace "after remove child ${PARAM_CHILD_ID}, #=${CNTCHILD}, PID list='${PID_CHILDREN}'"
 
 }
 
 # the parent wait all of the children
 mp_wait_all_children () {
-  echo "[DBG] (self=${BASHPID}) wait all of children" 1>&2
+  mr_trace "wait all of children"
   while [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} '{if(A>0){print 1;}else{print 0;}}' )" = "1" ]; do
     for ID2 in ${PID_CHILDREN} ; do
       wait ${ID2} 1>&2
-      echo "[DBG] child ${ID2} done!" 1>&2
+      mr_trace "child ${ID2} done!"
       mp_remove_child_record ${ID2}
     done
     sleep 5
@@ -112,7 +104,7 @@ mp_notify_child_exit () {
   shift
 
   CHILD_ID=${BASHPID}
-  echo "[DBG] child notif exit: id=${BASHPID}" 1>&2
+  mr_trace "child notif exit: id=${BASHPID}"
 }
 
 # add new child, check if the children are too many then wait
@@ -121,10 +113,10 @@ mp_add_child_check_wait () {
   shift
 
   if [ "${PARAM_CHILD_ID}" = "" ]; then
-    echo "[DBG] warning: child id null! ignored" 1>&2
+    mr_trace "Warning: child id null! ignored"
     return
   fi
-  echo "[DBG] (self=${BASHPID}) add child id=${PARAM_CHILD_ID}" 1>&2
+  mr_trace "add child id=${PARAM_CHILD_ID}"
 
   PID_CHILDREN="${PID_CHILDREN} ${PARAM_CHILD_ID}"
   CNTCHILD=$(( $CNTCHILD + 1 ))
@@ -138,14 +130,14 @@ mp_add_child_check_wait () {
     fatal_error "unable to generate session id!"
     return
   fi
-  echo "[DBG] (self=${BASHPID}) CNTCHILD=${CNTCHILD}; HDFF_NUM_CLONE=${HDFF_NUM_CLONE}, #=${CNTCHILD}, PID list='${PID_CHILDREN}' " 1>&2
+  mr_trace "CNTCHILD=${CNTCHILD}; HDFF_NUM_CLONE=${HDFF_NUM_CLONE}, #=${CNTCHILD}, PID list='${PID_CHILDREN}' "
   while [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} -v B=${HDFF_NUM_CLONE} '{if(A>=B){print 1;}else{print 0;}}' )" = "1" ]; do
     #echo "[DBG] (self=${BASHPID}) check all of children in the ${DN_DATATMP}/pids-${MP_SESSION_ID}/end/" 1>&2
     # the number of the end process is no more than HDFF_NUM_CLONE
     for ID in $PID_CHILDREN ; do
       ps -p ${ID} > /dev/null 2>&1
       if [ ! "$?" = "0" ]; then
-        echo "[DBG] (self=${BASHPID}) 1 child ${ID} done!" 1>&2
+        mr_trace "1 child ${ID} done!"
         mp_remove_child_record ${ID}
       fi
     done
@@ -176,7 +168,7 @@ HDFF_EXCLUDE_4FILENAME="\""
 unquote_filename () {
   PARAM_FN="$1"
   shift
-  #echo "e1map [DBG] PARAM_FN=${PARAM_FN}; dirname=$(dirname "${PARAM_FN}"); readlink2=$(readlink -f "$(dirname "${PARAM_FN}")" )" 1>&2
+  #mr_trace "PARAM_FN=${PARAM_FN}; dirname=$(dirname "${PARAM_FN}"); readlink2=$(readlink -f "$(dirname "${PARAM_FN}")" )"
   echo "${PARAM_FN//[${HDFF_EXCLUDE_4FILENAME}]/}"
 }
 
@@ -221,7 +213,7 @@ read_config_file () {
     ### Read in some system-wide configurations (if applicable) but do not override
     ### the user's environment
     PARAM_FN_CONF="$1"
-    echo "parse config file $1" 1>&2
+    mr_trace "parse config file $1"
     if [ -e "$PARAM_FN_CONF" ]; then
         while read LINE; do
             REX='^[^# ]*='
@@ -234,15 +226,15 @@ read_config_file () {
                     if [ "z${!VARIABLE}" == "z" ]; then
                         eval "${V0}=\"${VALUE}\""
                         eval "${VARIABLE}=\"${VALUE}\""
-                        #echo "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF" 1>&2
-                    #else echo "Keeping $VARIABLE=${!VARIABLE} from user environment" 1>&2
+                        #mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
+                    #else mr_trace "Keeping $VARIABLE=${!VARIABLE} from user environment"
                     fi
                 else
                     eval "${V0}=\"${VALUE}\""
                     eval "${VARIABLE}=\"${VALUE}\""
-                    #echo "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF" 1>&2
+                    #mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
                 fi
-                #echo "[DBG] VARIABLE=${VARIABLE}; VALUE=${VALUE}" 1>&2
+                #mr_trace "VARIABLE=${VARIABLE}; VALUE=${VALUE}"
             fi
         done < "$PARAM_FN_CONF"
     fi

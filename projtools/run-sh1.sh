@@ -31,8 +31,13 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 #DN_EXEC="$(my_getpath "${DN_TOP}/bin/")"
 #####################################################################
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+}
 
-#echo "[DBG] $0 DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}" 1>&2
+#####################################################################
+
+#mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
 PROGNAME=$(basename "$0")
 
@@ -61,7 +66,7 @@ if [ 1 = 1 ]; then
 fi
 
 if [ 1 = 1 ]; then
-echo "[${PROGNAME}] Stage 1 ..."
+mr_trace "Stage 1 ..."
 mkdir -p ${DN_OUTPUT1}
 cat ${DN_INPUT}/*.txt        | ${DN_EXEC}/e1map.sh | sort > ${DN_OUTPUT1}/mapout.txt
 TM_STAGE1_MAP=$(date +%s)
@@ -73,7 +78,7 @@ fi
 TM_STAGE1=$(date +%s)
 
 if [ 1 = 1 ]; then
-echo "[${PROGNAME}] Stage 2 ..."
+mr_trace "[Stage 2 ..."
 mkdir -p ${DN_OUTPUT2}
 cat ${DN_OUTPUT1}/redout.txt | ${DN_EXEC}/e2map.sh | sort > ${DN_OUTPUT2}/mapout.txt
 TM_STAGE2_MAP=$(date +%s)
@@ -94,15 +99,15 @@ TMCOST1_RED=$(echo | awk -v A=${TM_STAGE1_MAP} -v B=${TM_STAGE1} '{print B-A;}' 
 TMCOST2_MAP=$(echo | awk -v A=${TM_STAGE1} -v B=${TM_STAGE2_MAP} '{print B-A;}' )
 TMCOST2_RED=$(echo | awk -v A=${TM_STAGE2_MAP} -v B=${TM_STAGE2} '{print B-A;}' )
 
-echo "[${PROGNAME}] TM start=$TM_START, end=$TM_END"
-echo "[${PROGNAME}] stage 1 map=$TM_STAGE1_MAP, reduce=$TM_STAGE1"
-echo "[${PROGNAME}] stage 2 map=$TM_STAGE2_MAP, reduce=$TM_STAGE2"
+mr_trace "TM start=$TM_START, end=$TM_END"
+mr_trace "stage 1 map=$TM_STAGE1_MAP, reduce=$TM_STAGE1"
+mr_trace "stage 2 map=$TM_STAGE2_MAP, reduce=$TM_STAGE2"
 echo ""
 
-echo "[${PROGNAME}] Done !"
-echo "[${PROGNAME}] config:"
-echo "    HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
-echo "    OPTIONS_FFM_GLOBAL=${OPTIONS_FFM_GLOBAL}"
-echo "[${PROGNAME}] Cost time: total=${TMCOST} seconds" 1>&2
-echo "    stage1=${TMCOST1}(m=${TMCOST1_MAP},r=${TMCOST1_RED}) seconds" 1>&2
-echo "    stage2=${TMCOST2}(m=${TMCOST2_MAP},r=${TMCOST2_RED}) seconds" 1>&2
+mr_trace "Done !"
+mr_trace "config:"
+mr_trace "    HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
+mr_trace "    OPTIONS_FFM_GLOBAL=${OPTIONS_FFM_GLOBAL}"
+mr_trace "Cost time: total=${TMCOST} seconds" 1>&2
+mr_trace "    stage1=${TMCOST1}(m=${TMCOST1_MAP},r=${TMCOST1_RED}) seconds" 1>&2
+mr_trace "    stage2=${TMCOST2}(m=${TMCOST2_MAP},r=${TMCOST2_RED}) seconds" 1>&2

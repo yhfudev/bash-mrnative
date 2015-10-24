@@ -53,7 +53,7 @@ shift
 FN_CONFIG_PROJ=$1
 shift
 if [ ! -f "${FN_CONFIG_PROJ}" ]; then
-    echo "Error: not found file: $FN_CONFIG_PROJ" 1>&2
+    mr_trace "Error: not found file: $FN_CONFIG_PROJ"
     exit 1
 fi
 FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
@@ -61,7 +61,7 @@ FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
 read_config_file "${FN_CONFIG_PROJ2}"
 
 #####################################################################
-DN_TMP_CREATECONF="$(my_getpath "${DN_RESULTS}/tmp-createconf")"
+DN_TMP_CREATECONF="$(my_getpath "${DN_TOP}/tmp-createconf")"
 rm -rf "${DN_TMP_CREATECONF}"
 mkdir -p "${DN_TMP_CREATECONF}"
 for idx_num in $LIST_NODE_NUM ; do
@@ -75,4 +75,4 @@ done
 mkdir -p "${DN_RESULTS}/dataconf/"
 cp -rp "${DN_TMP_CREATECONF}"/* "${DN_RESULTS}/dataconf/"
 
-echo "$(date) DONE: ALL" >> "${FN_LOG}"
+mr_trace "DONE create config files"

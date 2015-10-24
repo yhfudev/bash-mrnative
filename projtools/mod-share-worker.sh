@@ -32,23 +32,28 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+}
+
+#####################################################################
 
 PROGNAME=$(basename "$0")
 
 source "${DN_TOP}/config-sys.sh"
 DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
-
-echo "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
+mr_trace "DN_RESULTS=$DN_RESULTS"
+mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 
 #####################################################################
 if [ ! -d "${PROJ_HOME}" ]; then
   PROJ_HOME="${DN_TOP}"
 fi
 mkdir -p "${PROJ_HOME}"
-if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $PROJ_HOME" 1>&2 ; fi
+if [ ! "$?" = "0" ]; then mr_trace "$(basename $0) Error in mkdir $PROJ_HOME" ; fi
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
-echo "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
+mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
 
 # detect if the DN_EXEC is real directory of the binary code
 # this is for PBS/HPC environment
@@ -59,8 +64,8 @@ if [ ! "${PROJ_HOME}" = "${DN_TOP}" ]; then
   #fi
 fi
 
-echo "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
-echo "PROJ_HOME=${PROJ_HOME}"
+mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
+mr_trace "PROJ_HOME=${PROJ_HOME}"
 
 #####################################################################
 EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR}"
@@ -78,7 +83,7 @@ fi
 if [ ! -f "${HDJAR}" ]; then
     HDJAR=/usr/lib/hadoop-mapreduce/hadoop-streaming.jar
 fi
-echo "EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
+mr_trace "EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
 
 #####################################################################
 generate_script_4hadoop () {
@@ -90,7 +95,7 @@ generate_script_4hadoop () {
   DN_EXEOUT9=$(dirname "${PARAM_OUTPUT}")
   if [ ! -d "${DN_EXEOUT9}" ]; then
     mkdir -p "${DN_EXEOUT9}"
-    if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $DN_EXEOUT9" 1>&2 ; fi
+    if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $DN_EXEOUT9"; fi
   fi
 
   echo '#!/bin/bash' > "${PARAM_OUTPUT}"
@@ -132,7 +137,7 @@ DN_PREFIX=${DN_RESULTS}/mapred-data/output
 if [ 1 = 1 ]; then
     # genrate input file:
     mkdir -p ${DN_INPUT}
-    if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir $DN_INPUT" 1>&2 ; fi
+    if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $DN_INPUT" ; fi
     rm -f ${DN_INPUT}/*
     #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
     find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
@@ -153,12 +158,12 @@ DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
 ${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT_HDFS}"
 ${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
-    echo "$(basename $0) Error in hadoop mkdir ${DN_INPUT_HDFS}" 1>&2
+    mr_trace "Error in hadoop mkdir ${DN_INPUT_HDFS}"
     return
 fi
 ${EXEC_HADOOP} fs -put "${DN_INPUT}/"* "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
-    echo "Error in put data: ${DN_INPUT_HDFS}" 1>&2
+    mr_trace "Error in put data: ${DN_INPUT_HDFS}"
     return
 fi
 ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
@@ -169,7 +174,7 @@ ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
 
 if [ 1 = 1 ]; then
-echo "[${PROGNAME}] Stage 1 ..."
+mr_trace "Stage 1 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HDJAR} \
     -D mapreduce.task.timeout=0 \
@@ -184,7 +189,7 @@ fi
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
 mkdir -p "${DN_PREFIX}/${STAGE}/"
-if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${DN_PREFIX}/${STAGE}/" 1>&2 ; fi
+if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
 rm -f "${DN_PREFIX}/${STAGE}/"*
 ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
@@ -219,7 +224,7 @@ DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
 ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
 if [ 1 = 1 ]; then
-echo "[${PROGNAME}] Stage 2 ..."
+mr_trace "Stage 2 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 #-D mapred.reduce.tasks=1
 #-D mapred.reduce.tasks=0
@@ -239,7 +244,7 @@ fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 mkdir -p "${DN_PREFIX}/${STAGE}/"
-if [ ! "$?" = "0" ]; then echo "$(basename $0) Error in mkdir ${DN_PREFIX}/${STAGE}/" 1>&2 ; fi
+if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
 ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
 echo
@@ -252,12 +257,12 @@ TMCOST=$(echo | awk -v A=${TM_START} -v B=${TM_END} '{print B-A;}' )
 TMCOST1=$(echo | awk -v A=${TM_START} -v B=${TM_STAGE1} '{print B-A;}' )
 TMCOST2=$(echo | awk -v A=${TM_STAGE1} -v B=${TM_STAGE2} '{print B-A;}' )
 
-echo "[${PROGNAME}] TM start=$TM_START, end=$TM_END"
-echo "[${PROGNAME}] stage 1=$TM_STAGE1"
-echo "[${PROGNAME}] stage 2=$TM_STAGE2"
+mr_trace "TM start=$TM_START, end=$TM_END"
+mr_trace "stage 1=$TM_STAGE1"
+mr_trace "stage 2=$TM_STAGE2"
 echo ""
 
-echo "Cost time: total=${TMCOST},stage1=${TMCOST1},stage2=${TMCOST2}, seconds" 1>&2
+mr_trace "Cost time: total=${TMCOST},stage1=${TMCOST1},stage2=${TMCOST2}, seconds"
 
 #####################################################################
 
