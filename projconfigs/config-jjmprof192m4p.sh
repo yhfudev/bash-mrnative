@@ -3,15 +3,15 @@
 
 # the test information to be showed
 MSG_TITLE="DOCSIS 3.1 Profiles"
-MSG_DESCRIPTION="D31 24.5MHz channel, with 4 profiles, test competing UDP/TCP flows."
-PREFIX="jjmprof24m4p"
+MSG_DESCRIPTION="D31 192MHz channel, with 4 profiles, test competing UDP/TCP flows."
+PREFIX="jjmprof192m4p"
 
 # the message log file
 #FN_LOG="log.txt"
 FN_LOG="/dev/null"
 
 # control if plot packet scheduling time figures
-USE_MEDIUMPACKET=0
+USE_MEDIUMPACKET=1
 
 # the stop time for the test
 TIME_STOP=160.2

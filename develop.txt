@@ -29,4 +29,4 @@ Palmetto Cluster Node Configuration:
 node1868:
 /dev/shm    32GB    
 /scratch1   85TB    W 28MB/s
-/home       5.7TB   W 333MB/s
+/home       5.7TB   W 333MB/s   R/W 1.1MB/s

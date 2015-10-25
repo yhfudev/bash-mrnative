@@ -11,7 +11,7 @@ PREFIX="jjmprof192m2p"
 FN_LOG="/dev/null"
 
 # control if plot packet scheduling time figures
-USE_MEDIUMPACKET=0
+USE_MEDIUMPACKET=1
 
 # the stop time for the test
 TIME_STOP=160.2
@@ -25,7 +25,7 @@ NUMBER_PROFILES=2
 # the maximum bitrate of the channel
 # default 3.0
 #BW_CHANNEL=42880000
-# 42.88m/7=6125714; use profiles_4k_async to get the 1,1.5,...,7 ratio
+# 42.88m/7=6125714; use profiles_4k_async_192m to get the 1,1.5,...,7 ratio
 # 42.88m/6=7146667
 #BW_CHANNEL=7146667
 

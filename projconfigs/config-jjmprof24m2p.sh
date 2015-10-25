@@ -11,7 +11,7 @@ PREFIX="jjmprof24m2p"
 FN_LOG="/dev/null"
 
 # control if plot packet scheduling time figures
-USE_MEDIUMPACKET=0
+USE_MEDIUMPACKET=1
 
 # the stop time for the test
 TIME_STOP=160.2
