@@ -55,7 +55,8 @@ run_one_ns2 () {
     if [ -d "${DN_SCRATCH}" ]; then
         DN_WORKING="${DN_SCRATCH}/$(uuidgen)-${PARAM_DN_TEST}"
         mkdir -p "${DN_WORKING}"
-        cp -rp "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"* "${DN_WORKING}"
+        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/"
+        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/"
         cd "${DN_WORKING}"
     else
         cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
@@ -85,7 +86,8 @@ run_one_ns2 () {
 
     cd "${DN_ORIG2}"
     if [ -d "${DN_WORKING}" ]; then
-        cp -rp "${DN_WORKING}/"* "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
         rm -rf "${DN_WORKING}"
     fi
 }

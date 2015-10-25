@@ -76,7 +76,17 @@ for idx_num in $LIST_NODE_NUM ; do
     done
 done
 mkdir -p "${DN_RESULTS}/dataconf/"
-cp -rp "${DN_TMP_CREATECONF}"/* "${DN_RESULTS}/dataconf/"
+
+#DN_ORIG15=$(pwd)
+#cd "${DN_TMP_CREATECONF}"
+#tar -cf - * | tar -C "${DN_RESULTS}/dataconf/" -xf -
+#cd "${DN_ORIG15}"
+
+rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/"
+rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/"
+
 rm -rf "${DN_TMP_CREATECONF}"
+
+
 
 mr_trace "DONE create config files"
