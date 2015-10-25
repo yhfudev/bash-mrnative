@@ -18,9 +18,10 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
+  cd "${DNORIG}"
   if [ "${FN}" = "" ]; then
     echo "${DN}"
   else
@@ -173,10 +174,11 @@ worker_clean() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
+    DN_ORIG1=$(pwd)
     cd "${DN_RESULTS}/figures/${PARAM_PREFIX}"
     find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 5 rm -f
     find . -maxdepth 1 -type f -name "fig-*" | xargs -n 5 rm -f
-    cd -
+    cd "${DN_ORIG1}"
 
     clean_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}"
 

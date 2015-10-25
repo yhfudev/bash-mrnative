@@ -19,10 +19,15 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
-  echo "${DN}/${FN}"
+  cd "${DNORIG}"
+  if [ "${FN}" = "" ]; then
+    echo "${DN}"
+  else
+    echo "${DN}/${FN}"
+  fi
 }
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
@@ -246,6 +251,7 @@ fi
 . ./mod-hadooppbs-setenv.sh
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
     mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
+    DN_ORIG7=$(pwd)
     cd "${HADOOP_HOME}/conf"
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
@@ -254,11 +260,12 @@ if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
         -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
         -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
         mapred-site.xml
-    cd -
+    cd "${DN_ORIG7}"
 
 elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
 
     mr_trace "set hadoop 2.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
+    DN_ORIG7=$(pwd)
     cd "${HADOOP_HOME}/etc/hadoop"
     cp mapred-site.xml.template mapred-site.xml
     cp   yarn-site.xml.template   yarn-site.xml
@@ -274,7 +281,7 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
         -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
         -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
         mapred-site.xml
-    cd -
+    cd "DN_ORIG7"
 else
     mr_trace "unknown hadoop version"
     exit 1

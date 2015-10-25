@@ -15,10 +15,15 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
-  echo "${DN}/${FN}"
+  cd "${DNORIG}"
+  if [ "${FN}" = "" ]; then
+    echo "${DN}"
+  else
+    echo "${DN}/${FN}"
+  fi
 }
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################

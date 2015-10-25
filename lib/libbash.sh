@@ -238,6 +238,7 @@ patch_centos_gawk () {
 # 对于非 x86 平台，如arm等，使用下载支持 x86 启动的syslinux
 download_extract_2tmp_syslinux () {
     PKG=""
+    DN_ORIG12=$(pwd)
     cd /tmp
     DATE1=$(date +%Y-%m-%d)
     rm -f index.html*
@@ -257,7 +258,7 @@ download_extract_2tmp_syslinux () {
         exit 0
     fi
     tar -xf "${FN_SYSLI}"
-    cd - > /dev/null
+    cd "${DN_ORIG12}"
 }
 
 # 安装软件包，使用debian 的发行名，自动转换成其他系统下的名字。

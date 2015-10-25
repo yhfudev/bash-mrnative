@@ -17,10 +17,15 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
-  echo "${DN}/${FN}"
+  cd "${DNORIG}"
+  if [ "${FN}" = "" ]; then
+    echo "${DN}"
+  else
+    echo "${DN}/${FN}"
+  fi
 }
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
@@ -199,11 +204,12 @@ TM_STAGE1=$(date +%s)
 
 #####################################################################
 # use hundreds of files instead of one small file:
+DNORIG2=$(pwd)
 cd "${DN_PREFIX}/${STAGE}/"
 rm -f file*.txt
 cat "redout.txt" \
     | awk 'BEGIN{cnt=0;}{cnt ++; print $0 > "file" cnt ".txt"}'
-cd -
+cd "${DNORIG2}"
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
 ${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"

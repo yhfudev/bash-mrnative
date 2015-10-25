@@ -15,9 +15,10 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
+  cd "${DNORIG}"
   if [ "${FN}" = "" ]; then
     echo "${DN}"
   else
@@ -110,6 +111,7 @@ case "${ARG_CMD}" in
     FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
     read_config_file "${FN_CONFIG_PROJ2}"
 
+    DN_ORIG5=$(pwd)
     cd "${DN_RESULTS}/dataconf/"
     FN_TP="$(pwd)/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}.dat"
     generate_throughput_stats_file "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
@@ -119,10 +121,10 @@ case "${ARG_CMD}" in
     gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
     gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
     #rm -f "${FN_TP}"
-    cd - > /dev/null
+    cd "${DN_ORIG5}"
     cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
     convert_eps2png
-    cd - > /dev/null
+    cd "${DN_ORIG5}"
     ;;
 
 "pktstat")
@@ -130,9 +132,10 @@ case "${ARG_CMD}" in
     ;;
 "pkttrans")
     plot_pktdelay_trans "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}"
+    DN_ORIG6=$(pwd)
     cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
     convert_eps2png
-    cd - > /dev/null
+    cd "${DN_ORIG6}"
     ;;
 *)
     mr_trace "Error: unknown command: ${ARG_CMD}"

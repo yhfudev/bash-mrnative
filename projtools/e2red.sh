@@ -17,9 +17,10 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
+  cd "${DNORIG}"
   if [ "${FN}" = "" ]; then
     echo "${DN}"
   else

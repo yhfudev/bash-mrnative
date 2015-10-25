@@ -15,10 +15,15 @@ my_getpath () {
     FN=$(basename "${DN}")
     DN=$(dirname "${DN}")
   fi
+  DNORIG=$(pwd)
   cd "${DN}" > /dev/null 2>&1
   DN=$(pwd)
-  cd - > /dev/null 2>&1
-  echo "${DN}/${FN}"
+  cd "${DNORIG}"
+  if [ "${FN}" = "" ]; then
+    echo "${DN}"
+  else
+    echo "${DN}/${FN}"
+  fi
 }
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
@@ -42,6 +47,7 @@ run_one_ns2 () {
     PARAM_FN_CONFIG_PROJ2="$(my_getpath "${PARAM_FN_CONFIG_PROJ}")"
     read_config_file "${PARAM_FN_CONFIG_PROJ2}"
 
+    DN_ORIG2=$(pwd)
     cd       "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
     rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
     mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}"
@@ -66,7 +72,7 @@ run_one_ns2 () {
         rm -f mediumpacket.out*
     fi
 
-    cd - 1>&2 > /dev/null
+    cd "${DN_ORIG2}"
 }
 
 prepare_one_tcl_scripts () {
@@ -313,9 +319,10 @@ clean_one_tcldir () {
     if [ -d "${PARAM_DN_DEST}" ]; then
         FLG_ERR=0
         FLG_NONE=1
+        DN_ORIG3=$(pwd)
         cd       "${DN_TEST}"
         find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 10 rm -f
-        cd - > /dev/null
+        cd "${DN_ORIG3}"
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
@@ -337,6 +344,7 @@ check_one_tcldir () {
     if [ -d "${PARAM_DN_DEST}" ]; then
         FLG_ERR=0
         FLG_NONE=1
+        DN_ORIG4=$(pwd)
         cd       "${PARAM_DN_DEST}"
         FN_TPFLOW="CMTCPDS*.out"
         LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
@@ -364,7 +372,7 @@ check_one_tcldir () {
         if [ "$FLG_NONE" = "1" ]; then
             FLG_ERR=1
         fi
-        cd - > /dev/null
+        cd "${DN_ORIG4}"
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then

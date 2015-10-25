@@ -69,6 +69,7 @@ generate_throughput_stats_file () {
                 mr_trace "Warning: skip ${DN_TEST}"
                 continue
             fi
+            DN_ORIG8=$(pwd)
             cd "${DN_TEST}/"
             # get the list of the files
             FN_DAT_STATS="tmp-tp-stats-${DN_TEST}.data"
@@ -122,7 +123,7 @@ EOF
             fi
             VALS=$(calculate_stats 10000000000 0 < "${FN_DAT_STATS}")
             mr_trace "DEBUG == throughput stats data for ${DN_TEST} (cnt, min, max, sum, mean, stddev, mmr, jfi, cfi)=${VALS}"
-            cd - > /dev/null
+            cd "${DN_ORIG8}"
             if [ "${VALS}" = "" ]; then
                 mr_trace "Warning: not found throughput stat file for ${DN_TEST}: ${PARAM_FN_STAT}; tpflow=${PARAM_FN_TPFLOW}"
                 continue
@@ -166,6 +167,7 @@ plot_eachflow_throughput () {
         return
     fi
     mr_trace "cd ${PARAM_DN_TEST}"
+    DN_ORIG9=$(pwd)
     cd "${PARAM_DN_TEST}/"
 
     # GNUPLOT - the arguments for gnuplot plot command
@@ -191,7 +193,7 @@ set ylabel "${YLABEL}"
 EOF
     gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST}/fig-nodetp-${PARAM_FN_TEST}"
     plot_script "${FN_TMPGP}"
-    cd - > /dev/null
+    cd "${DN_ORIG9}"
 }
 
 #####################################################################
@@ -204,6 +206,7 @@ plot_pktdelay_queue () {
     PARAM_DN_NAME="$1"
     shift
 
+    DN_ORIG10=$(pwd)
     cd "${PARAM_DN_TEST}"
     # the packets queue service time distribution
     FNDAT="tmp-pktdelay-queue-${PARAM_DN_NAME}.dat.gz"
@@ -222,7 +225,7 @@ plot_pktdelay_queue () {
     else
         mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
-    cd - > /dev/null
+    cd "${DN_ORIG10}"
 }
 
 plot_pktdelay_trans () {
@@ -233,6 +236,7 @@ plot_pktdelay_trans () {
     PARAM_DN_NAME="$1"
     shift
 
+    DN_ORIG11=$(pwd)
     cd "${PARAM_DN_TEST}"
     # the packets translation time distribution
     FNDAT="tmp-pktdelay-trans-${PARAM_DN_NAME}.dat.gz"
@@ -252,5 +256,5 @@ plot_pktdelay_trans () {
     else
         mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
-    cd - > /dev/null
+    cd "${DN_ORIG11}"
 }
