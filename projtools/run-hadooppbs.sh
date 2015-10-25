@@ -40,7 +40,7 @@ DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
 mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
 
 #####################################################################
@@ -241,11 +241,12 @@ MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 #     <value>-Xmx768m</value>
 # </property>
 MR_JOB_MEM=2048
+MR_JOB_MEM=8192
 if (( ${MR_JOB_MEM} < ${MEM}/${CORES} )) ; then
     MR_JOB_MEM=$(( ${MEM}/${CORES} ))
 fi
-if (( ${MR_JOB_MEM} > ${MEM} )) ; then
-    MR_JOB_MEM=${MEM}
+if (( ${MR_JOB_MEM} * 3 > ${MEM} )) ; then
+    MR_JOB_MEM=$(( ${MEM} / 3 ))
 fi
 
 . ./mod-hadooppbs-setenv.sh
@@ -256,9 +257,9 @@ if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
     cp mapred-site.xml.template mapred-site.xml
     sed -i \
         -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
-        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*4   ))</value>|" \
+        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
         -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
-        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
+        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
         mapred-site.xml
     cd "${DN_ORIG7}"
 
@@ -277,11 +278,11 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
 
     sed -i \
         -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
-        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*4   ))</value>|" \
+        -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
         -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
-        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3   ))m</value>|" \
+        -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
         mapred-site.xml
-    cd "DN_ORIG7"
+    cd "${DN_ORIG7}"
 else
     mr_trace "unknown hadoop version"
     exit 1
