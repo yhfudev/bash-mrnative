@@ -298,6 +298,9 @@ sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh
 #sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
 
+#sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/dev/shm/|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/local_scratch/\$USER/|" "${DN_TOP}/config-sys.sh"
+
 #ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
 mr_trace qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
 qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
