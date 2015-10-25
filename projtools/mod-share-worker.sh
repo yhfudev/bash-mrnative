@@ -38,7 +38,7 @@ DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
 mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S") [$(basename $0)] $@" 1>&2
+    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
 
 #####################################################################

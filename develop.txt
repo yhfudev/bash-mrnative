@@ -20,3 +20,13 @@ darw each flow figures
 
 3. (reduce) draw aggregate figures, such as JFI, avg, agg
 
+
+
+
+-------------
+Palmetto Cluster Node Configuration:
+
+node1868:
+/dev/shm    32GB    
+/scratch1   85TB    W 28MB/s
+/home       5.7TB   W 333MB/s
