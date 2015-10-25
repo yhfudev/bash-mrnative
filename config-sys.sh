@@ -11,3 +11,7 @@ HDFF_NUM_CLONE=0
 #EXEC_NS2="$(which ns)"
 FN_LOG="/dev/null"
 #FN_LOG="mylog.txt"
+
+# the temporary directory for NS2 simulator
+DN_SCRATCH="/dev/shm"
+#DN_SCRATCH="/local_scratch/$USER/"

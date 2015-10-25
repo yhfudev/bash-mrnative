@@ -61,8 +61,10 @@ FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
 #source ${FN_CONFIG_PROJ2}
 read_config_file "${FN_CONFIG_PROJ2}"
 
+read_config_file "${DN_TOP}/config-sys.sh"
+
 #####################################################################
-DN_TMP_CREATECONF="$(my_getpath "${DN_TOP}/tmp-createconf")"
+DN_TMP_CREATECONF="$(my_getpath "${DN_SCRATCH}/tmp-createconf")"
 rm -rf "${DN_TMP_CREATECONF}"
 mkdir -p "${DN_TMP_CREATECONF}"
 for idx_num in $LIST_NODE_NUM ; do
@@ -75,5 +77,6 @@ for idx_num in $LIST_NODE_NUM ; do
 done
 mkdir -p "${DN_RESULTS}/dataconf/"
 cp -rp "${DN_TMP_CREATECONF}"/* "${DN_RESULTS}/dataconf/"
+rm -rf "${DN_TMP_CREATECONF}"
 
 mr_trace "DONE create config files"

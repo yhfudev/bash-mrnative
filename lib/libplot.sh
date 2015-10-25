@@ -112,7 +112,9 @@ plot \
 EOF
 
     gnuplot "${FN_GPOUT}.gp"
-    echo "$?"
+    RET=$?
+    rm -f "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
+    echo "$RET"
 }
 
 test_gnuplot_png () {
@@ -130,7 +132,9 @@ set title  font ",20" norotate
 plot [-30:20] sin(x*20)*atan(x)
 EOF
     gnuplot "${FN_GPOUT}.gp"
-    echo "$?"
+    RET=$?
+    rm -f "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
+    echo "$RET"
 }
 
 RET1=$(test_gnuplot_png 2>/dev/null)

@@ -30,6 +30,8 @@ DN_EXEC=$(dirname $(my_getpath "$0") )
 
 FN_TCL=main.tcl
 
+#DN_SCRATCH="/dev/shm"
+
 run_one_ns2 () {
     PARAM_DN_PARENT=$1
     shift
@@ -48,7 +50,16 @@ run_one_ns2 () {
     read_config_file "${PARAM_FN_CONFIG_PROJ2}"
 
     DN_ORIG2=$(pwd)
-    cd       "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+    DN_WORKING="$(uuidgen)-${PARAM_DN_TEST}"
+    mkdir -p "${DN_SCRATCH}"
+    if [ -d "${DN_SCRATCH}" ]; then
+        DN_WORKING="${DN_SCRATCH}/$(uuidgen)-${PARAM_DN_TEST}"
+        mkdir -p "${DN_WORKING}"
+        cp -rp "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"* "${DN_WORKING}"
+        cd "${DN_WORKING}"
+    else
+        cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+    fi
     rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
     mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}"
     if [ ! -x "${EXEC_NS2}" ]; then
@@ -73,6 +84,10 @@ run_one_ns2 () {
     fi
 
     cd "${DN_ORIG2}"
+    if [ -d "${DN_WORKING}" ]; then
+        cp -rp "${DN_WORKING}/"* "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        rm -rf "${DN_WORKING}"
+    fi
 }
 
 prepare_one_tcl_scripts () {
