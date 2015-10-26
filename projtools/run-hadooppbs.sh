@@ -165,7 +165,7 @@ if [ ! -x "$(which whatsfree)" ]; then
     exit 1
 fi
 checkqueuecfg > tmp-checkqueuecfg.txt
-MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (b[2]) max=b[2]; } }END{print max;}')
+MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | grep -v "gpus" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (max<b[2]) max=b[2]; } }END{print max;}')
 if (( $NEEDED_CORES > $MAX_CORES )) ; then
     NEEDED_CORES=$MAX_CORES
 fi
