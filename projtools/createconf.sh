@@ -82,11 +82,14 @@ mkdir -p "${DN_RESULTS}/dataconf/"
 #tar -cf - * | tar -C "${DN_RESULTS}/dataconf/" -xf -
 #cd "${DN_ORIG15}"
 
-rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/"
-rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/"
+mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${DN_RESULTS}/dataconf/"
+rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+if [ ! "$?" = "0" ]; then
+    mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${DN_RESULTS}/dataconf/"
+    exit 1
+fi
 
 rm -rf "${DN_TMP_CREATECONF}"
-
-
 
 mr_trace "DONE create config files"

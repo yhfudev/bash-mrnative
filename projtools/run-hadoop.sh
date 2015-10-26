@@ -43,36 +43,64 @@ mr_trace () {
 #####################################################################
 
 # use scratch
-#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${DN_RESULTS}|" "/config-sys.sh"
+DN_RESULTS="$(my_getpath "${DN_EXEC}/results-mr/")"
+#DN_RESULTS="$(pwd)/result-mr"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${DN_RESULTS}|" "${DN_TOP}/config-sys.sh"
 
 #source "${DN_TOP}/config-sys.sh"
 #DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
-DN_RESULTS="$(my_getpath "${DN_EXEC}/results-mr/")"
 
 mr_trace "DN_RESULTS=$DN_RESULTS"
 
+
+start_hadoop () {
+    mr_trace "Start all Hadoop daemons"
+    if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
+        ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
+
+    elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
+        ${HADOOP_HOME}/bin/start-all.sh
+
+    else
+        mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
+        exit 1
+    fi
+    #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
+    echo
+    jps
+
+    mr_trace "wait for hadoop ready, sleep 10 ..."
+    sleep 10
+}
+
+stop_hadoop () {
+    mr_trace "Stop all Hadoop daemons"
+    jps
+    if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
+        ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
+
+    elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
+        ${HADOOP_HOME}/bin/stop-all.sh
+
+    else
+        mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
+        exit 1
+    fi
+    echo
+    jps
+}
+
 #####################################################################
+stop_hadoop
+#exit 0 # debug
 jps | grep NameNode
 if [ "$?" = "1" ]; then
-#### Start the Hadoop cluster
-mr_trace "Start all Hadoop daemons"
-if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
-  ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
-
-elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
-  ${HADOOP_HOME}/bin/start-all.sh
-
-else
-  mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
-  exit 1
+    #### Start the Hadoop cluster
+    start_hadoop
 fi
-#${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-echo
-jps
-
-mr_trace "wait for hadoop ready, sleep 10 ..."
-sleep 10
-fi
+#exit 0 # debug
+#hadoop dfsadmin -safemode leave
+#hdfs dfsadmin -safemode leave
 
 #### Run your jobs here
 mr_trace "Run some test Hadoop jobs"
@@ -86,20 +114,7 @@ echo
 mapred_main
 
 jps | grep NameNode
-#if [ "$?" = "0" ]; then
-if [ 0 = 1 ]; then
-mr_trace "Stop all Hadoop daemons"
-jps
-if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
-  ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
-
-elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
-  ${HADOOP_HOME}/bin/stop-all.sh
-
-else
-  mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
-  exit 1
-fi
-echo
-jps
+if [ "$?" = "0" ]; then
+#if [ 0 = 1 ]; then
+    stop_hadoop
 fi

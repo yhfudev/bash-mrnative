@@ -93,21 +93,41 @@ rm -rf ${HADOOP_HOME}/logs/*
 mr_trace "Set up the configurations for myHadoop"
 ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -n ${PBS_NUM_NODES} -c ${HADOOP_CONF_DIR} -s /local_scratch/$USER/$PBS_JOBID
 
+start_hadoop () {
+    mr_trace "Start all Hadoop daemons"
+    if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
+        ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
+
+    elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
+        ${HADOOP_HOME}/bin/start-all.sh
+
+    else
+        mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
+        exit 1
+    fi
+    #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
+    echo
+    jps
+}
+stop_hadoop () {
+    mr_trace "Stop all Hadoop daemons"
+    jps
+    if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
+        ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
+
+    elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
+        ${HADOOP_HOME}/bin/stop-all.sh
+
+    else
+        mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
+        exit 1
+    fi
+    echo
+    jps
+}
+
 #### Start the Hadoop cluster
-mr_trace "Start all Hadoop daemons"
-if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
-    ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
-
-elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
-    ${HADOOP_HOME}/bin/start-all.sh
-
-else
-    mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
-    exit 1
-fi
-#${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-echo
-jps
+start_hadoop
 
 mr_trace "wait for hadoop ready, sleep 50 ..."
 sleep 50
@@ -126,20 +146,7 @@ mapred_main
 sleep $(( 10 * 60 ))
 
 #### Stop the Hadoop cluster
-mr_trace "Stop all Hadoop daemons"
-jps
-if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
-    ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
-
-elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
-    ${HADOOP_HOME}/bin/stop-all.sh
-
-else
-    mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
-    exit 1
-fi
-echo
-jps
+stop_hadoop
 
 #### Clean up the working directories after job completion
 mr_trace "Clean up"

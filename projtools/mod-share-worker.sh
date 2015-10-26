@@ -73,9 +73,13 @@ mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 mr_trace "PROJ_HOME=${PROJ_HOME}"
 
 #####################################################################
-EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR}"
+if [ -d "${HADOOP_HOME}" ]; then
+    EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR}"
+else
+    EXEC_HADOOP=$(which hadoop)
+fi
 
-#HDJAR=${HADOOP_HOME}/contrib/streaming/hadoop-streaming-1.2.1.jar
+HDJAR=/usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar
 if [ ! -f "${HDJAR}" ]; then
     HDJAR=${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar
 fi
@@ -155,17 +159,35 @@ FN_MAP="${DN_PREFIX}/tmp/tmpe1map.sh"
 #FN_RED="${DN_PREFIX}/tmp/tmpe1red.sh"
 generate_script_4hadoop "${DN_EXEC}/e1map.sh" "${FN_MAP}"
 #generate_script_4hadoop "${DN_EXEC}/e1red.sh" "${FN_RED}"
+if [ ! -f "${FN_MAP}" ]; then
+    mr_trace "Error: not found exec file: ${FN_MAP}"
+    return
+fi
+
+DN_PREFIX_HDFS=/user/$USER
+${EXEC_HADOOP} fs -ls "${DN_PREFIX_HDFS}"
+if [ ! "$?" = "0" ]; then
+    mr_trace "not found user's location: ${DN_PREFIX_HDFS}"
+    DN_PREFIX_HDFS=
+fi
 
 STAGE=1
-DN_INPUT_HDFS=/hadoopffmpeg_in${STAGE}
-DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
+DN_INPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_in${STAGE}"
+DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
 
 ${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT_HDFS}"
+${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
+if [ ! "$?" = "0" ]; then
+    mr_trace "Warning: failed to hadoop mkdir ${DN_INPUT_HDFS}, try again ..."
+    hadoop dfsadmin -safemode leave
+    hdfs dfsadmin -safemode leave
+fi
 ${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
     mr_trace "Error in hadoop mkdir ${DN_INPUT_HDFS}"
     return
 fi
+${EXEC_HADOOP} fs -rm -f "${DN_INPUT_HDFS}/input.txt"
 ${EXEC_HADOOP} fs -put "${DN_INPUT}/"* "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
     mr_trace "Error in put data: ${DN_INPUT_HDFS}"
@@ -187,8 +209,12 @@ ${EXEC_HADOOP} jar ${HDJAR} \
     -D num.key.fields.for.partition=6 \
     -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
     -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
-    -mapper /bin/cat \
-    $(NULL)
+    -reducer /bin/cat \
+    ${NULL}
+if [ ! "$?" = "0" ]; then
+    mr_trace "Error in hadoop stage: ${STAGE}"
+    return
+fi
 fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
@@ -201,14 +227,20 @@ ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/red
 echo
 TM_STAGE1=$(date +%s)
 
-
 #####################################################################
 # use hundreds of files instead of one small file:
+if [ "${HDFF_TOTAL_NODES}" = "" ]; then
+    HDFF_TOTAL_NODES=0
+fi
+if (( ${HDFF_TOTAL_NODES} < 1 )) ; then
+    HDFF_TOTAL_NODES=10
+fi
+
 DNORIG2=$(pwd)
 cd "${DN_PREFIX}/${STAGE}/"
 rm -f file*.txt
 cat "redout.txt" \
-    | awk 'BEGIN{cnt=0;}{cnt ++; print $0 > "file" cnt ".txt"}'
+    | awk -v DUP=${HDFF_TOTAL_NODES} 'BEGIN{cnt=0;}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
 cd "${DNORIG2}"
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
@@ -221,11 +253,19 @@ FN_MAP="${DN_PREFIX}/tmp/tmpe2map.sh"
 FN_RED="${DN_PREFIX}/tmp/tmpe2red.sh"
 generate_script_4hadoop "${DN_EXEC}/e2map.sh" "${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e2red.sh" "${FN_RED}"
+if [ ! -f "${FN_RED}" ]; then
+    mr_trace "Error: not found exec file: ${FN_RED}"
+    return
+fi
+if [ ! -f "${FN_MAP}" ]; then
+    mr_trace "Error: not found exec file: ${FN_MAP}"
+    return
+fi
 
 DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
 
 STAGE=2
-DN_OUTPUT_HDFS=/hadoopffmpeg_out${STAGE}
+DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
 
 ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
@@ -245,7 +285,11 @@ ${EXEC_HADOOP} jar ${HDJAR} \
     -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
     -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
     -file "${FN_RED}" -reducer $(basename "${FN_RED}") \
-    $(NULL)
+    ${NULL}
+if [ ! "$?" = "0" ]; then
+    mr_trace "Error in hadoop stage: ${STAGE}"
+    return
+fi
 fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"

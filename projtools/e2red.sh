@@ -211,6 +211,8 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
 
   *)
     mr_trace "Error: unknown command: ${MR_CMD}"
+    # throw the command to output again
+    echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     ERR=1
     continue
     ;;

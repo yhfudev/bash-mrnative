@@ -121,7 +121,14 @@ worker_check_run() {
     RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
-        prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        # check the result
+        RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+        if [ ! "$RET" = "" ]; then
+            # error
+            echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
+        else
+            prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+        fi
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -217,7 +224,9 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
     ;;
 
   *)
-    mr_trace "Error: unknown type: ${MR_CMD}" 1>&2
+    mr_trace "Error: unknown type: ${MR_CMD}"
+    # throw the command to output again
+    echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     ERR=1
     ;;
   esac

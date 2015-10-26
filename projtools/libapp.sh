@@ -55,8 +55,14 @@ run_one_ns2 () {
     if [ -d "${DN_SCRATCH}" ]; then
         DN_WORKING="${DN_SCRATCH}/$(uuidgen)-${PARAM_DN_TEST}"
         mkdir -p "${DN_WORKING}"
-        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/"
-        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/"
+        mr_trace "run ns2: rsync from scratch to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
+        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
+        rsync -av "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
+        if [ ! "$?" = "0" ]; then
+            cd "${DN_ORIG2}"
+            mr_trace "Error: copy temp dir: $PARAM_DN_TEST to ${DN_WORKING}/"
+            return
+        fi
         cd "${DN_WORKING}"
     else
         cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
@@ -86,8 +92,13 @@ run_one_ns2 () {
 
     cd "${DN_ORIG2}"
     if [ -d "${DN_WORKING}" ]; then
-        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
-        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        mr_trace "run ns2: rsync from working to scratch dir: ${DN_WORKING}/ --> ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
+        rsync -av "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
+        if [ ! "$?" = "0" ]; then
+            mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
+            return
+        fi
         rm -rf "${DN_WORKING}"
     fi
 }

@@ -77,6 +77,8 @@ convert_avail_settings () {
 }
 
 # find the fit settings
+# ARG 1: the # of task
+# ARG 2: the required memory for each task, GB
 get_optimized_settings() {
     PARAM_MAXCORES=$1
     shift
@@ -158,6 +160,10 @@ mr_trace "needed cores=$NEEDED_CORES"
 #exit 0 # debug
 
 mr_trace "checking cores quota ..."
+if [ ! -x "$(which whatsfree)" ]; then
+    mr_trace "Error: not found 'checkqueuecfg'!"
+    exit 1
+fi
 checkqueuecfg > tmp-checkqueuecfg.txt
 MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (b[2]) max=b[2]; } }END{print max;}')
 if (( $NEEDED_CORES > $MAX_CORES )) ; then
@@ -165,6 +171,10 @@ if (( $NEEDED_CORES > $MAX_CORES )) ; then
 fi
 
 mr_trace "checking avail cores ..."
+if [ ! -x "$(which whatsfree)" ]; then
+    mr_trace "Error: not found 'whatsfree'!"
+    exit 1
+fi
 # get the free nodes list: (cores, mem, num)
 whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
     | awk 'BEGIN{cnt=0;}{nodes=$8; cores=$19; mem=$21; if (nodes > 0) print cores " " (0+mem) " " nodes;}END{}' \
@@ -178,6 +188,7 @@ if [ "$A" = "" ]; then
 fi
 REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 2) "gb";}')
 CORES=$(echo $A | awk '{print $1;}')
+NODES=$(echo $A | awk '{print $3;}')
 MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 
 # in this block, you need set two files in the hadoop 2.x config files
@@ -242,6 +253,7 @@ MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 # </property>
 MR_JOB_MEM=2048
 MR_JOB_MEM=8192
+MR_JOB_MEM=512
 if (( ${MR_JOB_MEM} < ${MEM}/${CORES} )) ; then
     MR_JOB_MEM=$(( ${MEM}/${CORES} ))
 fi
@@ -292,17 +304,23 @@ mr_trace "needed cores=$NEEDED_CORES"
 
 # set cores in config-sys.sh file
 sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/config-sys.sh"
 
 # use scratch
 #sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
 #sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
 
+
 #sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/dev/shm/|" "${DN_TOP}/config-sys.sh"
 sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/local_scratch/\$USER/|" "${DN_TOP}/config-sys.sh"
 
 #ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
 mr_trace qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
+if [ ! -x "$(which qsub)" ]; then
+    mr_trace "Error: not found 'qsub'!"
+    exit 1
+fi
 qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
 
 mr_trace "waitting for queueing ..."

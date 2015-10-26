@@ -2,11 +2,14 @@
 # config file for system
 
 # the outfile directory
-HDFF_DN_OUTPUT=results-mr
+HDFF_DN_OUTPUT=/home/yhfu/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns2testscripts/mapreduce-ns2docsis/projtools/results-mr
 
 # how many running processes in each node
 # 0 -- auto detect the CPU cores, use about 5/7 of them
 HDFF_NUM_CLONE=0
+
+# total number of nodes (machines) in the system, default = 1
+HDFF_TOTAL_NODES=1
 
 #EXEC_NS2="$(which ns)"
 FN_LOG="/dev/null"
@@ -15,3 +18,4 @@ FN_LOG="/dev/null"
 # the temporary directory for NS2 simulator
 DN_SCRATCH="/dev/shm"
 #DN_SCRATCH="/local_scratch/$USER/"
+
