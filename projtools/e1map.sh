@@ -48,17 +48,22 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
 fi
 #####################################################################
 
+EXEC_NS2="$(my_getpath "${DN_EXEC}/../../ns")"
+
 DN_COMM="$(my_getpath "${DN_EXEC}/common")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib")"
 
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libplot.sh
+source ${DN_LIB}/libns2figures.sh
+source ${DN_EXEC}/libapp.sh
 
 DN_PARENT="$(my_getpath ".")"
 
-#read_config_file "${DN_PARENT}/config.conf"
-source ${DN_TOP}/config-sys.sh
+#source ${DN_TOP}/config-sys.sh
+read_config_file "${DN_TOP}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
 
 check_global_config
 
@@ -76,13 +81,13 @@ worker_create_tcl_config () {
     shift
 
     if [ "${HDFF_FUNCTION}" = "plot" ]; then
-        ${DN_EXEC}/createconf.sh "plot" "${PARAM_CONFIG_FILE}"
+        prepare_all_tcl_scripts "plot" "${PARAM_CONFIG_FILE}"
     elif [ "${HDFF_FUNCTION}" = "check" ]; then
-        ${DN_EXEC}/createconf.sh "check" "${PARAM_CONFIG_FILE}"
+        prepare_all_tcl_scripts "check" "${PARAM_CONFIG_FILE}"
     elif [ "${HDFF_FUNCTION}" = "clean" ]; then
-        ${DN_EXEC}/createconf.sh "clean" "${PARAM_CONFIG_FILE}"
+        prepare_all_tcl_scripts "clean" "${PARAM_CONFIG_FILE}"
     else
-        ${DN_EXEC}/createconf.sh "sim" "${PARAM_CONFIG_FILE}"
+        prepare_all_tcl_scripts "sim" "${PARAM_CONFIG_FILE}"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}

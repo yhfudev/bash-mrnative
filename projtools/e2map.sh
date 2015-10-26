@@ -95,7 +95,7 @@ worker_check_ns2() {
     RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         # error
-        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
+        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_SCHE}\t${PARAM_NUM}"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -129,7 +129,7 @@ worker_check_run() {
         RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
         if [ ! "$RET" = "" ]; then
             # error
-            echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
+            echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_SCHE}\t${PARAM_NUM}"
         else
             prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
         fi
@@ -187,6 +187,7 @@ worker_clean() {
 
     DN_ORIG1=$(pwd)
     cd "${DN_RESULTS}/figures/${PARAM_PREFIX}"
+    mr_trace "remove file tmp-*, fig-* from ${DN_RESULTS}/figures/${PARAM_PREFIX}"
     find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 5 rm -f
     find . -maxdepth 1 -type f -name "fig-*" | xargs -n 5 rm -f
     cd "${DN_ORIG1}"
@@ -229,6 +230,17 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
 
   clean)
     worker_clean "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
+    PID_CHILD=$!
+    mp_add_child_check_wait ${PID_CHILD}
+    ;;
+
+  error-run)
+    mr_trace "regenerate the TCL scripts for ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE}"
+    DN_TMP_CREATECONF="$(my_getpath "${DN_SCRATCH}/tmp-createconf")"
+    prepare_one_tcl_scripts "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+
+    mr_trace "redo unfinished run: ${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
+    worker_check_ns2 "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;

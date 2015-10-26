@@ -276,40 +276,63 @@ if [ ! -f "${FN_RED}" ]; then
     return
 fi
 
-DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
-
-STAGE=2
-DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
-
-${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
 if [ 1 = 1 ]; then
-mr_trace "Stage 2 ..."
-${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
-#-D mapred.reduce.tasks=1
-#-D mapred.reduce.tasks=0
-#-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT_HDFS0} | tail -n +2 | wc -l)
-#-mapper  org.apache.hadoop.mapred.lib.IdentityMapper
-#-mapper /bin/cat
-#-reducer org.apache.hadoop.mapred.lib.IdentityReducer
-${EXEC_HADOOP} jar ${HDJAR} \
-    -D mapreduce.task.timeout=0 \
-    -D stream.num.map.output.key.fields=4 \
-    -D num.key.fields.for.partition=2 \
-    -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
-    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
-    -file "${FN_RED}" -reducer $(basename "${FN_RED}") \
-    ${NULL}
-if [ ! "$?" = "0" ]; then
-    mr_trace "Error in hadoop stage: ${STAGE}"
-    return
-fi
-fi
+LINES_PRE=0
+STAGE2_RUN=0
+STAGE2_RUN_MAX=10
 
-${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
-mkdir -p "${DN_PREFIX}/${STAGE}/"
-if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
-${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
+    STAGE=$(( $STAGE + 1 ))
+
+    DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
+
+    DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
+
+    ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
+
+    mr_trace "Stage 2 ..."
+    ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
+    #-D mapred.reduce.tasks=1
+    #-D mapred.reduce.tasks=0
+    #-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT_HDFS0} | tail -n +2 | wc -l)
+    #-mapper  org.apache.hadoop.mapred.lib.IdentityMapper
+    #-mapper /bin/cat
+    #-reducer org.apache.hadoop.mapred.lib.IdentityReducer
+    ${EXEC_HADOOP} jar ${HDJAR} \
+        -D mapreduce.task.timeout=0 \
+        -D stream.num.map.output.key.fields=4 \
+        -D num.key.fields.for.partition=2 \
+        -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
+        -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
+        -file "${FN_RED}" -reducer $(basename "${FN_RED}") \
+        ${NULL}
+    if [ ! "$?" = "0" ]; then
+        mr_trace "Error in hadoop stage: ${STAGE}"
+        return
+    fi
+
+    ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
+    mkdir -p "${DN_PREFIX}/${STAGE}/"
+    if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
+    ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+
+    STAGE2_RUN=$(( $STAGE2_RUN + 1 ))
+    LINES=$(cat "${DN_PREFIX}/${STAGE}/redout.txt" | wc -l)
+    if (( $LINES < 1 )) ; then
+        mr_trace "finished after ${STAGE2_RUN} tries."
+        break
+    fi
+    if (( $LINES < $LINES_PRE )) ; then
+        STAGE2_RUN=0
+        mr_trace "got some advantages at stage ${STAGE}."
+    fi
+    mr_trace "Try to do stage ${STAGE} for the next: ${STAGE2_RUN}."
+done
+if (( $LINES > 0 )) ; then
+    mr_trace "Warning: Stage 2 error after ${STAGE2_RUN} tries."
+fi
+fi
 
 echo
 TM_STAGE2=$(date +%s)

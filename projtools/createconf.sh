@@ -45,8 +45,11 @@ source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
-source "${DN_TOP}/config-sys.sh"
+#source "${DN_TOP}/config-sys.sh"
+read_config_file "${DN_TOP}/config-sys.sh"
 DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+
+check_global_config
 
 #####################################################################
 MR_COMMAND=$1
@@ -60,8 +63,6 @@ fi
 FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
 #source ${FN_CONFIG_PROJ2}
 read_config_file "${FN_CONFIG_PROJ2}"
-
-read_config_file "${DN_TOP}/config-sys.sh"
 
 #####################################################################
 DN_TMP_CREATECONF="$(my_getpath "${DN_SCRATCH}/tmp-createconf")"
@@ -83,13 +84,13 @@ mkdir -p "${DN_RESULTS}/dataconf/"
 #cd "${DN_ORIG15}"
 
 mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${DN_RESULTS}/dataconf/"
-rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
-rsync -av "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-1.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-2.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
 if [ ! "$?" = "0" ]; then
     mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${DN_RESULTS}/dataconf/"
     exit 1
 fi
 
-rm -rf "${DN_TMP_CREATECONF}"
+#rm -rf "${DN_TMP_CREATECONF}"
 
 mr_trace "DONE create config files"
