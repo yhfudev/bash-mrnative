@@ -45,9 +45,6 @@ mr_trace () {
 
 PROGNAME=$(basename "$0")
 
-source "${DN_TOP}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
-mr_trace "DN_RESULTS=$DN_RESULTS"
 mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 
 #####################################################################
@@ -59,6 +56,10 @@ if [ ! "$?" = "0" ]; then mr_trace "$(basename $0) Error in mkdir $PROJ_HOME" ; 
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
 mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
+
+source "${PROJ_HOME}/config-sys.sh"
+DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+mr_trace "DN_RESULTS=$DN_RESULTS"
 
 # detect if the DN_EXEC is real directory of the binary code
 # this is for PBS/HPC environment
@@ -236,7 +237,7 @@ if [ "${HDFF_TOTAL_NODES}" = "" ]; then
     HDFF_TOTAL_NODES=0
 fi
 if (( ${HDFF_TOTAL_NODES} < 1 )) ; then
-    HDFF_TOTAL_NODES=10
+    HDFF_TOTAL_NODES=1
 fi
 if [ "${HDFF_NUM_CLONE}" = "" ]; then
     HDFF_NUM_CLONE=0
@@ -250,7 +251,7 @@ DNORIG2=$(pwd)
 cd "${DN_PREFIX}/${STAGE}/"
 rm -f file*.txt
 cat "redout.txt" \
-    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP*CLONE/4);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
+    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
 cd "${DNORIG2}"
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"

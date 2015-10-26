@@ -57,21 +57,23 @@ convert_avail_settings () {
     MYMEM=0
     MYNODES=0
     while read CORES MEM NODES ; do
-    if [ ! "${MYCORES}" = "${CORES}" ]; then
-        echo "${MYCORES} ${MYMEM} ${MYNODES}"
-        MYCORES=${CORES}
-        MYMEM=${MEM}
-        MYNODES=${NODES}
-    elif [ ! "${MYMEM}" = "${MEM}" ]; then
-        echo "${MYCORES} ${MYMEM} ${MYNODES}"
-        MYMEM=${MEM}
-        MYNODES=$(( ${MYNODES} + ${NODES} ))
-    else
-        MYMEM=${MEM}
-        MYNODES=$(( ${MYNODES} + ${NODES} ))
-    fi
+        if [ ! "${MYCORES}" = "${CORES}" ]; then
+            if (( ${MYCORES} > 0 )) ; then
+                echo "${MYCORES} ${MYMEM} ${MYNODES}"
+            fi
+            MYCORES=${CORES}
+            MYMEM=${MEM}
+            MYNODES=${NODES}
+        elif [ ! "${MYMEM}" = "${MEM}" ]; then
+            echo "${MYCORES} ${MYMEM} ${MYNODES}"
+            MYMEM=${MEM}
+            MYNODES=$(( ${MYNODES} + ${NODES} ))
+        else
+            MYMEM=${MEM}
+            MYNODES=$(( ${MYNODES} + ${NODES} ))
+        fi
     done
-    if [ ! "${MYCORES}" = "0" ]; then
+    if (( ${MYCORES} > 0 )) ; then
         echo "${MYCORES} ${MYMEM} ${MYNODES}"
     fi
 }
@@ -94,9 +96,35 @@ get_optimized_settings() {
     if (( ${PARAM_MAXCORES} < 1 )) ; then
         PARAM_MAXCORES=1
     fi
+
+    cat << EOF > tmp-opt-cores.awk
+BEGIN{
+    fit=0; avail_c=0; avail_m=0; avail_n=0;
+}{
+    cores=\$1; mem=\$2; nodes=\$3;
+    if (fit==0 && avail_c*avail_n <= cores*nodes && cores > 0 && mem/cores >= MPC) {
+        avail_c = cores;
+        avail_n = nodes;
+        avail_m = mem;
+    }
+    if (fit==0 && MAXC <= cores * nodes && cores > 0 && MC <= mem / cores) {
+        avail_c = cores;
+        avail_n = nodes;
+        avail_m = mem;
+        fit=1;
+    }
+}END{
+    if (avail_c * avail_n < MAXC) {
+        print avail_c " " avail_m " " avail_n;
+    } else {
+        # cores, mem, nodes
+        printf("%d %d %d\n", avail_c, avail_m, (MAXC + avail_c - 1) / avail_c);
+    }
+}
+EOF
+
     #echo "ARGS: '${PARAM_MAXCORES} ${PARAM_MEM_PER_CORE}'"
-    convert_avail_settings \
-        | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE 'BEGIN{fit=0; avail_c=0; avail_m=0; avail_n=0;}{cores=$1; mem=$2; nodes=$3; if (fit==0 && avail_c*avail_n <= cores*nodes && cores > 0 && mem/cores >= MPC) {avail_c = cores; avail_n = nodes; avail_m = mem;} if (fit==0 && MAXC <= cores * nodes && cores > 0 && MC <= mem / cores) {avail_c = cores; avail_n = nodes; avail_m = mem; fit=1;} }END{if (avail_c * avail_n < MAXC) {print avail_c " " avail_m " " avail_n;} else {printf("%d %d %d\n", avail_c, avail_m, (MAXC + avail_c - 1) / avail_c);}}'
+    convert_avail_settings | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE -f tmp-opt-cores.awk
 }
 
 # get # of simulation tasks from a config file
@@ -191,6 +219,20 @@ CORES=$(echo $A | awk '{print $1;}')
 NODES=$(echo $A | awk '{print $3;}')
 MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 
+# set cores in config-sys.sh file
+sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/config-sys.sh"
+
+# use scratch
+#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
+#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
+
+#sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/dev/shm/|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/local_scratch/\$USER/|" "${DN_TOP}/config-sys.sh"
+
+# set the vcores to 1 to let bash script generate multiple processes.
+CORES=1
 # in this block, you need set two files in the hadoop 2.x config files
 # mapred-site.xml.template
 # <property>
@@ -282,6 +324,7 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
     cd "${HADOOP_HOME}/etc/hadoop"
     cp mapred-site.xml.template mapred-site.xml
     cp   yarn-site.xml.template   yarn-site.xml
+
     sed -i \
         -e "s|<value>3072</value>|<value>${MEM}</value>|" \
         -e  "s|<value>256</value>|<value>$(( ${MEM}/${CORES} ))</value>|" \
@@ -301,19 +344,6 @@ else
 fi
 
 mr_trace "needed cores=$NEEDED_CORES"
-
-# set cores in config-sys.sh file
-sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/config-sys.sh"
-
-# use scratch
-#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
-#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
-
-
-#sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/dev/shm/|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/local_scratch/\$USER/|" "${DN_TOP}/config-sys.sh"
 
 #ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
 mr_trace qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
