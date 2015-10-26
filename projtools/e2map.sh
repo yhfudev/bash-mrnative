@@ -70,8 +70,8 @@ source ${DN_EXEC}/libapp.sh
 mp_new_session
 
 #####################################################################
-# run ns2
-worker_run_ns2() {
+# check ns2
+worker_check_ns2() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"
@@ -91,8 +91,12 @@ worker_run_ns2() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
-    prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+    mr_trace "check_one_tcldir '${DN_RESULTS}/dataconf/${DN_TEST}' ..."
+    RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+    if [ ! "$RET" = "" ]; then
+        # error
+        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
+    fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -213,6 +217,12 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
 
   plot)
     worker_plotonly "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
+    PID_CHILD=$!
+    mp_add_child_check_wait ${PID_CHILD}
+    ;;
+
+  check)
+    worker_check_ns2 "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;

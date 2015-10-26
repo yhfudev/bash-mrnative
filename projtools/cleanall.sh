@@ -28,4 +28,4 @@ my_getpath () {
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
-HDFF_FUNCTION="clean" run-sh1.sh
+HDFF_FUNCTION="clean" ${DN_EXEC}/run-sh1.sh

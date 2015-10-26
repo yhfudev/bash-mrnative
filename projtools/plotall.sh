@@ -28,4 +28,4 @@ my_getpath () {
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
-HDFF_FUNCTION="plot" run-sh1.sh
+HDFF_FUNCTION="plot" ${DN_EXEC}/run-sh1.sh

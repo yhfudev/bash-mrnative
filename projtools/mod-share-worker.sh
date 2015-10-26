@@ -145,6 +145,7 @@ DN_PREFIX=${DN_RESULTS}/mapred-data/output
 
 if [ 1 = 1 ]; then
     # genrate input file:
+    mr_trace "generating input file ..."
     mkdir -p ${DN_INPUT}
     if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $DN_INPUT" ; fi
     rm -f ${DN_INPUT}/*
@@ -157,6 +158,7 @@ fi
 
 FN_MAP="${DN_PREFIX}/tmp/tmpe1map.sh"
 #FN_RED="${DN_PREFIX}/tmp/tmpe1red.sh"
+mr_trace "generating exec file: ${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e1map.sh" "${FN_MAP}"
 #generate_script_4hadoop "${DN_EXEC}/e1red.sh" "${FN_RED}"
 if [ ! -f "${FN_MAP}" ]; then
@@ -229,18 +231,26 @@ TM_STAGE1=$(date +%s)
 
 #####################################################################
 # use hundreds of files instead of one small file:
+mr_trace "origin HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
 if [ "${HDFF_TOTAL_NODES}" = "" ]; then
     HDFF_TOTAL_NODES=0
 fi
 if (( ${HDFF_TOTAL_NODES} < 1 )) ; then
     HDFF_TOTAL_NODES=10
 fi
+if [ "${HDFF_NUM_CLONE}" = "" ]; then
+    HDFF_NUM_CLONE=0
+fi
+if (( ${HDFF_NUM_CLONE} < 4 )) ; then
+    HDFF_NUM_CLONE=4
+fi
+mr_trace "adjusted HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
 
 DNORIG2=$(pwd)
 cd "${DN_PREFIX}/${STAGE}/"
 rm -f file*.txt
 cat "redout.txt" \
-    | awk -v DUP=${HDFF_TOTAL_NODES} 'BEGIN{cnt=0;}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
+    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP*CLONE/4);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
 cd "${DNORIG2}"
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
@@ -251,14 +261,18 @@ ${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"
 
 FN_MAP="${DN_PREFIX}/tmp/tmpe2map.sh"
 FN_RED="${DN_PREFIX}/tmp/tmpe2red.sh"
+
+mr_trace "generating exec file: ${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e2map.sh" "${FN_MAP}"
+if [ ! -f "${FN_MAP}" ]; then
+    mr_trace "Error: not found exec file: ${FN_MAP}"
+    return
+fi
+
+mr_trace "generating exec file: ${FN_RED}"
 generate_script_4hadoop "${DN_EXEC}/e2red.sh" "${FN_RED}"
 if [ ! -f "${FN_RED}" ]; then
     mr_trace "Error: not found exec file: ${FN_RED}"
-    return
-fi
-if [ ! -f "${FN_MAP}" ]; then
-    mr_trace "Error: not found exec file: ${FN_MAP}"
     return
 fi
 

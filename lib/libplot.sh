@@ -113,7 +113,7 @@ EOF
 
     gnuplot "${FN_GPOUT}.gp"
     RET=$?
-    rm -f "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
+    rm -f "${FN_GPOUT}.dat.gz" "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
     echo "$RET"
 }
 
@@ -169,7 +169,7 @@ plot_script () {
         "${EXEC_PLOT}" "${FN_TMPGP}"
         if [ "$?" = "1" ]; then
             NEWNAME="${FN_TMPGP}$(date +%s)"
-            mr_trace "Warning: in process file ${FN_TMPGP}, changed to ${NEWNAME}."
+            mr_trace "Warning: error in process file ${FN_TMPGP}, changed to ${NEWNAME}."
             mv "${FN_TMPGP}" "${NEWNAME}"
         fi
     else
@@ -533,7 +533,7 @@ EOF
     if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
         mr_trace "Unable to plot CDF file: ${PARAM_FN_OUT_BASE}"
     else
-cat >> "${FN_TMPGP}" << EOF
+        cat >> "${FN_TMPGP}" << EOF
 # save to eps
 set terminal postscript eps color enhanced
 set output "${PARAM_FN_OUT_BASE}-cdf.eps"
@@ -630,31 +630,31 @@ if [ 0 = 1 ]; then
     N=$(echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${INTERVAL} '{print int(A*150/B + 1)}')
     MAX_INTERVAL=$( ${EXEC_AWK} -v N=${N} -v MAX=${MAX_INTERVAL} 'BEGIN{W=MAX/N} {i=int(($1+0.5)/W); a[i]=a[i]+1;} END {wl=MAX*0.9; sum=0; for (i = 0; i < N; i ++) {sum=sum+a[i]; if (sum > wl) {break}} print W*i*2 }' ${PARAM_FN_INTERVALS_2} )
     #mr_trace "DEBUG: ==== 0 MAX_INTERVAL=${MAX_INTERVAL}"
-    mr_trace "DEBUG: ==== 0 MIN_INTERVAL=${MIN_INTERVAL}"
+    #mr_trace "DEBUG: ==== 0 MIN_INTERVAL=${MIN_INTERVAL}"
 
     # TCP LAN ACK should be in 0.3 second
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{if (A < 0.035) {print 1} else {print 0}}'`" = "1" ]; then
         MAX_INTERVAL=0.035
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        mr_trace "DEBUG: ==== 1 MIN_INTERVAL=${MIN_INTERVAL}"
+        #mr_trace "DEBUG: ==== 1 MIN_INTERVAL=${MIN_INTERVAL}"
     fi
 
     # 如果调整后的 MAX_INTERVAL 大于最大值，则调整成最大值，同时相应设置MIN_INTERVAL
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${MAX_INTERVAL_BAK} '{if (A > B) {print 1} else {print 0}}'`" = "1" ]; then
-        #echo "DEBUG: ==== 2 MAX_INTERVAL change from ${MAX_INTERVAL} to ${MAX_INTERVAL_BAK}" 1>&2
+        #mr_trace "DEBUG: ==== 2 MAX_INTERVAL change from ${MAX_INTERVAL} to ${MAX_INTERVAL_BAK}"
         MAX_INTERVAL=${MAX_INTERVAL_BAK}
-        mr_trace "DEBUG: ==== 2 adjusted MAX_INTERVAL=${MAX_INTERVAL}"
+        #mr_trace "DEBUG: ==== 2 adjusted MAX_INTERVAL=${MAX_INTERVAL}"
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        mr_trace "DEBUG: ==== 2 adjusted MIN_INTERVAL=${MIN_INTERVAL}"
+        #mr_trace "DEBUG: ==== 2 adjusted MIN_INTERVAL=${MIN_INTERVAL}"
     fi
 
     # 如果调整后的 MAX_INTERVAL 大于平均值的3倍，则设置成平均值的3倍，同时相应设置MIN_INTERVAL
     if [ "`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} -v B=${INTERVAL} '{if (A > B*5) {print 1} else {print 0}}'`" = "1" ]; then
         MAX_INTERVAL=`echo | ${EXEC_AWK} -v A=${INTERVAL} '{print A*3}'`
-        mr_trace "DEBUG: ==== 3 MAX_INTERVAL= ${MAX_INTERVAL}"
+        #mr_trace "DEBUG: ==== 3 MAX_INTERVAL= ${MAX_INTERVAL}"
 
         MIN_INTERVAL=`echo | ${EXEC_AWK} -v A=${MAX_INTERVAL} '{print A/150}'`
-        mr_trace "DEBUG: ==== 3 MIN_INTERVAL= ${MIN_INTERVAL}"
+        #mr_trace "DEBUG: ==== 3 MIN_INTERVAL= ${MIN_INTERVAL}"
     fi
 
     # check the values

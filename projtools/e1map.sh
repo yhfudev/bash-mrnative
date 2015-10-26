@@ -75,9 +75,11 @@ worker_create_tcl_config () {
     PARAM_CONFIG_FILE="$1"
     shift
 
-    if [ "HDFF_FUNCTION" = "plot" ]; then
+    if [ "${HDFF_FUNCTION}" = "plot" ]; then
         ${DN_EXEC}/createconf.sh "plot" "${PARAM_CONFIG_FILE}"
-    elif [ "HDFF_FUNCTION" = "clean" ]; then
+    elif [ "${HDFF_FUNCTION}" = "check" ]; then
+        ${DN_EXEC}/createconf.sh "check" "${PARAM_CONFIG_FILE}"
+    elif [ "${HDFF_FUNCTION}" = "clean" ]; then
         ${DN_EXEC}/createconf.sh "clean" "${PARAM_CONFIG_FILE}"
     else
         ${DN_EXEC}/createconf.sh "sim" "${PARAM_CONFIG_FILE}"
@@ -89,20 +91,20 @@ worker_create_tcl_config () {
 #<command> <config_file>
 # config "/path/to/config.sh"
 while read MR_CMD MR_CONFIG_FILE ; do
-  FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
+    FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
 
-  case "${MR_CMD}" in
-  config)
-    worker_create_tcl_config "$(mp_get_session_id)" "${FN_CONFIG_FILE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-    ;;
+    mr_trace "HDFF_FUNCTION=${HDFF_FUNCTION}"
+    case "${MR_CMD}" in
+    config)
+        worker_create_tcl_config "$(mp_get_session_id)" "${FN_CONFIG_FILE}" &
+        PID_CHILD=$!
+        mp_add_child_check_wait ${PID_CHILD}
+        ;;
 
-  *)
-    mr_trace "Warning: unknown command '${MR_CMD}'."
-    ;;
-  esac
-
+    *)
+        mr_trace "Warning: unknown command '${MR_CMD}'."
+        ;;
+    esac
 done
 
 mp_wait_all_children
