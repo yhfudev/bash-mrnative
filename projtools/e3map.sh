@@ -70,6 +70,8 @@ mp_new_session
 worker_flow_throughput () {
     PARAM_SESSION_ID="$1"
     shift
+    PARAM_CONFIG_FILE="$1"
+    shift
     PARAM_PREFIX="$1"
     shift
     PARAM_TYPE="$1"
@@ -81,8 +83,11 @@ worker_flow_throughput () {
     PARAM_NODE="$1"
     shift
 
-    #mr_trace "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
-    ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    #mr_trace "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    TM_START=$(date +%s.%N)
+    ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    TM_END=$(date +%s.%N)
+    echo -e "time-tpflow\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -91,6 +96,8 @@ worker_flow_throughput () {
 worker_stats_packet () {
     PARAM_SESSION_ID="$1"
     shift
+    PARAM_CONFIG_FILE="$1"
+    shift
     PARAM_PREFIX="$1"
     shift
     PARAM_TYPE="$1"
@@ -102,7 +109,10 @@ worker_stats_packet () {
     PARAM_NODE="$1"
     shift
 
+    TM_START=$(date +%s.%N)
     ${DN_EXEC}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    TM_END=$(date +%s.%N)
+    echo -e "time-pktsche\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -110,6 +120,8 @@ worker_stats_packet () {
 # process packet time stats
 worker_trans_packet () {
     PARAM_SESSION_ID="$1"
+    shift
+    PARAM_CONFIG_FILE="$1"
     shift
     PARAM_PREFIX="$1"
     shift
@@ -123,7 +135,10 @@ worker_trans_packet () {
     shift
 
     #mr_trace ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    TM_START=$(date +%s.%N)
     ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    TM_END=$(date +%s.%N)
+    echo -e "time-pkttran\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -147,21 +162,21 @@ mr_trace "received: cmd='${MR_CMD}', prefix='${MR_PREFIX}', type='${MR_TYPE}', f
   case "${MR_CMD}" in
   tpflow)
     # plot figure for each flow
-    worker_flow_throughput "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+    worker_flow_throughput "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;
 
   packetsche)
     # the packet scheduling time distribution
-    worker_stats_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+    worker_stats_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;
 
   packettran)
     # the packet transfering time distribution
-    worker_trans_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+    worker_trans_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;

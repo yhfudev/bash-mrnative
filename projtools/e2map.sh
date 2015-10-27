@@ -96,7 +96,7 @@ worker_check_ns2() {
     if [ ! "$RET" = "" ]; then
         # error
         mr_trace "detected error at ${DN_TEST}"
-        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}" | tee "${DN_EXEC}/checkerror.txt"
+        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}" | tee -a "${DN_EXEC}/checkerror.txt"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -125,13 +125,16 @@ worker_check_run() {
 
     RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
+        TM_START=$(date +%s.%N)
         run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
+        TM_END=$(date +%s.%N)
         # check the result
         RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
         if [ ! "$RET" = "" ]; then
             # error
             echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
         else
+            echo -e "time-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}\t${TM_START}\t${TM_END}"
             prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
         fi
     fi
