@@ -192,7 +192,7 @@ if [ ! "$?" = "0" ]; then
     mr_trace "Error in hadoop mkdir ${DN_INPUT_HDFS}"
     return
 fi
-${EXEC_HADOOP} fs -rm -f "${DN_INPUT_HDFS}/input.txt"
+${EXEC_HADOOP} fs -rm -f "${DN_INPUT_HDFS}/"*
 ${EXEC_HADOOP} fs -put "${DN_INPUT}/"* "${DN_INPUT_HDFS}"
 if [ ! "$?" = "0" ]; then
     mr_trace "Error in put data: ${DN_INPUT_HDFS}"

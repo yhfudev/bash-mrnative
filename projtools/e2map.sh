@@ -124,7 +124,10 @@ worker_check_run() {
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
     RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
-    if [ ! "$RET" = "" ]; then
+    if [ "$RET" = "" ]; then
+        # the task was finished successfully
+        prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
+    else
         TM_START=$(date +%s.%N)
         run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
         TM_END=$(date +%s.%N)
