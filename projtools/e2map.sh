@@ -95,7 +95,7 @@ worker_check_ns2() {
     RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         # error
-        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_SCHE}\t${PARAM_NUM}"
+        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -129,7 +129,7 @@ worker_check_run() {
         RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
         if [ ! "$RET" = "" ]; then
             # error
-            echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_SCHE}\t${PARAM_NUM}"
+            echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
         else
             prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
         fi
@@ -199,13 +199,14 @@ worker_clean() {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-#<command> <config_file> <prefix> <type> <scheduler> <number_of_node>
-#sim <config_file> <prefix> <type> <scheduler> <number_of_node>
-# sim "config-xx.sh" "jjmbase"  "tcp" "PF" 24
-while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_SCHEDULER MR_NUM_NODE ; do
+#<command> <config_file> <prefix> <type> <flow type> <scheduler> <number_of_node>
+#sim <config_file> <prefix> <type> <flow type> <scheduler> <number_of_node>
+# sim "config-xx.sh" "jjmbase"  "tcp" "unknown" "PF" 24
+while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_NUM_NODE ; do
   FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
   MR_PREFIX1=$( unquote_filename "${MR_PREFIX}" )
   MR_TYPE1=$( unquote_filename "${MR_TYPE}" )
+  MR_FLOW_TYPE1=$( unquote_filename "${MR_FLOW_TYPE}" )
   MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
   GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}|${MR_SCHEDULER1}|${FN_CONFIG_FILE}|"
 

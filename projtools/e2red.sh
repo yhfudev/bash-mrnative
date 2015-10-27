@@ -54,10 +54,8 @@ source ${DN_LIB}/libplot.sh
 source ${DN_LIB}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
-DN_PARENT="$(my_getpath ".")"
-
-#read_config_file "${DN_PARENT}/config.conf"
-source ${DN_TOP}/config-sys.sh
+source "${DN_TOP}/config-sys.sh"
+#DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
 
 check_global_config
 
@@ -67,26 +65,6 @@ check_global_config
 mp_new_session
 
 #####################################################################
-# process flow throughput figure
-worker_flow_throughput () {
-    PARAM_SESSION_ID="$1"
-    shift
-    PARAM_PREFIX="$1"
-    shift
-    PARAM_TYPE="$1"
-    shift
-    PARAM_FLOW_TYPE="$1"
-    shift
-    PARAM_SCHEDULE="$1"
-    shift
-    PARAM_NODE="$1"
-    shift
-
-    #mr_trace "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
-    ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${MR_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
 
 # process throughput stats
 worker_stats_throughput () {
@@ -101,48 +79,6 @@ worker_stats_throughput () {
 
     #mr_trace ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
     ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-
-# process packet time stats
-worker_stats_packet () {
-    PARAM_SESSION_ID="$1"
-    shift
-    PARAM_PREFIX="$1"
-    shift
-    PARAM_TYPE="$1"
-    shift
-    PARAM_FLOW_TYPE="$1"
-    shift
-    PARAM_SCHEDULE="$1"
-    shift
-    PARAM_NODE="$1"
-    shift
-
-    ${DN_EXEC}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
-
-    mp_notify_child_exit ${PARAM_SESSION_ID}
-}
-
-# process packet time stats
-worker_trans_packet () {
-    PARAM_SESSION_ID="$1"
-    shift
-    PARAM_PREFIX="$1"
-    shift
-    PARAM_TYPE="$1"
-    shift
-    PARAM_FLOW_TYPE="$1"
-    shift
-    PARAM_SCHEDULE="$1"
-    shift
-    PARAM_NODE="$1"
-    shift
-
-    #mr_trace ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
-    ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -173,11 +109,7 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
   case "${MR_CMD}" in
   throughput)
     # REDUCE: read until reach to a different key, then reduce it
-
-    # plot figure for each flow
-    worker_flow_throughput "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
+    echo -e "tpflow\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
 
     # plot stats
     if [ ! "${PICGROUP_T_TAG}" = "${GROUP_STATS}" ] ; then
@@ -198,22 +130,14 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
     ;;
 
   packet)
-    # REDUCE: read until reach to a different key, then reduce it
-
-    worker_stats_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-
-    worker_trans_packet "$(mp_get_session_id)" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
+    echo -e "packetsche\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
+    echo -e "packettran\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     ;;
 
   *)
-    mr_trace "Error: unknown command: ${MR_CMD}"
+    #mr_trace "Error: unknown command: ${MR_CMD}"
     # throw the command to output again
     echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
-    ERR=1
     continue
     ;;
   esac

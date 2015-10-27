@@ -71,12 +71,16 @@ shift
 ARG_NUM1=$1
 shift
 
+mr_trace "received: cmd='${ARG_CMD1}', prefix='${ARG_PREFIX1}', type='${ARG_TYPE1}', flow='${ARG_FLOW_TYPE1}', sche='${ARG_SCHE1}', num='${ARG_NUM1}'"
+
 ARG_CMD=$( unquote_filename "${ARG_CMD1}" )
 ARG_PREFIX=$( unquote_filename "${ARG_PREFIX1}" )
 ARG_TYPE=$( unquote_filename "${ARG_TYPE1}" )
 ARG_FLOW_TYPE=$( unquote_filename "${ARG_FLOW_TYPE1}" )
 ARG_SCHE=$( unquote_filename "${ARG_SCHE1}" )
 ARG_NUM=$( unquote_filename "${ARG_NUM1}" )
+
+mr_trace "after processed: cmd='${ARG_CMD}', prefix='${ARG_PREFIX}', type='${ARG_TYPE}', flow='${ARG_FLOW_TYPE}', sche='${ARG_SCHE}', num='${ARG_NUM}'"
 
 DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
 

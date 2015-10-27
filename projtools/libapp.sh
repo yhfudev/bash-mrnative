@@ -327,11 +327,15 @@ prepare_all_tcl_scripts () {
     rm -rf "${DN_TMP_CREATECONF}"
     mr_trace "mkdir -p ${DN_TMP_CREATECONF}"
     mkdir -p "${DN_TMP_CREATECONF}"
+    mr_trace "LIST_NODE_NUM='${LIST_NODE_NUM}'"
+    mr_trace "LIST_TYPES='${LIST_TYPES}'"
+    mr_trace "LIST_SCHEDULERS='${LIST_SCHEDULERS}'"
     for idx_num9 in $LIST_NODE_NUM ; do
         for idx_type9 in $LIST_TYPES ; do
             for idx_sche9 in $LIST_SCHEDULERS ; do
+                mr_trace "prefix='${PREFIX}', type='$idx_type9', sche='$idx_sche9', num='$idx_num9', exec='${DN_EXEC}', comm='${DN_COMM}', tmp='${DN_TMP_CREATECONF}'"
                 prepare_one_tcl_scripts "${PREFIX}" "$idx_type9" "$idx_sche9" "$idx_num9" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
-                echo -e "${PARAM_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\t\"${idx_sche9}\"\t${idx_num9}"
+                echo -e "${PARAM_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
             done
         done
     done
@@ -354,8 +358,6 @@ prepare_all_tcl_scripts () {
 
     mr_trace "DONE create config files"
 }
-
-
 
 
 # parse the parameters and generate the requests for ploting figures
@@ -448,7 +450,8 @@ check_one_tcldir () {
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
             #mr_trace "curr dir=$(pwd), tail i=$i"
             TM1=$(tail -n 1 "$i" | awk '{print $1}')
-            if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
+            # we assume it done correctly if the time different is in 8 seconds
+            if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 8 < B) print 1; else print 0;}') = 1 ] ; then
                 FLG_ERR=1
             fi
         done

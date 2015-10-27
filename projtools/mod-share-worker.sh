@@ -174,7 +174,9 @@ if [ ! "$?" = "0" ]; then
     DN_PREFIX_HDFS=
 fi
 
-STAGE=1
+STAGE=0
+
+STAGE=$(( $STAGE + 1 ))
 DN_INPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_in${STAGE}"
 DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
 
@@ -287,7 +289,6 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     STAGE=$(( $STAGE + 1 ))
 
     DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
-
     DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
 
     ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
@@ -319,7 +320,7 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
     STAGE2_RUN=$(( $STAGE2_RUN + 1 ))
-    LINES=$(cat "${DN_PREFIX}/${STAGE}/redout.txt" | wc -l)
+    LINES=$(cat "${DN_PREFIX}/${STAGE}/redout.txt" | grep ^error | wc -l)
     if (( $LINES < 1 )) ; then
         mr_trace "finished after ${STAGE2_RUN} tries."
         break
@@ -339,18 +340,93 @@ echo
 TM_STAGE2=$(date +%s)
 
 #####################################################################
+# use hundreds of files instead of one small file:
+mr_trace "origin HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
+if [ "${HDFF_TOTAL_NODES}" = "" ]; then
+    HDFF_TOTAL_NODES=0
+fi
+if (( ${HDFF_TOTAL_NODES} < 1 )) ; then
+    HDFF_TOTAL_NODES=1
+fi
+if [ "${HDFF_NUM_CLONE}" = "" ]; then
+    HDFF_NUM_CLONE=0
+fi
+if (( ${HDFF_NUM_CLONE} < 4 )) ; then
+    HDFF_NUM_CLONE=4
+fi
+mr_trace "adjusted HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
+
+DNORIG2=$(pwd)
+cd "${DN_PREFIX}/${STAGE}/"
+rm -f file*.txt
+# we dispatch the tasks to various machines and let each machine process only 2 tasks since processing the packet distribution is time-consumed work
+cat "redout.txt" \
+    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP*CLONE/2);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
+cd "${DNORIG2}"
+
+${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
+${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"
+
+#####################################################################
+STAGE=$(( $STAGE + 1 ))
+
+FN_MAP="${DN_PREFIX}/tmp/tmpe3map.sh"
+#FN_RED="${DN_PREFIX}/tmp/tmpe3red.sh"
+
+mr_trace "generating exec file: ${FN_MAP}"
+generate_script_4hadoop "${DN_EXEC}/e3map.sh" "${FN_MAP}"
+if [ ! -f "${FN_MAP}" ]; then
+    mr_trace "Error: not found exec file: ${FN_MAP}"
+    return
+fi
+
+DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
+DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
+
+${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
+
+if [ 1 = 1 ]; then
+mr_trace "Stage 3 ..."
+${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
+${EXEC_HADOOP} jar ${HDJAR} \
+    -D mapreduce.task.timeout=0 \
+    -D stream.num.map.output.key.fields=6 \
+    -D num.key.fields.for.partition=6 \
+    -input "${DN_INPUT_HDFS}" -output "${DN_OUTPUT_HDFS}" \
+    -file "${FN_MAP}" -mapper  $(basename "${FN_MAP}") \
+    -reducer /bin/cat \
+    ${NULL}
+if [ ! "$?" = "0" ]; then
+    mr_trace "Error in hadoop stage: ${STAGE}"
+    return
+fi
+fi
+
+${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
+#${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
+mkdir -p "${DN_PREFIX}/${STAGE}/"
+if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
+rm -f "${DN_PREFIX}/${STAGE}/"*
+${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+
+echo
+TM_STAGE3=$(date +%s)
+
+#####################################################################
 # end time
 TM_END=$(date +%s)
 TMCOST=$(echo | awk -v A=${TM_START} -v B=${TM_END} '{print B-A;}' )
 TMCOST1=$(echo | awk -v A=${TM_START} -v B=${TM_STAGE1} '{print B-A;}' )
 TMCOST2=$(echo | awk -v A=${TM_STAGE1} -v B=${TM_STAGE2} '{print B-A;}' )
+TMCOST3=$(echo | awk -v A=${TM_STAGE2} -v B=${TM_STAGE3} '{print B-A;}' )
 
 mr_trace "TM start=$TM_START, end=$TM_END"
 mr_trace "stage 1=$TM_STAGE1"
 mr_trace "stage 2=$TM_STAGE2"
+mr_trace "stage 3=$TM_STAGE3"
 echo ""
 
-mr_trace "Cost time: total=${TMCOST},stage1=${TMCOST1},stage2=${TMCOST2}, seconds"
+mr_trace "Cost time: total=${TMCOST},stage1=${TMCOST1},stage2=${TMCOST2},stage3=${TMCOST3}, seconds"
 
 #####################################################################
 
@@ -359,4 +435,3 @@ FN_OUTPUT=part-00000
 ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/${FN_OUTPUT}"
 
 }
-

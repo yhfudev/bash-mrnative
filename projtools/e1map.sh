@@ -99,6 +99,7 @@ while read MR_CMD MR_CONFIG_FILE ; do
     FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
 
     mr_trace "HDFF_FUNCTION=${HDFF_FUNCTION}"
+    mr_trace "FN_CONFIG_FILE='${FN_CONFIG_FILE}'"
     case "${MR_CMD}" in
     config)
         worker_create_tcl_config "$(mp_get_session_id)" "${FN_CONFIG_FILE}" &

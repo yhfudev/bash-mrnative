@@ -167,7 +167,7 @@ plot_script () {
             mr_trace "Warning: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly."
         fi
         "${EXEC_PLOT}" "${FN_TMPGP}"
-        if [ "$?" = "1" ]; then
+        if [ ! "$?" = "0" ]; then
             NEWNAME="${FN_TMPGP}$(date +%s)"
             mr_trace "Warning: error in process file ${FN_TMPGP}, changed to ${NEWNAME}."
             mv "${FN_TMPGP}" "${NEWNAME}"

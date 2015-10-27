@@ -169,7 +169,7 @@ unquote_filename () {
   PARAM_FN="$1"
   shift
   #mr_trace "PARAM_FN=${PARAM_FN}; dirname=$(dirname "${PARAM_FN}"); readlink2=$(readlink -f "$(dirname "${PARAM_FN}")" )"
-  echo "${PARAM_FN//[${HDFF_EXCLUDE_4FILENAME}]/}"
+  echo "${PARAM_FN//[${HDFF_EXCLUDE_4FILENAME}]/}" | sed 's/\t//g'
 }
 
 #####################################################################

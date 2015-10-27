@@ -20,17 +20,26 @@ Directory Structure
 │   └── config-verifyd31.sh # test case: Docsis 3.1 1.9 Gbps channel, various flows
 ├── projtools/
 │   ├── checkall.sh         # run from current dir, to check if all test cases are finished
-│   ├── checkproj.sh        # run from each test case dir, to check if a test case is finished
+│   ├── cleanall.sh         # run from current dir, to clean all of the temperary files
 │   ├── plotall.sh          # run from current dir, to plot all of figures of all test cases
-│   ├── plotproj.sh         # run from each test case dir, to plot all of figures of a test case
+│   ├── plotfigns2.sh       # called by e2red.sh, to plot all kinds of figures
 │   ├── runall.sh           # run from current dir, to check and run all of the un-finshed test cases
-│   ├── runproj.sh          # run from each test case dir, to check and run the un-finshed task of the test case
+│   ├── run-sh1.sh          # signle host version, to check and run all of the un-finshed test cases
+│   ├── run-hadoop.sh       # hadoop version, to check and run all of the un-finshed test cases
+│   ├── run-hadooppbs.sh    # hadoop for HPC version, to check and run all of the un-finshed test cases
+│   ├── mod-hadooppbs-jobmain.sh # main entry for HPC Hadoop
+│   ├── mod-hadooppbs-setenv.sh  # environment variables for HPC Hadoop
+│   ├── mod-share-worker.sh # Hadoop main flow for both run-hadoop.sh and run-hadooppbs.sh
+│   ├── e1map.sh            # map-reduce function, map() for stage 1
+│   ├── e2map.sh            # map-reduce function, map() for stage 2
+│   ├── e2red.sh            # map-reduce function, reduce() for stage 2
+│   ├── libapp.sh           # help functions for NS2
 │   ├── main.tcl            # a template file for the TCL entry function of NS2
 │   ├── run-conf.tcl        # TCL config variables
 │   ├── common/             # This folder contains all of the scripts and data files to be used for the test, which will be copied to the working directory, while some of the files may also be modified for a specified test.
 │   └── ...
 ├── 
-└── config-sys.sh
+└── config-sys.sh           # global config variables
 
 
 Usage
@@ -44,11 +53,11 @@ and then, run all of the tests:
 
     ./runall.sh
 
-To check if all of the tests were finished correct, you may run the following commands and the file testfailed.txt contains the failed tests:
+To check if all of the tests were finished correctly, you may run the following command to show the failed tests:
 
     ./checkall.sh
 
-if you want to plot all of figures, type:
+if you want to plot all of figures again, type:
 
     ./plotall.sh
 
@@ -61,5 +70,3 @@ If you want re-run the test, you may try:
 
     cd proj-base-prof-high2low/baseh2l_has_DRR_1/
     ../../../../ns main.tcl 1
-
-
