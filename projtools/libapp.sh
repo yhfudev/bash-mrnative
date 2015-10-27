@@ -334,7 +334,11 @@ prepare_all_tcl_scripts () {
         for idx_type9 in $LIST_TYPES ; do
             for idx_sche9 in $LIST_SCHEDULERS ; do
                 mr_trace "prefix='${PREFIX}', type='$idx_type9', sche='$idx_sche9', num='$idx_num9', exec='${DN_EXEC}', comm='${DN_COMM}', tmp='${DN_TMP_CREATECONF}'"
-                prepare_one_tcl_scripts "${PREFIX}" "$idx_type9" "$idx_sche9" "$idx_num9" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+                case "${PARAM_COMMAND}" in
+                sim)
+                    prepare_one_tcl_scripts "${PREFIX}" "$idx_type9" "$idx_sche9" "$idx_num9" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+                    ;;
+                esac
                 echo -e "${PARAM_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
             done
         done
@@ -346,13 +350,17 @@ prepare_all_tcl_scripts () {
     #tar -cf - * | tar -C "${DN_RESULTS}/dataconf/" -xf -
     #cd "${DN_ORIG15}"
 
-    mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${DN_RESULTS}/dataconf/"
-    rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-1-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
-    rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-2-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
-    if [ ! "$?" = "0" ]; then
-        mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${DN_RESULTS}/dataconf/"
-        exit 1
-    fi
+    case "${PARAM_COMMAND}" in
+    sim)
+        mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${DN_RESULTS}/dataconf/"
+        rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-1-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+        rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-2-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
+        if [ ! "$?" = "0" ]; then
+            mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${DN_RESULTS}/dataconf/"
+            exit 1
+        fi
+        ;;
+    esac
 
     #rm -rf "${DN_TMP_CREATECONF}"
 
@@ -430,18 +438,25 @@ clean_one_tcldir () {
 # check the throughput log file, if the log time reach to the pre-set end time.
 # checked both for UDP and TCP packets, with file prefix CMTCPDS and CMUDPDS
 check_one_tcldir () {
+    PARAM_FN_CONF=$1
+    shift
     PARAM_DN_DEST=$1
     shift
     # output file save the failed directories
     PARAM_FN_LOG_ERROR=$1
     shift
 
+    read_config_file "${PARAM_FN_CONF}"
     FLG_ERR=1
+    mr_trace "checking $(basename ${PARAM_DN_DEST}) ..."
     if [ -d "${PARAM_DN_DEST}" ]; then
         FLG_ERR=0
         FLG_NONE=1
         DN_ORIG4=$(pwd)
+
         cd       "${PARAM_DN_DEST}"
+
+        mr_trace "checking CMTCPDS*.out ..."
         FN_TPFLOW="CMTCPDS*.out"
         LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
         for i in $LST ; do
@@ -455,11 +470,13 @@ check_one_tcldir () {
                 FLG_ERR=1
             fi
         done
+
+        mr_trace "checking CMUDPDS*.out ..."
         FN_TPFLOW="CMUDPDS*.out"
         LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
         for i in $LST ; do
             FLG_NONE=0
-            mr_trace "process flow throughput (tcp) $i ..."
+            mr_trace "process flow throughput (udp) $i ..."
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
             TM1=$(tail -n 1 "$i" | awk '{print $1}')
             if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
@@ -473,7 +490,7 @@ check_one_tcldir () {
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
-        #mr_trace "save ${PARAM_FN_LOG_ERROR}: ${PARAM_DN_DEST}"
+        mr_trace "save ${PARAM_FN_LOG_ERROR}: ${PARAM_DN_DEST}"
         echo "${PARAM_DN_DEST}" >> "${PARAM_FN_LOG_ERROR}"
     fi
 }

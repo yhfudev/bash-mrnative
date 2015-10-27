@@ -91,11 +91,12 @@ worker_check_ns2() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    mr_trace "check_one_tcldir '${DN_RESULTS}/dataconf/${DN_TEST}' ..."
-    RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+    mr_trace "check_one_tcldir '$(basename ${PARAM_CONFIG_FILE})' '${DN_TEST}' '/dev/stdout' ..."
+    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         # error
-        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
+        mr_trace "detected error at ${DN_TEST}"
+        echo -e "error-check\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}" | tee "${DN_EXEC}/checkerror.txt"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
@@ -122,11 +123,11 @@ worker_check_run() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
         # check the result
-        RET=$(check_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+        RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
         if [ ! "$RET" = "" ]; then
             # error
             echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"

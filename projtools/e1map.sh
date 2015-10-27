@@ -80,6 +80,7 @@ worker_create_tcl_config () {
     PARAM_CONFIG_FILE="$1"
     shift
 
+    mr_trace "infunc create tcl config: HDFF_FUNCTION=${HDFF_FUNCTION}"
     if [ "${HDFF_FUNCTION}" = "plot" ]; then
         prepare_all_tcl_scripts "plot" "${PARAM_CONFIG_FILE}"
     elif [ "${HDFF_FUNCTION}" = "check" ]; then
@@ -98,7 +99,7 @@ worker_create_tcl_config () {
 while read MR_CMD MR_CONFIG_FILE ; do
     FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
 
-    mr_trace "HDFF_FUNCTION=${HDFF_FUNCTION}"
+    mr_trace "1 HDFF_FUNCTION=${HDFF_FUNCTION}"
     mr_trace "FN_CONFIG_FILE='${FN_CONFIG_FILE}'"
     case "${MR_CMD}" in
     config)
