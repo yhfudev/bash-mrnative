@@ -113,7 +113,7 @@ EOF
 
     gnuplot "${FN_GPOUT}.gp"
     RET=$?
-    rm -f "${FN_GPOUT}.dat.gz" "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
+    rm -f "${FN_GPOUT}.dat" "${FN_GPOUT}.dat.gz" "${FN_GPOUT}.eps" "${FN_GPOUT}.png" "${FN_GPOUT}.gp"
     echo "$RET"
 }
 
