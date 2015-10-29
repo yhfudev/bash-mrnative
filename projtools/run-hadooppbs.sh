@@ -223,13 +223,17 @@ MEM=$(echo $A | awk '{print ($2-2)*1024;}')
 sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
 sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/config-sys.sh"
 
-# use scratch
-#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
-#sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/home/\$USER/mapreduce-ns2docsis-results/|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=/scratch1/\$USER/jjmtest-output/|" "${DN_TOP}/config-sys.sh"
+# output dir
+#HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
+#HDFF_DN_OUTPUT="file://$HOME/mapreduce-ns2docsis-results/"
+#HDFF_DN_OUTPUT="file:///scratch1/$USER/mapreduce-ns2docsis-results/"
+HDFF_DN_OUTPUT="file:///scratch1/$USER/jjmtest-output/"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
 
-#sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/dev/shm/|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|^DN_SCRATCH=.*$|DN_SCRATCH=/local_scratch/\$USER/|" "${DN_TOP}/config-sys.sh"
+# scratch(temp) dir
+HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+#HDFF_DN_SCRATCH="/local_scratch/\$USER/"
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
 
 # set the vcores to 1 to let bash script generate multiple processes.
 CORES=1

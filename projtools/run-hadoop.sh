@@ -41,18 +41,6 @@ mr_trace () {
 }
 
 #####################################################################
-
-# use scratch
-DN_RESULTS="$(my_getpath "${DN_EXEC}/results-mr/")"
-#DN_RESULTS="$(pwd)/result-mr"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${DN_RESULTS}|" "${DN_TOP}/config-sys.sh"
-
-#source "${DN_TOP}/config-sys.sh"
-#DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
-
-mr_trace "DN_RESULTS=$DN_RESULTS"
-
-
 start_hadoop () {
     mr_trace "Start all Hadoop daemons"
     if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
@@ -89,6 +77,20 @@ stop_hadoop () {
     echo
     jps
 }
+
+#####################################################################
+# redirect the output to HDFS so we can fetch back later
+HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
+
+# scratch(temp) dir
+HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
+
+# tar the binary and save it to HDFS for the node extract it later
+# TODO:
+#   1. the tar file for ns2 exec
+#   2. the HDFS path to this project
 
 #####################################################################
 stop_hadoop

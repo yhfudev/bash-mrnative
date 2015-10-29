@@ -37,8 +37,8 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
-if [ -f "${DN_EXEC}/libshall.sh" ]; then
-. ${DN_EXEC}/libshall.sh
+if [ -f "${DN_EXEC}/liball.sh" ]; then
+. ${DN_EXEC}/liball.sh
 fi
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
@@ -46,17 +46,14 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
 fi
 #####################################################################
-
-DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-DN_LIB="$(my_getpath "${DN_TOP}/lib")"
-source ${DN_LIB}/libbash.sh
-source ${DN_LIB}/libshrt.sh
-source ${DN_LIB}/libplot.sh
-source ${DN_LIB}/libns2figures.sh
-source ${DN_EXEC}/libapp.sh
-
-source "${DN_TOP}/config-sys.sh"
-#DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+if [ ! "$RET0" = "f" ]; then
+    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+fi
+FN_TMP="/dev/shm/config-$(uuidgen)"
+copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+read_config_file "${FN_TMP}"
+rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
 check_global_config
 
@@ -83,11 +80,11 @@ worker_flow_throughput () {
     PARAM_NODE="$1"
     shift
 
-    #mr_trace "worker_flow_throughput(): " ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    #mr_trace "worker_flow_throughput(): " plot_ns2_type tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    ${DN_EXEC}/plotfigns2.sh tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    plot_ns2_type bitflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
-    echo -e "time-tpflow\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
+    echo -e "time-bitflow\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -110,7 +107,7 @@ worker_stats_packet () {
     shift
 
     TM_START=$(date +%s.%N)
-    ${DN_EXEC}/plotfigns2.sh pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    plot_ns2_type pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pktsche\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -134,9 +131,9 @@ worker_trans_packet () {
     PARAM_NODE="$1"
     shift
 
-    #mr_trace ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    #mr_trace plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    ${DN_EXEC}/plotfigns2.sh pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pkttran\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -160,7 +157,7 @@ mr_trace "received: cmd='${MR_CMD}', prefix='${MR_PREFIX}', type='${MR_TYPE}', f
   GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}|${MR_SCHEDULER1}|${FN_CONFIG_FILE}|"
 
   case "${MR_CMD}" in
-  tpflow)
+  bitflow)
     # plot figure for each flow
     worker_flow_throughput "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
     PID_CHILD=$!

@@ -34,7 +34,7 @@ else
     DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-#DN_EXEC="$(my_getpath "${DN_TOP}/bin/")"
+#DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
 mr_trace () {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
@@ -47,12 +47,11 @@ mr_trace () {
 PROGNAME=$(basename "$0")
 
 source "${DN_TOP}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
 
 #####################################################################
-DN_INPUT=${DN_RESULTS}/mapred-data/input
+DN_INPUT=${HDFF_DN_OUTPUT}/mapred-data/input
 
-DN_PREFIX=${DN_RESULTS}/mapred-data/output
+DN_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/output
 
 DN_OUTPUT1=${DN_PREFIX}/1
 DN_OUTPUT2=${DN_PREFIX}/2

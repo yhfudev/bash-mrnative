@@ -39,12 +39,14 @@ DN_LIB="$(my_getpath "${DN_TOP}/lib")"
 
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libshrt.sh
+source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libplot.sh
-source ${DN_LIB}/libns2figures.sh
+source ${DN_LIB}/libconfig.sh
+source ${DN_EXEC}/libns2config.sh
+source ${DN_EXEC}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh
 
-source "${DN_TOP}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+cat_file "${DN_TOP}/config-sys.sh" | read_config_file
 
 #####################################################################
 convert_eps2png () {
@@ -84,62 +86,129 @@ mr_trace "after processed: cmd='${ARG_CMD}', prefix='${ARG_PREFIX}', type='${ARG
 
 DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
 
-mkdir -p "${DN_RESULTS}/figures/${ARG_PREFIX}"
+make_dir "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
 
 mr_trace "ARG_CMD=${ARG_CMD}"
 
 case "${ARG_CMD}" in
-"tpflow")
-    TTT="$(sed 's/[\"\`_]/ /g' <<<${ARG_SCHE})"
-    TITLE="Throughput of ${ARG_NUM} $TTT ${ARG_TYPE} flows"
+"bitflow")
+    local NSCHE="$(sed 's/[\"\`_]/ /g' <<<${ARG_SCHE})"
+    local TITLE="Throughput of ${ARG_NUM} $NSCHE ${ARG_TYPE} flows"
+    local TMP_SRC=""
+    local TMP_DEST=""
+    local DN_SRC="${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}"
+    local DN_DEST="${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
 
+    local DN_ORIG5=$(pwd)
+    local RET=$(is_local "${DN_SRC}")
+    if [ ! "${RET}" = "l" ]; then
+        TMP_SRC="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
+        make_dir "${TMP_SRC}/"
+        copy_file "${DN_SRC}/CMTCPDS*.out" "${TMP_SRC}/"
+        copy_file "${DN_SRC}/CMUDPDS*.out" "${TMP_SRC}/"
+        DN_SRC="${TMP_SRC}/"
+    fi
+    RET=$(is_local "${DN_DEST}")
+    if [ ! "${RET}" = "l" ]; then
+        TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
+        make_dir "${TMP_DEST}/"
+        DN_DEST="${TMP_DEST}/"
+    fi
     case "${ARG_FLOW_TYPE}" in
     "tcp")
-        plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
+        plot_eachflow_throughput "${DN_SRC}" "${DN_DEST}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
         ;;
     "udp")
-        plot_eachflow_throughput "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
+        plot_eachflow_throughput "${DN_SRC}" "${DN_DEST}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
         ;;
     *)
         mr_trace "Error: Unknown flow type: ${ARG_FLOW_TYPE}"
+        exit 1
         ;;
     esac
+    cd "${DN_DEST}"
+    convert_eps2png
+    cd "${DN_ORIG5}"
+    if [ ! "${TMP_DEST}" = "" ]; then
+        copy_file "${TMP_DEST}" "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+        rm_f_dir "${TMP_DEST}"
+    fi
+    if [ ! "${TMP_SRC}" = "" ]; then
+        rm_f_dir "${TMP_SRC}"
+    fi
     ;;
 
 "tpstat")
-    FN_CONFIG_PROJ=$ARG_FLOW_TYPE
-    if [ ! -f "${FN_CONFIG_PROJ}" ]; then
-        mr_trace "Error: not found file: $FN_CONFIG_PROJ"
-        exit 1
+    local FN_CONFIG_PROJ=$ARG_FLOW_TYPE
+    cat_file "${FN_CONFIG_PROJ}" | read_config_file
+
+    local TMP_DEST=""
+    local DN_SRC="${HDFF_DN_OUTPUT}/dataconf/"
+    local DN_DEST="${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+    local RET=$(is_local "${DN_DEST}")
+    if [ ! "${RET}" = "l" ]; then
+        TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
+        make_dir "${TMP_DEST}/"
+        DN_DEST="${TMP_DEST}/"
     fi
-    FN_CONFIG_PROJ2="$(my_getpath "${FN_CONFIG_PROJ}")"
-    read_config_file "${FN_CONFIG_PROJ2}"
 
-    DN_ORIG5=$(pwd)
-    cd "${DN_RESULTS}/dataconf/"
-    FN_TP="$(pwd)/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}.dat"
-    generate_throughput_stats_file "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
+    local DN_ORIG5=$(pwd)
+    FN_TP="${HDFF_DN_SCRATCH}/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}-$(uuidgen).dat"
+    generate_throughput_stats_file "${DN_SRC}" "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
 
-    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
-    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
+    gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
+    gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
+    gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
     #rm -f "${FN_TP}"
     cd "${DN_ORIG5}"
-    cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    cd "${DN_DEST}"
     convert_eps2png
     cd "${DN_ORIG5}"
+    if [ ! "${TMP_DEST}" = "" ]; then
+        copy_file "${TMP_DEST}" "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+        rm_f_dir "${TMP_DEST}"
+    fi
     ;;
 
 "pktstat")
-    plot_pktdelay_queue "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}"
-    ;;
-"pkttrans")
-    plot_pktdelay_trans "${DN_RESULTS}/dataconf/${DN_TEST}" "${DN_RESULTS}/figures/${ARG_PREFIX}" "${DN_TEST}"
     DN_ORIG6=$(pwd)
-    cd "${DN_RESULTS}/figures/${ARG_PREFIX}"
+    local TMP_DEST=""
+    local DN_DEST="${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+    local RET=$(is_local "${DN_DEST}")
+    if [ ! "${RET}" = "l" ]; then
+        TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
+        make_dir "${TMP_DEST}/"
+        DN_DEST="${TMP_DEST}/"
+    fi
+    plot_pktdelay_queue "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
+    cd "${DN_DEST}"
     convert_eps2png
     cd "${DN_ORIG6}"
+    if [ ! "${TMP_DEST}" = "" ]; then
+        copy_file "${TMP_DEST}" "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+        rm_f_dir "${TMP_DEST}"
+    fi
+    ;;
+
+"pkttrans")
+    DN_ORIG6=$(pwd)
+    local TMP_DEST=""
+    local DN_DEST="${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+    local RET=$(is_local "${DN_DEST}")
+    if [ ! "${RET}" = "l" ]; then
+        TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
+        make_dir "${TMP_DEST}/"
+        DN_DEST="${TMP_DEST}/"
+    fi
+    plot_pktdelay_trans "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
+    cd "${DN_DEST}"
+    convert_eps2png
+    cd "${DN_ORIG6}"
+    if [ ! "${TMP_DEST}" = "" ]; then
+        copy_file "${TMP_DEST}" "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+        rm_f_dir "${TMP_DEST}"
+    fi
     ;;
 *)
     mr_trace "Error: unknown command: ${ARG_CMD}"

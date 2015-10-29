@@ -38,8 +38,8 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
-if [ -f "${DN_EXEC}/libshall.sh" ]; then
-. ${DN_EXEC}/libshall.sh
+if [ -f "${DN_EXEC}/liball.sh" ]; then
+. ${DN_EXEC}/liball.sh
 fi
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
@@ -47,25 +47,26 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
 fi
 #####################################################################
+#HDFF_NUM_CLONE=0
+#HDFF_TOTAL_NODES=1
+#HDFF_FN_LOG="/dev/null"
+#HDFF_DN_SCRATCH="/dev/shm1/${USER}/"
 
-EXEC_NS2="$(my_getpath "${DN_EXEC}/../../ns")"
-
-DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-DN_LIB="$(my_getpath "${DN_TOP}/lib")"
-
-source ${DN_LIB}/libbash.sh
-source ${DN_LIB}/libshrt.sh
-source ${DN_LIB}/libplot.sh
-source ${DN_LIB}/libns2figures.sh
-source ${DN_EXEC}/libapp.sh
-
-DN_PARENT="$(my_getpath ".")"
-
-#source ${DN_TOP}/config-sys.sh
-read_config_file "${DN_TOP}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+if [ ! "$RET0" = "f" ]; then
+    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+fi
+FN_TMP="/dev/shm/config-$(uuidgen)"
+copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+read_config_file "${FN_TMP}"
+rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
 check_global_config
+
+mr_trace cat_file "${DN_TOP}/config-sys.sh"
+cat_file "${DN_TOP}/config-sys.sh" 1>&2
+mr_trace "e1map, global config=${DN_TOP}/config-sys.sh"
+mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
 #####################################################################
 # generate session for this process and its children
@@ -79,6 +80,11 @@ worker_create_tcl_config () {
     shift
     PARAM_CONFIG_FILE="$1"
     shift
+
+    if [ ! -f "${PARAM_CONFIG_FILE}" ]; then
+        mr_trace "Error: not found config file: $PARAM_CONFIG_FILE"
+        exit 1
+    fi
 
     mr_trace "infunc create tcl config: HDFF_FUNCTION=${HDFF_FUNCTION}"
     if [ "${HDFF_FUNCTION}" = "plot" ]; then

@@ -30,36 +30,55 @@ DN_EXEC=$(dirname $(my_getpath "$0") )
 
 FN_TCL=main.tcl
 
-#DN_SCRATCH="/dev/shm"
+#HDFF_DN_SCRATCH="/dev/shm/$USER/"
 
+# PARAM_DN_PARENT -- the parent dir for the data to be saved.
+# PARAM_DN_TEST   -- the sub dir for the data, related dir name to PARAM_DN_PARENT
+# PARAM_FN_CONFIG_PROJ -- the config file for this simulation
 run_one_ns2 () {
-    PARAM_DN_PARENT=$1
+    local PARAM_DN_PARENT=$1
     shift
-    PARAM_DN_TEST=$1
+    local PARAM_DN_TEST=$1
     shift
-    PARAM_FN_CONFIG_PROJ=$1
+    local PARAM_FN_CONFIG_PROJ=$1
     shift
 
     # read in the config file for this test group
     # in this case, is to read the config for USE_MEDIUMPACKET
-    if [ ! -f "${PARAM_FN_CONFIG_PROJ}" ]; then
-        mr_trace "Error: not found file: $PARAM_FN_CONFIG_PROJ"
-        return
-    fi
-    PARAM_FN_CONFIG_PROJ2="$(my_getpath "${PARAM_FN_CONFIG_PROJ}")"
-    read_config_file "${PARAM_FN_CONFIG_PROJ2}"
+    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
+    read_config_file "${FN_TMP}"
+    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
+    # set the scratch dir, which is used to store temperary files.
+    local RET=0
+
+    local DN_WORKING="${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+    local FLG_USETMP=0
+    RET=$(is_local "${PARAM_DN_PARENT}")
+    if [ ! "${RET}" = "l" ]; then
+        FLG_USETMP=1
+    fi
+    if [ ! "${HDFF_DN_SCRATCH}" = "" ]; then
+        FLG_USETMP=1
+    fi
     DN_ORIG2=$(pwd)
-    DN_WORKING="${PARAM_DN_TEST}-$(uuidgen)"
-    mkdir -p "${DN_SCRATCH}"
-    if [ -d "${DN_SCRATCH}" ]; then
-        DN_WORKING="${DN_SCRATCH}/$(uuidgen)-${PARAM_DN_TEST}"
+    if [ ! "${FLG_USETMP}" = "0" ]; then
+        RET=$(is_local "${HDFF_DN_SCRATCH}")
+        if [ ! "${RET}" = "l" ]; then
+            mr_trace "Error in prepare the scratch dir: ${HDFF_DN_SCRATCH}"
+            return
+        fi
+
+        DN_WORKING="${HDFF_DN_SCRATCH}/run-${PARAM_DN_TEST}-$(uuidgen)/"
         mkdir -p "${DN_WORKING}"
-        mr_trace "run ns2: rsync from scratch to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
-        rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
-        rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-2.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
-        if [ ! "$?" = "0" ]; then
-            cd "${DN_ORIG2}"
+        mr_trace "run ns2: copy from parent to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
+        #rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.tcl" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.dat" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.sh" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        RET=$?
+        if [ ! "$RET" = "0" ]; then
             mr_trace "Error: copy temp dir: $PARAM_DN_TEST to ${DN_WORKING}/"
             return
         fi
@@ -69,12 +88,12 @@ run_one_ns2 () {
     fi
     mr_trace "rm -f *.bin *.txt *.out out.* *.tr *.log tmp*"
     rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
-    mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${FN_LOG}"
+    mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${HDFF_FN_LOG}"
     if [ ! -x "${EXEC_NS2}" ]; then
         mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
     else
-        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${FN_LOG}"
-        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${FN_LOG}" 2>&1
+        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}" 2>&1
     fi
 
     mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
@@ -93,16 +112,16 @@ run_one_ns2 () {
     fi
 
     cd "${DN_ORIG2}"
-    if [ -d "${DN_WORKING}" ]; then
-        mr_trace "run ns2: rsync from working to scratch dir: ${DN_WORKING}/ --> ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
-        rsync -av  --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copyback-1-${PARAM_DN_TEST}.log" "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
-        rsync -av  --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copyback-2-${PARAM_DN_TEST}.log" "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
-        if [ ! "$?" = "0" ]; then
+    if [ ! "${FLG_USETMP}" = "0" ]; then
+        mr_trace "run ns2: copy back from working to parent dir: ${DN_WORKING}/ --> ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        #rsync -av  --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copyback-1-${PARAM_DN_TEST}.log" "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
+        RET=$(copy_file "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/")
+        if [ ! "$RET" = "0" ]; then
             mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
             return
         fi
-        mr_trace "rm -f ${DN_WORKING} ..."
-        rm -rf "${DN_WORKING}"
+        mr_trace "remove working dir: rm -f ${DN_WORKING} ..."
+        #rm -rf "${DN_WORKING}"
     fi
 }
 
@@ -126,9 +145,15 @@ prepare_one_tcl_scripts () {
     PARAM_DN_TARGET=$1
     shift
 
+    RET=$(is_local "${PARAM_DN_TARGET}")
+    if [ ! "${RET}" = "l" ]; then
+        mr_trace "Error: The target dir should be in a local disk!"
+        return
+    fi
+
     PARAM_DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
     mr_trace "generate folder: ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    mr_trace "rm -rf ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
+    mr_trace "remove trash first: rm -rf ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
     rm -rf   "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
     mr_trace "mkdir -p ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
     mkdir -p "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
@@ -304,8 +329,8 @@ prepare_one_tcl_scripts () {
 }
 
 # generate the TCL scripts for all of the settings
-# my_getpath, DN_EXEC, DN_COMM, DN_RESULTS, should be defined before call this function
-# DN_SCRATCH should be in global config file (config-sys.sh)
+# my_getpath, DN_EXEC, DN_COMM, HDFF_DN_OUTPUT, should be defined before call this function
+# HDFF_DN_SCRATCH should be in global config file (config-sys.sh)
 # PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
 prepare_all_tcl_scripts () {
     PARAM_COMMAND=$1
@@ -313,20 +338,18 @@ prepare_all_tcl_scripts () {
     PARAM_FN_CONFIG_PROJ=$1
     shift
 
-    if [ ! -f "${PARAM_FN_CONFIG_PROJ}" ]; then
-        mr_trace "Error: not found file: $PARAM_FN_CONFIG_PROJ"
-        exit 1
-    fi
-    FN_CONFIG_PROJ2="$(my_getpath "${PARAM_FN_CONFIG_PROJ}")"
-    #source ${FN_CONFIG_PROJ2}
-    read_config_file "${FN_CONFIG_PROJ2}"
+    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
+    read_config_file "${FN_TMP}"
+    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
-    DN_TMP193="${DN_SCRATCH}/tmp-createconf-$(uuidgen)"
-    DN_TMP_CREATECONF="$(my_getpath "${DN_TMP193}")"
-    mr_trace "rm -rf ${DN_TMP_CREATECONF}"
-    rm -rf "${DN_TMP_CREATECONF}"
+mr_trace "prepare_all_tcl_scripts, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
+
+    DN_TMP_CREATECONF="${HDFF_DN_SCRATCH}/tmp-createconf-$(uuidgen)"
+    mr_trace "remove tmp trash first: rm -rf ${DN_TMP_CREATECONF}"
+    rm_f_dir"${DN_TMP_CREATECONF}"
     mr_trace "mkdir -p ${DN_TMP_CREATECONF}"
-    mkdir -p "${DN_TMP_CREATECONF}"
+    make_dir "${DN_TMP_CREATECONF}"
     mr_trace "LIST_NODE_NUM='${LIST_NODE_NUM}'"
     mr_trace "LIST_TYPES='${LIST_TYPES}'"
     mr_trace "LIST_SCHEDULERS='${LIST_SCHEDULERS}'"
@@ -339,24 +362,25 @@ prepare_all_tcl_scripts () {
                     prepare_one_tcl_scripts "${PREFIX}" "$idx_type9" "$idx_sche9" "$idx_num9" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
                     ;;
                 esac
-                echo -e "${PARAM_COMMAND}\t\"${FN_CONFIG_PROJ2}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
+                echo -e "${PARAM_COMMAND}\t\"${PARAM_FN_CONFIG_PROJ}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
             done
         done
     done
-    mkdir -p "${DN_RESULTS}/dataconf/"
+    make_dir "${HDFF_DN_OUTPUT}/dataconf/"
 
     #DN_ORIG15=$(pwd)
     #cd "${DN_TMP_CREATECONF}"
-    #tar -cf - * | tar -C "${DN_RESULTS}/dataconf/" -xf -
+    #tar -cf - * | tar -C "${HDFF_DN_OUTPUT}/dataconf/" -xf -
     #cd "${DN_ORIG15}"
 
     case "${PARAM_COMMAND}" in
     sim)
-        mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${DN_RESULTS}/dataconf/"
-        rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-1-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
-        rsync -av --log-file "${DN_RESULTS}/rsync-log-createconf-copyback-2-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${DN_RESULTS}/dataconf/" 1>&2
-        if [ ! "$?" = "0" ]; then
-            mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${DN_RESULTS}/dataconf/"
+        mr_trace "create conf: rsync from temp to result dir: ${DN_TMP_CREATECONF}/ --> ${HDFF_DN_OUTPUT}/dataconf/"
+        #rsync -av --log-file "${HDFF_DN_OUTPUT}/rsync-log-createconf-copyback-1-${PREFIX}.log" "${DN_TMP_CREATECONF}/" "${HDFF_DN_OUTPUT}/dataconf/" 1>&2
+        RET=$(copy_file "${DN_TMP_CREATECONF}/" "${HDFF_DN_OUTPUT}/dataconf/")
+        #rm_f_dir "${DN_TMP_CREATECONF}/"*
+        if [ ! "$RET" = "0" ]; then
+            mr_trace "Error: copy temp dir: ${DN_TMP_CREATECONF}/ to ${HDFF_DN_OUTPUT}/dataconf/"
             exit 1
         fi
         ;;
@@ -365,6 +389,7 @@ prepare_all_tcl_scripts () {
     #rm -rf "${DN_TMP_CREATECONF}"
 
     mr_trace "DONE create config files"
+exit 1 # debug
 }
 
 
@@ -421,22 +446,17 @@ clean_one_tcldir () {
     FLG_ERR=1
     if [ -d "${PARAM_DN_DEST}" ]; then
         FLG_ERR=0
-        FLG_NONE=1
-        DN_ORIG3=$(pwd)
-        cd       "${DN_TEST}"
-        mr_trace "remove tmp-* files in ${DN_TEST}"
-        find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 10 rm -f
-        cd "${DN_ORIG3}"
+        find_file "${PARAM_DN_DEST}" -name "tmp-*" | xargs -n 1 rm_f_dir
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
-        #mr_trace "save ${PARAM_FN_LOG_ERROR}: ${DN_TEST}"
-        echo "${DN_TEST}" >> "${PARAM_FN_LOG_ERROR}"
+        echo -e "error-clean\t${DN_TEST}"
     fi
 }
 
 # check the throughput log file, if the log time reach to the pre-set end time.
 # checked both for UDP and TCP packets, with file prefix CMTCPDS and CMUDPDS
+# get the TIME_STOP from your config file
 check_one_tcldir () {
     PARAM_FN_CONF=$1
     shift
@@ -446,19 +466,23 @@ check_one_tcldir () {
     PARAM_FN_LOG_ERROR=$1
     shift
 
-    read_config_file "${PARAM_FN_CONF}"
+    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONF}" "${FN_TMP}" > /dev/null 2>&1
+    read_config_file "${FN_TMP}"
+    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+
     FLG_ERR=1
     mr_trace "checking $(basename ${PARAM_DN_DEST}) ..."
-    if [ -d "${PARAM_DN_DEST}" ]; then
+    local RET
+    RET=$(is_file_or_dir "${PARAM_DN_DEST}")
+    if [ "${RET}" = "d" ]; then
         FLG_ERR=0
         FLG_NONE=1
-        DN_ORIG4=$(pwd)
 
-        cd       "${PARAM_DN_DEST}"
-
-        mr_trace "checking CMTCPDS*.out ..."
         FN_TPFLOW="CMTCPDS*.out"
-        LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
+        mr_trace "checking tcp FN_TPFLOW=$FN_TPFLOW ..."
+        #mr_trace "find_file '${PARAM_DN_DEST}' -name '${FN_TPFLOW}' ..."
+        LST=$(find_file "${PARAM_DN_DEST}" -name "${FN_TPFLOW}" | sort)
         for i in $LST ; do
             FLG_NONE=0
             mr_trace "process flow throughput (tcp) $i ..."
@@ -471,9 +495,10 @@ check_one_tcldir () {
             fi
         done
 
-        mr_trace "checking CMUDPDS*.out ..."
         FN_TPFLOW="CMUDPDS*.out"
-        LST=$(find . -maxdepth 1 -type f -name "${FN_TPFLOW}" | awk -F/ '{print $2}' | sort)
+        mr_trace "checking udp FN_TPFLOW=$FN_TPFLOW ..."
+        #mr_trace "find_file '${PARAM_DN_DEST}' -name '${FN_TPFLOW}' ..."
+        LST=$(find_file "${PARAM_DN_DEST}" -name "${FN_TPFLOW}" | sort)
         for i in $LST ; do
             FLG_NONE=0
             mr_trace "process flow throughput (udp) $i ..."
@@ -486,7 +511,6 @@ check_one_tcldir () {
         if [ "$FLG_NONE" = "1" ]; then
             FLG_ERR=1
         fi
-        cd "${DN_ORIG4}"
     fi
 
     if [ "${FLG_ERR}" = "1" ]; then
@@ -494,9 +518,3 @@ check_one_tcldir () {
         echo "${PARAM_DN_DEST}" >> "${PARAM_FN_LOG_ERROR}"
     fi
 }
-
-if [ ! -f "${DN_TOP}/config-sys.sh" ]; then
-  generate_default_config > "${DN_TOP}/config-sys.sh"
-fi
-read_config_file "${DN_TOP}/config-sys.sh"
-check_global_config

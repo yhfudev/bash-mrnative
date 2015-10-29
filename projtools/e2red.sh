@@ -36,8 +36,8 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
-if [ -f "${DN_EXEC}/libshall.sh" ]; then
-. ${DN_EXEC}/libshall.sh
+if [ -f "${DN_EXEC}/liball.sh" ]; then
+. ${DN_EXEC}/liball.sh
 fi
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
@@ -45,17 +45,14 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
 fi
 #####################################################################
-
-DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-DN_LIB="$(my_getpath "${DN_TOP}/lib")"
-source ${DN_LIB}/libbash.sh
-source ${DN_LIB}/libshrt.sh
-source ${DN_LIB}/libplot.sh
-source ${DN_LIB}/libns2figures.sh
-source ${DN_EXEC}/libapp.sh
-
-source "${DN_TOP}/config-sys.sh"
-#DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+if [ ! "$RET0" = "f" ]; then
+    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+fi
+FN_TMP="/dev/shm/config-$(uuidgen)"
+copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+read_config_file "${FN_TMP}"
+rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
 check_global_config
 
@@ -77,8 +74,8 @@ worker_stats_throughput () {
     PARAM_TYPE="$1"
     shift
 
-    #mr_trace ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
-    ${DN_EXEC}/plotfigns2.sh tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
+    #mr_trace plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
+    plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -109,7 +106,7 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
   case "${MR_CMD}" in
   throughput)
     # REDUCE: read until reach to a different key, then reduce it
-    echo -e "tpflow\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
+    echo -e "bitflow\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
 
     # plot stats
     if [ ! "${PICGROUP_T_TAG}" = "${GROUP_STATS}" ] ; then

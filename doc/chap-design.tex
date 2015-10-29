@@ -61,6 +61,8 @@ The packet delay time processing includes:
 
 \chapter{Low Level Design}
 
+\section{main}
+
 
 \subsection{Interface of the generating configurations}
 
@@ -140,4 +142,114 @@ packet <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
 \end{lstlisting}
 
 Output: figures
+
+
+\section{utils}
+
+There're three types of environment be supported by the software,
+which are single host bash, hadoop, and myhadoop.
+
+In hadoop environment, the system will need HDFS to store both the data and executable for all of nodes involved.
+\begin{itemize}
+  \item executable: such as ns2 C++ binary and its support files
+  \item data: config files and TCL scripts for the specific simulation
+\end{itemize}
+Once a node start to run the simulation, the map-reduce script should load the binary files from HDFS to local host first,
+then read a global config file for environment settings,
+and read a config file for that simulation to continue simulation.
+
+While in myhadoop case, the data and executable are not necessary to be stored in HDFS since there's share file system for the HPC.
+But the user should also be warned because some type of network file system (NFS) will downgrade the simulation speed if the simulator write the data to the NFS directly.
+One of the trade-off is to copy the config files from the NFS to a directory of local disks and run the simulator on that directory and copy the data back to the NFS after finishing the simulation.
+
+To overcome all of these challenges mentioned above,
+we integrate the following functions in the software:
+\begin{itemize}
+  \item An abstract interface for the file system: it supports copy files, move files, print files on the standard output, find files etc. So that the software can support local files and HDFS files in a restricted computing environment (we're not system administrator and can't install various file system driver by ourselves.).
+  \item use local disks to store data temporally: to speed up the simulation.
+\end{itemize}
+
+
+We have following program entrances for various execution environments:
+
+\begin{itemize}
+  \item \texttt{run-sh1.sh}, run in a single host, to test the basic functions of the software;
+
+
+    It will call following scripts
+    \begin{itemize}
+      \item \texttt{e1map.sh}
+      \item \texttt{e2map.sh}
+      \item \texttt{e2red.sh}
+      \item \texttt{e3map.sh}
+    \end{itemize}
+  \item \texttt{run-hadoop.sh}, setup basic Hadoop environment, copy executable and data to HDFS, call \texttt{mod-share-worker.sh};
+    \begin{itemize}
+      \item \texttt{mod-share-worker.sh}, the hadoop main script, it will submit various map-reduce tasks for the simulation and data processing;
+        \begin{itemize}
+          \item \texttt{e1map.sh}
+          \item \texttt{e2map.sh}
+          \item \texttt{e2red.sh}
+          \item \texttt{e3map.sh}
+        \end{itemize}
+    \end{itemize}
+
+  \item \texttt{run-hadooppbs.sh}, get available HPC resources, setup basic resources info for Hadoop (cores, memory etc.), submit \texttt{mod-hadooppbs-jobmain.sh} to the PBS;
+
+    \begin{itemize}
+      \item \texttt{mod-hadooppbs-jobmain.sh}, setup myHadoop environment;
+
+        It setup myHadoop, start Hadoop over the nodes in HPC,
+
+        and call \texttt{mod-share-worker.sh}:
+        \begin{itemize}
+          \item \texttt{mod-share-worker.sh}, the hadoop main script, it will submit various map-reduce tasks for the simulation and data processing;
+
+          This script can runs in either Hadoop or myHadoop environment, and should using the environment variables from the setting scripts (\texttt{mod-hadooppbs-jobmain.sh} or \texttt{run-hadoop.sh})
+
+          It also sets following variables:
+            \begin{itemize}
+              \item \texttt{EXEC\_HADOOP} \texttt{hadoop} command
+              \item \texttt{HDJAR} find the \texttt{hadoop-streaming.jar}
+            \end{itemize}
+
+
+          It will call following scripts for map-reduce tasks:
+            \begin{itemize}
+              \item \texttt{e1map.sh}:
+
+                1. \texttt{DN\_TOP} is the path to the scripts, to find the global config file \texttt{config-sys.sh}; the \texttt{lib/libxxx.sh} and other files don't need be used since it is integrated in the \texttt{tempe1map.sh} by \texttt{mod-share-worker.sh};
+
+                2. \texttt{HDFF\_DN\_SCRATCH} is the path that the program can store temporary data, it may be changed by the \texttt{e1map.sh} at the begin according to the computing environment limitations.
+
+              \item \texttt{e2map.sh}
+              \item \texttt{e2red.sh}
+              \item \texttt{e3map.sh}
+            \end{itemize}
+        \end{itemize}
+
+    \end{itemize}
+
+\end{itemize}
+
+
+
+The scripts such as \texttt{e1map.sh}, \texttt{e2map.sh}, \texttt{e2red.sh}, \texttt{e3map.sh} etc,
+are executed in hadoop environment, so it should use the file system abstract interface when accessing file system.
+The other scripts may use it for convenience.
+
+
+
+The global variables (switches) in \texttt{config-sys.sh}:
+\begin{itemize}
+  \item \texttt{HDFF\_DN\_SCRATCH}, a suggested local path to store temporary data;
+
+  \item \texttt{HDFF\_DN\_OUTPUT}, the path that the results will be stored;
+\end{itemize}
+
+
+
+
+
+
 

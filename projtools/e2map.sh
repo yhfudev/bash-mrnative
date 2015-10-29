@@ -37,8 +37,8 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 #####################################################################
-if [ -f "${DN_EXEC}/libshall.sh" ]; then
-. ${DN_EXEC}/libshall.sh
+if [ -f "${DN_EXEC}/liball.sh" ]; then
+. ${DN_EXEC}/liball.sh
 fi
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
@@ -46,23 +46,21 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
 fi
 #####################################################################
-
-DN_COMM="$(my_getpath "${DN_EXEC}/common")"
-DN_LIB="$(my_getpath "${DN_TOP}/lib")"
-source ${DN_LIB}/libbash.sh
-source ${DN_LIB}/libshrt.sh
-source ${DN_LIB}/libplot.sh
-source ${DN_LIB}/libns2figures.sh
-
+# the default
 EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
-FN_LOG="/dev/null"
 
-source "${DN_TOP}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
+RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+if [ ! "$RET0" = "f" ]; then
+    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+fi
+FN_TMP="/dev/shm/config-$(uuidgen)"
+copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+read_config_file "${FN_TMP}"
+rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
 check_global_config
 
-source ${DN_EXEC}/libapp.sh
+mr_trace "e2map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
 #####################################################################
 # generate session for this process and its children
@@ -92,7 +90,7 @@ worker_check_ns2() {
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
     mr_trace "check_one_tcldir '$(basename ${PARAM_CONFIG_FILE})' '${DN_TEST}' '/dev/stdout' ..."
-    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ ! "$RET" = "" ]; then
         # error
         mr_trace "detected error at ${DN_TEST}"
@@ -123,16 +121,17 @@ worker_check_run() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+    RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "/dev/stdout")
     if [ "$RET" = "" ]; then
         # the task was finished successfully
         prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
     else
         TM_START=$(date +%s.%N)
-        run_one_ns2 "${DN_RESULTS}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
+        run_one_ns2 "${HDFF_DN_OUTPUT}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
         TM_END=$(date +%s.%N)
         # check the result
-        RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${DN_RESULTS}/dataconf/${DN_TEST}" "/dev/stdout")
+        RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "/dev/stdout")
+        mr_trace check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" return $RET
         if [ ! "$RET" = "" ]; then
             # error
             echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
@@ -192,14 +191,11 @@ worker_clean() {
 
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
-    DN_ORIG1=$(pwd)
-    cd "${DN_RESULTS}/figures/${PARAM_PREFIX}"
-    mr_trace "remove file tmp-*, fig-* from ${DN_RESULTS}/figures/${PARAM_PREFIX}"
-    find . -maxdepth 1 -type f -name "tmp-*" | xargs -n 5 rm -f
-    find . -maxdepth 1 -type f -name "fig-*" | xargs -n 5 rm -f
-    cd "${DN_ORIG1}"
+    mr_trace "remove file tmp-*, fig-* from ${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}"
+    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "tmp-*" | xargs -n 1 rm_f_dir
+    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "fig-*" | xargs -n 1 rm_f_dir
 
-    clean_one_tcldir "${DN_RESULTS}/dataconf/${DN_TEST}"
+    clean_one_tcldir "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}"
 
     #prepare_figure_commands_for_one_stats "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
@@ -244,11 +240,13 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
 
   error-run)
     mr_trace "regenerate the TCL scripts for ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE}"
-    DN_TMP_CREATECONF="$(my_getpath "${DN_SCRATCH}/tmp-createconf")"
+    DN_TMP_CREATECONF="${HDFF_DN_SCRATCH}/tmp-createconf-$(uuidgen)"
     prepare_one_tcl_scripts "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+    copy_file "${DN_TMP_CREATECONF}/"* "${HDFF_DN_OUTPUT}/dataconf/" > /dev/null 2>&1
+    rm_f_dir "${DN_TMP_CREATECONF}/"*
 
     mr_trace "redo unfinished run: ${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
-    worker_check_ns2 "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
+    worker_check_run "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &
     PID_CHILD=$!
     mp_add_child_check_wait ${PID_CHILD}
     ;;

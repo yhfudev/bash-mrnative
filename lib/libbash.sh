@@ -361,7 +361,6 @@ detect_os_type 1>&2
 #hiter hash
 #install_package apt-get subversion
 #exit 0
-
 ######################################################################
 EXEC_SSH="$(which ssh)"
 if [ ! -x "${EXEC_SSH}" ]; then
@@ -396,7 +395,7 @@ else
     DN_EXEC="./"
 fi
 
-############################################################
+######################################################################
 # ssh
 # generate the cert of localhost
 ssh_check_id_file () {
@@ -424,7 +423,7 @@ ssh_ensure_connection () {
     fi
 }
 
-############################################################
+######################################################################
 # Math Lib:
 
 # 最大公约数 (Greatest Common Divisor, GCD)
@@ -457,7 +456,7 @@ gcd () {
     echo $(($NUM1 * $NUM2 / $a))
 }
 
-############################################################
+######################################################################
 # IPv4 address Lib:
 die() {
     echo "Error: $@" 1>&2
@@ -560,7 +559,7 @@ IPv4_convert () {
     OUTPUT_IPV4_DHCP_KNOW_RANGE="$(  IPv4_from_int $((  $intBASE + 1 + $SZ1  ))  )    $(  IPv4_from_int $((  $MID  ))  )"
 }
 
-############################################################
+#####################################################################
 # http://blog.n01se.net/blog-n01se-net-p-145.html
 # redirect tty fds to /dev/null
 redirect-std() {
@@ -602,4 +601,51 @@ daemonize-job() {
     disown -h $!       # 2.2.3. guard against HUP (in parent)
 }
 
-############################################################
+#####################################################################
+# the format of the segment file name, it seems 19 is the max value for gawk.
+PRIuSZ="%019d"
+
+#####################################################################
+# becareful the danger execution, such as rm -rf ...
+# use DANGER_EXEC=echo to skip all of such executions.
+DANGER_EXEC=echo
+
+mr_trace () {
+    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
+}
+mr_exec_do () {
+    mr_trace "$@"
+    $@
+}
+mr_exec_skip () {
+    mr_trace "DEBUG (skip) $@"
+}
+
+MYEXEC=mr_exec_do
+#MYEXEC=
+if [ "$FLG_SIMULATE" = "1" ]; then
+    MYEXEC=mr_exec_skip
+fi
+
+fatal_error () {
+  PARAM_MSG="$1"
+  mr_trace "Fatal error: ${PARAM_MSG}" 1>&2
+  #exit 1
+}
+
+#####################################################################
+HDFF_EXCLUDE_4PREFIX="\.\,?\!\-_:;\]\[\#\|\$()\"%"
+generate_prefix_from_filename () {
+  PARAM_FN="$1"
+  shift
+
+  echo "${PARAM_FN//[${HDFF_EXCLUDE_4PREFIX}]/}" | tr [:upper:] [:lower:]
+}
+
+HDFF_EXCLUDE_4FILENAME="\""
+unquote_filename () {
+  PARAM_FN="$1"
+  shift
+  #mr_trace "PARAM_FN=${PARAM_FN}; dirname=$(dirname "${PARAM_FN}"); readlink2=$(readlink -f "$(dirname "${PARAM_FN}")" )"
+  echo "${PARAM_FN//[${HDFF_EXCLUDE_4FILENAME}]/}" | sed 's/\t//g'
+}

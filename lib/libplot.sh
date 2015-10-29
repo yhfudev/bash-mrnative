@@ -6,11 +6,11 @@
 # Copyright 2014 Yunhui Fu
 # License: GPL v3.0 or later
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
-#####################################################################
-DN_TEMP="/tmp/"
+
+# please make sure the following variables are set:
+if [ "${HDFF_DN_SCRATCH}" = "" ]; then
+HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+fi
 
 EXEC_AWK=$(which gawk)
 EXEC_PLOT=$(which gnuplot)
@@ -286,7 +286,6 @@ replot
 EOF
 fi
 
-
 }
 
 #gplot_draw_statfig "file.dat" 3 "Aggregate Throughput" "Throughput (bps)" "fig-aggtp-${PARAM_FLOW_TYPE}"
@@ -312,7 +311,7 @@ gplot_draw_statfig () {
     shift
 
     # plot figure
-    FN_TMPGP=tmp-statsfig-$PARAM_FN_OUTFIG.gplot
+    FN_TMPGP="${HDFF_DN_SCRATCH}/tmp-statsfig-$PARAM_FN_OUTFIG.gplot"
     gplot_setheader "${FN_TMPGP}"
 
     TITLE="${PARAM_TITLE}"
@@ -331,7 +330,7 @@ set xlabel "${XLABEL}"
 set ylabel "${YLABEL}"
 EOF
     for sched in $LIST_SCHEDULERS ; do
-        FN="tmp-stats-$sched-col-${PARAM_COL}.dat"
+        FN="${HDFF_DN_SCRATCH}/tmp-stats-$sched-col-${PARAM_COL}.dat"
         cat ${PARAM_FN_DATA} | grep $sched | awk "{print \$1 \" \" \$${PARAM_COL};}" > "${FN}"
         TTT="$(sed 's/[\"\`_]/ /g' <<<$sched)"
         if [ ! "${PLOT_LINE}" = "" ] ; then PLOT_LINE="${PLOT_LINE},"; fi
@@ -342,12 +341,6 @@ EOF
     mr_trace "ploting ${PARAM_FN_OUTFIG} ..."
     plot_script "${FN_TMPGP}"
 }
-
-#####################################################################
-# please make sure the following variables are set:
-if [ "${DN_TEMP}" = "" ]; then
-    DN_TEMP="/tmp/"
-fi
 
 #####################################################################
 # Some useful sub-functions for plotting PDF/CDF figures.
@@ -482,7 +475,7 @@ plotgen_pdf_with_minmax () {
     #FN_BASE=`echo "${PARAM_FN_FULL}" | ${EXEC_AWK} -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}'`
 
     if [ "${PARAM_FN_OUT_GNUPLOT}" = "" ]; then
-        FN_TMPGP="${DN_TEMP}op-tmp1.gp"
+        FN_TMPGP="${HDFF_DN_SCRATCH}/op-tmp1.gp"
     else
         FN_TMPGP="${PARAM_FN_OUT_GNUPLOT}"
     fi
@@ -598,7 +591,7 @@ plotgen_pdf () {
     # extend the box width by x3
     MIN_INTERVAL=$( _get_interval_gz "${PARAM_FN_INTERVALS}" )
 
-    mr_trace "DEBUG: ==== ${PARAM_TITLE}: min/max/avg = ${MIN_INTERVAL}; fn=${PARAM_FN_INTERVALS}"
+    #mr_trace "DEBUG: ==== ${PARAM_TITLE}: min/max/avg = ${MIN_INTERVAL}; fn=${PARAM_FN_INTERVALS}"
 
     # get the max interval
     MAX_INTERVAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $2}'`
@@ -621,7 +614,7 @@ plotgen_pdf () {
     TOTAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $5}'`
 
     MIN_INTERVAL=`echo "${MIN_INTERVAL}" | ${EXEC_AWK} '{print $1}'`
-    mr_trace "DEBUG: ==== maxinterval=${MAX_INTERVAL}; mininterval=${MIN_INTERVAL}; avg interval=${INTERVAL}; "
+    #mr_trace "DEBUG: ==== maxinterval=${MAX_INTERVAL}; mininterval=${MIN_INTERVAL}; avg interval=${INTERVAL}; "
 
 if [ 0 = 1 ]; then
     MAX_INTERVAL_BAK=${MAX_INTERVAL}

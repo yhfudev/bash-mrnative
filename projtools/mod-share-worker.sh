@@ -52,14 +52,14 @@ if [ ! -d "${PROJ_HOME}" ]; then
   PROJ_HOME="${DN_TOP}"
 fi
 mkdir -p "${PROJ_HOME}"
-if [ ! "$?" = "0" ]; then mr_trace "$(basename $0) Error in mkdir $PROJ_HOME" ; fi
+if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $PROJ_HOME" ; fi
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
 mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
 
 source "${PROJ_HOME}/config-sys.sh"
-DN_RESULTS="$(my_getpath "${HDFF_DN_OUTPUT}")"
-mr_trace "DN_RESULTS=$DN_RESULTS"
+
+mr_trace "HDFF_DN_OUTPUT=$HDFF_DN_OUTPUT"
 
 # detect if the DN_EXEC is real directory of the binary code
 # this is for PBS/HPC environment
@@ -115,8 +115,11 @@ generate_script_4hadoop () {
   echo "DN_TOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
   cat "${DN_TOP}/lib/libbash.sh" >> "${PARAM_OUTPUT}"
   cat "${DN_TOP}/lib/libshrt.sh" >> "${PARAM_OUTPUT}"
+  cat "${DN_TOP}/lib/libfs.sh"   >> "${PARAM_OUTPUT}"
   cat "${DN_TOP}/lib/libplot.sh" >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libns2figures.sh" >> "${PARAM_OUTPUT}"
+  cat "${DN_TOP}/lib/libconfig.sh"   >> "${PARAM_OUTPUT}"
+  cat "${DN_FILE9}/libns2config.sh"  >> "${PARAM_OUTPUT}"
+  cat "${DN_FILE9}/libns2figures.sh" >> "${PARAM_OUTPUT}"
   cat "${DN_FILE9}/libapp.sh" >> "${PARAM_OUTPUT}"
   echo "DN_EXEC_4HADOOP=${DN_EXEC}" >> "${PARAM_OUTPUT}"
   echo "DN_TOP_4HADOOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
@@ -125,7 +128,10 @@ generate_script_4hadoop () {
   cat "${PARAM_ORIG}" \
     | grep -v "libbash.sh" \
     | grep -v "libshrt.sh" \
+    | grep -v "libfs.sh" \
     | grep -v "libplot.sh" \
+    | grep -v "libconfig.sh" \
+    | grep -v "libns2config.sh" \
     | grep -v "libns2figures.sh" \
     | grep -v "libapp.sh" \
     | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
@@ -141,8 +147,8 @@ TM_START=$(date +%s)
 
 # generate config lines
 #DN_INPUT="${PROJ_HOME}/data/input/"
-DN_INPUT=${DN_RESULTS}/mapred-data/input
-DN_PREFIX=${DN_RESULTS}/mapred-data/output
+DN_INPUT=${HDFF_DN_OUTPUT}/mapred-data/input
+DN_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/output
 
 if [ 1 = 1 ]; then
     # genrate input file:
