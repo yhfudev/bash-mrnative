@@ -6,11 +6,6 @@ HDFF_PROJ_ID=mr4ns2
 # description
 HDFF_PROJ_DESC="Map-Reduce for NS2 simulations"
 
-# the output file directory
-#HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
-#HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
-HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
-
 # how many running processes in each node
 # 0 -- auto detect the CPU cores, use about 5/7 of them
 HDFF_NUM_CLONE=0
@@ -22,11 +17,15 @@ HDFF_TOTAL_NODES=1
 HDFF_FN_LOG="/dev/null"
 #HDFF_FN_LOG="mylog.txt"
 
+# the output file directory
+#HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
+#HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
+HDFF_DN_OUTPUT=hdfs:///user/${USER}/mapreduce-results/
+
 # the temporary directory for NS2 simulator
 #HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 #HDFF_DN_SCRATCH="/local_scratch/${USER}/"
 HDFF_DN_SCRATCH=/dev/shm/${USER}/
-
 
 # the directory for save the un-tar binary files
 # it should be a directory in a local disk
