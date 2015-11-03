@@ -27,21 +27,24 @@ my_getpath () {
     echo "${DN}/${FN}"
   fi
 }
-#DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
-DN_EXEC=$(dirname $(my_getpath "$0") )
-if [ ! "${DN_EXEC}" = "" ]; then
-    export DN_EXEC="$(my_getpath "${DN_EXEC}")/"
-else
-    export DN_EXEC="${DN_EXEC}/"
+if [ "${DN_TOP}" = "" ]; then
+    #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
+    DN_EXEC=$(dirname $(my_getpath "$0") )
+    if [ ! "${DN_EXEC}" = "" ]; then
+        export DN_EXEC="$(my_getpath "${DN_EXEC}")/"
+    else
+        export DN_EXEC="${DN_EXEC}/"
+    fi
+    DN_TOP="$(my_getpath "${DN_EXEC}/../")"
+    DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+    FN_CONF_SYS="${DN_TOP}/config-sys.sh"
 fi
-DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
 mr_trace () {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
 
+DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 source ${DN_LIB}/libfs.sh
 
 #####################################################################
@@ -98,8 +101,10 @@ generate_script_4hadoop () {
     echo '#!/bin/bash'                      | save_file "${PARAM_OUTPUT}"
     echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
     echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"
+    echo "FN_CONF_SYS_4HADOOP=${FN_CONF_SYS}" | save_file "${PARAM_OUTPUT}"
     echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
     echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
+    echo "FN_CONF_SYS=${FN_CONF_SYS}"       | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_FILE9}/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libbash.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libshrt.sh"     | save_file "${PARAM_OUTPUT}"

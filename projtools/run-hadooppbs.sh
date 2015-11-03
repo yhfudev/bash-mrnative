@@ -214,10 +214,10 @@ if [ "$A" = "" ]; then
     mr_trace "Error in get # of nodes."
     exit 1
 fi
-REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 2) "gb";}')
+REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 3) "gb";}')
 CORES=$(echo $A | awk '{print $1;}')
 NODES=$(echo $A | awk '{print $3;}')
-MEM=$(echo $A | awk '{print ($2-2)*1024;}')
+MEM=$(echo $A | awk '{print ($2-3)*1024;}')
 
 # set cores in config-sys.sh file
 sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
@@ -231,8 +231,11 @@ HDFF_DN_OUTPUT="file:///scratch1/$USER/jjmtest-output/"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
 
 # scratch(temp) dir
-HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+#HDFF_DN_SCRATCH="/tmp/${USER}/"
+#HDFF_DN_SCRATCH="/run/shm/${USER}/"
+#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 #HDFF_DN_SCRATCH="/local_scratch/\$USER/"
+HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
 
 # the directory for save the un-tar binary files
@@ -353,7 +356,7 @@ if (( ${MR_JOB_MEM} * 3 > ${MEM} )) ; then
     MR_JOB_MEM=$(( ${MEM} / 3 ))
 fi
 
-. ./mod-hadooppbs-setenv.sh
+. ./mod-setenv-hadoop.sh
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
     mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
     DN_ORIG7=$(pwd)

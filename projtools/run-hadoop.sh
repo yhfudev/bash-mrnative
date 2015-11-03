@@ -37,6 +37,7 @@ DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
+source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
 
@@ -49,6 +50,9 @@ HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
 
 # scratch(temp) dir
+#HDFF_DN_SCRATCH="/tmp/${USER}/"
+#HDFF_DN_SCRATCH="/run/shm/${USER}/"
+#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
 
@@ -71,11 +75,17 @@ cp "../${FN_TAR_MRNATIVE}" .
 HDFF_FN_TAR_MRNATIVE="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
 sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
 
+P=
+#P=$(echo $(basename "${FN_TAR_MRNATIVE}") | awk -F. '{name=$1; for (i=2; i + 1 < NF; i ++) name=name "." $i } END {print name}')
+FN_CONF_SYS="${HDFF_DN_BIN}/${P}/config-sys.sh"
+make_dir "${HDFF_DN_BIN}/${P}/"
+copy_file "${DN_TOP}/config-sys.sh" "${FN_CONF_SYS}"
+
 #####################################################################
 if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
 .   ${DN_EXEC}/mod-setenv-hadoop.sh
 else
-    mr_trace "Error: not found file ${DN_EXEC}/mod-hadooppbs-setenv.sh"
+    mr_trace "Error: not found file ${DN_EXEC}/mod-setenv-hadoop.sh"
     exit 1
 fi
 
@@ -131,6 +141,7 @@ mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Data/gutenberg
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} jar ${HADOOP_HOME}/hadoop-0.20.2-examples.jar wordcount Data/gutenberg Outputs
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
+
 . ${DN_EXEC}/mod-share-worker.sh
 echo
 mapred_main

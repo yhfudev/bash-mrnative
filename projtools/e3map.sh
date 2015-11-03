@@ -36,6 +36,7 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+FN_CONF_SYS="${DN_TOP}/config-sys.sh"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh
@@ -44,14 +45,17 @@ fi
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_EXEC="${DN_EXEC_4HADOOP}"
   DN_TOP="${DN_TOP_4HADOOP}"
+  FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
 #####################################################################
-RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+RET0=$(is_file_or_dir "${FN_CONF_SYS}")
 if [ ! "$RET0" = "f" ]; then
-    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+    mr_trace "Warning: not found config file '${FN_CONF_SYS}'!"
+    mr_trace "generating new config file '${FN_CONF_SYS}' ..."
+    generate_default_config | save_file "${FN_CONF_SYS}"
 fi
-FN_TMP="/dev/shm/config-$(uuidgen)"
-copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+FN_TMP="/tmp/config-$(uuidgen)"
+copy_file "${FN_CONF_SYS}" "${FN_TMP}" > /dev/null 2>&1
 read_config_file "${FN_TMP}"
 rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 

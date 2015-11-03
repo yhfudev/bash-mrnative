@@ -28,7 +28,6 @@ include_HEADERS = \
     $(top_srcdir)/projtools/e2red.sh \
     $(top_srcdir)/projtools/e3map.sh \
     $(top_srcdir)/projtools/mod-hadooppbs-jobmain.sh \
-    $(top_srcdir)/projtools/mod-hadooppbs-setenv.sh \
     $(top_srcdir)/projtools/mod-setenv-hadoop.sh \
     $(top_srcdir)/projtools/mod-share-worker.sh \
     $(top_srcdir)/projtools/plotall.sh \
@@ -72,6 +71,10 @@ include_HEADERS = \
     $(top_srcdir)/projtools/common/profile.tcl \
     $(top_srcdir)/projtools/common/sched-defs.tcl \
     $(top_srcdir)/projtools/common/tcpudp-util.tcl \
+    $(top_srcdir)/autogen.sh \
+    $(top_srcdir)/autoclean.sh \
+    $(top_srcdir)/compile \
+    $(top_srcdir)/install-sh \
     $(NULL)
 
 noinst_HEADERS= \

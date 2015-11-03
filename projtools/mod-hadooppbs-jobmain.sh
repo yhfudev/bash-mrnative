@@ -47,6 +47,7 @@ cd $PBS_O_WORKDIR
 DN_EXEC="$(my_getpath "$(pwd)")"
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+FN_CONF_SYS="${DN_TOP}/config-sys.sh"
 
 mr_trace "PBS_O_WORKDIR=$PBS_O_WORKDIR"
 mr_trace "DN_TOP=$DN_TOP"

@@ -371,7 +371,7 @@ plot_ns2_type () {
 
     "tpstat")
         local FN_CONFIG_PROJ=$ARG_FLOW_TYPE
-        local FN_TMP="/dev/shm/config-$(uuidgen)"
+        local FN_TMP="/tmp/config-$(uuidgen)"
         copy_file "${FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
         read_config_file "${FN_TMP}"
         rm_f_dir "${FN_TMP}" > /dev/null 2>&1

@@ -37,6 +37,7 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+FN_CONF_SYS="${DN_TOP}/config-sys.sh"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh
@@ -45,27 +46,30 @@ fi
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_EXEC="${DN_EXEC_4HADOOP}"
   DN_TOP="${DN_TOP_4HADOOP}"
+  FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
 #####################################################################
 #HDFF_NUM_CLONE=0
 #HDFF_TOTAL_NODES=1
 #HDFF_FN_LOG="/dev/null"
-#HDFF_DN_SCRATCH="/dev/shm1/${USER}/"
+#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 
-RET0=$(is_file_or_dir "${DN_TOP}/config-sys.sh")
+RET0=$(is_file_or_dir "${FN_CONF_SYS}")
 if [ ! "$RET0" = "f" ]; then
-    generate_default_config | save_file "${DN_TOP}/config-sys.sh"
+    mr_trace "Warning: not found config file '${FN_CONF_SYS}'!"
+    mr_trace "generating new config file '${FN_CONF_SYS}' ..."
+    generate_default_config | save_file "${FN_CONF_SYS}"
 fi
-FN_TMP="/dev/shm/config-$(uuidgen)"
-copy_file "${DN_TOP}/config-sys.sh" "${FN_TMP}" > /dev/null 2>&1
+FN_TMP="/tmp/config-$(uuidgen)"
+copy_file "${FN_CONF_SYS}" "${FN_TMP}" > /dev/null 2>&1
 read_config_file "${FN_TMP}"
 rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
 check_global_config
 
-mr_trace cat_file "${DN_TOP}/config-sys.sh"
-cat_file "${DN_TOP}/config-sys.sh" 1>&2
-mr_trace "e1map, global config=${DN_TOP}/config-sys.sh"
+mr_trace cat_file "${FN_CONF_SYS}"
+cat_file "${FN_CONF_SYS}" 1>&2
+mr_trace "e1map, global config=${FN_CONF_SYS}"
 mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
 #####################################################################
@@ -73,6 +77,7 @@ mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #  use mp_get_session_id to get the session id later
 mp_new_session
 
+# extract the mrnative, include the files in projtool/common which are used in setting ns2 TCL scripts
 prepare_mrnative_binary_ns2
 DN_EXEC="${DN_TOP}/projtools/"
 DN_COMM="${DN_EXEC}/common/"

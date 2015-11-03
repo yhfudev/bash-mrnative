@@ -117,7 +117,7 @@ run_one_ns2 () {
 
     # read in the config file for this test group
     # in this case, is to read the config for USE_MEDIUMPACKET
-    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    local FN_TMP="/tmp/config-$(uuidgen)"
     copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
     read_config_file "${FN_TMP}"
     rm_f_dir "${FN_TMP}" > /dev/null 2>&1
@@ -414,7 +414,7 @@ prepare_all_tcl_scripts () {
     local PARAM_FN_CONFIG_PROJ=$1
     shift
 
-    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    local FN_TMP="/tmp/config-$(uuidgen)"
     mr_trace "read proj config file: ${PARAM_FN_CONFIG_PROJ} ..."
     copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
     read_config_file "${FN_TMP}"
@@ -553,7 +553,7 @@ check_one_tcldir () {
     PARAM_FN_LOG_ERROR=$1
     shift
 
-    local FN_TMP="/dev/shm/config-$(uuidgen)"
+    local FN_TMP="/tmp/config-$(uuidgen)"
     copy_file "${PARAM_FN_CONF}" "${FN_TMP}" > /dev/null 2>&1
     read_config_file "${FN_TMP}"
     rm_f_dir "${FN_TMP}" > /dev/null 2>&1
