@@ -62,16 +62,6 @@ fi
 DN_EXEC1="${PROJ_HOME}/projtools"
 
 ### Run the myHadoop environment script to set the appropriate variables
-#
-# Note: ensure that the variables are set correctly in bin/mod-hadooppbs-setenv.sh
-if [ -f "${DN_EXEC1}/mod-hadooppbs-setenv.sh" ]; then
-.   ${DN_EXEC1}/mod-hadooppbs-setenv.sh
-else
-    mr_trace "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
-    exit 1
-fi
-
-export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
 
 #### Set this to the directory where Hadoop configs should be generated
 # Don't change the name of this variable (HADOOP_CONF_DIR) as it is
@@ -83,48 +73,25 @@ export HADOOP_CONF_DIR=${PBS_O_WORKDIR}/hadoopconfigs-$PBS_JOBID
 mkdir -p "${HADOOP_CONF_DIR}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
+# Note: ensure that the variables are set correctly in bin/mod-hadooppbs-setenv.sh
+if [ -f "${DN_EXEC1}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_EXEC1}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
+    exit 1
+fi
+
 rm -rf ${HADOOP_HOME}/logs/*
 #mkdir -p "${HADOOP_LOG_DIR}"
 #if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_LOG_DIR}" ; fi
+
+export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
 
 #### Set up the configuration
 # Make sure number of nodes is the same as what you have requested from PBS
 # usage: ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -h
 mr_trace "Set up the configurations for myHadoop"
 ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -n ${PBS_NUM_NODES} -c ${HADOOP_CONF_DIR} -s /local_scratch/$USER/$PBS_JOBID
-
-start_hadoop () {
-    mr_trace "Start all Hadoop daemons"
-    if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
-        ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
-
-    elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
-        ${HADOOP_HOME}/bin/start-all.sh
-
-    else
-        mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
-        exit 1
-    fi
-    #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-    echo
-    jps
-}
-stop_hadoop () {
-    mr_trace "Stop all Hadoop daemons"
-    jps
-    if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
-        ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
-
-    elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
-        ${HADOOP_HOME}/bin/stop-all.sh
-
-    else
-        mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
-        exit 1
-    fi
-    echo
-    jps
-}
 
 #### Start the Hadoop cluster
 start_hadoop

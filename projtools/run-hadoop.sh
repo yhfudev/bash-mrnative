@@ -35,50 +35,10 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
+source ${DN_LIB}/libfs.sh
 
-#####################################################################
-start_hadoop () {
-    mr_trace "Start all Hadoop daemons"
-    if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
-        ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
-
-    elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
-        ${HADOOP_HOME}/bin/start-all.sh
-
-    else
-        mr_trace "Not found ${HADOOP_HOME}/bin/start-all.sh"
-        exit 1
-    fi
-    #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-    echo
-    jps
-
-    mr_trace "wait for hadoop ready, sleep 10 ..."
-    sleep 10
-}
-
-stop_hadoop () {
-    mr_trace "Stop all Hadoop daemons"
-    jps
-    if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
-        ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
-
-    elif [ -x "${HADOOP_HOME}/bin/stop-all.sh" ]; then
-        ${HADOOP_HOME}/bin/stop-all.sh
-
-    else
-        mr_trace "Not found ${HADOOP_HOME}/bin/stop-all.sh"
-        exit 1
-    fi
-    echo
-    jps
-}
-
-#####################################################################
 # redirect the output to HDFS so we can fetch back later
 HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
@@ -87,13 +47,34 @@ sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/co
 HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
 
+# the directory for save the un-tar binary files
+HDFF_DN_BIN="/dev/shm/${USER}/bin"
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+
 # tar the binary and save it to HDFS for the node extract it later
-# TODO:
-#   1. the tar file for ns2 exec
-#   2. the HDFS path to this project
+# the tar file for ns2 exec
+FN_TAR_APP="ns2docsis-ds31profile-i386-compiled.tar.gz"
+HDFF_FN_TAR_APP="hdfs:///user/${USER}/${FN_TAR_APP}"
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+
+# the HDFS path to this project
+cd ..
+make dist-gzip
+FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | head -n 1)
+cd -
+cp "../${FN_TAR_MRNATIVE}" .
+HDFF_FN_TAR_MRNATIVE="hdfs:///user/${USER}/${FN_TAR_MRNATIVE}"
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
 
 #####################################################################
-stop_hadoop
+if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_EXEC}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_EXEC}/mod-hadooppbs-setenv.sh"
+    exit 1
+fi
+
+#stop_hadoop
 #exit 0 # debug
 jps | grep NameNode
 if [ "$?" = "1" ]; then
@@ -103,6 +84,40 @@ fi
 #exit 0 # debug
 #hadoop dfsadmin -safemode leave
 #hdfs dfsadmin -safemode leave
+
+# put the file to HDFS ...
+mr_trace "copying '${FN_TAR_MRNATIVE}' to '${HDFF_FN_TAR_MRNATIVE}' ..."
+DN1="$(dirname ${HDFF_FN_TAR_MRNATIVE})"
+RET=$(make_dir "${DN1}")
+if [ ! "$RET" = "0" ]; then
+    mr_trace "Warning: failed to hadoop mkdir ${DN1}, try again ..."
+    hadoop dfsadmin -safemode leave
+    hdfs dfsadmin -safemode leave
+    RET=$(make_dir "${DN1}")
+    if [ ! "$RET" = "0" ]; then
+        mr_trace "Error in hadoop mkdir ${DN1}"
+        return
+    fi
+fi
+
+rm_f_dir "${HDFF_FN_TAR_MRNATIVE}"
+RET=$(copy_file "${FN_TAR_MRNATIVE}" "${HDFF_FN_TAR_MRNATIVE}")
+if [ ! "$RET" = "0" ]; then
+    mr_trace "Warning: failed to hadoop copy file ${FN_TAR_MRNATIVE}, try again ..."
+    hadoop dfsadmin -safemode leave
+    hdfs dfsadmin -safemode leave
+    RET=$(copy_file "${FN_TAR_MRNATIVE}" "${HDFF_FN_TAR_MRNATIVE}")
+    if [ ! "$?" = "0" ]; then
+        mr_trace "Error in hadoop copyfile ${FN_TAR_MRNATIVE}"
+        return
+    fi
+fi
+
+make_dir "$(dirname ${HDFF_FN_TAR_APP})"
+mr_trace "copying '${FN_TAR_APP}' to '${HDFF_FN_TAR_APP}' ..."
+rm_f_dir "${HDFF_FN_TAR_APP}"
+copy_file "${FN_TAR_APP}"      "${HDFF_FN_TAR_APP}"
+#exit 0 # debug
 
 #### Run your jobs here
 mr_trace "Run some test Hadoop jobs"
@@ -116,7 +131,7 @@ echo
 mapred_main
 
 jps | grep NameNode
-if [ "$?" = "0" ]; then
-#if [ 0 = 1 ]; then
+#if [ "$?" = "0" ]; then
+if [ 0 = 1 ]; then
     stop_hadoop
 fi

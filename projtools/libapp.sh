@@ -28,6 +28,78 @@ my_getpath () {
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
+# untar the ns2 binary from the file specified by HDFF_FN_TAR_APP
+extrace_binary() {
+    PARAM_FN_TAR=$1
+    shift
+
+    local RET=$(is_local "${HDFF_DN_BIN}")
+    if [ ! "${RET}" = "l" ]; then
+        mr_trace "Error: binary is not local dir: ${HDFF_DN_BIN}"
+        exit 1
+    fi
+    mr_trace "extract ${PARAM_FN_TAR} to dir ${HDFF_DN_BIN} ..."
+    extract_file "${PARAM_FN_TAR}" ${HDFF_DN_BIN} >/dev/null 2>&1
+    P=$(echo $(basename "${PARAM_FN_TAR}") | awk -F. '{name=$1; for (i=2; i + 1 < NF; i ++) name=name "." $i } END {print name}')
+
+    #DN=$(ls ${HDFF_DN_BIN}/${P}* | head -n 1)
+    mr_trace "DN1=$(ls ${HDFF_DN_BIN}/${P}* | head -n 1)"
+    DN="${HDFF_DN_BIN}/${P}"
+    mr_trace "DN=$DN"
+    echo $DN
+}
+
+prepare_app_binary_ns2() {
+    if [ "${HDFF_FN_TAR_APP}" = "" ]; then
+        # detect the application execuable
+        EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
+        mr_trace "try detect ns2 1: ${EXEC_NS2}"
+    else
+        local DN2=$(extrace_binary "${HDFF_FN_TAR_APP}")
+        EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
+        mr_trace "try detect ns2 2: ${EXEC_NS2}"
+        if [ ! -x "${EXEC_NS2}" ]; then
+            EXEC_NS2="$(dirname ${DN2})/ns2docsis-ds31profile/ns-2.33/ns"
+            mr_trace "try detect ns2 3: ${EXEC_NS2}"
+        fi
+        if [ ! -x "${EXEC_NS2}" ]; then
+            EXEC_NS2="${HDFF_DN_BIN}/ns2docsis-ds31profile/ns-2.33/ns"
+            mr_trace "try detect ns2 4: ${EXEC_NS2}"
+        fi
+        if [ ! -x "${EXEC_NS2}" ]; then
+            EXEC_NS2="$(dirname ${HDFF_FN_TAR_APP})/ns2docsis-ds31profile/ns-2.33/ns"
+            mr_trace "try detect ns2 5: ${EXEC_NS2}"
+        fi
+    fi
+
+    if [ ! -x "${EXEC_NS2}" ]; then
+        EXEC_NS2=$(which ns2)
+        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+    fi
+    mr_trace "EXEC_NS2=${EXEC_NS2}"
+    if [ ! -x "${EXEC_NS2}" ]; then
+        mr_trace "Error: not found ns2"
+    fi
+}
+
+# untar the mrnative binary from the file specified by HDFF_FN_TAR_MRNATIVE
+# return the path to the untar files
+prepare_mrnative_binary_ns2() {
+    if [ "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
+        # detect the marnative dir
+        mr_trace "Error: not found mrnative file '${HDFF_FN_TAR_MRNATIVE}'"
+    else
+        local DN2=$(extrace_binary "${HDFF_FN_TAR_MRNATIVE}")
+        if [ -d "${DN2}" ] ; then
+            DN_TOP=$(my_getpath "${DN2}")
+            mr_trace "[DBG] set top dir to '${DN_TOP}'"
+        else
+            mr_trace "Error: not found mrnative top dir '${DN2}'"
+        fi
+    fi
+}
+
+#####################################################################
 FN_TCL=main.tcl
 
 #HDFF_DN_SCRATCH="/dev/shm/$USER/"
@@ -74,9 +146,12 @@ run_one_ns2 () {
         mkdir -p "${DN_WORKING}"
         mr_trace "run ns2: copy from parent to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
         #rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.tcl" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.dat" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.sh" | while read a; do copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.tcl to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.tcl" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.dat to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.dat" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.sh to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.sh" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
         RET=$?
         if [ ! "$RET" = "0" ]; then
             mr_trace "Error: copy temp dir: $PARAM_DN_TEST to ${DN_WORKING}/"
@@ -125,6 +200,7 @@ run_one_ns2 () {
     fi
 }
 
+# all the files should be in the local disk
 prepare_one_tcl_scripts () {
     # the prefix of the test
     PARAM_PREFIX=$1
@@ -333,23 +409,34 @@ prepare_one_tcl_scripts () {
 # HDFF_DN_SCRATCH should be in global config file (config-sys.sh)
 # PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
 prepare_all_tcl_scripts () {
-    PARAM_COMMAND=$1
+    local PARAM_COMMAND=$1
     shift
-    PARAM_FN_CONFIG_PROJ=$1
+    local PARAM_FN_CONFIG_PROJ=$1
     shift
 
     local FN_TMP="/dev/shm/config-$(uuidgen)"
+    mr_trace "read proj config file: ${PARAM_FN_CONFIG_PROJ} ..."
     copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
     read_config_file "${FN_TMP}"
     rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
-mr_trace "prepare_all_tcl_scripts, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
+    local RET=0
+    RET=$(is_file_or_dir "${DN_COMM}")
+    if [ ! "${RET}" = "d" ]; then
+        DN_COMM="${DN_TOP}/projtools/common/"
+        RET=$(is_file_or_dir "${DN_COMM}")
+        if [ ! "${RET}" = "d" ]; then
+            mr_trace "Error: Not found TCL scripts, DN_TOP=${DN_TOP}"
+            return
+        fi
+    fi
+    mr_trace "prepare_all_tcl_scripts, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
     DN_TMP_CREATECONF="${HDFF_DN_SCRATCH}/tmp-createconf-$(uuidgen)"
     mr_trace "remove tmp trash first: rm -rf ${DN_TMP_CREATECONF}"
-    rm_f_dir"${DN_TMP_CREATECONF}"
+    rm_f_dir "${DN_TMP_CREATECONF}" >/dev/null 2>&1
     mr_trace "mkdir -p ${DN_TMP_CREATECONF}"
-    make_dir "${DN_TMP_CREATECONF}"
+    make_dir "${DN_TMP_CREATECONF}" >/dev/null 2>&1
     mr_trace "LIST_NODE_NUM='${LIST_NODE_NUM}'"
     mr_trace "LIST_TYPES='${LIST_TYPES}'"
     mr_trace "LIST_SCHEDULERS='${LIST_SCHEDULERS}'"
@@ -488,7 +575,7 @@ check_one_tcldir () {
             mr_trace "process flow throughput (tcp) $i ..."
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
             #mr_trace "curr dir=$(pwd), tail i=$i"
-            TM1=$(tail -n 1 "$i" | awk '{print $1}')
+            TM1=$(tail_file "$i" -n 1 | awk '{print $1}')
             # we assume it done correctly if the time different is in 8 seconds
             if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 8 < B) print 1; else print 0;}') = 1 ] ; then
                 FLG_ERR=1
@@ -503,7 +590,7 @@ check_one_tcldir () {
             FLG_NONE=0
             mr_trace "process flow throughput (udp) $i ..."
             idx=$(echo "$i" | sed -e 's|[^0-9]*\([0-9]\+\)[^0-9]*|\1|')
-            TM1=$(tail -n 1 "$i" | awk '{print $1}')
+            TM1=$(tail_file "$i" -n 1 | awk '{print $1}')
             if [ $(echo | awk -v A=$TM1 -v B=$TIME_STOP '{if (A + 5 < B) print 1; else print 0;}') = 1 ] ; then
                 FLG_ERR=1
             fi
@@ -518,3 +605,4 @@ check_one_tcldir () {
         echo "${PARAM_DN_DEST}" >> "${PARAM_FN_LOG_ERROR}"
     fi
 }
+

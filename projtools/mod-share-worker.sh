@@ -36,10 +36,13 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
 mr_trace () {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
+
+source ${DN_LIB}/libfs.sh
 
 #####################################################################
 
@@ -55,7 +58,7 @@ mkdir -p "${PROJ_HOME}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $PROJ_HOME" ; fi
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
-mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
+mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HADOOP_JAR_STREAMING=${HADOOP_JAR_STREAMING}; "
 
 source "${PROJ_HOME}/config-sys.sh"
 
@@ -74,71 +77,56 @@ mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 mr_trace "PROJ_HOME=${PROJ_HOME}"
 
 #####################################################################
-if [ -d "${HADOOP_HOME}" ]; then
-    EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR}"
-else
-    EXEC_HADOOP=$(which hadoop)
-fi
-
-HDJAR=/usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar
-if [ ! -f "${HDJAR}" ]; then
-    HDJAR=${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-2.7.1.jar
-fi
-if [ ! -f "${HDJAR}" ]; then
-    HDJAR=${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-2.3.0.jar
-fi
-if [ ! -f "${HDJAR}" ]; then
-    HDJAR=/usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.4.0.jar
-fi
-if [ ! -f "${HDJAR}" ]; then
-    HDJAR=/usr/lib/hadoop-mapreduce/hadoop-streaming.jar
-fi
-mr_trace "EXEC_HADOOP=${EXEC_HADOOP}; HDJAR=${HDJAR}; "
-
-#####################################################################
 generate_script_4hadoop () {
-  PARAM_ORIG="$1"
-  shift
-  PARAM_OUTPUT="$1"
-  shift
-  DN_FILE9=$(dirname "${PARAM_ORIG}")
-  DN_EXEOUT9=$(dirname "${PARAM_OUTPUT}")
-  if [ ! -d "${DN_EXEOUT9}" ]; then
-    mkdir -p "${DN_EXEOUT9}"
-    if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $DN_EXEOUT9"; fi
-  fi
+    local PARAM_ORIG="$1"
+    shift
+    local PARAM_OUTPUT="$1"
+    shift
 
-  echo '#!/bin/bash' > "${PARAM_OUTPUT}"
-  echo "DN_EXEC_4HADOOP=${DN_EXEC}" >> "${PARAM_OUTPUT}"
-  echo "DN_TOP_4HADOOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
-  echo "DN_EXEC=${DN_EXEC}" >> "${PARAM_OUTPUT}"
-  echo "DN_TOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libbash.sh" >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libshrt.sh" >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libfs.sh"   >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libplot.sh" >> "${PARAM_OUTPUT}"
-  cat "${DN_TOP}/lib/libconfig.sh"   >> "${PARAM_OUTPUT}"
-  cat "${DN_FILE9}/libns2config.sh"  >> "${PARAM_OUTPUT}"
-  cat "${DN_FILE9}/libns2figures.sh" >> "${PARAM_OUTPUT}"
-  cat "${DN_FILE9}/libapp.sh" >> "${PARAM_OUTPUT}"
-  echo "DN_EXEC_4HADOOP=${DN_EXEC}" >> "${PARAM_OUTPUT}"
-  echo "DN_TOP_4HADOOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
-  echo "DN_EXEC=${DN_EXEC}" >> "${PARAM_OUTPUT}"
-  echo "DN_TOP=${DN_TOP}" >> "${PARAM_OUTPUT}"
-  cat "${PARAM_ORIG}" \
-    | grep -v "libbash.sh" \
-    | grep -v "libshrt.sh" \
-    | grep -v "libfs.sh" \
-    | grep -v "libplot.sh" \
-    | grep -v "libconfig.sh" \
-    | grep -v "libns2config.sh" \
-    | grep -v "libns2figures.sh" \
-    | grep -v "libapp.sh" \
-    | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
-    >> "${PARAM_OUTPUT}"
+    local DN_FILE9=$(dirname "${PARAM_ORIG}")
+    local DN_EXEOUT9=$(dirname "${PARAM_OUTPUT}")
+
+    local RET=
+    RET=$(is_file_or_dir "${DN_EXEOUT9}")
+    if [ ! "${RET}" = "d" ]; then
+        make_dir "${DN_EXEOUT9}"
+        RET=$(is_file_or_dir "${DN_EXEOUT9}")
+        if [ ! "${RET}" = "d" ]; then mr_trace "Error in mkdir $DN_EXEOUT9"; fi
+    fi
+
+    rm_f_dir "${PARAM_OUTPUT}"
+    echo '#!/bin/bash'                      | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libbash.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libshrt.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libfs.sh"       | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libplot.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libconfig.sh"   | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/libns2config.sh"  | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/libns2figures.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/libapp.sh"        | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
+    cat_file "${PARAM_ORIG}"    \
+        | grep -v "libbash.sh"  \
+        | grep -v "libshrt.sh"  \
+        | grep -v "libfs.sh"    \
+        | grep -v "libplot.sh"  \
+        | grep -v "libconfig.sh"    \
+        | grep -v "libns2config.sh" \
+        | grep -v "libns2figures.sh" \
+        | grep -v "libapp.sh"   \
+        | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
+        | save_file "${PARAM_OUTPUT}"
 }
-#####################################################################
 
+#####################################################################
 
 mapred_main () {
 
@@ -147,61 +135,65 @@ TM_START=$(date +%s)
 
 # generate config lines
 #DN_INPUT="${PROJ_HOME}/data/input/"
-DN_INPUT=${HDFF_DN_OUTPUT}/mapred-data/input
-DN_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/output
+DN_INPUT=${HDFF_DN_OUTPUT}/${HDFF_PROJ_ID}/mapred-data/0/
+DN_PREFIX=${HDFF_DN_OUTPUT}/${HDFF_PROJ_ID}/mapred-data/
+DN_CONFIG=${DN_PREFIX}/config
 
 if [ 1 = 1 ]; then
     # genrate input file:
     mr_trace "generating input file ..."
-    mkdir -p ${DN_INPUT}
+    rm_f_dir ${DN_INPUT}
+    make_dir ${DN_INPUT}
+    rm_f_dir ${DN_CONFIG}
+    make_dir ${DN_CONFIG}
     if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $DN_INPUT" ; fi
-    rm -f ${DN_INPUT}/*
     #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
-    find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
+    find_file ../mytest/ -name "config-*" | while read a; do copy_file "${a}" "${DN_CONFIG}/"; echo -e "config\t\"${DN_CONFIG}/$(basename ${a})\"" | save_file ${DN_INPUT}/input.txt; done
 fi
 
-#generate_script_4hadoop "${DN_EXEC}/plotfigns2.sh" "${DN_PREFIX}/tmp/plotfigns2.sh"
-#generate_script_4hadoop "${DN_EXEC}/createconf.sh" "${DN_PREFIX}/tmp/createconf.sh"
-
-FN_MAP="${DN_PREFIX}/tmp/tmpe1map.sh"
-#FN_RED="${DN_PREFIX}/tmp/tmpe1red.sh"
+FN_MAP="/tmp/tmpe1map-$(uuidgen).sh"
+#FN_RED="/tmp/tmpe1red-$(uuidgen).sh"
 mr_trace "generating exec file: ${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e1map.sh" "${FN_MAP}"
 #generate_script_4hadoop "${DN_EXEC}/e1red.sh" "${FN_RED}"
-if [ ! -f "${FN_MAP}" ]; then
+RET=$(is_file_or_dir "${FN_MAP}")
+if [ ! "${RET}" = "f" ]; then
     mr_trace "Error: not found exec file: ${FN_MAP}"
     return
 fi
 
-DN_PREFIX_HDFS=/user/$USER
-${EXEC_HADOOP} fs -ls "${DN_PREFIX_HDFS}"
-if [ ! "$?" = "0" ]; then
+DN_PREFIX_HDFS="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/"
+RET=$(is_file_or_dir "${DN_PREFIX_HDFS}")
+if [ ! "${RET}" = "d" ]; then
+    make_dir "${DN_PREFIX_HDFS}"
+fi
+RET=$(is_file_or_dir "${DN_PREFIX_HDFS}")
+if [ ! "${RET}" = "d" ]; then
     mr_trace "not found user's location: ${DN_PREFIX_HDFS}"
-    DN_PREFIX_HDFS=
+    return
 fi
 
 STAGE=0
+DN_INPUT_HDFS="${DN_PREFIX_HDFS}/${STAGE}"
 
 STAGE=$(( $STAGE + 1 ))
-DN_INPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_in${STAGE}"
-DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
+DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/${STAGE}"
 
-${EXEC_HADOOP} fs -rm -f -r "${DN_INPUT_HDFS}"
-${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
-if [ ! "$?" = "0" ]; then
+rm_f_dir "${DN_INPUT_HDFS}"
+RET=$(make_dir "${DN_INPUT_HDFS}")
+if [ ! "${RET}" = "0" ]; then
     mr_trace "Warning: failed to hadoop mkdir ${DN_INPUT_HDFS}, try again ..."
     hadoop dfsadmin -safemode leave
     hdfs dfsadmin -safemode leave
+    RET=$(make_dir "${DN_INPUT_HDFS}")
+    if [ ! "${RET}" = "0" ]; then
+        mr_trace "Error in hadoop mkdir(ret=${RET}) ${DN_INPUT_HDFS}"
+        return
+    fi
 fi
-${EXEC_HADOOP} fs -mkdir -p "${DN_INPUT_HDFS}"
-if [ ! "$?" = "0" ]; then
-    mr_trace "Error in hadoop mkdir ${DN_INPUT_HDFS}"
-    return
-fi
-${EXEC_HADOOP} fs -rm -f "${DN_INPUT_HDFS}/"*
-${EXEC_HADOOP} fs -put "${DN_INPUT}/"* "${DN_INPUT_HDFS}"
-if [ ! "$?" = "0" ]; then
-    mr_trace "Error in put data: ${DN_INPUT_HDFS}"
+RET=$(copy_file "${DN_INPUT}/" "${DN_INPUT_HDFS}")
+if [ ! "${RET}" = "0" ]; then
+    mr_trace "Error in put data: ret=${RET}, in=${DN_INPUT}/, out=${DN_INPUT_HDFS}"
     return
 fi
 ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
@@ -214,7 +206,7 @@ ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 if [ 1 = 1 ]; then
 mr_trace "Stage 1 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
-${EXEC_HADOOP} jar ${HDJAR} \
+${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
@@ -230,10 +222,11 @@ fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
-mkdir -p "${DN_PREFIX}/${STAGE}/"
-if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
-rm -f "${DN_PREFIX}/${STAGE}/"*
-${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+
+rm_f_dir "${DN_PREFIX}/${STAGE}/"
+make_dir "${DN_PREFIX}/${STAGE}/"
+mr_trace move_file "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+move_file "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
 echo
 TM_STAGE1=$(date +%s)
@@ -255,32 +248,50 @@ if (( ${HDFF_NUM_CLONE} < 4 )) ; then
 fi
 mr_trace "adjusted HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
 
-DNORIG2=$(pwd)
-cd "${DN_PREFIX}/${STAGE}/"
-rm -f file*.txt
-cat "redout.txt" \
-    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
-cd "${DNORIG2}"
+# use temp dir to store the output of awk since it don't support save to hdfs
+DN_TMP=
+DN_SPL="${DN_PREFIX}/${STAGE}/"
+make_dir "${DN_SPL}"
+RET=$(is_local "${DN_SPL}")
+if [ ! "${DN_SPL}" = "l" ]; then
+    DN_TMP="/tmp/dir-$(uuidgen)"
+    DN_SPL="${DN_TMP}"
+fi
+make_dir "${DN_SPL}"
+
+find_file "${DN_PREFIX}/${STAGE}/" -name "file*.txt" | while read a; do rm_f_dir "${a}"; done
+mr_trace "at the end of stage ${STAGE}, split file ${DN_PREFIX}/${STAGE}/redout.txt to ${DN_SPL}/file*.txt"
+cat_file "${DN_PREFIX}/${STAGE}/redout.txt" \
+    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} -v DN="${DN_SPL}/" 'BEGIN{cnt=0; DUP=int(DUP);}{cnt ++; print $0 >> "" DN "/file" (cnt % DUP) ".txt"}'
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
-${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"
+mr_trace "copy ${DN_SPL}/file*.txt to ${DN_OUTPUT_HDFS}"
 
+if [ ! "${DN_TMP}" = "" ]; then
+    mr_trace "copy_file ${DN_TMP}/ ${DN_PREFIX}/${STAGE}/"
+    copy_file "${DN_TMP}/" "${DN_PREFIX}/${STAGE}/"
+    rm_f_dir "${DN_TMP}/"
+fi
+mr_trace "copy ${DN_PREFIX}/${STAGE}/file*.txt to ${DN_OUTPUT_HDFS}"
+find_file "${DN_PREFIX}/${STAGE}/" -name "file*.txt" | while read a; do mr_trace "at the end of stage ${STAGE}, copy_file ${a} ${DN_OUTPUT_HDFS}"; copy_file "${a}" "${DN_OUTPUT_HDFS}"; done
 
 #####################################################################
 
-FN_MAP="${DN_PREFIX}/tmp/tmpe2map.sh"
-FN_RED="${DN_PREFIX}/tmp/tmpe2red.sh"
+FN_MAP="/tmp/tmpe2map-$(uuidgen).sh"
+FN_RED="/tmp/tmpe2red-$(uuidgen).sh"
 
 mr_trace "generating exec file: ${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e2map.sh" "${FN_MAP}"
-if [ ! -f "${FN_MAP}" ]; then
+RET=$(is_file_or_dir "${FN_MAP}")
+if [ ! "${RET}" = "f" ]; then
     mr_trace "Error: not found exec file: ${FN_MAP}"
     return
 fi
 
 mr_trace "generating exec file: ${FN_RED}"
 generate_script_4hadoop "${DN_EXEC}/e2red.sh" "${FN_RED}"
-if [ ! -f "${FN_RED}" ]; then
+RET=$(is_file_or_dir "${FN_RED}")
+if [ ! "${RET}" = "f" ]; then
     mr_trace "Error: not found exec file: ${FN_RED}"
     return
 fi
@@ -295,7 +306,7 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     STAGE=$(( $STAGE + 1 ))
 
     DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
-    DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
+    DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/${STAGE}"
 
     ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
@@ -307,7 +318,7 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     #-mapper  org.apache.hadoop.mapred.lib.IdentityMapper
     #-mapper /bin/cat
     #-reducer org.apache.hadoop.mapred.lib.IdentityReducer
-    ${EXEC_HADOOP} jar ${HDJAR} \
+    ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
         -D mapreduce.task.timeout=0 \
         -D stream.num.map.output.key.fields=4 \
         -D num.key.fields.for.partition=2 \
@@ -320,13 +331,12 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
         return
     fi
 
-    ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
-    mkdir -p "${DN_PREFIX}/${STAGE}/"
-    if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
-    ${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+    rm_f_dir "${DN_PREFIX}/${STAGE}/"
+    make_dir "${DN_PREFIX}/${STAGE}/"
+    move_file "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
 
     STAGE2_RUN=$(( $STAGE2_RUN + 1 ))
-    LINES=$(cat "${DN_PREFIX}/${STAGE}/redout.txt" | grep ^error | wc -l)
+    LINES=$(cat_file "${DN_PREFIX}/${STAGE}/redout.txt" | grep ^error | wc -l)
     if (( $LINES < 1 )) ; then
         mr_trace "finished after ${STAGE2_RUN} tries."
         break
@@ -362,39 +372,56 @@ if (( ${HDFF_NUM_CLONE} < 4 )) ; then
 fi
 mr_trace "adjusted HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
 
-DNORIG2=$(pwd)
-cd "${DN_PREFIX}/${STAGE}/"
-rm -f file*.txt
-# we dispatch the tasks to various machines and let each machine process only 2 tasks since processing the packet distribution is time-consumed work
-cat "redout.txt" \
-    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} 'BEGIN{cnt=0; DUP=int(DUP*CLONE/2);}{cnt ++; print $0 >> "file" (cnt % DUP) ".txt"}'
-cd "${DNORIG2}"
+# use temp dir to store the output of awk since it don't support save to hdfs
+DN_TMP=
+DN_SPL="${DN_PREFIX}/${STAGE}/"
+make_dir "${DN_SPL}"
+RET=$(is_local "${DN_SPL}")
+if [ ! "${DN_SPL}" = "l" ]; then
+    DN_TMP="/tmp/dir-$(uuidgen)"
+    DN_SPL="${DN_TMP}"
+fi
+make_dir "${DN_SPL}"
+
+find_file "${DN_PREFIX}/${STAGE}/" -name "file*.txt" | while read a; do rm_f_dir "${a}"; done
+mr_trace "split file ${DN_PREFIX}/${STAGE}/redout.txt to ${DN_SPL}/file*.txt"
+cat_file "${DN_PREFIX}/${STAGE}/redout.txt" \
+    | awk -v DUP=${HDFF_TOTAL_NODES} -v CLONE=${HDFF_NUM_CLONE} -v DN="${DN_SPL}/" 'BEGIN{cnt=0; DUP=int(DUP*CLONE/2);}{cnt ++; print $0 >> "" DN "/file" (cnt % DUP) ".txt"}'
 
 ${EXEC_HADOOP} fs -rm -f "${DN_OUTPUT_HDFS}/part-00000"
-${EXEC_HADOOP} fs -put "${DN_PREFIX}/${STAGE}/file"* "${DN_OUTPUT_HDFS}"
+
+if [ ! "${DN_TMP}" = "" ]; then
+    mr_trace "copy ${DN_TMP}/* to ${DN_PREFIX}/${STAGE}/"
+    copy_file "${DN_TMP}/" "${DN_PREFIX}/${STAGE}/"
+    rm_f_dir "${DN_TMP}/"
+fi
+
+mr_trace "copy ${DN_PREFIX}/${STAGE}/file*.txt to ${DN_OUTPUT_HDFS}"
+find_file "${DN_PREFIX}/${STAGE}/" -name "file*.txt" | while read a; do mr_trace "at the end of stage ${STAGE}, copy_file ${a} ${DN_OUTPUT_HDFS}"; copy_file "${a}" "${DN_OUTPUT_HDFS}"; done
 
 #####################################################################
 STAGE=$(( $STAGE + 1 ))
 
-FN_MAP="${DN_PREFIX}/tmp/tmpe3map.sh"
-#FN_RED="${DN_PREFIX}/tmp/tmpe3red.sh"
+FN_MAP="/tmp/tmpe3map-$(uuidgen).sh"
+#FN_RED="/tmp/tmpe3red-$(uuidgen).sh"
 
 mr_trace "generating exec file: ${FN_MAP}"
 generate_script_4hadoop "${DN_EXEC}/e3map.sh" "${FN_MAP}"
-if [ ! -f "${FN_MAP}" ]; then
+RET=$(is_file_or_dir "${FN_MAP}")
+if [ ! "${RET}" = "f" ]; then
     mr_trace "Error: not found exec file: ${FN_MAP}"
     return
 fi
 
 DN_INPUT_HDFS=${DN_OUTPUT_HDFS}
-DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/hadoopffmpeg_out${STAGE}"
+DN_OUTPUT_HDFS="${DN_PREFIX_HDFS}/${STAGE}"
 
 ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
 if [ 1 = 1 ]; then
 mr_trace "Stage 3 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
-${EXEC_HADOOP} jar ${HDJAR} \
+${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
@@ -410,10 +437,11 @@ fi
 
 ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
-mkdir -p "${DN_PREFIX}/${STAGE}/"
-if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${DN_PREFIX}/${STAGE}/" ; fi
-rm -f "${DN_PREFIX}/${STAGE}/"*
-${EXEC_HADOOP} fs -get "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+rm_f_dir "${DN_PREFIX}/${STAGE}/"
+make_dir "${DN_PREFIX}/${STAGE}/"
+move_file "${DN_OUTPUT_HDFS}/part-00000" "${DN_PREFIX}/${STAGE}/redout.txt"
+
+
 
 echo
 TM_STAGE3=$(date +%s)

@@ -255,6 +255,22 @@ CORES=1
 #     <name>mapreduce.reduce.java.opts</name>
 #     <value>-Xmx768m</value>
 # </property>
+#<!-- A value of 0 disables the timeout -->
+#<!--
+#<property>
+#    <name>mapreduce.task.timeout</name>
+#    <value>0</value>
+#</property>
+#-->
+#<!-- setting the vcores -->
+#<property>
+#    <name>mapreduce.map.cpu.vcores</name>
+#    <value>1</value>
+#</property>
+#<property>
+#    <name>mapreduce.reduce.cpu.vcores</name>
+#    <value>1</value>
+#</property>
 #
 # yarn-site.xml.template
 # <property>
@@ -279,6 +295,23 @@ CORES=1
 #     <value>4</value>
 #     <description>Ratio between virtual memory to physical memory when setting memory limits for containers</description>
 # </property>
+#<!-- setting the vcores -->
+#<property>
+#    <name>yarn.app.mapreduce.am.resource.cpu-vcores</name>
+#    <value>1</value>
+#</property>
+#<property>
+#    <name>yarn.scheduler.maximum-allocation-vcores</name>
+#    <value>24</value>
+#</property>
+#<property>
+#    <name>yarn.scheduler.minimum-allocation-vcores</name>
+#    <value>1</value>
+#</property>
+#<property>
+#    <name>yarn.nodemanager.resource.cpu-vcores</name>
+#    <value>24</value>
+#</property>
 #
 # or hadoop 1.x config files mapred-site.xml.template
 # <property>

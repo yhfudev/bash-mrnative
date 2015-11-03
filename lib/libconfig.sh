@@ -39,3 +39,5 @@ read_config_file () {
         done < "$PARAM_FN_CONF"
     fi
 }
+
+

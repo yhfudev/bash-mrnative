@@ -54,10 +54,12 @@ check_global_config () {
         RET=$(is_local "${HDFF_DN_SCRATCH}")
         if [ ! "${RET}" = "l" ]; then
             # search if such device exist
-            df | grep /dev/shm
-            if [ "$?" = "0" ]; then
-                HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+            HDFF_DN_SCRATCH="/tmp/${USER}/"
+            DN_SHM=$(df | grep shm | tail -n 1)
+            if [ ! "$DN_SHM" = "" ]; then
+                HDFF_DN_SCRATCH="${DN_SHM}/${USER}/"
             fi
+
             # the size
             SZK=$(df -P -T "${HDFF_DN_SCRATCH}" | awk '{print $5}')
             if (( $SZK < 1000000 )) ; then

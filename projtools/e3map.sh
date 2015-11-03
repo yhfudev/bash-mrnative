@@ -179,7 +179,7 @@ mr_trace "received: cmd='${MR_CMD}', prefix='${MR_PREFIX}', type='${MR_TYPE}', f
     ;;
 
   *)
-    mr_trace "Error: unknown type: ${MR_CMD}"
+    mr_trace "Warning: unknown mr command '${MR_CMD}'."
     # throw the command to output again
     echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     ERR=1

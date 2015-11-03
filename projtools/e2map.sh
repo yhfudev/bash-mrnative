@@ -67,6 +67,8 @@ mr_trace "e2map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #  use mp_get_session_id to get the session id later
 mp_new_session
 
+prepare_app_binary_ns2
+
 #####################################################################
 # check ns2
 worker_check_ns2() {
@@ -134,6 +136,7 @@ worker_check_run() {
         mr_trace check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" return $RET
         if [ ! "$RET" = "" ]; then
             # error
+            mr_trace "check error: ${DN_TEST}, ${TM_START}, ${TM_END}"
             echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
         else
             echo -e "time-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}\t${TM_START}\t${TM_END}"
@@ -252,7 +255,7 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
     ;;
 
   *)
-    mr_trace "Error: unknown type: ${MR_CMD}"
+    mr_trace "Warning: unknown mr command '${MR_CMD}'."
     # throw the command to output again
     echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     ERR=1

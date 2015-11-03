@@ -42,6 +42,34 @@ mr_trace () {
 
 #####################################################################
 
+# redirect the output to HDFS so we can fetch back later
+HDFF_DN_OUTPUT="$(pwd)/mapreduce-results/"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
+
+# scratch(temp) dir
+HDFF_DN_SCRATCH="/tmp/${USER}/"
+DN_SHM=$(df | grep shm | tail -n 1)
+if [ ! "$DN_SHM" = "" ]; then
+    HDFF_DN_SCRATCH="${DN_SHM}/${USER}/"
+fi
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
+
+# the directory for save the un-tar binary files
+HDFF_DN_BIN=""
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+
+# tar the binary and save it to HDFS for the node extract it later
+# the tar file for ns2 exec
+HDFF_FN_TAR_APP=""
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+
+# the HDFS path to this project
+HDFF_FN_TAR_MRNATIVE=""
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
+
+
+
+
 #mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
 PROGNAME=$(basename "$0")

@@ -1,5 +1,5 @@
-dpp-test
-========
+mrnativens2
+===========
 
 
 This folder contains the scripts to run various NS2 DOCSIS 3.1 tests.
@@ -63,10 +63,18 @@ if you want to plot all of figures again, type:
 
 
 
-After run the script runall.sh, all of sub-folders, such as proj-base-prof-high2low, will contains the data files mixed with NS2 TCL scripts and ploted figures.
-For example, the folder proj-base-prof-high2low/baseh2l_has_DRR_1/ will contains all of the TCL scripts and output data in it;
-The folder name baseh2l_has_DRR_1 means the prefix "baseh2l", and use HAS("has") as application, using down-stream scheduler DRR, and with 1 HAS(TCP) flow.
+After run the script runall.sh, all of sub-folders in mapreduce-results/dataconf, such as verifyd30_tcp_DRR_1, will contains the data files mixed with NS2 TCL scripts and ploted figures.
+For example, the folder mapreduce-results/dataconf/verifyd30_tcp_DRR_1/ will contains all of the TCL scripts and output data in it;
+The folder name verifyd30_tcp_DRR_1 means the prefix "verifyd30", and use FTP("tcp") as application, using down-stream scheduler DRR, and with 1 FTP flow.
 If you want re-run the test, you may try:
 
-    cd proj-base-prof-high2low/baseh2l_has_DRR_1/
-    ../../../../ns main.tcl 1
+    cd mapreduce-results/dataconf/verifyd30_tcp_DRR_1
+    ns main.tcl 1
+
+
+To run this software in Hadoop environment, you need pack two tar files, the ns2 binary and this folder.
+You can tar this folder by:
+    ./autogen.sh
+    configure
+    make dist-gzip
+

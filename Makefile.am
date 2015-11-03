@@ -1,4 +1,16 @@
 
+DOC_FILES0= \
+    $(top_srcdir)/README.md \
+    $(top_srcdir)/doc/mrns2fig-manual.tex \
+    $(top_srcdir)/doc/cndoc.tex \
+    $(top_srcdir)/doc/chap-design.tex \
+    $(top_srcdir)/doc/figures/flowchart-1-ns2figures.dia \
+    $(top_srcdir)/doc/figures/flowchart-1-ns2figures.eps \
+    $(NULL)
+
+DOC_FILES= \
+    $(NULL)
+
 include_HEADERS = \
     $(top_srcdir)/lib/libbash.sh \
     $(top_srcdir)/lib/libconfig.sh \
@@ -17,6 +29,7 @@ include_HEADERS = \
     $(top_srcdir)/projtools/e3map.sh \
     $(top_srcdir)/projtools/mod-hadooppbs-jobmain.sh \
     $(top_srcdir)/projtools/mod-hadooppbs-setenv.sh \
+    $(top_srcdir)/projtools/mod-setenv-hadoop.sh \
     $(top_srcdir)/projtools/mod-share-worker.sh \
     $(top_srcdir)/projtools/plotall.sh \
     $(top_srcdir)/projtools/runall.sh \
@@ -62,13 +75,7 @@ include_HEADERS = \
     $(NULL)
 
 noinst_HEADERS= \
-    $(top_srcdir)/README.md \
     $(top_srcdir)/config-sys.sh \
-    $(top_srcdir)/doc/mrns2fig-manual.tex \
-    $(top_srcdir)/doc/cndoc.tex \
-    $(top_srcdir)/doc/chap-design.tex \
-    $(top_srcdir)/doc/figures/flowchart-1-ns2figures.dia \
-    $(top_srcdir)/doc/figures/flowchart-1-ns2figures.eps \
     $(top_srcdir)/projconfigs/config-jjmbase.sh \
     $(top_srcdir)/projconfigs/config-jjmprof192m1p.sh \
     $(top_srcdir)/projconfigs/config-jjmprof192m2p.sh \
@@ -81,4 +88,5 @@ noinst_HEADERS= \
     $(top_srcdir)/projconfigs/config-proj-verifyd30.sh \
     $(top_srcdir)/projconfigs/config-proj-verifyd31.sh \
     $(top_srcdir)/mytest/* \
+    $(DOC_FILES) \
     $(NULL)

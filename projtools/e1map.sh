@@ -73,17 +73,23 @@ mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #  use mp_get_session_id to get the session id later
 mp_new_session
 
+prepare_mrnative_binary_ns2
+DN_EXEC="${DN_TOP}/projtools/"
+DN_COMM="${DN_EXEC}/common/"
+
 #####################################################################
 # create TCL directories
 worker_create_tcl_config () {
-    PARAM_SESSION_ID="$1"
+    local PARAM_SESSION_ID="$1"
     shift
-    PARAM_CONFIG_FILE="$1"
+    local PARAM_CONFIG_FILE="$1"
     shift
 
-    if [ ! -f "${PARAM_CONFIG_FILE}" ]; then
+    local RET=0
+    RET=$(is_file_or_dir "${PARAM_CONFIG_FILE}")
+    if [ ! "${RET}" = "f" ]; then
         mr_trace "Error: not found config file: $PARAM_CONFIG_FILE"
-        exit 1
+        return
     fi
 
     mr_trace "infunc create tcl config: HDFF_FUNCTION=${HDFF_FUNCTION}"
@@ -115,7 +121,7 @@ while read MR_CMD MR_CONFIG_FILE ; do
         ;;
 
     *)
-        mr_trace "Warning: unknown command '${MR_CMD}'."
+        mr_trace "Warning: unknown mr command '${MR_CMD}'."
         ;;
     esac
 done
