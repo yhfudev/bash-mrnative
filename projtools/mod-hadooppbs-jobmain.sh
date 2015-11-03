@@ -73,11 +73,11 @@ export HADOOP_CONF_DIR=${PBS_O_WORKDIR}/hadoopconfigs-$PBS_JOBID
 mkdir -p "${HADOOP_CONF_DIR}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
-# Note: ensure that the variables are set correctly in bin/mod-hadooppbs-setenv.sh
+# Note: ensure that the variables are set correctly in bin/mod-setenv-hadoop.sh
 if [ -f "${DN_EXEC1}/mod-setenv-hadoop.sh" ]; then
 .   ${DN_EXEC1}/mod-setenv-hadoop.sh
 else
-    mr_trace "Error: not found file ${DN_EXEC1}/mod-hadooppbs-setenv.sh"
+    mr_trace "Error: not found file ${DN_EXEC1}/mod-setenv-hadoop.sh"
     exit 1
 fi
 

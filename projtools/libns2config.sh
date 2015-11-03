@@ -55,7 +55,7 @@ check_global_config () {
         if [ ! "${RET}" = "l" ]; then
             # search if such device exist
             HDFF_DN_SCRATCH="/tmp/${USER}/"
-            DN_SHM=$(df | grep shm | tail -n 1)
+            DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
             if [ ! "$DN_SHM" = "" ]; then
                 HDFF_DN_SCRATCH="${DN_SHM}/${USER}/"
             fi

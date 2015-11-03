@@ -38,6 +38,11 @@ DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
 source ${DN_LIB}/libfs.sh
+source ${DN_LIB}/libconfig.sh
+
+# read basic config from config-sys.sh
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+read_config_file "${DN_TOP}/config-sys.sh"
 
 # redirect the output to HDFS so we can fetch back later
 HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
@@ -54,7 +59,7 @@ sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys
 # tar the binary and save it to HDFS for the node extract it later
 # the tar file for ns2 exec
 FN_TAR_APP="ns2docsis-ds31profile-i386-compiled.tar.gz"
-HDFF_FN_TAR_APP="hdfs:///user/${USER}/${FN_TAR_APP}"
+HDFF_FN_TAR_APP="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
 sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
 
 # the HDFS path to this project
@@ -63,7 +68,7 @@ make dist-gzip
 FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | head -n 1)
 cd -
 cp "../${FN_TAR_MRNATIVE}" .
-HDFF_FN_TAR_MRNATIVE="hdfs:///user/${USER}/${FN_TAR_MRNATIVE}"
+HDFF_FN_TAR_MRNATIVE="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
 sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
 
 #####################################################################

@@ -235,6 +235,19 @@ HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 #HDFF_DN_SCRATCH="/local_scratch/\$USER/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
 
+# the directory for save the un-tar binary files
+HDFF_DN_BIN=""
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+
+# tar the binary and save it to HDFS for the node extract it later
+# the tar file for ns2 exec
+HDFF_FN_TAR_APP=""
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+
+# the HDFS path to this project
+HDFF_FN_TAR_MRNATIVE=""
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
+
 # set the vcores to 1 to let bash script generate multiple processes.
 CORES=1
 # in this block, you need set two files in the hadoop 2.x config files
