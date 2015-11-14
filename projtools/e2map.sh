@@ -134,7 +134,7 @@ worker_check_run() {
     else
         TM_START=$(date +%s.%N)
         mr_trace "run_one_ns2 ${HDFF_DN_OUTPUT}/dataconf ${DN_TEST} ${PARAM_CONFIG_FILE}"
-        run_one_ns2 "${HDFF_DN_OUTPUT}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}"
+        run_one_ns2 "${HDFF_DN_OUTPUT}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}" > /dev/null 2>&1
         TM_END=$(date +%s.%N)
         # check the result
         RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "/dev/stdout")
@@ -200,8 +200,8 @@ worker_clean() {
     DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
 
     mr_trace "remove file tmp-*, fig-* from ${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}"
-    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "tmp-*" | xargs -n 1 rm_f_dir
-    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "fig-*" | xargs -n 1 rm_f_dir
+    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "tmp-*" | xargs -n 1 rm_f_dir > /dev/null 2>&1
+    find_file "${HDFF_DN_OUTPUT}/figures/${PARAM_PREFIX}" -name "fig-*" | xargs -n 1 rm_f_dir > /dev/null 2>&1
 
     clean_one_tcldir "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}"
 
@@ -251,7 +251,7 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
     DN_TMP_CREATECONF="${HDFF_DN_SCRATCH}/tmp-createconf-$(uuidgen)"
     prepare_one_tcl_scripts "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
     copy_file "${DN_TMP_CREATECONF}/"* "${HDFF_DN_OUTPUT}/dataconf/" > /dev/null 2>&1
-    rm_f_dir "${DN_TMP_CREATECONF}/"*
+    rm_f_dir "${DN_TMP_CREATECONF}/"* > /dev/null 2>&1
 
     mr_trace "redo unfinished run: ${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
     worker_check_run "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &

@@ -143,7 +143,7 @@ run_one_ns2 () {
         fi
 
         DN_WORKING="${HDFF_DN_SCRATCH}/run-${PARAM_DN_TEST}-$(uuidgen)/"
-        mkdir -p "${DN_WORKING}"
+        mkdir -p "${DN_WORKING}" > /dev/null 2>&1
         mr_trace "run ns2: copy from parent to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
         #rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
         mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.tcl to ${DN_WORKING}/"
@@ -162,7 +162,7 @@ run_one_ns2 () {
         cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
     fi
     mr_trace "rm -f *.bin *.txt *.out out.* *.tr *.log tmp*"
-    rm -f *.bin *.txt *.out out.* *.tr *.log tmp*
+    rm -f *.bin *.txt *.out out.* *.tr *.log tmp* > /dev/null 2>&1
     mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${HDFF_FN_LOG}"
     if [ ! -x "${EXEC_NS2}" ]; then
         mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
@@ -175,15 +175,15 @@ run_one_ns2 () {
     if [ "${USE_MEDIUMPACKET}" = "1" ]; then
         if [ -f mediumpacket.out ]; then
             mr_trace "rm -f mediumpacket.out.gz ..."
-            rm -f mediumpacket.out.gz
+            rm -f mediumpacket.out.gz > /dev/null 2>&1
             mr_trace "compressing mediumpacket.out ..."
-            gzip mediumpacket.out
+            gzip mediumpacket.out > /dev/null 2>&1
         else
             mr_trace "Warning: not found mediumpacket.out."
         fi
     else
         mr_trace "Warning: remove mediumpacket.out*!"
-        rm -f mediumpacket.out*
+        rm -f mediumpacket.out* > /dev/null 2>&1
     fi
 
     cd "${DN_ORIG2}"
@@ -230,9 +230,9 @@ prepare_one_tcl_scripts () {
     PARAM_DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
     mr_trace "generate folder: ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
     mr_trace "remove trash first: rm -rf ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    rm -rf   "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
+    rm -rf   "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null 2>&1
     mr_trace "mkdir -p ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    mkdir -p "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
+    mkdir -p "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null 2>&1
 
     mr_trace "Copy common scripts and data files to ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
     # Copy common scripts and data files from Common directory
@@ -453,7 +453,7 @@ prepare_all_tcl_scripts () {
             done
         done
     done
-    make_dir "${HDFF_DN_OUTPUT}/dataconf/"
+    make_dir "${HDFF_DN_OUTPUT}/dataconf/" > /dev/null 2>&1
 
     #DN_ORIG15=$(pwd)
     #cd "${DN_TMP_CREATECONF}"
@@ -476,7 +476,6 @@ prepare_all_tcl_scripts () {
     #rm -rf "${DN_TMP_CREATECONF}"
 
     mr_trace "DONE create config files"
-exit 1 # debug
 }
 
 

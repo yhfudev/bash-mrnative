@@ -31,7 +31,8 @@ is_local() {
 tail_file() {
     local PARAM_FN_INPUT=$1
     shift
-    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -cat "${PARAM_FN_INPUT}" | awk 'BEGIN{str="";}{str=$0;}END{print str;}' && return
+    #[[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -cat "${PARAM_FN_INPUT}" | awk 'BEGIN{str="";}{str=$0;}END{print str;}' && return
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -tail "${PARAM_FN_INPUT}" && return
     tail "${PARAM_FN_INPUT#file://}" $@
 }
 
@@ -231,10 +232,10 @@ move_file() {
         case ${PARAM_FN_SRC} in
         */)
             make_dir "${PARAM_FN_DEST}"
-            hadoop fs -put "${PARAM_FN_SRC}*" "${PARAM_FN_DEST}"
+            hadoop fs -put -f "${PARAM_FN_SRC}*" "${PARAM_FN_DEST}"
             ;;
         *)
-            hadoop fs -put "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
+            hadoop fs -put -f "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
             ;;
         esac
         if [ "$?" = "0" ]; then
@@ -343,12 +344,12 @@ copy_file() {
     if [[ "${PARAM_FN_DEST}" =~ ^hdfs:// ]]; then
         case ${PARAM_FN_SRC} in
         */)
-            mr_trace "copy_file all: hdfs -put ${PARAM_FN_SRC}* ${PARAM_FN_DEST}"
-            hadoop fs -put "${PARAM_FN_SRC}"* "${PARAM_FN_DEST}"
+            mr_trace "copy_file all: hdfs -put -f ${PARAM_FN_SRC}* ${PARAM_FN_DEST}"
+            hadoop fs -put -f "${PARAM_FN_SRC}"* "${PARAM_FN_DEST}"
             ;;
         *)
-            mr_trace "copy_file dir: hdfs -put ${PARAM_FN_SRC} ${PARAM_FN_DEST}"
-            hadoop fs -put "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
+            mr_trace "copy_file dir: hdfs -put -f ${PARAM_FN_SRC} ${PARAM_FN_DEST}"
+            hadoop fs -put -f "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
             ;;
         esac
         if [ "$?" = "0" ]; then

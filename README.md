@@ -9,6 +9,7 @@ Directory Structure
 -------------------
 
 ├── lib/
+│   ├── libconfig.sh        # bash lib for read config file
 │   ├── libplot.sh          # bash lib for plotting
 │   ├── libns2figures.sh    # bash lib for plotting ns2 figures
 │   ├── libbash.sh          # bash lib misc functions

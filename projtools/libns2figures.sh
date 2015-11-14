@@ -246,7 +246,7 @@ plot_pktdelay_trans () {
             copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' \
                 "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out.gz" | gzip -dc) | gzip > "${FNDAT}"
-            rm -f "${TMP_FILE}"
+            rm -f "${TMP_FILE}" > /dev/null 2>&1
         else
             RET=$(is_local "${PARAM_DN_TEST}/mediumpacket.out")
             if [ ! "${RET}" = "e" ]; then
@@ -254,7 +254,7 @@ plot_pktdelay_trans () {
                 copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
                 awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' \
                     "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out") | gzip > "${FNDAT}"
-                rm -f "${TMP_FILE}"
+                rm -f "${TMP_FILE}" > /dev/null 2>&1
             fi
         fi
     fi
@@ -308,7 +308,7 @@ plot_ns2_type () {
 
     DN_TEST=$(simulation_directory "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_SCHE}" "${ARG_NUM}")
 
-    make_dir "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}"
+    make_dir "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}" > /dev/null 2>&1
 
     #mr_trace "ARG_CMD=${ARG_CMD}"
 
@@ -325,7 +325,7 @@ plot_ns2_type () {
         local RET=$(is_local "${DN_SRC}")
         if [ ! "${RET}" = "l" ]; then
             TMP_SRC="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
-            make_dir "${TMP_SRC}/"
+            make_dir "${TMP_SRC}/" > /dev/null 2>&1
             #copy_file "${DN_SRC}/"CMTCPDS*.out "${TMP_SRC}/" > /dev/null 2>&1
             find_file "${DN_SRC}/" -name "CMTCPDS*.out" | while read a; do copy_file "$a" "${TMP_SRC}/" > /dev/null 2>&1; done
             find_file "${DN_SRC}/" -name "CMUDPDS*.out" | while read a; do copy_file "$a" "${TMP_SRC}/" > /dev/null 2>&1; done
@@ -341,7 +341,7 @@ plot_ns2_type () {
         fi
         if [ ! "${FLG_USETMP}" = "0" ]; then
             TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
-            make_dir "${TMP_DEST}/"
+            make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
         case "${ARG_FLOW_TYPE}" in
@@ -356,16 +356,16 @@ plot_ns2_type () {
             exit 1
             ;;
         esac
-        cd "${DN_DEST}"
+        cd "${DN_DEST}" > /dev/null 2>&1
         convert_eps2png
         cd "${DN_ORIG5}"
         if [ ! "${TMP_DEST}" = "" ]; then
             mr_trace "copy file back to ${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX} from ${TMP_DEST}"
             copy_file "${TMP_DEST}" "${HDFF_DN_OUTPUT}/figures/${ARG_PREFIX}" > /dev/null 2>&1
-            rm_f_dir "${TMP_DEST}"
+            rm_f_dir "${TMP_DEST}" > /dev/null 2>&1
         fi
         if [ ! "${TMP_SRC}" = "" ]; then
-            rm_f_dir "${TMP_SRC}"
+            rm_f_dir "${TMP_SRC}" > /dev/null 2>&1
         fi
         ;;
 
@@ -382,7 +382,7 @@ plot_ns2_type () {
         local RET=$(is_local "${DN_DEST}")
         if [ ! "${RET}" = "l" ]; then
             TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
-            make_dir "${TMP_DEST}/"
+            make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
 
@@ -412,7 +412,7 @@ plot_ns2_type () {
         local RET=$(is_local "${DN_DEST}")
         if [ ! "${RET}" = "l" ]; then
             TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
-            make_dir "${TMP_DEST}/"
+            make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
         plot_pktdelay_queue "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
@@ -432,7 +432,7 @@ plot_ns2_type () {
         local RET=$(is_local "${DN_DEST}")
         if [ ! "${RET}" = "l" ]; then
             TMP_DEST="${HDFF_DN_SCRATCH}/file-$(uuidgen)/"
-            make_dir "${TMP_DEST}/"
+            make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
         plot_pktdelay_trans "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
