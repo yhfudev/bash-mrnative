@@ -84,7 +84,7 @@ detect_os_type () {
         OSNAME=$(lsb_release -cs)
     fi
     if [ "${OSDIST}" = "" ]; then
-        echo "Error: Not found lsb_release!" 1>&2
+        echo "Error: Not found lsb_release." 1>&2
     fi
     echo "[INFO] Detected $OSTYPE system: $OSDIST $OSVERSION $OSNAME" 1>&2
     export OSTYPE

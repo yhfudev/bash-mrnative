@@ -36,6 +36,7 @@ extrace_binary() {
     local RET=$(is_local "${HDFF_DN_BIN}")
     if [ ! "${RET}" = "l" ]; then
         mr_trace "Error: binary is not local dir: ${HDFF_DN_BIN}"
+        echo -e "error-extractbin\tnot-local-dir\t${HDFF_DN_BIN}"
         exit 1
     fi
     mr_trace "extract ${PARAM_FN_TAR} to dir ${HDFF_DN_BIN} ..."
@@ -54,21 +55,26 @@ prepare_app_binary_ns2() {
         # detect the application execuable
         EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
         mr_trace "try detect ns2 1: ${EXEC_NS2}"
+        #echo -e "error-prepapp\ttry-get-file\t${DN_TOP}/../../ns"
     else
         local DN2=$(extrace_binary "${HDFF_FN_TAR_APP}")
         EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
         mr_trace "try detect ns2 2: ${EXEC_NS2}"
+        #echo -e "error-prepapp\ttry-get-file\t${DN2}/ns-2.33/ns"
         if [ ! -x "${EXEC_NS2}" ]; then
             EXEC_NS2="$(dirname ${DN2})/ns2docsis-ds31profile/ns-2.33/ns"
             mr_trace "try detect ns2 3: ${EXEC_NS2}"
+            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
         fi
         if [ ! -x "${EXEC_NS2}" ]; then
             EXEC_NS2="${HDFF_DN_BIN}/ns2docsis-ds31profile/ns-2.33/ns"
             mr_trace "try detect ns2 4: ${EXEC_NS2}"
+            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
         fi
         if [ ! -x "${EXEC_NS2}" ]; then
             EXEC_NS2="$(dirname ${HDFF_FN_TAR_APP})/ns2docsis-ds31profile/ns-2.33/ns"
             mr_trace "try detect ns2 5: ${EXEC_NS2}"
+            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
         fi
     fi
 
@@ -79,6 +85,7 @@ prepare_app_binary_ns2() {
     mr_trace "EXEC_NS2=${EXEC_NS2}"
     if [ ! -x "${EXEC_NS2}" ]; then
         mr_trace "Error: not found ns2"
+        echo -e "error-prepapp\tNOT-get-file\tns"
     fi
 }
 
@@ -88,6 +95,7 @@ prepare_mrnative_binary_ns2() {
     if [ "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
         # detect the marnative dir
         mr_trace "Error: not found mrnative file '${HDFF_FN_TAR_MRNATIVE}'"
+        #echo -e "error-prepnative\tnot-get-tarfile\tHDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
     else
         local DN2=$(extrace_binary "${HDFF_FN_TAR_MRNATIVE}")
         if [ -d "${DN2}" ] ; then
@@ -95,6 +103,7 @@ prepare_mrnative_binary_ns2() {
             mr_trace "[DBG] set top dir to '${DN_TOP}'"
         else
             mr_trace "Error: not found mrnative top dir '${DN2}'"
+            echo -e "error-prepnative\tnot-get-dir\t$${DN2}"
         fi
     fi
 }
@@ -406,7 +415,7 @@ prepare_one_tcl_scripts () {
 
 # generate the TCL scripts for all of the settings
 # my_getpath, DN_EXEC, DN_COMM, HDFF_DN_OUTPUT, should be defined before call this function
-# HDFF_DN_SCRATCH should be in global config file (config-sys.sh)
+# HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
 # PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
 prepare_all_tcl_scripts () {
     local PARAM_COMMAND=$1

@@ -19,7 +19,6 @@ include_HEADERS = \
     $(top_srcdir)/lib/libshrt.sh \
     $(top_srcdir)/projtools/liball.sh \
     $(top_srcdir)/projtools/libapp.sh \
-    $(top_srcdir)/projtools/libns2config.sh \
     $(top_srcdir)/projtools/libns2figures.sh \
     $(top_srcdir)/projtools/checkall.sh \
     $(top_srcdir)/projtools/cleanall.sh \
@@ -73,12 +72,11 @@ include_HEADERS = \
     $(top_srcdir)/projtools/common/tcpudp-util.tcl \
     $(top_srcdir)/autogen.sh \
     $(top_srcdir)/autoclean.sh \
-    $(top_srcdir)/compile \
-    $(top_srcdir)/install-sh \
     $(NULL)
 
 noinst_HEADERS= \
-    $(top_srcdir)/config-sys.sh \
+    $(top_srcdir)/install-sh \
+    $(top_srcdir)/mrsystem.conf \
     $(top_srcdir)/projconfigs/config-jjmbase.sh \
     $(top_srcdir)/projconfigs/config-jjmprof192m1p.sh \
     $(top_srcdir)/projconfigs/config-jjmprof192m2p.sh \

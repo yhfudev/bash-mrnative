@@ -14,9 +14,9 @@
 # Copyright 2015 Yunhui Fu
 # License: GPL v3.0 or later
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
+#mr_trace () {
+    #echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
+#}
 
 is_local() {
     local PARAM_FN_INPUT=$1
@@ -41,7 +41,7 @@ save_file() {
     local PARAM_FN_SAVE=$1
     shift
     [[ "${PARAM_FN_SAVE}" =~ ^hdfs:// ]] && hadoop fs -appendToFile - "${PARAM_FN_SAVE}" && return
-    cat >> "${PARAM_FN_SAVE#file://}"
+    cat - >> "${PARAM_FN_SAVE#file://}"
 }
 
 is_file_or_dir() {
@@ -79,6 +79,32 @@ is_file_or_dir() {
     echo "e"
 }
 
+chmod_file() {
+    local OPT=
+    local OTHERS=
+    local MODE=
+    while [ ! "$1" = "" ] ; do
+        case $1 in
+        -*)
+            OPT="$OPT $1"
+            ;;
+        *)
+            if [ "$MODE" = "" ] ; then
+                MODE=$1
+            else
+                mr_trace "chown_file $OPT $MODE ${1}"
+                if [[ "${1}" =~ ^hdfs:// ]] ; then
+                    hadoop fs -chmod $OPT $MODE "${1}"
+                else
+                    chmod $OPT $MODE "${1#file://}"
+                fi
+            fi
+            ;;
+        esac
+        shift
+    done
+}
+
 cat_file() {
     local PARAM_FN_INPUT=$1
     shift
@@ -95,7 +121,6 @@ cat_file() {
     mr_trace "cat_file: cat ${PARAM_FN_INPUT#file://}"
     cat "${PARAM_FN_INPUT#file://}"
 }
-
 
 
 myexec_ignore () {

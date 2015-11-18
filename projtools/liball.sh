@@ -52,6 +52,5 @@ source ${DN_LIB}/libshrt.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libplot.sh
 source ${DN_LIB}/libconfig.sh
-source ${DN_EXEC}/libns2config.sh
 source ${DN_EXEC}/libns2figures.sh
 source ${DN_EXEC}/libapp.sh

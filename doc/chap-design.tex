@@ -218,7 +218,7 @@ We have following program entrances for various execution environments:
             \begin{itemize}
               \item \texttt{e1map.sh}:
 
-                1. \texttt{DN\_TOP} is the path to the scripts, to find the global config file \texttt{config-sys.sh}; the \texttt{lib/libxxx.sh} and other files don't need be used since it is integrated in the \texttt{tempe1map.sh} by \texttt{mod-share-worker.sh};
+                1. \texttt{DN\_TOP} is the path to the scripts, to find the global config file \texttt{mrsystem.conf}; the \texttt{lib/libxxx.sh} and other files don't need be used since it is integrated in the \texttt{tempe1map.sh} by \texttt{mod-share-worker.sh};
 
                 2. \texttt{HDFF\_DN\_SCRATCH} is the path that the program can store temporary data, it may be changed by the \texttt{e1map.sh} at the begin according to the computing environment limitations.
 
@@ -240,7 +240,7 @@ The other scripts may use it for convenience.
 
 
 
-The global variables (switches) in \texttt{config-sys.sh}:
+The global variables (switches) in \texttt{mrsystem.conf}:
 \begin{itemize}
   \item \texttt{HDFF\_DN\_SCRATCH}, a suggested local path to store temporary data;
 

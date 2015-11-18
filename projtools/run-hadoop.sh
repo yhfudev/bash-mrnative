@@ -41,45 +41,49 @@ source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
 
-# read basic config from config-sys.sh
+#####################################################################
+# read basic config from mrsystem.conf
 # such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
-read_config_file "${DN_TOP}/config-sys.sh"
+read_config_file "${DN_TOP}/mrsystem.conf"
+
+HDFF_USER=${USER}
+sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
+
+HDFF_DN_BASE="/tmp/${HDFF_USER}"
+sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
+HDFF_DN_OUTPUT="hdfs://${HDFF_DN_BASE}/mapreduce-results/"
+sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-#HDFF_DN_SCRATCH="/tmp/${USER}/"
-#HDFF_DN_SCRATCH="/run/shm/${USER}/"
-#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
-HDFF_DN_SCRATCH="/dev/shm/${USER}/"
-sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
+HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/"
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
-HDFF_DN_BIN="/dev/shm/${USER}/bin"
-sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+HDFF_DN_BIN="/dev/shm/${HDFF_USER}/bin"
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
 # the tar file for ns2 exec
 FN_TAR_APP="ns2docsis-ds31profile-i386-compiled.tar.gz"
-HDFF_FN_TAR_APP="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+HDFF_FN_TAR_APP="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
 cd ..
 make dist-gzip
-FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | head -n 1)
+FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | sort | tail -n 1)
 cd -
 cp "../${FN_TAR_MRNATIVE}" .
-HDFF_FN_TAR_MRNATIVE="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
+HDFF_FN_TAR_MRNATIVE="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
-P=
-#P=$(echo $(basename "${FN_TAR_MRNATIVE}") | awk -F. '{name=$1; for (i=2; i + 1 < NF; i ++) name=name "." $i } END {print name}')
-FN_CONF_SYS="${HDFF_DN_BIN}/${P}/config-sys.sh"
-make_dir "${HDFF_DN_BIN}/${P}/"
-copy_file "${DN_TOP}/config-sys.sh" "${FN_CONF_SYS}"
+FN_CONF_SYS="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/mrsystem.conf"
+make_dir "$(dirname ${FN_CONF_SYS})"
+copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONF_SYS}"
+
+check_global_config
 
 #####################################################################
 if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then

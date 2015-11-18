@@ -37,7 +37,7 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-FN_CONF_SYS="${DN_TOP}/config-sys.sh"
+FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh
@@ -63,14 +63,20 @@ fi
 FN_TMP="/tmp/config-$(uuidgen)"
 copy_file "${FN_CONF_SYS}" "${FN_TMP}" > /dev/null 2>&1
 read_config_file "${FN_TMP}"
-rm_f_dir "${FN_TMP}" > /dev/null 2>&1
 
+if [ $(is_local "${FN_TMP}") = l ]; then
+    #cat_file "${FN_TMP}" | awk -v P=debug -v H=$(hostname) '{print P "\t" H "\ttmpconfig____"$0}'
+    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+else
+    echo -e "debug\tError_file_is_not_local\t${FN_TMP}"
+fi
 check_global_config
 
 mr_trace cat_file "${FN_CONF_SYS}"
-cat_file "${FN_CONF_SYS}" 1>&2
+#cat_file "${FN_CONF_SYS}" 1>&2
 mr_trace "e1map, global config=${FN_CONF_SYS}"
 mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
+#echo -e "debug\tFN_CONF_SYS=${FN_CONF_SYS},FN_TMP=${FN_TMP},HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
 
 #####################################################################
 # generate session for this process and its children

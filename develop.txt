@@ -2,7 +2,7 @@
 * 存放路径 $HDFF_DN_OUTPUT/dataconf/$PREFIX/
 * 配置路径 projconfigs/config-proj-xxxx.sh
 * 输出图片 $HDFF_DN_OUTPUT/figures/$PREFIX/
-* 系统配置 config-sys.sh, HDFF_NUM_CLONE
+* 系统配置 mrsystem.conf, HDFF_NUM_CLONE
 * 执行库  lib/
 * 工具    utils/, 如提交脚本等
 * 项目文件 projtools/, 如各种处理脚本, map reduce

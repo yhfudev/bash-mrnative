@@ -100,8 +100,11 @@ mp_add_child_check_wait () {
     fatal_error "unable to generate session id!"
     return
   fi
+  if [ "${HDFF_NUM_CLONE}" = "" ]; then
+    HDFF_NUM_CLONE=0
+  fi
   mr_trace "CNTCHILD=${CNTCHILD}; HDFF_NUM_CLONE=${HDFF_NUM_CLONE}, #=${CNTCHILD}, PID list='${PID_CHILDREN}' "
-  while [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} -v B=${HDFF_NUM_CLONE} '{if(A>=B){print 1;}else{print 0;}}' )" = "1" ]; do
+  while [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} -v B=${HDFF_NUM_CLONE} '{if(B<1 || A<B){print 0;}else{print 1;}}' )" = "1" ]; do
     #echo "[DBG] (self=${BASHPID}) check all of children in the ${DN_DATATMP}/pids-${MP_SESSION_ID}/end/" 1>&2
     # the number of the end process is no more than HDFF_NUM_CLONE
     for ID in $PID_CHILDREN ; do
@@ -113,6 +116,7 @@ mp_add_child_check_wait () {
     done
     if [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} -v B=${HDFF_NUM_CLONE} '{if(A>=B){print 1;}else{print 0;}}' )" = "1" ]; then
 #if [ 1 = 1 ]; then
+      mr_trace "sleep 1 ..."
       sleep 1
 #else
 #      #IDX1=$(echo | awk -v S=$RANDOM -v N=$(date +%N) -v M=${CNTCHILD} 'BEGIN{srand(S+N);}{print int(rand()*10*M) % M; }' )

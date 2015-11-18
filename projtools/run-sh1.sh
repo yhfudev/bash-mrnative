@@ -35,44 +35,60 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 #DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
+source ${DN_LIB}/libbash.sh
+source ${DN_LIB}/libfs.sh
+source ${DN_LIB}/libconfig.sh
+
+PROGNAME=$(basename "$0")
 
 #####################################################################
+# read basic config from mrsystem.conf
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+read_config_file "${DN_TOP}/mrsystem.conf"
+
+HDFF_USER=${USER}
+sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
+
+HDFF_DN_BASE="$(pwd)/mapreduce-results/"
+sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="$(pwd)/mapreduce-results/"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
+sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-HDFF_DN_SCRATCH="/tmp/${USER}/"
+HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/"
 DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
 if [ ! "$DN_SHM" = "" ]; then
-    HDFF_DN_SCRATCH="${DN_SHM}/${USER}/"
+    HDFF_DN_SCRATCH="${DN_SHM}/${HDFF_USER}/"
 fi
-sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
 HDFF_DN_BIN=""
-sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
 # the tar file for ns2 exec
 HDFF_FN_TAR_APP=""
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
 HDFF_FN_TAR_MRNATIVE=""
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
-
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
 #mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
-PROGNAME=$(basename "$0")
+mr_trace "HDFF_DN_BASE=${HDFF_DN_BASE}"
+mr_trace "HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}"
+mr_trace "HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
+mr_trace "HDFF_DN_BIN=${HDFF_DN_BIN}"
+mr_trace "HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}"
+mr_trace "HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
 
-source "${DN_TOP}/config-sys.sh"
+check_global_config
 
 #####################################################################
 DN_INPUT=${HDFF_DN_OUTPUT}/mapred-data/input
@@ -82,6 +98,8 @@ DN_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/output
 DN_OUTPUT1=${DN_PREFIX}/1
 DN_OUTPUT2=${DN_PREFIX}/2
 DN_OUTPUT3=${DN_PREFIX}/3
+
+chmod_file -R 777 ${DN_INPUT}
 
 # start time
 TM_START=$(date +%s)

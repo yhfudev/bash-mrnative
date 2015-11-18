@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.61])
 AC_INIT([mrnativens2], [1.1], [yhfudev@gmail.com])
 AM_INIT_AUTOMAKE(-Wall subdir-objects)
 

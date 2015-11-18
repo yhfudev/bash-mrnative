@@ -219,16 +219,22 @@ CORES=$(echo $A | awk '{print $1;}')
 NODES=$(echo $A | awk '{print $3;}')
 MEM=$(echo $A | awk '{print ($2-3)*1024;}')
 
-# set cores in config-sys.sh file
-sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/config-sys.sh"
-sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/config-sys.sh"
+HDFF_USER=${USER}
+sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
+
+HDFF_DN_BASE="/tmp/${HDFF_USER}"
+sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
+
+# set cores in mrsystem.conf file
+sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/mrsystem.conf"
+sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/mrsystem.conf"
 
 # output dir
 #HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
 #HDFF_DN_OUTPUT="file://$HOME/mapreduce-ns2docsis-results/"
 #HDFF_DN_OUTPUT="file:///scratch1/$USER/mapreduce-ns2docsis-results/"
 HDFF_DN_OUTPUT="file:///scratch1/$USER/jjmtest-output/"
-sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
 #HDFF_DN_SCRATCH="/tmp/${USER}/"
@@ -236,20 +242,20 @@ sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/co
 #HDFF_DN_SCRATCH="/dev/shm/${USER}/"
 #HDFF_DN_SCRATCH="/local_scratch/\$USER/"
 HDFF_DN_SCRATCH="/dev/shm/${USER}/"
-sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
 HDFF_DN_BIN=""
-sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
 # the tar file for ns2 exec
 HDFF_FN_TAR_APP=""
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
 HDFF_FN_TAR_MRNATIVE=""
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/config-sys.sh"
+sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
 # set the vcores to 1 to let bash script generate multiple processes.
 CORES=1

@@ -40,7 +40,7 @@ Directory Structure
 │   ├── common/             # This folder contains all of the scripts and data files to be used for the test, which will be copied to the working directory, while some of the files may also be modified for a specified test.
 │   └── ...
 ├── 
-└── config-sys.sh           # global config variables
+└── mrsystem.conf           # global config variables
 
 
 Usage

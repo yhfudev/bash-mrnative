@@ -35,7 +35,7 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-FN_CONF_SYS="${DN_TOP}/config-sys.sh"
+FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh

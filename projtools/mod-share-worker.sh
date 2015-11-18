@@ -37,7 +37,7 @@ if [ "${DN_TOP}" = "" ]; then
     fi
     DN_TOP="$(my_getpath "${DN_EXEC}/../")"
     DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-    FN_CONF_SYS="${DN_TOP}/config-sys.sh"
+    FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 fi
 #####################################################################
 mr_trace () {
@@ -63,7 +63,7 @@ PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
 mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HADOOP_JAR_STREAMING=${HADOOP_JAR_STREAMING}; "
 
-source "${PROJ_HOME}/config-sys.sh"
+source "${PROJ_HOME}/mrsystem.conf"
 
 mr_trace "HDFF_DN_OUTPUT=$HDFF_DN_OUTPUT"
 
@@ -144,6 +144,8 @@ DN_INPUT=${HDFF_DN_OUTPUT}/${HDFF_PROJ_ID}/mapred-data/0/
 DN_PREFIX=${HDFF_DN_OUTPUT}/${HDFF_PROJ_ID}/mapred-data/
 DN_CONFIG=${DN_PREFIX}/config
 
+chmod_file -R 777 "${HDFF_DN_OUTPUT}/${HDFF_PROJ_ID}"
+
 if [ 1 = 1 ]; then
     # genrate input file:
     mr_trace "generating input file ..."
@@ -209,9 +211,10 @@ ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 #${EXEC_HADOOP} fs -cat "${DN_OUTPUT_HDFS}/part-00000"
 
 if [ 1 = 1 ]; then
-mr_trace "Stage 1 ..."
+mr_trace "Stage ${STAGE} ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
+    -D mapred.job.name=${HDFF_PROJ_ID}-${STAGE} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
@@ -324,6 +327,7 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     #-mapper /bin/cat
     #-reducer org.apache.hadoop.mapred.lib.IdentityReducer
     ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
+        -D mapred.job.name=${HDFF_PROJ_ID}-${STAGE} \
         -D mapreduce.task.timeout=0 \
         -D stream.num.map.output.key.fields=4 \
         -D num.key.fields.for.partition=2 \
@@ -427,6 +431,7 @@ if [ 1 = 1 ]; then
 mr_trace "Stage 3 ..."
 ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
+    -D mapred.job.name=${HDFF_PROJ_ID}-${STAGE} \
     -D mapreduce.task.timeout=0 \
     -D stream.num.map.output.key.fields=6 \
     -D num.key.fields.for.partition=6 \
