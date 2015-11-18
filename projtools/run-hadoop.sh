@@ -49,11 +49,11 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="/tmp/${HDFF_USER}"
+HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="hdfs://${HDFF_DN_BASE}/mapreduce-results/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}/mapreduce-results/"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
@@ -67,7 +67,7 @@ sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.c
 # tar the binary and save it to HDFS for the node extract it later
 # the tar file for ns2 exec
 FN_TAR_APP="ns2docsis-ds31profile-i386-compiled.tar.gz"
-HDFF_FN_TAR_APP="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
+HDFF_FN_TAR_APP="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
 sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
@@ -76,10 +76,10 @@ make dist-gzip
 FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | sort | tail -n 1)
 cd -
 cp "../${FN_TAR_MRNATIVE}" .
-HDFF_FN_TAR_MRNATIVE="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
+HDFF_FN_TAR_MRNATIVE="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
 sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
-FN_CONF_SYS="hdfs://${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/mrsystem.conf"
+FN_CONF_SYS="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/mrsystem.conf"
 make_dir "$(dirname ${FN_CONF_SYS})"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONF_SYS}"
 

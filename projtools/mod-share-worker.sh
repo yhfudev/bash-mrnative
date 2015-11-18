@@ -40,12 +40,16 @@ if [ "${DN_TOP}" = "" ]; then
     FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 fi
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
 
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
+source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
+source ${DN_LIB}/libconfig.sh
+
+#####################################################################
+# read basic config from mrsystem.conf
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+read_config_file "${DN_TOP}/mrsystem.conf"
 
 #####################################################################
 
@@ -111,7 +115,6 @@ generate_script_4hadoop () {
     cat_file "${DN_TOP}/lib/libfs.sh"       | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libplot.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libconfig.sh"   | save_file "${PARAM_OUTPUT}"
-    cat_file "${DN_FILE9}/libns2config.sh"  | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_FILE9}/libns2figures.sh" | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_FILE9}/libapp.sh"        | save_file "${PARAM_OUTPUT}"
     echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
@@ -124,7 +127,6 @@ generate_script_4hadoop () {
         | grep -v "libfs.sh"    \
         | grep -v "libplot.sh"  \
         | grep -v "libconfig.sh"    \
-        | grep -v "libns2config.sh" \
         | grep -v "libns2figures.sh" \
         | grep -v "libapp.sh"   \
         | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
@@ -169,7 +171,7 @@ if [ ! "${RET}" = "f" ]; then
     return
 fi
 
-DN_PREFIX_HDFS="hdfs:///user/${USER}/mapreduce-working/${HDFF_PROJ_ID}/"
+DN_PREFIX_HDFS="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/"
 RET=$(is_file_or_dir "${DN_PREFIX_HDFS}")
 if [ ! "${RET}" = "d" ]; then
     make_dir "${DN_PREFIX_HDFS}"
@@ -212,7 +214,7 @@ ${EXEC_HADOOP} fs -ls "${DN_OUTPUT_HDFS}"
 
 if [ 1 = 1 ]; then
 mr_trace "Stage ${STAGE} ..."
-${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
+rm_f_dir "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
     -D mapred.job.name=${HDFF_PROJ_ID}-${STAGE} \
     -D mapreduce.task.timeout=0 \
@@ -319,7 +321,7 @@ while (( $STAGE2_RUN < $STAGE2_RUN_MAX )) ; do
     ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
     mr_trace "Stage 2 ..."
-    ${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
+    rm_f_dir "${DN_OUTPUT_HDFS}"
     #-D mapred.reduce.tasks=1
     #-D mapred.reduce.tasks=0
     #-D N=$(${EXEC_HADOOP} fs -ls ${DN_INPUT_HDFS0} | tail -n +2 | wc -l)
@@ -429,7 +431,7 @@ ${EXEC_HADOOP} fs -ls "${DN_INPUT_HDFS}"
 
 if [ 1 = 1 ]; then
 mr_trace "Stage 3 ..."
-${EXEC_HADOOP} fs -rm -f -r "${DN_OUTPUT_HDFS}"
+rm_f_dir "${DN_OUTPUT_HDFS}"
 ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
     -D mapred.job.name=${HDFF_PROJ_ID}-${STAGE} \
     -D mapreduce.task.timeout=0 \

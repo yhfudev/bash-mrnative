@@ -249,7 +249,26 @@ The global variables (switches) in \texttt{mrsystem.conf}:
 
 
 
+\section{Performance}
 
+
+run in a single host with bash:
+
+\begin{lstlisting}[language=bash]
+config:
+    HDFF_NUM_CLONE=4
+    OPTIONS_FFM_GLOBAL=
+Cost time: total=139 seconds
+    stage1=10(m=10,r=0) seconds
+    stage2=77(m=65,r=12) seconds
+    stage3=(m=52,r=0) seconds
+\end{lstlisting}
+
+
+run in a single host hadoop:
+\begin{lstlisting}[language=bash]
+Cost time: total=2926,stage1=498,stage2=1697,stage3=731, seconds
+\end{lstlisting}
 
 
 

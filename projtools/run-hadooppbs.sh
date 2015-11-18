@@ -222,7 +222,7 @@ MEM=$(echo $A | awk '{print ($2-3)*1024;}')
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="/tmp/${HDFF_USER}"
+HDFF_DN_BASE="file:///scratch1/$USER/jjmtest-output/"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # set cores in mrsystem.conf file
@@ -233,7 +233,7 @@ sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/mrsystem.
 #HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
 #HDFF_DN_OUTPUT="file://$HOME/mapreduce-ns2docsis-results/"
 #HDFF_DN_OUTPUT="file:///scratch1/$USER/mapreduce-ns2docsis-results/"
-HDFF_DN_OUTPUT="file:///scratch1/$USER/jjmtest-output/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
