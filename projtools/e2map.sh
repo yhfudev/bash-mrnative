@@ -134,14 +134,14 @@ worker_check_run() {
     else
         TM_START=$(date +%s.%N)
         mr_trace "run_one_ns2 ${HDFF_DN_OUTPUT}/dataconf ${DN_TEST} ${PARAM_CONFIG_FILE}"
-        run_one_ns2 "${HDFF_DN_OUTPUT}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}" > /dev/null 2>&1
+        run_one_ns2 "${HDFF_DN_OUTPUT}/dataconf" "${DN_TEST}" "${PARAM_CONFIG_FILE}" 1>&2
         TM_END=$(date +%s.%N)
         # check the result
         RET=$(check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "/dev/stdout")
         mr_trace check_one_tcldir "${PARAM_CONFIG_FILE}" "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" return $RET
         if [ ! "$RET" = "" ]; then
             # error
-            mr_trace "check error: ${DN_TEST}, ${TM_START}, ${TM_END}"
+            mr_trace "Error in ${DN_TEST}, ${TM_START}, ${TM_END}"
             echo -e "error-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}"
         else
             echo -e "time-run\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\tunknown\t${PARAM_SCHE}\t${PARAM_NUM}\t${TM_START}\t${TM_END}"

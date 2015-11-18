@@ -79,6 +79,18 @@ prepare_app_binary_ns2() {
     fi
 
     if [ ! -x "${EXEC_NS2}" ]; then
+        EXEC_NS2=$HOME/ns2docsis-ds31profile-svn/ns-2.33/ns
+        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+    fi
+    if [ ! -x "${EXEC_NS2}" ]; then
+        EXEC_NS2=$HOME/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns
+        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+    fi
+    if [ ! -x "${EXEC_NS2}" ]; then
+        EXEC_NS2=$HOME/bin/ns
+        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+    fi
+    if [ ! -x "${EXEC_NS2}" ]; then
         EXEC_NS2=$(which ns2)
         mr_trace "try detect ns2 10: ${EXEC_NS2}"
     fi
@@ -177,7 +189,8 @@ run_one_ns2 () {
         mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
     else
         #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
-        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}" 2>&1
+        mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" TO "${HDFF_FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
     fi
 
     mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
@@ -270,43 +283,52 @@ prepare_one_tcl_scripts () {
         # setup the number of flows
         mr_trace "setup udp ..."
         sed -i \
-            -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  0|" \
-            -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  ${PARAM_NUM}|" \
-            -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs 0|" \
-            -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs  0|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs  ${PARAM_NUM}|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs 0|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs  0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         mr_trace "setup udp done!"
         ;;
     "tcp")
         sed -i \
-            -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  ${PARAM_NUM}|" \
-            -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  0|" \
-            -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs 0|" \
-            -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs  ${PARAM_NUM}|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs  0|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs 0|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs  0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
     "has")
         sed -i \
-            -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  0|" \
-            -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  0|" \
-            -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs ${PARAM_NUM}|" \
-            -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs  0|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs  0|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs ${PARAM_NUM}|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs  0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
     "udp+has")
         sed -i \
-            -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  0|" \
-            -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  [expr ${PARAM_NUM} / 3]|" \
-            -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs [expr ${PARAM_NUM} - (${PARAM_NUM} / 3)]|" \
-            -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs  0|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs  [expr ${PARAM_NUM} / 3]|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs [expr ${PARAM_NUM} - (${PARAM_NUM} / 3)]|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs  0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
     "tcp+has")
         sed -i \
-            -e "s|set NUM_FTPs\s[0-9]*|set NUM_FTPs  [expr ${PARAM_NUM} / 3]|" \
-            -e "s|set NUM_UDPs\s[0-9]*|set NUM_UDPs  0|" \
-            -e "s|set NUM_DASHs\s[0-9]*|set NUM_DASHs [expr ${PARAM_NUM} - (${PARAM_NUM} / 3)]|" \
-            -e "s|set NUM_WEBs\s[0-9]*|set NUM_WEBs  0|" \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs   [expr ${PARAM_NUM} / 3]|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs   0|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs  [expr ${PARAM_NUM} - (${PARAM_NUM} / 3)]|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
+            "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
+        ;;
+    "tcp+has5")
+        # 20151119: use fix 5 HAS flow vs multiple FTP flows
+        sed -i \
+            -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs   ${PARAM_NUM}|" \
+            -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs   0|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs  5|" \
+            -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
     esac
@@ -508,24 +530,24 @@ prepare_figure_commands_for_one_stats () {
     #${DN_PARENT}/plotfigns2.sh tpflow "${HDFF_DN_OUTPUT}/dataconf/" "${HDFF_DN_OUTPUT}/figures/" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}"
 
     case $PARAM_TYPE in
-    "udp")
+    udp)
         echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"udp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
-    "tcp")
+    tcp)
         echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
-    "has")
+    has*)
         echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
-    "udp+has")
+    udp+has*)
         echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"udp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
-    "tcp+has")
+    tcp+has*)
         echo -e "packet\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"any\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         echo -e "throughput\t\"${PARAM_CONFIG_FILE}\"\t\"${PARAM_PREFIX}\"\t\"${PARAM_TYPE}\"\t\"tcp\"\t\"${PARAM_SCHE}\"\t${PARAM_NUM}"
         ;;
