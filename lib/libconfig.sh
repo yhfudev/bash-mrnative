@@ -130,20 +130,14 @@ check_global_config () {
         mr_trace make_dir "$(dirname ${HDFF_FN_TAR_MRNATIVE})"
         make_dir "$(dirname ${HDFF_FN_TAR_MRNATIVE})" > /dev/null
     fi
-    #if [ ! "${HDFF_USER}" = "${USER}" ]; then
-        chmod_file -R 777 "${HDFF_DN_OUTPUT}" > /dev/null
-        chmod_file -R 777 "${HDFF_DN_SCRATCH}" > /dev/null
-        if [ ! "${HDFF_DN_BIN}" = "" ]; then
-            chmod_file -R 777 "${HDFF_DN_BIN}" > /dev/null
-        fi
-        if [ ! "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
-            chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_APP})" > /dev/null
-        fi
-        if [ ! "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
-            chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_MRNATIVE})" > /dev/null
-        fi
-        chmod_file -R 777 "${HDFF_DN_BASE}" > /dev/null
-    #fi
+    # only change the mode for others user's access in HDFS, because the user changed in hadoop only
+    [[ "${HDFF_DN_OUTPUT}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_OUTPUT}"  > /dev/null
+    [[ "${HDFF_DN_SCRATCH}" =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_SCRATCH}" > /dev/null
+    [[ "${HDFF_DN_BIN}"     =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_BIN}"     > /dev/null
+    [[ "${HDFF_FN_TAR_APP}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_APP})" > /dev/null
+    [[ "${HDFF_FN_TAR_MRNATIVE}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_MRNATIVE})" > /dev/null
+    [[ "${HDFF_DN_BASE}"    =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_BASE}"    > /dev/null  # this line should be the last line
+
     RET=$(is_local "${HDFF_DN_SCRATCH}")
     if [ ! "${RET}" = "l" ]; then
         mr_trace "Warning: the scratch dir is not in local disk: ${HDFF_DN_SCRATCH}"

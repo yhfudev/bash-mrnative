@@ -387,14 +387,6 @@ if [ ! -x "${EXEC_AWK}" ]; then
   exit 1
 fi
 
-#DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
-DN_EXEC="$(dirname "$0")"
-if [ ! "${DN_EXEC}" = "" ]; then
-    DN_EXEC="${DN_EXEC}/"
-else
-    DN_EXEC="./"
-fi
-
 ######################################################################
 # ssh
 # generate the cert of localhost

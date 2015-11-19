@@ -50,17 +50,13 @@ DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 
 mr_trace "PBS_O_WORKDIR=$PBS_O_WORKDIR"
-mr_trace "DN_TOP=$DN_TOP"
+mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}"
 
 export PROJ_HOME=$DN_TOP
-if [ ! -d "${PROJ_HOME}" ]; then
-    export PROJ_HOME=/home/$USER/mapreduce-ns2docsis
-fi
 if [ ! -d "${PROJ_HOME}" ]; then
     mr_trace "Error: not exit dir $PROJ_HOME"
     exit 1
 fi
-DN_EXEC1="${PROJ_HOME}/projtools"
 
 ### Run the myHadoop environment script to set the appropriate variables
 
@@ -75,10 +71,10 @@ mkdir -p "${HADOOP_CONF_DIR}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
 # Note: ensure that the variables are set correctly in bin/mod-setenv-hadoop.sh
-if [ -f "${DN_EXEC1}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_EXEC1}/mod-setenv-hadoop.sh
+if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_EXEC}/mod-setenv-hadoop.sh
 else
-    mr_trace "Error: not found file ${DN_EXEC1}/mod-setenv-hadoop.sh"
+    mr_trace "Error: not found file ${DN_EXEC}/mod-setenv-hadoop.sh"
     exit 1
 fi
 
@@ -107,7 +103,7 @@ mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Data/gutenberg
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} jar ${HADOOP_HOME}/hadoop-0.20.2-examples.jar wordcount Data/gutenberg Outputs
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
-. ${DN_EXEC1}/mod-share-worker.sh
+. ${DN_EXEC}/mod-share-worker.sh
 echo
 mapred_main
 
