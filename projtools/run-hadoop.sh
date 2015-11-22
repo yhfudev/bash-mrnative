@@ -57,11 +57,11 @@ HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results/"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/"
+HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
-HDFF_DN_BIN="/dev/shm/${HDFF_USER}/bin"
+HDFF_DN_BIN="/dev/shm/${HDFF_USER}/${HDFF_PROJ_ID}/bin"
 sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
@@ -114,13 +114,15 @@ fi
 
 # copy the file to HDFS so all of the hadoop node can access it
 rm_f_dir "${HDFF_PATHTO_TAR_MRNATIVE}"
+
+cd ${DN_TOP}
 if [ ! -f "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" ]; then
-    cd ${DN_TOP}
     ./autogen.sh
     ./configure
-    make dist-gzip
-    cd -
 fi
+make dist-gzip
+cd -
+
 if [ ! -f "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" ]; then
     mr_trace "Error: not found file ${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}"
     exit 1

@@ -25,7 +25,7 @@ my_getpath () {
     echo "${DN}/${FN}"
   fi
 }
-DN_EXEC=$(dirname $(my_getpath "$0") )
+#DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
 # untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP

@@ -187,7 +187,7 @@ MEM=$(echo $A | awk '{print ($2-3)*1024;}')
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="file:///scratch1/$USER/hdpbs-output/"
+HDFF_DN_BASE="file:///scratch1/$USER/${HDFF_PROJ_ID}/"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # set cores in mrsystem.conf file
@@ -195,18 +195,18 @@ sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/mrsystem.conf
 sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/mrsystem.conf"
 
 # output dir
-#HDFF_DN_OUTPUT="hdfs:///user/${USER}/hdpbs-output/"
-#HDFF_DN_OUTPUT="file://$HOME/hdpbs-output/"
-#HDFF_DN_OUTPUT="file:///scratch1/$USER/hdpbs-output/"
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
+#HDFF_DN_OUTPUT="hdfs:///user/${USER}/${HDFF_PROJ_ID}/results/"
+#HDFF_DN_OUTPUT="file://$HOME/${HDFF_PROJ_ID}/results/"
+#HDFF_DN_OUTPUT="file:///scratch1/$USER/${HDFF_PROJ_ID}/results/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-#HDFF_DN_SCRATCH="/tmp/${USER}/"
-#HDFF_DN_SCRATCH="/run/shm/${USER}/"
-#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
-#HDFF_DN_SCRATCH="/local_scratch/\$USER/"
-HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+#HDFF_DN_SCRATCH="/tmp/${USER}/${HDFF_PROJ_ID}/"
+#HDFF_DN_SCRATCH="/run/shm/${USER}/${HDFF_PROJ_ID}/"
+#HDFF_DN_SCRATCH="/dev/shm/${USER}/${HDFF_PROJ_ID}/"
+#HDFF_DN_SCRATCH="/local_scratch/\$USER/${HDFF_PROJ_ID}/"
+HDFF_DN_SCRATCH="/dev/shm/${USER}/${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
