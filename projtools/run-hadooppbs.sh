@@ -38,19 +38,14 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
+source ${DN_LIB}/libbash.sh
+source ${DN_LIB}/libfs.sh
+source ${DN_LIB}/libconfig.sh
+source ${DN_EXEC}/libapp.sh
 
 #####################################################################
-rm -f pbs_hadoop_run.stderr
-rm -f pbs_hadoop_run.stdout
-rm -rf hadoopconfig-*
-rm -f /scratch1/$USER/project/myhadoop-example/pbs_hadoop_run.stderr
-rm -f /scratch1/$USER/project/myhadoop-example/pbs_hadoop_run.stdout
-rm -rf /scratch1/$USER/project/myhadoop-example/hadoopconfig-*
-
 # sum the nodes of same or greater # cores
 convert_avail_settings () {
     MYCORES=0
@@ -127,36 +122,6 @@ EOF
     convert_avail_settings | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE -f tmp-opt-cores.awk
 }
 
-# get # of simulation tasks from a config file
-get_sim_tasks_each_file () {
-    NUM_SCHE=0
-    NUM_NODES=0
-    NUM_TYPE=0
-    while read get_sim_tasks_each_file_tmp_a; do
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_TYPE=${#arr[@]}
-            #echo "$(basename $0) [DBG] got type=$NUM_TYPE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_NODE_NUM | sed -e 's|LIST_NODE_NUM="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_NODES=${#arr[@]}
-            #echo "$(basename $0) [DBG] got node=$NUM_NODES, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_SCHEDULERS | sed -e 's|LIST_SCHEDULERS="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_SCHE=${#arr[@]}
-            #echo "$(basename $0) [DBG] got sch=$NUM_SCHE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-    done
-    #mr_trace "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
-    mr_trace "got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
-    echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
-}
-
 # get # of simulation tasks from the config files in folder projconfigs
 get_sim_tasks () {
     PARAM_DN_CONF=$1
@@ -171,7 +136,7 @@ get_sim_tasks () {
     find "${PARAM_DN_CONF}" -maxdepth 1 -name "config*" \
         | (TASKS=0;
         while read get_sim_tasks_tmp_a; do
-            A=$(cat $get_sim_tasks_tmp_a | get_sim_tasks_each_file)
+            A=$(cat $get_sim_tasks_tmp_a | libapp_get_tasks_number_from_config)
             TASKS=$(( $TASKS + $A ))
             mr_trace "got $A cores for file $a"
         done;
@@ -204,7 +169,7 @@ if [ ! -x "$(which whatsfree)" ]; then
     exit 1
 fi
 # get the free nodes list: (cores, mem, num)
-whatsfree | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
+whatsfree | grep -v 24 | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
     | awk 'BEGIN{cnt=0;}{nodes=$8; cores=$19; mem=$21; if (nodes > 0) print cores " " (0+mem) " " nodes;}END{}' \
     | grep -v "  0" | sort -n -r -k1 -k2 -k3 \
     > tmp-whatsfree.txt
@@ -222,7 +187,7 @@ MEM=$(echo $A | awk '{print ($2-3)*1024;}')
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="file:///scratch1/$USER/jjmtest-output/"
+HDFF_DN_BASE="file:///scratch1/$USER/hdpbs-output/"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # set cores in mrsystem.conf file
@@ -230,9 +195,9 @@ sed -i -e "s|HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${DN_TOP}/mrsystem.conf
 sed -i -e "s|HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${DN_TOP}/mrsystem.conf"
 
 # output dir
-#HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
-#HDFF_DN_OUTPUT="file://$HOME/mapreduce-ns2docsis-results/"
-#HDFF_DN_OUTPUT="file:///scratch1/$USER/mapreduce-ns2docsis-results/"
+#HDFF_DN_OUTPUT="hdfs:///user/${USER}/hdpbs-output/"
+#HDFF_DN_OUTPUT="file://$HOME/hdpbs-output/"
+#HDFF_DN_OUTPUT="file:///scratch1/$USER/hdpbs-output/"
 HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
 sed -i -e "s|HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
@@ -249,13 +214,13 @@ HDFF_DN_BIN=""
 sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
-# the tar file for ns2 exec
-HDFF_FN_TAR_APP=""
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
+# the tar file for application exec
+HDFF_PATHTO_TAR_APP=""
+sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
-HDFF_FN_TAR_MRNATIVE=""
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
+HDFF_PATHTO_TAR_MRNATIVE=""
+sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
 # set the vcores to 1 to let bash script generate multiple processes.
 CORES=1
@@ -358,8 +323,8 @@ MR_JOB_MEM=512
 if (( ${MR_JOB_MEM} < ${MEM}/${CORES} )) ; then
     MR_JOB_MEM=$(( ${MEM}/${CORES} ))
 fi
-if (( ${MR_JOB_MEM} * 3 > ${MEM} )) ; then
-    MR_JOB_MEM=$(( ${MEM} / 3 ))
+if (( ${MR_JOB_MEM} * 6 > ${MEM} )) ; then
+    MR_JOB_MEM=$(( ${MEM} / 6 ))
 fi
 
 . ./mod-setenv-hadoop.sh
@@ -386,7 +351,7 @@ elif [ -d "${HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
 
     sed -i \
         -e "s|<value>3072</value>|<value>${MEM}</value>|" \
-        -e  "s|<value>256</value>|<value>$(( ${MEM}/${CORES} ))</value>|" \
+        -e  "s|<value>256</value>|<value>${MR_JOB_MEM}</value>|" \
         -e   "s|<value>24</value>|<value>${CORES}</value>|" \
         yarn-site.xml
 

@@ -122,20 +122,20 @@ check_global_config () {
         mr_trace make_dir "${HDFF_DN_BIN}"
         make_dir "${HDFF_DN_BIN}" > /dev/null
     fi
-    if [ ! "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
-        mr_trace make_dir "$(dirname ${HDFF_FN_TAR_APP})"
-        make_dir "$(dirname ${HDFF_FN_TAR_APP})" > /dev/null
+    if [ ! "${HDFF_PATHTO_TAR_APP}" = "" ]; then
+        mr_trace make_dir "$(dirname ${HDFF_PATHTO_TAR_APP})"
+        make_dir "$(dirname ${HDFF_PATHTO_TAR_APP})" > /dev/null
     fi
-    if [ ! "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
-        mr_trace make_dir "$(dirname ${HDFF_FN_TAR_MRNATIVE})"
-        make_dir "$(dirname ${HDFF_FN_TAR_MRNATIVE})" > /dev/null
+    if [ ! "${HDFF_PATHTO_TAR_MRNATIVE}" = "" ]; then
+        mr_trace make_dir "$(dirname ${HDFF_PATHTO_TAR_MRNATIVE})"
+        make_dir "$(dirname ${HDFF_PATHTO_TAR_MRNATIVE})" > /dev/null
     fi
     # only change the mode for others user's access in HDFS, because the user changed in hadoop only
     [[ "${HDFF_DN_OUTPUT}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_OUTPUT}"  > /dev/null
     [[ "${HDFF_DN_SCRATCH}" =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_SCRATCH}" > /dev/null
     [[ "${HDFF_DN_BIN}"     =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_BIN}"     > /dev/null
-    [[ "${HDFF_FN_TAR_APP}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_APP})" > /dev/null
-    [[ "${HDFF_FN_TAR_MRNATIVE}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_FN_TAR_MRNATIVE})" > /dev/null
+    [[ "${HDFF_PATHTO_TAR_APP}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_PATHTO_TAR_APP})" > /dev/null
+    [[ "${HDFF_PATHTO_TAR_MRNATIVE}" =~ ^hdfs:// ]] && chmod_file -R 777 "$(dirname ${HDFF_PATHTO_TAR_MRNATIVE})" > /dev/null
     [[ "${HDFF_DN_BASE}"    =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFF_DN_BASE}"    > /dev/null  # this line should be the last line
 
     RET=$(is_local "${HDFF_DN_SCRATCH}")
@@ -173,15 +173,15 @@ HDFF_USER=${HDFF_USER}
 # and the /tmp(or /dev/shm) is the only directory that can be
 # accessed by both the user and runner (and also other users)
 
-HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}"
+HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/${HDFF_PROJ_ID}"
 
 # the output file directory
 #HDFF_DN_OUTPUT=mapreduce-results
-#HDFF_DN_OUTPUT=hdfs://${HDFF_DN_BASE}/mapreduce-results/
-#HDFF_DN_OUTPUT="hdfs:///user/${USER}/mapreduce-results/"
-#HDFF_DN_OUTPUT="file://$HOME/mapreduce-results/"
-#HDFF_DN_OUTPUT="file:///scratch1/$USER/mapreduce-results/"
-HDFF_DN_OUTPUT=${HDFF_DN_BASE}/mapreduce-results/
+#HDFF_DN_OUTPUT=hdfs://${HDFF_DN_BASE}/results/
+#HDFF_DN_OUTPUT="hdfs:///user/${USER}/${HDFF_PROJ_ID}/results/"
+#HDFF_DN_OUTPUT="file://$HOME/${HDFF_PROJ_ID}/results/"
+#HDFF_DN_OUTPUT="file:///scratch1/$USER/${HDFF_PROJ_ID}/results/"
+HDFF_DN_OUTPUT=${HDFF_DN_BASE}/results/
 
 # the temporary directory for NS2 simulator
 #HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/"
@@ -196,12 +196,21 @@ HDFF_DN_SCRATCH=/dev/shm/${HDFF_USER}/
 #HDFF_DN_BIN="/dev/shm/${HDFF_USER}/bin"
 HDFF_DN_BIN=/dev/shm/${HDFF_USER}/bin
 
-# the tar file for application binary
-#HDFF_FN_TAR_APP=hdfs:///tmp/${HDFF_USER}/app-test-binary.tar.gz
+# the name of tar file for application binary at the top folder
+#HDFF_FN_TAR_APP=app-test-binary.tar.gz
 HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}
 
-# the tar file for mrnative-ns2
-#HDFF_FN_TAR_MRNATIVE=hdfs:///tmp/${HDFF_USER}/mrtest-1.0.tar.gz
+# the path to the tar file of application binary, set by run-*.sh
+#HDFF_PATHTO_TAR_APP=${HDFF_DN_BASE}/app-test-binary.tar.gz
+HDFF_PATHTO_TAR_APP=
+
+# the tar file for mrnative-test
+#HDFF_FN_TAR_MRNATIVE=mrtest-1.0.tar.gz
 HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}
+
+# the path to the tar file of mrnative-test binary, set by run-*.sh
+#HDFF_PATHTO_TAR_MRNATIVE=${HDFF_DN_BASE}/mrtest-1.0.tar.gz
+HDFF_PATHTO_TAR_MRNATIVE=
+
 EOF
 }

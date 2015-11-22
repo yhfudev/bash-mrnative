@@ -40,6 +40,8 @@ DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
+source ${DN_LIB}/libhadoop.sh
+source ${DN_EXEC}/libapp.sh
 
 PROGNAME=$(basename "$0")
 
@@ -57,7 +59,7 @@ sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsyste
 # redirect the output to HDFS so we can fetch back later
 HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
-
+-+
 # scratch(temp) dir
 HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/"
 DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
@@ -71,13 +73,13 @@ HDFF_DN_BIN=""
 sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
-# the tar file for ns2 exec
-HDFF_FN_TAR_APP=""
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
+# the tar file for application exec
+HDFF_PATHTO_TAR_APP=""
+sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
-HDFF_FN_TAR_MRNATIVE=""
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
+HDFF_PATHTO_TAR_MRNATIVE=""
+sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
 #mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
@@ -85,93 +87,59 @@ mr_trace "HDFF_DN_BASE=${HDFF_DN_BASE}"
 mr_trace "HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}"
 mr_trace "HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 mr_trace "HDFF_DN_BIN=${HDFF_DN_BIN}"
-mr_trace "HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}"
-mr_trace "HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
+mr_trace "HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}"
+mr_trace "HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}"
 
 check_global_config
 
 #####################################################################
-DN_INPUT=${HDFF_DN_OUTPUT}/mapred-data/input
+mapred_main_sh1 () {
 
-DN_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/output
+    #LIST_MAPREDUCE_WORK is defined in libapp.sh
+    lst_mr_work=(${LIST_MAPREDUCE_WORK})
 
-DN_OUTPUT1=${DN_PREFIX}/1
-DN_OUTPUT2=${DN_PREFIX}/2
-DN_OUTPUT3=${DN_PREFIX}/3
+    HDFS_DN_WORKING_PREFIX=${HDFF_DN_OUTPUT}/working/
+    HDFS_DN_OUTPUT_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/
 
-chmod_file -R 777 ${DN_INPUT}
+    chmod_file -R 777 ${HDFS_DN_OUTPUT_PREFIX}/0/
 
-# start time
-TM_START=$(date +%s)
+    # start time
+    TM_START=$(date +%s)
 
-# generate config lines
-if [ 1 = 1 ]; then
+    ####################
     # genrate input file:
-    mkdir -p ${DN_INPUT}
-    rm -f ${DN_INPUT}/*.txt
-    #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
-    find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_INPUT}/input.txt; done
-fi
+    mkdir -p ${HDFS_DN_OUTPUT_PREFIX}/0/
+    rm -f ${HDFS_DN_OUTPUT_PREFIX}/0/*.txt
+    find ../mytest/ -maxdepth 1 -name "config-*" | while read a; do \
+        echo -e "config\t\"$(my_getpath ${a})\"" | save_file ${HDFS_DN_OUTPUT_PREFIX}/0/redout.txt; \
+    done
 
-if [ 1 = 1 ]; then
-mr_trace "Stage 1 ..."
-mkdir -p ${DN_OUTPUT1}
-cat ${DN_INPUT}/*.txt        | ${DN_EXEC}/e1map.sh | sort > ${DN_OUTPUT1}/mapout.txt
-TM_STAGE1_MAP=$(date +%s)
-cat ${DN_OUTPUT1}/mapout.txt | cat                        > ${DN_OUTPUT1}/redout.txt
-else
-#cat ${DN_INPUT}/*.txt        | ${DN_EXEC}/e1map.sh | sort | tee ${DN_OUTPUT1}/mapout.txt | ${DN_EXEC}/e1red.sh > ${DN_OUTPUT1}/redout.txt
-TM_STAGE1_MAP=$(date +%s)
-fi
-TM_STAGE1=$(date +%s)
+    ####################
+    TM_PRE=$(date +%s)
+    MSG_TM=
 
-if [ 1 = 1 ]; then
-mr_trace "[Stage 2 ..."
-mkdir -p ${DN_OUTPUT2}
-cat ${DN_OUTPUT1}/redout.txt | ${DN_EXEC}/e2map.sh | sort > ${DN_OUTPUT2}/mapout.txt
-TM_STAGE2_MAP=$(date +%s)
-cat ${DN_OUTPUT2}/mapout.txt | ${DN_EXEC}/e2red.sh        > ${DN_OUTPUT2}/redout.txt
-else
-#cat ${DN_OUTPUT1}/redout.txt | ${DN_EXEC}/e2map.sh | sort | tee ${DN_OUTPUT2}/mapout.txt | ${DN_EXEC}/e2red.sh > ${DN_OUTPUT2}/redout.txt
-TM_STAGE2_MAP=$(date +%s)
-fi
-TM_STAGE2=$(date +%s)
+    CNT=0
+    while [[ ${CNT} < ${#lst_mr_work[*]} ]] ; do
+        TM_STAGE_MAP=$(run_stage_sh1 ${lst_mr_work[${CNT}]} $(( ${CNT} + 1 )) libapp_generate_script_4hadoop "${HDFS_DN_WORKING_PREFIX}/${CNT}" "${HDFS_DN_OUTPUT_PREFIX}/${CNT}" "${HDFS_DN_OUTPUT_PREFIX}/$(( ${CNT} + 1 ))")
+        CNT=$(( ${CNT} + 1 ))
+        TM_CUR=$(date +%s)
+        MSG_TM="${MSG_TM},stage${CNT}=$(( ${TM_CUR} - ${TM_PRE} ))(m=$(( ${TM_STAGE_MAP} - ${TM_PRE} )),r=$(( ${TM_CUR} - ${TM_STAGE_MAP} )) )"
 
-if [ 1 = 1 ]; then
-mr_trace "[Stage 3 ..."
-mkdir -p ${DN_OUTPUT3}
-cat ${DN_OUTPUT2}/redout.txt | ${DN_EXEC}/e3map.sh | sort > ${DN_OUTPUT3}/mapout.txt
-TM_STAGE3_MAP=$(date +%s)
-cat ${DN_OUTPUT3}/mapout.txt | cat                        > ${DN_OUTPUT3}/redout.txt
-else
-#cat ${DN_OUTPUT2}/redout.txt | ${DN_EXEC}/e3map.sh | sort | tee ${DN_OUTPUT3}/mapout.txt | ${DN_EXEC}/e3red.sh > ${DN_OUTPUT3}/redout.txt
-TM_STAGE3_MAP=$(date +%s)
-fi
-TM_STAGE3=$(date +%s)
+        TM_PRE=${TM_CUR}
+    done
 
-# end time
-TM_END=$(date +%s)
-TMCOST=$(echo | awk -v A=${TM_START} -v B=${TM_END} '{print B-A;}' )
-TMCOST1=$(echo | awk -v A=${TM_START} -v B=${TM_STAGE1} '{print B-A;}' )
-TMCOST2=$(echo | awk -v A=${TM_STAGE1} -v B=${TM_STAGE2} '{print B-A;}' )
-TMCOST1_MAP=$(echo | awk -v A=${TM_START} -v B=${TM_STAGE1_MAP} '{print B-A;}' )
-TMCOST1_RED=$(echo | awk -v A=${TM_STAGE1_MAP} -v B=${TM_STAGE1} '{print B-A;}' )
-TMCOST2_MAP=$(echo | awk -v A=${TM_STAGE1} -v B=${TM_STAGE2_MAP} '{print B-A;}' )
-TMCOST2_RED=$(echo | awk -v A=${TM_STAGE2_MAP} -v B=${TM_STAGE2} '{print B-A;}' )
-TMCOST3_MAP=$(echo | awk -v A=${TM_STAGE2} -v B=${TM_STAGE3_MAP} '{print B-A;}' )
-TMCOST3_RED=$(echo | awk -v A=${TM_STAGE3_MAP} -v B=${TM_STAGE3} '{print B-A;}' )
+    ####################
+    # end time
+    TM_END=$(date +%s)
 
-mr_trace "TM start=$TM_START, end=$TM_END"
-mr_trace "stage 1 map=$TM_STAGE1_MAP, reduce=$TM_STAGE1"
-mr_trace "stage 2 map=$TM_STAGE2_MAP, reduce=$TM_STAGE2"
-mr_trace "stage 3 map=$TM_STAGE3_MAP, reduce=$TM_STAGE3"
-echo ""
+    mr_trace "TM start=$TM_START, end=$TM_END"
+    echo ""
 
-mr_trace "Done !"
-mr_trace "config:"
-mr_trace "    HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
-mr_trace "    OPTIONS_FFM_GLOBAL=${OPTIONS_FFM_GLOBAL}"
-mr_trace "Cost time: total=${TMCOST} seconds" 1>&2
-mr_trace "    stage1=${TMCOST1}(m=${TMCOST1_MAP},r=${TMCOST1_RED}) seconds" 1>&2
-mr_trace "    stage2=${TMCOST2}(m=${TMCOST2_MAP},r=${TMCOST2_RED}) seconds" 1>&2
-mr_trace "    stage3=${TMCOST3}(m=${TMCOST3_MAP},r=${TMCOST3_RED}) seconds" 1>&2
+    mr_trace "Done !"
+    mr_trace "config:"
+    mr_trace "    HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
+    mr_trace "    OPTIONS_FFM_GLOBAL=${OPTIONS_FFM_GLOBAL}"
+    mr_trace "Cost time: total=$(( ${TM_END} - ${TM_START} ))${MSG_TM} seconds" 1>&2
+}
+
+mapred_main_sh1

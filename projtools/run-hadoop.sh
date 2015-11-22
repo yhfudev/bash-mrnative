@@ -49,11 +49,11 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}"
+HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/${HDFF_PROJ_ID}/"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}/mapreduce-results/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results/"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
@@ -65,21 +65,15 @@ HDFF_DN_BIN="/dev/shm/${HDFF_USER}/bin"
 sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later
-# the tar file for ns2 exec
-FN_TAR_APP="ns2docsis-ds31profile-i386-compiled.tar.gz"
-HDFF_FN_TAR_APP="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_APP}"
-sed -i -e "s|^HDFF_FN_TAR_APP=.*$|HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
+# the tar file for application exec
+HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
+sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${DN_TOP}/mrsystem.conf"
 
 # the HDFS path to this project
-cd ..
-make dist-gzip
-FN_TAR_MRNATIVE=$(ls mrnative*.tar.gz | sort | tail -n 1)
-cd -
-cp "../${FN_TAR_MRNATIVE}" .
-HDFF_FN_TAR_MRNATIVE="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/${FN_TAR_MRNATIVE}"
-sed -i -e "s|^HDFF_FN_TAR_MRNATIVE=.*$|HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
+HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
+sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${DN_TOP}/mrsystem.conf"
 
-FN_CONF_SYS="${HDFF_DN_BASE}/mapreduce-working/${HDFF_PROJ_ID}/mrsystem.conf"
+FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem.conf"
 make_dir "$(dirname ${FN_CONF_SYS})"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONF_SYS}"
 
@@ -105,8 +99,7 @@ fi
 #hdfs dfsadmin -safemode leave
 
 # put the file to HDFS ...
-mr_trace "copying '${FN_TAR_MRNATIVE}' to '${HDFF_FN_TAR_MRNATIVE}' ..."
-DN1="$(dirname ${HDFF_FN_TAR_MRNATIVE})"
+DN1="$(dirname ${HDFF_PATHTO_TAR_MRNATIVE})"
 RET=$(make_dir "${DN1}")
 if [ ! "$RET" = "0" ]; then
     mr_trace "Warning: failed to hadoop mkdir ${DN1}, try again ..."
@@ -119,23 +112,25 @@ if [ ! "$RET" = "0" ]; then
     fi
 fi
 
-rm_f_dir "${HDFF_FN_TAR_MRNATIVE}"
-RET=$(copy_file "${FN_TAR_MRNATIVE}" "${HDFF_FN_TAR_MRNATIVE}")
+# copy the file to HDFS so all of the hadoop node can access it
+rm_f_dir "${HDFF_PATHTO_TAR_MRNATIVE}"
+mr_trace "copying '${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}' to '${HDFF_PATHTO_TAR_MRNATIVE}' ..."
+RET=$(copy_file "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" "${HDFF_PATHTO_TAR_MRNATIVE}")
 if [ ! "$RET" = "0" ]; then
-    mr_trace "Warning: failed to hadoop copy file ${FN_TAR_MRNATIVE}, try again ..."
+    mr_trace "Warning: failed to hadoop copy file ${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}, try again ..."
     hadoop dfsadmin -safemode leave
     hdfs dfsadmin -safemode leave
-    RET=$(copy_file "${FN_TAR_MRNATIVE}" "${HDFF_FN_TAR_MRNATIVE}")
+    RET=$(copy_file "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" "${HDFF_PATHTO_TAR_MRNATIVE}")
     if [ ! "$?" = "0" ]; then
-        mr_trace "Error in hadoop copyfile ${FN_TAR_MRNATIVE}"
+        mr_trace "Error in hadoop copyfile ${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}"
         return
     fi
 fi
 
-make_dir "$(dirname ${HDFF_FN_TAR_APP})"
-mr_trace "copying '${FN_TAR_APP}' to '${HDFF_FN_TAR_APP}' ..."
-rm_f_dir "${HDFF_FN_TAR_APP}"
-copy_file "${FN_TAR_APP}"      "${HDFF_FN_TAR_APP}"
+make_dir "$(dirname ${HDFF_PATHTO_TAR_APP})"
+mr_trace "copying '${DN_TOP}/${HDFF_FN_TAR_APP}' to '${HDFF_PATHTO_TAR_APP}' ..."
+rm_f_dir "${HDFF_PATHTO_TAR_APP}"
+copy_file "${DN_TOP}/${HDFF_FN_TAR_APP}" "${HDFF_PATHTO_TAR_APP}"
 #exit 0 # debug
 
 #### Run your jobs here
