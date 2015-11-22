@@ -49,10 +49,7 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
 #####################################################################
-#HDFF_NUM_CLONE=0
-#HDFF_TOTAL_NODES=1
-#HDFF_FN_LOG="/dev/null"
-#HDFF_DN_SCRATCH="/dev/shm/${USER}/"
+mr_trace "e1map, DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS}"
 
 RET0=$(is_file_or_dir "${FN_CONF_SYS}")
 if [ ! "$RET0" = "f" ]; then
@@ -72,9 +69,7 @@ else
 fi
 check_global_config
 
-mr_trace cat_file "${FN_CONF_SYS}"
-#cat_file "${FN_CONF_SYS}" 1>&2
-mr_trace "e1map, global config=${FN_CONF_SYS}"
+mr_trace "e1map, DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS}"
 mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #echo -e "debug\tFN_CONF_SYS=${FN_CONF_SYS},FN_TMP=${FN_TMP},HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
 
@@ -84,7 +79,7 @@ mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 mp_new_session
 
 # extract the mrnative, include the files in projtool/common which are used in setting ns2 TCL scripts
-prepare_mrnative_binary_ns2
+libapp_prepare_mrnative_binary
 DN_EXEC="${DN_TOP}/projtools/"
 DN_COMM="${DN_EXEC}/common/"
 
@@ -105,13 +100,13 @@ worker_create_tcl_config () {
 
     mr_trace "infunc create tcl config: HDFF_FUNCTION=${HDFF_FUNCTION}"
     if [ "${HDFF_FUNCTION}" = "plot" ]; then
-        prepare_all_tcl_scripts "plot" "${PARAM_CONFIG_FILE}"
+        libapp_prepare_execution_config "plot" "${PARAM_CONFIG_FILE}"
     elif [ "${HDFF_FUNCTION}" = "check" ]; then
-        prepare_all_tcl_scripts "check" "${PARAM_CONFIG_FILE}"
+        libapp_prepare_execution_config "check" "${PARAM_CONFIG_FILE}"
     elif [ "${HDFF_FUNCTION}" = "clean" ]; then
-        prepare_all_tcl_scripts "clean" "${PARAM_CONFIG_FILE}"
+        libapp_prepare_execution_config "clean" "${PARAM_CONFIG_FILE}"
     else
-        prepare_all_tcl_scripts "sim" "${PARAM_CONFIG_FILE}"
+        libapp_prepare_execution_config "sim" "${PARAM_CONFIG_FILE}"
     fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}

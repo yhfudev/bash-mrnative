@@ -71,7 +71,7 @@ mr_trace "e2map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #  use mp_get_session_id to get the session id later
 mp_new_session
 
-prepare_app_binary_ns2
+libapp_prepare_app_binary
 
 #####################################################################
 # check ns2
