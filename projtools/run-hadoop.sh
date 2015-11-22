@@ -49,7 +49,7 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 HDFF_USER=${USER}
 sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/${HDFF_PROJ_ID}/"
+HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
 sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
@@ -57,11 +57,11 @@ HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results/"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/${HDFF_PROJ_ID}/"
+HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 
 # the directory for save the un-tar binary files
-HDFF_DN_BIN="/dev/shm/${HDFF_USER}/${HDFF_PROJ_ID}/bin"
+HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
 sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${DN_TOP}/mrsystem.conf"
 
 # tar the binary and save it to HDFS for the node extract it later

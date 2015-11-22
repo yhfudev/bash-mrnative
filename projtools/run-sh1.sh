@@ -53,7 +53,7 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 HDFF_USER=${USER}
 sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
-HDFF_DN_BASE="$(pwd)/${HDFF_PROJ_ID}/"
+HDFF_DN_BASE="$(pwd)/output-${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
@@ -61,10 +61,10 @@ HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${DN_TOP}/mrsystem.conf"
 
 # scratch(temp) dir
-HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/${HDFF_PROJ_ID}/"
+HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
 DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
 if [ ! "$DN_SHM" = "" ]; then
-    HDFF_DN_SCRATCH="${DN_SHM}/${HDFF_USER}/${HDFF_PROJ_ID}/"
+    HDFF_DN_SCRATCH="${DN_SHM}/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
 fi
 sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${DN_TOP}/mrsystem.conf"
 

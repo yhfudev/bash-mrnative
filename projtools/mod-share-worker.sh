@@ -103,8 +103,8 @@ mapred_main () {
     # LIST_MAPREDUCE_WORK should be defined in libapp.sh
     lst_mr_work=(${LIST_MAPREDUCE_WORK})
 
-    DN_BASE_HDFS="hdfs:///tmp/${USER}/${HDFF_PROJ_ID}"
-    DN_OUTPUT_HDFS="hdfs:///tmp/${USER}/${HDFF_PROJ_ID}/results"
+    DN_BASE_HDFS="hdfs:///tmp/${USER}/working-${HDFF_PROJ_ID}"
+    DN_OUTPUT_HDFS="hdfs:///tmp/${USER}/working-${HDFF_PROJ_ID}/results"
     if [[ "${HDFF_DN_BASE}" =~ ^hdfs:// ]]; then
         DN_BASE_HDFS="${HDFF_DN_BASE}"
     fi
