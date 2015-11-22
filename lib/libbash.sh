@@ -554,14 +554,14 @@ IPv4_convert () {
 #####################################################################
 # http://blog.n01se.net/blog-n01se-net-p-145.html
 # redirect tty fds to /dev/null
-redirect-std() {
+redirect_std() {
     [[ -t 0 ]] && exec </dev/null
     [[ -t 1 ]] && exec >/dev/null
     [[ -t 2 ]] && exec 2>/dev/null
 }
 
 # close all non-std* fds
-close-fds() {
+close_fds() {
     eval exec {3..255}\>\&-
 }
 
@@ -577,7 +577,7 @@ daemonize() {
 }
 
 # daemonize without setsid, keeps the child in the jobs table
-daemonize-job() {
+daemonize_job() {
     (                   # 1. fork
         redirect-std    # 2.2.1. redirect stdin/stdout/stderr
         trap '' 1 2     # 2.2.2. guard against HUP and INT (in child)
