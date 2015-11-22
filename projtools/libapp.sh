@@ -28,7 +28,7 @@ my_getpath () {
 DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
-# untar the ns2 binary from the file specified by HDFF_FN_TAR_APP
+# untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP
 extrace_binary() {
     PARAM_FN_TAR=$1
     shift
@@ -50,14 +50,17 @@ extrace_binary() {
     echo $DN
 }
 
-prepare_app_binary_ns2() {
-    if [ "${HDFF_FN_TAR_APP}" = "" ]; then
+# MUST implemented
+# to setup some environment variable for application
+# and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+libapp_prepare_app_binary() {
+    if [ "${HDFF_PATHTO_TAR_APP}" = "" ]; then
         # detect the application execuable
         EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
         mr_trace "try detect ns2 1: ${EXEC_NS2}"
         #echo -e "error-prepapp\ttry-get-file\t${DN_TOP}/../../ns"
     else
-        local DN2=$(extrace_binary "${HDFF_FN_TAR_APP}")
+        local DN2=$(extrace_binary "${HDFF_PATHTO_TAR_APP}")
         EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
         mr_trace "try detect ns2 2: ${EXEC_NS2}"
         #echo -e "error-prepapp\ttry-get-file\t${DN2}/ns-2.33/ns"
@@ -72,7 +75,7 @@ prepare_app_binary_ns2() {
             #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
         fi
         if [ ! -x "${EXEC_NS2}" ]; then
-            EXEC_NS2="$(dirname ${HDFF_FN_TAR_APP})/ns2docsis-ds31profile/ns-2.33/ns"
+            EXEC_NS2="$(dirname ${HDFF_PATHTO_TAR_APP})/ns2docsis-ds31profile/ns-2.33/ns"
             mr_trace "try detect ns2 5: ${EXEC_NS2}"
             #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
         fi
@@ -101,15 +104,16 @@ prepare_app_binary_ns2() {
     fi
 }
 
-# untar the mrnative binary from the file specified by HDFF_FN_TAR_MRNATIVE
+# MUST implemented
+# untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
 # return the path to the untar files
-prepare_mrnative_binary_ns2() {
-    if [ "${HDFF_FN_TAR_MRNATIVE}" = "" ]; then
+libapp_prepare_mrnative_binary() {
+    if [ "${HDFF_PATHTO_TAR_MRNATIVE}" = "" ]; then
         # detect the marnative dir
-        mr_trace "Error: not found mrnative file '${HDFF_FN_TAR_MRNATIVE}'"
-        #echo -e "error-prepnative\tnot-get-tarfile\tHDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
+        mr_trace "Error: not found mrnative file '${HDFF_PATHTO_TAR_MRNATIVE}'"
+        #echo -e "error-prepnative\tnot-get-tarfile\tHDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}"
     else
-        local DN2=$(extrace_binary "${HDFF_FN_TAR_MRNATIVE}")
+        local DN2=$(extrace_binary "${HDFF_PATHTO_TAR_MRNATIVE}")
         if [ -d "${DN2}" ] ; then
             DN_TOP=$(my_getpath "${DN2}")
             mr_trace "[DBG] set top dir to '${DN_TOP}'"
@@ -120,107 +124,92 @@ prepare_mrnative_binary_ns2() {
     fi
 }
 
-#####################################################################
-FN_TCL=main.tcl
-
-#HDFF_DN_SCRATCH="/dev/shm/$USER/"
-
-# PARAM_DN_PARENT -- the parent dir for the data to be saved.
-# PARAM_DN_TEST   -- the sub dir for the data, related dir name to PARAM_DN_PARENT
-# PARAM_FN_CONFIG_PROJ -- the config file for this simulation
-run_one_ns2 () {
-    local PARAM_DN_PARENT=$1
-    shift
-    local PARAM_DN_TEST=$1
-    shift
-    local PARAM_FN_CONFIG_PROJ=$1
-    shift
-
-    # read in the config file for this test group
-    # in this case, is to read the config for USE_MEDIUMPACKET
-    local FN_TMP="/tmp/config-$(uuidgen)"
-    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
-    read_config_file "${FN_TMP}"
-    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
-
-    # set the scratch dir, which is used to store temperary files.
-    local RET=0
-
-    local DN_WORKING="${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
-    local FLG_USETMP=0
-    RET=$(is_local "${PARAM_DN_PARENT}")
-    if [ ! "${RET}" = "l" ]; then
-        FLG_USETMP=1
-    fi
-    if [ ! "${HDFF_DN_SCRATCH}" = "" ]; then
-        FLG_USETMP=1
-    fi
-    DN_ORIG2=$(pwd)
-    if [ ! "${FLG_USETMP}" = "0" ]; then
-        RET=$(is_local "${HDFF_DN_SCRATCH}")
-        if [ ! "${RET}" = "l" ]; then
-            mr_trace "Error in prepare the scratch dir: ${HDFF_DN_SCRATCH}"
-            return
+# MUST implemented
+# get # of simulation tasks from a config file
+libapp_get_tasks_number_from_config () {
+    NUM_SCHE=1
+    NUM_NODES=1
+    NUM_TYPE=1
+    while read get_sim_tasks_each_file_tmp_a; do
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
+        if [ ! "$A" = "" ]; then
+            arr=($A)
+            NUM_TYPE=${#arr[@]}
+            #echo "$(basename $0) [DBG] got type=$NUM_TYPE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
-
-        DN_WORKING="${HDFF_DN_SCRATCH}/run-${PARAM_DN_TEST}-$(uuidgen)/"
-        mkdir -p "${DN_WORKING}" > /dev/null 2>&1
-        mr_trace "run ns2: copy from parent to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
-        #rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
-        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.tcl to ${DN_WORKING}/"
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.tcl" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
-        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.dat to ${DN_WORKING}/"
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.dat" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
-        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.sh to ${DN_WORKING}/"
-        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.sh" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
-        RET=$?
-        if [ ! "$RET" = "0" ]; then
-            mr_trace "Error: copy temp dir: $PARAM_DN_TEST to ${DN_WORKING}/"
-            return
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_NODE_NUM | sed -e 's|LIST_NODE_NUM="\(.*\)"$|\1|' )
+        if [ ! "$A" = "" ]; then
+            arr=($A)
+            NUM_NODES=${#arr[@]}
+            #echo "$(basename $0) [DBG] got node=$NUM_NODES, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
-        cd "${DN_WORKING}"
-    else
-        cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
-    fi
-    mr_trace "rm -f *.bin *.txt *.out out.* *.tr *.log tmp*"
-    rm -f *.bin *.txt *.out out.* *.tr *.log tmp* > /dev/null 2>&1
-    mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${HDFF_FN_LOG}"
-    if [ ! -x "${EXEC_NS2}" ]; then
-        mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
-    else
-        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
-        mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" TO "${HDFF_FN_LOG}"
-        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
-    fi
-
-    mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
-    if [ "${USE_MEDIUMPACKET}" = "1" ]; then
-        if [ -f mediumpacket.out ]; then
-            mr_trace "rm -f mediumpacket.out.gz ..."
-            rm -f mediumpacket.out.gz > /dev/null 2>&1
-            mr_trace "compressing mediumpacket.out ..."
-            gzip mediumpacket.out > /dev/null 2>&1
-        else
-            mr_trace "Warning: not found mediumpacket.out."
+        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_SCHEDULERS | sed -e 's|LIST_SCHEDULERS="\(.*\)"$|\1|' )
+        if [ ! "$A" = "" ]; then
+            arr=($A)
+            NUM_SCHE=${#arr[@]}
+            #echo "$(basename $0) [DBG] got sch=$NUM_SCHE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
         fi
-    else
-        mr_trace "Warning: remove mediumpacket.out*!"
-        rm -f mediumpacket.out* > /dev/null 2>&1
-    fi
-
-    cd "${DN_ORIG2}"
-    if [ ! "${FLG_USETMP}" = "0" ]; then
-        mr_trace "run ns2: copy back from working to parent dir: ${DN_WORKING}/ --> ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
-        #rsync -av  --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copyback-1-${PARAM_DN_TEST}.log" "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
-        RET=$(copy_file "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/")
-        if [ ! "$RET" = "0" ]; then
-            mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
-            return
-        fi
-        mr_trace "remove working dir: rm -f ${DN_WORKING} ..."
-        #rm -rf "${DN_WORKING}"
-    fi
+    done
+    #mr_trace "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
+    mr_trace "got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
+    echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
 }
+
+# MUST implemented
+libapp_generate_script_4hadoop () {
+    local PARAM_ORIG="$1"
+    shift
+    local PARAM_OUTPUT="$1"
+    shift
+
+    local DN_FILE9=$(dirname "${PARAM_ORIG}")
+    local DN_EXEOUT9=$(dirname "${PARAM_OUTPUT}")
+
+    local RET=
+    RET=$(is_file_or_dir "${DN_EXEOUT9}")
+    if [ ! "${RET}" = "d" ]; then
+        make_dir "${DN_EXEOUT9}"
+        RET=$(is_file_or_dir "${DN_EXEOUT9}")
+        if [ ! "${RET}" = "d" ]; then mr_trace "Error in mkdir $DN_EXEOUT9"; fi
+    fi
+
+    rm_f_dir "${PARAM_OUTPUT}"
+    mr_trace "generating ${PARAM_OUTPUT} ..."
+    echo '#!/bin/bash'                      | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"
+    echo "FN_CONF_SYS_4HADOOP=${FN_CONF_SYS}" | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
+    echo "FN_CONF_SYS=${FN_CONF_SYS}"       | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libbash.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libshrt.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libfs.sh"       | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libplot.sh"     | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/lib/libconfig.sh"   | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/libns2figures.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_FILE9}/libapp.sh"        | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"
+    echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
+    echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
+    cat_file "${PARAM_ORIG}"    \
+        | grep -v "libbash.sh"  \
+        | grep -v "libshrt.sh"  \
+        | grep -v "libfs.sh"    \
+        | grep -v "libplot.sh"  \
+        | grep -v "libconfig.sh"    \
+        | grep -v "libns2figures.sh" \
+        | grep -v "libapp.sh"   \
+        | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
+        | save_file "${PARAM_OUTPUT}"
+}
+
+#config binary for map/reduce task
+# config line: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
+
 
 # all the files should be in the local disk
 prepare_one_tcl_scripts () {
@@ -435,11 +424,12 @@ prepare_one_tcl_scripts () {
     mr_trace "TCL script done: ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
 }
 
+# MUST implemented
 # generate the TCL scripts for all of the settings
 # my_getpath, DN_EXEC, DN_COMM, HDFF_DN_OUTPUT, should be defined before call this function
 # HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
 # PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
-prepare_all_tcl_scripts () {
+libapp_prepare_execution_config () {
     local PARAM_COMMAND=$1
     shift
     local PARAM_FN_CONFIG_PROJ=$1
@@ -509,6 +499,107 @@ prepare_all_tcl_scripts () {
     mr_trace "DONE create config files"
 }
 
+#####################################################################
+FN_TCL=main.tcl
+
+#HDFF_DN_SCRATCH="/dev/shm/$USER/"
+
+# PARAM_DN_PARENT -- the parent dir for the data to be saved.
+# PARAM_DN_TEST   -- the sub dir for the data, related dir name to PARAM_DN_PARENT
+# PARAM_FN_CONFIG_PROJ -- the config file for this simulation
+run_one_ns2 () {
+    local PARAM_DN_PARENT=$1
+    shift
+    local PARAM_DN_TEST=$1
+    shift
+    local PARAM_FN_CONFIG_PROJ=$1
+    shift
+
+    # read in the config file for this test group
+    # in this case, is to read the config for USE_MEDIUMPACKET
+    local FN_TMP="/tmp/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
+    read_config_file "${FN_TMP}"
+    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+
+    # set the scratch dir, which is used to store temperary files.
+    local RET=0
+
+    local DN_WORKING="${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+    local FLG_USETMP=0
+    RET=$(is_local "${PARAM_DN_PARENT}")
+    if [ ! "${RET}" = "l" ]; then
+        FLG_USETMP=1
+    fi
+    if [ ! "${HDFF_DN_SCRATCH}" = "" ]; then
+        FLG_USETMP=1
+    fi
+    DN_ORIG2=$(pwd)
+    if [ ! "${FLG_USETMP}" = "0" ]; then
+        RET=$(is_local "${HDFF_DN_SCRATCH}")
+        if [ ! "${RET}" = "l" ]; then
+            mr_trace "Error in prepare the scratch dir: ${HDFF_DN_SCRATCH}"
+            return
+        fi
+
+        DN_WORKING="${HDFF_DN_SCRATCH}/run-${PARAM_DN_TEST}-$(uuidgen)/"
+        mkdir -p "${DN_WORKING}" > /dev/null 2>&1
+        mr_trace "run ns2: copy from parent to working dir: ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/ --> ${DN_WORKING}/"
+        #rsync -av --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copytemp-1.log" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" "${DN_WORKING}/" 1>&2
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.tcl to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.tcl" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.dat to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.dat" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        mr_trace "copy ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/*.sh to ${DN_WORKING}/"
+        find_file "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" -name "*.sh" | while read a; do mr_trace "copy ${a} to ${DN_WORKING}/"; copy_file "$a" "${DN_WORKING}/" > /dev/null 2>&1; done
+        RET=$?
+        if [ ! "$RET" = "0" ]; then
+            mr_trace "Error: copy temp dir: $PARAM_DN_TEST to ${DN_WORKING}/"
+            return
+        fi
+        cd "${DN_WORKING}"
+    else
+        cd "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+    fi
+    mr_trace "rm -f *.bin *.txt *.out out.* *.tr *.log tmp*"
+    rm -f *.bin *.txt *.out out.* *.tr *.log tmp* > /dev/null 2>&1
+    mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" FILTER grep PFSCHE TO "${HDFF_FN_LOG}"
+    if [ ! -x "${EXEC_NS2}" ]; then
+        mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
+    else
+        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
+        mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" TO "${HDFF_FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
+    fi
+
+    mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
+    if [ "${USE_MEDIUMPACKET}" = "1" ]; then
+        if [ -f mediumpacket.out ]; then
+            mr_trace "rm -f mediumpacket.out.gz ..."
+            rm -f mediumpacket.out.gz > /dev/null 2>&1
+            mr_trace "compressing mediumpacket.out ..."
+            gzip mediumpacket.out > /dev/null 2>&1
+        else
+            mr_trace "Warning: not found mediumpacket.out."
+        fi
+    else
+        mr_trace "Warning: remove mediumpacket.out*!"
+        rm -f mediumpacket.out* > /dev/null 2>&1
+    fi
+
+    cd "${DN_ORIG2}"
+    if [ ! "${FLG_USETMP}" = "0" ]; then
+        mr_trace "run ns2: copy back from working to parent dir: ${DN_WORKING}/ --> ${PARAM_DN_PARENT}/${PARAM_DN_TEST}/"
+        #rsync -av  --log-file "${PARAM_DN_PARENT}/rsync-log-runns2-copyback-1-${PARAM_DN_TEST}.log" "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/" 1>&2
+        RET=$(copy_file "${DN_WORKING}/" "${PARAM_DN_PARENT}/${PARAM_DN_TEST}/")
+        if [ ! "$RET" = "0" ]; then
+            mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
+            return
+        fi
+        mr_trace "remove working dir: rm -f ${DN_WORKING} ..."
+        #rm -rf "${DN_WORKING}"
+    fi
+}
 
 # parse the parameters and generate the requests for ploting figures
 prepare_figure_commands_for_one_stats () {
