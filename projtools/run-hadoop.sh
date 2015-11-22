@@ -114,6 +114,17 @@ fi
 
 # copy the file to HDFS so all of the hadoop node can access it
 rm_f_dir "${HDFF_PATHTO_TAR_MRNATIVE}"
+if [ ! -f "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" ]; then
+    cd ${DN_TOP}
+    ./autogen.sh
+    ./configure
+    make dist-gzip
+    cd -
+fi
+if [ ! -f "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" ]; then
+    mr_trace "Error: not found file ${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}"
+    exit 1
+fi
 mr_trace "copying '${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}' to '${HDFF_PATHTO_TAR_MRNATIVE}' ..."
 RET=$(copy_file "${DN_TOP}/${HDFF_FN_TAR_MRNATIVE}" "${HDFF_PATHTO_TAR_MRNATIVE}")
 if [ ! "$RET" = "0" ]; then
@@ -127,6 +138,10 @@ if [ ! "$RET" = "0" ]; then
     fi
 fi
 
+if [ ! -f "${DN_TOP}/${HDFF_FN_TAR_APP}" ]; then
+    mr_trace "Error: not found file ${DN_TOP}/${HDFF_FN_TAR_APP}"
+    exit 1
+fi
 make_dir "$(dirname ${HDFF_PATHTO_TAR_APP})"
 mr_trace "copying '${DN_TOP}/${HDFF_FN_TAR_APP}' to '${HDFF_PATHTO_TAR_APP}' ..."
 rm_f_dir "${HDFF_PATHTO_TAR_APP}"
