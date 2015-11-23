@@ -17,6 +17,7 @@ include_HEADERS = \
     $(top_srcdir)/lib/libfs.sh \
     $(top_srcdir)/lib/libplot.sh \
     $(top_srcdir)/lib/libshrt.sh \
+    $(top_srcdir)/lib/libhadoop.sh \
     $(top_srcdir)/projtools/liball.sh \
     $(top_srcdir)/projtools/libapp.sh \
     $(top_srcdir)/projtools/libns2figures.sh \
