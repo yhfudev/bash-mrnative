@@ -46,6 +46,11 @@ source ${DN_LIB}/libconfig.sh
 source ${DN_EXEC}/libapp.sh
 
 #####################################################################
+# read basic config from mrsystem.conf
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+read_config_file "${DN_TOP}/mrsystem.conf"
+
+#####################################################################
 # sum the nodes of same or greater # cores
 convert_avail_settings () {
     MYCORES=0

@@ -81,21 +81,29 @@ libapp_prepare_app_binary() {
         fi
     fi
 
+    lst_ns2_dirs=(
+        "/home/$USER/ns2docsis-ds31profile/ns-2.33/ns"
+              "$HOME/ns2docsis-ds31profile/ns-2.33/ns"
+        "/home/$USER/ns2docsis-ds31profile-svn/ns-2.33/ns"
+              "$HOME/ns2docsis-ds31profile-svn/ns-2.33/ns"
+        "/home/$USER/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns"
+              "$HOME/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns"
+        "/home/$USER/bin/ns"
+              "$HOME/bin/ns"
+        )
     if [ ! -x "${EXEC_NS2}" ]; then
-        EXEC_NS2=$HOME/ns2docsis-ds31profile-svn/ns-2.33/ns
-        mr_trace "try detect ns2 10: ${EXEC_NS2}"
-    fi
-    if [ ! -x "${EXEC_NS2}" ]; then
-        EXEC_NS2=$HOME/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns
-        mr_trace "try detect ns2 10: ${EXEC_NS2}"
-    fi
-    if [ ! -x "${EXEC_NS2}" ]; then
-        EXEC_NS2=$HOME/bin/ns
-        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+        CNT=0
+        while [[ ${CNT} < ${#lst_ns2_dirs[*]} ]] ; do
+            mr_trace "try detect ns2 lst_ns2_dirs(${CNT}):" ${lst_ns2_dirs[${CNT}]}
+            if [ -x "${EXEC_NS2}" ]; then
+                EXEC_NS2=${lst_ns2_dirs[${CNT}]}
+                break
+            fi
+        done
     fi
     if [ ! -x "${EXEC_NS2}" ]; then
         EXEC_NS2=$(which ns2)
-        mr_trace "try detect ns2 10: ${EXEC_NS2}"
+        mr_trace "try detect ns2 13: ${EXEC_NS2}"
     fi
     mr_trace "EXEC_NS2=${EXEC_NS2}"
     if [ ! -x "${EXEC_NS2}" ]; then
@@ -119,7 +127,7 @@ libapp_prepare_mrnative_binary() {
             mr_trace "[DBG] set top dir to '${DN_TOP}'"
         else
             mr_trace "Error: not found mrnative top dir '${DN2}'"
-            echo -e "error-prepnative\tnot-get-dir\t$${DN2}"
+            echo -e "error-prepnative\tnot-get-dir\t${DN2}"
         fi
     fi
 }
