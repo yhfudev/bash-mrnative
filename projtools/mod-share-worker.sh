@@ -40,6 +40,8 @@ if [ "${DN_TOP}" = "" ]; then
     fi
     DN_TOP="$(my_getpath "${DN_EXEC}/../")"
     DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+fi
+if [ "${FN_CONF_SYS}" = "" ]; then
     FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 fi
 #####################################################################

@@ -47,10 +47,10 @@ source ${DN_LIB}/libconfig.sh
 read_config_file "${DN_TOP}/mrsystem.conf"
 
 HDFF_USER=${USER}
-sed -i -e "s|HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
+sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${DN_TOP}/mrsystem.conf"
 
 HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
-sed -i -e "s|HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
+sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${DN_TOP}/mrsystem.conf"
 
 # redirect the output to HDFS so we can fetch back later
 HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results/"
