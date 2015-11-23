@@ -147,7 +147,6 @@ mapred_main () {
 
     ####################
     mr_trace "generating input file ..."
-    #find ../projconfigs/ -maxdepth 1 -name "config-*" | while read a; do echo -e "config\t\"$(my_getpath ${a})\"" >> ${DN_OUTPUT_HDFS}/0/input.txt; done
     find_file ${DN_TOP}/mytest/ -name "config-*" | while read a; do \
         copy_file "${a}" "${DN_OUTPUT_HDFS}/"; \
         echo -e "config\t\"${DN_OUTPUT_HDFS}/$(basename ${a})\"" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt; \
@@ -171,9 +170,9 @@ mapred_main () {
     TM_END=$(date +%s)
 
     if [[ ! "${HDFF_DN_OUTPUT}" =~ ^hdfs:// ]]; then
-        rm_f_dir "${HDFF_DN_OUTPUT}"
-        make_dir "${HDFF_DN_OUTPUT}"
-        copy_file "${DN_OUTPUT_HDFS}/" "${HDFF_DN_OUTPUT}"
+        rm_f_dir "${HDFF_DN_OUTPUT}/working"
+        make_dir "${HDFF_DN_OUTPUT}/working"
+        copy_file "${DN_OUTPUT_HDFS}/" "${HDFF_DN_OUTPUT}/working"
     fi
 
     mr_trace "TM start=$TM_START, end=$TM_END"

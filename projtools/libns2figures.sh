@@ -131,10 +131,10 @@ EOF
 
 # plot the flows' throughput
 plot_eachflow_throughput () {
-    # the test dir
+    # the test dir, should be a local dir
     local PARAM_DN_TEST=$1
     shift
-    # the dir stores figures
+    # the dir stores figures, should be a local dir
     local PARAM_DN_DEST=$1
     shift
     local PARAM_FN_TEST=$1
@@ -149,13 +149,13 @@ plot_eachflow_throughput () {
     local XLABEL="Time (sec)"
     local YLABEL="Throughput (bps)"
 
-    if [ ! -d "${PARAM_DN_TEST}/" ]; then
+    if [ ! -d "${PARAM_DN_TEST#file://}" ]; then
         mr_trace "Error, not found dir: ${PARAM_DN_TEST}"
         return
     fi
     mr_trace "cd ${PARAM_DN_TEST}"
     local DN_ORIG9=$(pwd)
-    cd "${PARAM_DN_TEST}/"
+    cd "${PARAM_DN_TEST#file://}/"
 
     # GNUPLOT - the arguments for gnuplot plot command
     PLOT_LINE=
@@ -178,7 +178,7 @@ set title "${PARAM_TITLE}"
 set xlabel "${XLABEL}"
 set ylabel "${YLABEL}"
 EOF
-    gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST}/fig-nodetp-${PARAM_FN_TEST}"
+    gplot_settail "${FN_TMPGP}" "${PARAM_DN_DEST#file://}/fig-nodetp-${PARAM_FN_TEST}"
     plot_script "${FN_TMPGP}"
     cd "${DN_ORIG9}"
 }
@@ -346,17 +346,17 @@ plot_ns2_type () {
         fi
         case "${ARG_FLOW_TYPE}" in
         "tcp")
-            plot_eachflow_throughput "${DN_SRC}" "${DN_DEST}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
+            plot_eachflow_throughput "${DN_SRC#file://}" "${DN_DEST#file://}" "${DN_TEST}" "${TITLE}" "CMTCPDS*.out"
             ;;
         "udp")
-            plot_eachflow_throughput "${DN_SRC}" "${DN_DEST}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
+            plot_eachflow_throughput "${DN_SRC#file://}" "${DN_DEST#file://}" "${DN_TEST}" "${TITLE}" "CMUDPDS*.out"
             ;;
         *)
             mr_trace "Error: Unknown flow type: ${ARG_FLOW_TYPE}"
             exit 1
             ;;
         esac
-        cd "${DN_DEST}" > /dev/null 2>&1
+        cd "${DN_DEST#file://}" > /dev/null 2>&1
         convert_eps2png
         cd "${DN_ORIG5}"
         if [ ! "${TMP_DEST}" = "" ]; then
@@ -388,15 +388,15 @@ plot_ns2_type () {
 
         local DN_ORIG5=$(pwd)
         FN_TP="${HDFF_DN_SCRATCH}/tmp-avgtp-stats-udp-${ARG_PREFIX}-${ARG_TYPE}-$(uuidgen).dat"
-        generate_throughput_stats_file "${DN_SRC}" "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
+        generate_throughput_stats_file "${DN_SRC#file://}" "${ARG_PREFIX}" "${ARG_TYPE}" "${ARG_FLOW_TYPE}" "notfound.out"    "CM??PDS*.out" "${FN_TP}"
 
-        gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
-        gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
-        gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
-        gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST}"
+        gplot_draw_statfig "${FN_TP}"  6 "Aggregate Throughput"  "Throughput (bps)" "fig-aggtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
+        gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
+        gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
+        gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
         #rm -f "${FN_TP}"
         cd "${DN_ORIG5}"
-        cd "${DN_DEST}"
+        cd "${DN_DEST#file://}"
         convert_eps2png
         cd "${DN_ORIG5}"
         if [ ! "${TMP_DEST}" = "" ]; then
@@ -415,8 +415,8 @@ plot_ns2_type () {
             make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
-        plot_pktdelay_queue "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
-        cd "${DN_DEST}"
+        plot_pktdelay_queue "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST#file://}" "${DN_TEST}"
+        cd "${DN_DEST#file://}"
         convert_eps2png
         cd "${DN_ORIG6}"
         if [ ! "${TMP_DEST}" = "" ]; then
@@ -435,8 +435,8 @@ plot_ns2_type () {
             make_dir "${TMP_DEST}/" > /dev/null 2>&1
             DN_DEST="${TMP_DEST}/"
         fi
-        plot_pktdelay_trans "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST}" "${DN_TEST}"
-        cd "${DN_DEST}"
+        plot_pktdelay_trans "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${DN_DEST#file://}" "${DN_TEST}"
+        cd "${DN_DEST#file://}"
         convert_eps2png
         cd "${DN_ORIG6}"
         if [ ! "${TMP_DEST}" = "" ]; then

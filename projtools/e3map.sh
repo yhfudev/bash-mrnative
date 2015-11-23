@@ -94,7 +94,7 @@ worker_flow_throughput () {
 
     #mr_trace "worker_flow_throughput(): " plot_ns2_type tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    plot_ns2_type bitflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" > /dev/null 2>&1
+    $MYEXEC plot_ns2_type bitflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-bitflow\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -119,7 +119,7 @@ worker_stats_packet () {
     shift
 
     TM_START=$(date +%s.%N)
-    plot_ns2_type pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" > /dev/null 2>&1
+    $MYEXEC plot_ns2_type pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pktsche\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -145,7 +145,7 @@ worker_trans_packet () {
 
     #mr_trace plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}" > /dev/null 2>&1
+    $MYEXEC plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pkttran\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -159,44 +159,44 @@ worker_trans_packet () {
 # tpflow "config-xx.sh" "jjmbase"  "tcp" "tcp" "PF" 24
 while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_NUM_NODE ; do
 
-mr_trace "received: cmd='${MR_CMD}', prefix='${MR_PREFIX}', type='${MR_TYPE}', flow='${MR_FLOW_TYPE}', sche='${MR_SCHEDULER}', num='${MR_NUM_NODE}'"
+    mr_trace "received: cmd='${MR_CMD}', prefix='${MR_PREFIX}', type='${MR_TYPE}', flow='${MR_FLOW_TYPE}', sche='${MR_SCHEDULER}', num='${MR_NUM_NODE}'"
 
-  FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
-  MR_PREFIX1=$( unquote_filename "${MR_PREFIX}" )
-  MR_TYPE1=$( unquote_filename "${MR_TYPE}" )
-  MR_FLOW_TYPE1=$( unquote_filename "${MR_FLOW_TYPE}" )
-  MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
-  GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}|${MR_SCHEDULER1}|${FN_CONFIG_FILE}|"
+    FN_CONFIG_FILE=$( unquote_filename "${MR_CONFIG_FILE}" )
+    MR_PREFIX1=$( unquote_filename "${MR_PREFIX}" )
+    MR_TYPE1=$( unquote_filename "${MR_TYPE}" )
+    MR_FLOW_TYPE1=$( unquote_filename "${MR_FLOW_TYPE}" )
+    MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
+    GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}|${MR_SCHEDULER1}|${FN_CONFIG_FILE}|"
 
-  case "${MR_CMD}" in
-  bitflow)
-    # plot figure for each flow
-    worker_flow_throughput "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-    ;;
+    case "${MR_CMD}" in
+    bitflow)
+        # plot figure for each flow
+        worker_flow_throughput "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+        PID_CHILD=$!
+        mp_add_child_check_wait ${PID_CHILD}
+        ;;
 
-  packetsche)
-    # the packet scheduling time distribution
-    worker_stats_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-    ;;
+    packetsche)
+        # the packet scheduling time distribution
+        worker_stats_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+        PID_CHILD=$!
+        mp_add_child_check_wait ${PID_CHILD}
+        ;;
 
-  packettran)
-    # the packet transfering time distribution
-    worker_trans_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
-    PID_CHILD=$!
-    mp_add_child_check_wait ${PID_CHILD}
-    ;;
+    packettran)
+        # the packet transfering time distribution
+        worker_trans_packet "$(mp_get_session_id)" "${FN_CONFIG_FILE}" "${MR_PREFIX1}" "${MR_TYPE1}" "${MR_FLOW_TYPE1}" "${MR_SCHEDULER1}" "${MR_NUM_NODE}" &
+        PID_CHILD=$!
+        mp_add_child_check_wait ${PID_CHILD}
+        ;;
 
-  *)
-    mr_trace "Warning: unknown mr command '${MR_CMD}'."
-    # throw the command to output again
-    echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
-    ERR=1
-    ;;
-  esac
+    *)
+        mr_trace "Warning: unknown mr command '${MR_CMD}'."
+        # throw the command to output again
+        echo -e "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
+        ERR=1
+        ;;
+    esac
 
 done
 
