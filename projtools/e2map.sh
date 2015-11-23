@@ -36,7 +36,6 @@ else
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh
@@ -46,6 +45,15 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_EXEC="${DN_EXEC_4HADOOP}"
   DN_TOP="${DN_TOP_4HADOOP}"
   FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
+fi
+if [ ! -f "${FN_CONF_SYS}" ]; then
+    FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
+fi
+if [ ! -f "${FN_CONF_SYS}" ]; then
+    FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
+fi
+if [ ! -f "${FN_CONF_SYS}" ]; then
+    mr_trace "not found config file: ${FN_CONF_SYS}"
 fi
 #####################################################################
 # the default

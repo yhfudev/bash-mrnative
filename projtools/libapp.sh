@@ -81,7 +81,7 @@ libapp_prepare_app_binary() {
         fi
     fi
 
-    lst_ns2_dirs=(
+    lst_app_dirs=(
         "/home/$USER/ns2docsis-ds31profile/ns-2.33/ns"
               "$HOME/ns2docsis-ds31profile/ns-2.33/ns"
         "/home/$USER/ns2docsis-ds31profile-svn/ns-2.33/ns"
@@ -93,16 +93,18 @@ libapp_prepare_app_binary() {
         )
     if [ ! -x "${EXEC_NS2}" ]; then
         CNT=0
-        while [[ ${CNT} < ${#lst_ns2_dirs[*]} ]] ; do
-            mr_trace "try detect ns2 lst_ns2_dirs(${CNT}):" ${lst_ns2_dirs[${CNT}]}
+        while [[ ${CNT} < ${#lst_app_dirs[*]} ]] ; do
+            mr_trace "try detect ns2 lst_app_dirs(${CNT}):" ${lst_app_dirs[${CNT}]}
             if [ -x "${EXEC_NS2}" ]; then
-                EXEC_NS2=${lst_ns2_dirs[${CNT}]}
+                EXEC_NS2=${lst_app_dirs[${CNT}]}
+                mr_trace "found: $EXEC_NS2"
                 break
             fi
+            CNT=$(( $CNT + 1 ))
         done
     fi
     if [ ! -x "${EXEC_NS2}" ]; then
-        EXEC_NS2=$(which ns2)
+        EXEC_NS2=$(which ns)
         mr_trace "try detect ns2 13: ${EXEC_NS2}"
     fi
     mr_trace "EXEC_NS2=${EXEC_NS2}"

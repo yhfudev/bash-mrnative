@@ -41,8 +41,15 @@ if [ "${DN_TOP}" = "" ]; then
     DN_TOP="$(my_getpath "${DN_EXEC}/../")"
     DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 fi
-if [ "${FN_CONF_SYS}" = "" ]; then
+
+if [ ! -f "${FN_CONF_SYS}" ]; then
+    FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
+fi
+if [ ! -f "${FN_CONF_SYS}" ]; then
     FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
+fi
+if [ ! -f "${FN_CONF_SYS}" ]; then
+    mr_trace "not found config file: ${FN_CONF_SYS}"
 fi
 #####################################################################
 
@@ -60,7 +67,7 @@ mr_trace "3 DN_TOP=$DN_TOP;DN_EXEC=${DN_EXEC}"
 #####################################################################
 # read basic config from mrsystem.conf
 # such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
-read_config_file "${DN_TOP}/mrsystem.conf"
+read_config_file "${FN_CONF_SYS}"
 
 mr_trace "4 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 
@@ -81,8 +88,6 @@ if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir $PROJ_HOME" ; fi
 PROJ_HOME="$(my_getpath "${PROJ_HOME}")"
 
 mr_trace "PROJ_HOME=${PROJ_HOME}; EXEC_HADOOP=${EXEC_HADOOP}; HADOOP_JAR_STREAMING=${HADOOP_JAR_STREAMING}; "
-
-source "${PROJ_HOME}/mrsystem.conf"
 
 mr_trace "HDFF_DN_OUTPUT=$HDFF_DN_OUTPUT"
 
@@ -166,6 +171,7 @@ mapred_main () {
     TM_END=$(date +%s)
 
     if [[ ! "${HDFF_DN_OUTPUT}" =~ ^hdfs:// ]]; then
+        rm_f_dir "${HDFF_DN_OUTPUT}"
         make_dir "${HDFF_DN_OUTPUT}"
         copy_file "${DN_OUTPUT_HDFS}/" "${HDFF_DN_OUTPUT}"
     fi

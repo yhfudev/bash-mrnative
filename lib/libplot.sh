@@ -166,11 +166,11 @@ plot_script () {
         if [ ${FLG_GNUPLOT_LESS_43} = 1 ]; then
             mr_trace "Warning: ${EXEC_PLOT} verion < 4.3, it may not plot CDF correctly."
         fi
-        "${EXEC_PLOT}" "${FN_TMPGP}"
+        $MYEXEC "${EXEC_PLOT}" "${FN_TMPGP}"
         if [ ! "$?" = "0" ]; then
             NEWNAME="${FN_TMPGP}$(date +%s)"
             mr_trace "Warning: error in process file ${FN_TMPGP}, changed to ${NEWNAME}."
-            mv "${FN_TMPGP}" "${NEWNAME}"
+            $MYEXEC mv "${FN_TMPGP}" "${NEWNAME}"
         fi
     else
         mr_trace "Error: unable to find the gnuplot!"

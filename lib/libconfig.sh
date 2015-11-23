@@ -202,7 +202,7 @@ HDFF_FN_TAR_APP=${HDFF_FN_TAR_APP}
 
 # the path to the tar file of application binary, set by run-*.sh
 #HDFF_PATHTO_TAR_APP=${HDFF_DN_BASE}/app-test-binary.tar.gz
-HDFF_PATHTO_TAR_APP=
+HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}
 
 # the tar file for mrnative-test
 #HDFF_FN_TAR_MRNATIVE=mrtest-1.0.tar.gz
@@ -210,7 +210,7 @@ HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}
 
 # the path to the tar file of mrnative-test binary, set by run-*.sh
 #HDFF_PATHTO_TAR_MRNATIVE=${HDFF_DN_BASE}/mrtest-1.0.tar.gz
-HDFF_PATHTO_TAR_MRNATIVE=
+HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}
 
 EOF
 }

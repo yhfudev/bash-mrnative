@@ -40,7 +40,7 @@ tail_file() {
     local PARAM_FN_INPUT=$1
     shift
     #[[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -cat "${PARAM_FN_INPUT}" | awk 'BEGIN{str="";}{str=$0;}END{print str;}' && return
-    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -tail "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -tail "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
     tail "${PARAM_FN_INPUT#file://}" $@
 }
 
@@ -48,7 +48,7 @@ tail_file() {
 save_file() {
     local PARAM_FN_SAVE=$1
     shift
-    [[ "${PARAM_FN_SAVE}" =~ ^hdfs:// ]] && hadoop fs -appendToFile - "${HDFS_URL}${PARAM_FN_SAVE#hdfs://}" && return
+    [[ "${PARAM_FN_SAVE}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -appendToFile - "${HDFS_URL}${PARAM_FN_SAVE#hdfs://}" && return
     cat - >> "${PARAM_FN_SAVE#file://}"
 }
 
@@ -100,11 +100,10 @@ chmod_file() {
             if [ "$MODE" = "" ] ; then
                 MODE=$1
             else
-                mr_trace "chown_file $OPT $MODE ${1}"
                 if [[ "${1}" =~ ^hdfs:// ]] ; then
-                    hadoop fs -chmod $OPT $MODE "${HDFS_URL}${1#hdfs://}"
+                    $MYEXEC hadoop fs -chmod $OPT $MODE "${HDFS_URL}${1#hdfs://}"
                 else
-                    chmod $OPT $MODE "${1#file://}"
+                    $MYEXEC chmod $OPT $MODE "${1#file://}"
                 fi
             fi
             ;;
@@ -119,26 +118,14 @@ cat_file() {
 
     mr_trace "cat_file: input=${PARAM_FN_INPUT}"
 
-    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -cat "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
-    [[ "${PARAM_FN_INPUT}" =~ ^http:// ]] && wget -qO /dev/null "${PARAM_FN_INPUT}" && return
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -cat "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
+    [[ "${PARAM_FN_INPUT}" =~ ^http:// ]] && $MYEXEC wget -qO /dev/null "${PARAM_FN_INPUT}" && return
     # curl sftp://username@hostname/path/to/file.txt
     # scp remotehost:/path/to/remote/file /dev/stdout
-    #[[ "${PARAM_FN_INPUT}" =~ ^sftp:// ]] && curl "${PARAM_FN_INPUT}" && return
-    #[[ "${PARAM_FN_INPUT}" =~ ^sftp:// ]] && scp "${PARAM_FN_INPUT#sftp://}" /dev/stdout && return
+    #[[ "${PARAM_FN_INPUT}" =~ ^sftp:// ]] && $MYEXEC curl "${PARAM_FN_INPUT}" && return
+    #[[ "${PARAM_FN_INPUT}" =~ ^sftp:// ]] && $MYEXEC scp "${PARAM_FN_INPUT#sftp://}" /dev/stdout && return
 
-    mr_trace "cat_file: cat ${PARAM_FN_INPUT#file://}"
-    cat "${PARAM_FN_INPUT#file://}"
-}
-
-
-myexec_ignore () {
-    echo "[DBG] (skip) 6 $*" 1>&2
-    local A=
-    while [ ! "$1" = "" ]; do
-        A="$A \"$1\""
-        shift
-    done
-    echo "[DBG] (skip) 5 $A" 1>&2
+    $MYEXEC cat "${PARAM_FN_INPUT#file://}"
 }
 
 # only support -name and -iname
@@ -168,11 +155,11 @@ make_dir() {
     shift
 
     if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]]; then
-        hadoop fs -mkdir -p "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}"
+        $MYEXEC hadoop fs -mkdir -p "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}"
         echo $?
         return
     fi
-    mkdir -p "${PARAM_FN_INPUT#file://}"
+    $MYEXEC mkdir -p "${PARAM_FN_INPUT#file://}"
     echo $?
 }
 
@@ -181,8 +168,8 @@ rm_f_dir() {
     shift
 
     mr_trace "del dir: ${PARAM_FN_INPUT} ..."
-    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
-    rm -rf "${PARAM_FN_INPUT#file://}"
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
+    $MYEXEC rm -rf "${PARAM_FN_INPUT#file://}"
 }
 
 # using rsync style of directory name:
@@ -200,10 +187,10 @@ move_file() {
             case ${PARAM_FN_SRC} in
             */)
                 make_dir "${PARAM_FN_DEST}"
-                hadoop fs -mv "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+                $MYEXEC hadoop fs -mv "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
                 ;;
             *)
-                hadoop fs -mv "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+                $MYEXEC hadoop fs -mv "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
                 ;;
             esac
             if [ "$?" = "0" ]; then
@@ -215,10 +202,10 @@ move_file() {
                 case ${PARAM_FN_SRC} in
                 */)
                     make_dir "${PARAM_FN_DEST#file://}"
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${PARAM_FN_DEST#file://}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${PARAM_FN_DEST#file://}"
                     ;;
                 *)
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${PARAM_FN_DEST#file://}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${PARAM_FN_DEST#file://}"
                     ;;
                 esac
                 if [ "$?" = "0" ]; then
@@ -229,10 +216,10 @@ move_file() {
                 case ${PARAM_FN_SRC} in
                 */)
                     make_dir "${FNTMP1}"
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${FNTMP1}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${FNTMP1}"
                     ;;
                 *)
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${FNTMP1}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${FNTMP1}"
                     ;;
                 esac
                 if [ "$?" = "0" ]; then
@@ -248,7 +235,7 @@ move_file() {
                 fi
             fi
             if [ "${IS_OK}" = "1" ]; then
-                hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_SRC#hdfs://}"
+                $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_SRC#hdfs://}"
             fi
         fi
         if [ "${IS_OK}" = "1" ]; then
@@ -265,14 +252,14 @@ move_file() {
         case ${PARAM_FN_SRC} in
         */)
             make_dir "${PARAM_FN_DEST}"
-            hadoop fs -put -f "${PARAM_FN_SRC}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+            $MYEXEC hadoop fs -put -f "${PARAM_FN_SRC}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
             ;;
         *)
-            hadoop fs -put -f "${PARAM_FN_SRC}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+            $MYEXEC hadoop fs -put -f "${PARAM_FN_SRC}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
             ;;
         esac
         if [ "$?" = "0" ]; then
-            rm -rf "${PARAM_FN_SRC}"
+            $MYEXEC rm -rf "${PARAM_FN_SRC}"
             echo "0"
         else
             echo "1"
@@ -285,10 +272,10 @@ move_file() {
     case ${PARAM_FN_SRC} in
     */)
         make_dir "${PARAM_FN_DEST}"
-        mv "${PARAM_FN_SRC}*" "${PARAM_FN_DEST}"
+        $MYEXEC mv "${PARAM_FN_SRC}*" "${PARAM_FN_DEST}"
         ;;
     *)
-        mv "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
+        $MYEXEC mv "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
         ;;
     esac
     if [ "$?" = "0" ]; then
@@ -314,12 +301,10 @@ copy_file() {
             case ${PARAM_FN_SRC} in
             */)
                 make_dir "${PARAM_FN_DEST}" >/dev/null 2>&1
-                mr_trace hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
-                hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+                $MYEXEC hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
                 ;;
             *)
-                mr_trace hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
-                hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+                $MYEXEC hadoop fs -cp "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
                 ;;
             esac
             if [ "$?" = "0" ]; then
@@ -331,10 +316,10 @@ copy_file() {
                 case ${PARAM_FN_SRC} in
                 */)
                     make_dir "${PARAM_FN_DEST#file://}" >/dev/null 2>&1
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${PARAM_FN_DEST#file://}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${PARAM_FN_DEST#file://}"
                     ;;
                 *)
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${PARAM_FN_DEST#file://}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${PARAM_FN_DEST#file://}"
                     ;;
                 esac
                 if [ "$?" = "0" ]; then
@@ -345,10 +330,10 @@ copy_file() {
                 case ${PARAM_FN_SRC} in
                 */)
                     make_dir "${FNTMP1}" >/dev/null 2>&1
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${FNTMP1}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}*" "${FNTMP1}"
                     ;;
                 *)
-                    hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${FNTMP1}"
+                    $MYEXEC hadoop fs -get "${HDFS_URL}${PARAM_FN_SRC#hdfs://}" "${FNTMP1}"
                     ;;
                 esac
                 if [ "$?" = "0" ]; then
@@ -377,12 +362,10 @@ copy_file() {
     if [[ "${PARAM_FN_DEST}" =~ ^hdfs:// ]]; then
         case ${PARAM_FN_SRC} in
         */)
-            mr_trace "copy_file all: hdfs -put -f ${PARAM_FN_SRC#file://}* ${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
-            hadoop fs -put -f "${PARAM_FN_SRC#file://}"* "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+            $MYEXEC hadoop fs -put -f "${PARAM_FN_SRC#file://}"* "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
             ;;
         *)
-            mr_trace "copy_file dir: hdfs -put -f ${PARAM_FN_SRC#file://} ${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
-            hadoop fs -put -f "${PARAM_FN_SRC#file://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
+            $MYEXEC hadoop fs -put -f "${PARAM_FN_SRC#file://}" "${HDFS_URL}${PARAM_FN_DEST#hdfs://}"
             ;;
         esac
         if [ "$?" = "0" ]; then
@@ -398,12 +381,10 @@ copy_file() {
     mr_trace "copy_file: cp -r ${PARAM_FN_SRC} ${PARAM_FN_DEST}"
     case ${PARAM_FN_SRC} in
     */)
-        mr_trace "copy_file all: cp -r ${PARAM_FN_SRC}* ${PARAM_FN_DEST}"
-        cp -r "${PARAM_FN_SRC}"* "${PARAM_FN_DEST}"
+        $MYEXEC cp -r "${PARAM_FN_SRC}"* "${PARAM_FN_DEST}"
         ;;
     *)
-        mr_trace "copy_file dir: cp -r ${PARAM_FN_SRC} ${PARAM_FN_DEST}"
-        cp -r "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
+        $MYEXEC cp -r "${PARAM_FN_SRC}" "${PARAM_FN_DEST}"
         ;;
     esac
     if [ "$?" = "0" ]; then
@@ -497,20 +478,20 @@ extract_file () {
     *.rar)
         mr_trace "extract (unrar) ${DN_DIC}/${FN_CUR} ..."
         cd "${DN_DEST}"
-        unrar x -o+ "${FN_SRC}"
+        $MYEXEC unrar x -o+ "${FN_SRC}"
         cd "${DN_CUR}"
         ;;
     *.zip)
         echo "extract (unzip) ${DN_DIC}/${FN_CUR} ..."
         cd "${DN_DEST}"
-        unzip "${FN_SRC}"
+        $MYEXEC unzip "${FN_SRC}"
         cd "${DN_CUR}"
         ;;
     *.deb)
         # ar xv "${FN_CUR}" && tar -xf data.tar.gz
         echo "extract (dpkg) ${DN_DIC}/${FN_CUR} ..."
         cd "${DN_DEST}"
-        dpkg -x "${FN_SRC}" .
+        $MYEXEC dpkg -x "${FN_SRC}" .
         cd "${DN_CUR}"
         ;;
     *.dz)
@@ -557,10 +538,10 @@ extract_file () {
 
     if [ ! "${DN_TMP}" = "" ]; then
         copy_file "${DN_TMP}/" "${ARG_DN}" >/dev/null 2>&1
-        rm -r -f "${DN_TMP}"
+        $MYEXEC rm -r -f "${DN_TMP}"
     fi
     if [ ! "${FN_TMP}" = "" ]; then
-        rm -f "${FN_TMP}"
+        $MYEXEC rm -f "${FN_TMP}"
     fi
     return 0;
 }
@@ -634,7 +615,7 @@ test_cases() {
     fi
 
     rm_f_dir "${DEST}" >/dev/null 2>&1
-    hadoop fs -mkdir -p "${DEST}" >/dev/null 2>&1
+    $MYEXEC hadoop fs -mkdir -p "${DEST}" >/dev/null 2>&1
     RET=$(is_file_or_dir "${DEST}")
     if [ ! "$RET" = "d" ]; then
         mr_trace "Error in is_file_or_dir ${DEST}, ret=$RET"
@@ -642,10 +623,10 @@ test_cases() {
     else
         mr_trace "pass is_file_or_dir ${DEST}, ret=$RET"
     fi
-    hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
+    $MYEXEC hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
 
     # test copy_file()
-    hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
+    $MYEXEC hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
     copy_file "${SRC}" "${DEST}"
     RET=$(is_file_or_dir "${DEST}")
     if [ ! "$RET" = "f" ]; then
@@ -666,7 +647,7 @@ test_cases() {
     fi
 
     # test copy to dir
-    rm -f "${DEST#hdfs://}"
+    $MYEXEC rm -f "${DEST#hdfs://}"
     copy_file "${DEST}" "${SRC3}"
     RET=$(is_file_or_dir "${SRC3}")
     if [ ! "$RET" = "d" ]; then
@@ -683,7 +664,7 @@ test_cases() {
     fi
 
     # test move_file()
-    rm -f "${SRC2#file://}"
+    $MYEXEC rm -f "${SRC2#file://}"
     move_file "${DEST}" "${SRC2}"
     RET=$(is_file_or_dir "${SRC2}")
     if [ ! "$RET" = "f" ]; then
@@ -699,8 +680,8 @@ test_cases() {
         fi
     fi
 
-    hadoop fs -rm -f "${DEST}" >/dev/null 2>&1
-    hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
+    $MYEXEC hadoop fs -rm -f "${DEST}" >/dev/null 2>&1
+    $MYEXEC hadoop fs -rm -r -f "${DEST}" >/dev/null 2>&1
     move_file "${SRC2}" "${DEST}"
     RET=$(is_file_or_dir "${DEST}")
     if [ ! "$RET" = "f" ]; then
