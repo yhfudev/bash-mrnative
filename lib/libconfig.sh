@@ -14,7 +14,7 @@ read_config_file () {
     ### the user's environment
     PARAM_FN_CONF="$1"
     mr_trace "parse config file $1"
-    if [ ! -e "$PARAM_FN_CONF" ]; then
+    if [ ! -f "$PARAM_FN_CONF" ]; then
         echo -e "debug\t$(hostname)\tread_config_file\tnot_exist_conf_file__$PARAM_FN_CONF"
         mr_trace "not exist config file: $PARAM_FN_CONF"
         return

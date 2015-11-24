@@ -1,6 +1,6 @@
 #!/bin/bash
 #####################################################################
-# Run ns2 in a single machine using Map/Reduce paradigm -- Step 2 Reduce part
+# Run ns2 using Map/Reduce paradigm -- Step 2 Reduce part
 #
 # In this part, the script handle ploting stats figures.
 #
@@ -45,26 +45,32 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
   FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
+
+RET=$(is_file_or_dir "${FN_CONF_SYS}")
+if [ ! "${RET}" = "f" ]; then
     FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
+    RET=$(is_file_or_dir "${FN_CONF_SYS}")
+    if [ ! "${RET}" = "f" ]; then
+        FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
+        RET=$(is_file_or_dir "${FN_CONF_SYS}")
+        if [ ! "${RET}" = "f" ]; then
+            mr_trace "not found config file: ${FN_CONF_SYS}"
+        fi
+    fi
 fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
-fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    mr_trace "not found config file: ${FN_CONF_SYS}"
-fi
+
 #####################################################################
 RET0=$(is_file_or_dir "${FN_CONF_SYS}")
 if [ ! "$RET0" = "f" ]; then
+    echo -e "debug\t$(hostname)\tgenerated_config\t${FN_CONF_SYS}"
     mr_trace "Warning: not found config file '${FN_CONF_SYS}'!"
     mr_trace "generating new config file '${FN_CONF_SYS}' ..."
     generate_default_config | save_file "${FN_CONF_SYS}"
 fi
-FN_TMP="/tmp/config-$(uuidgen)"
-copy_file "${FN_CONF_SYS}" "${FN_TMP}" > /dev/null 2>&1
-read_config_file "${FN_TMP}"
-rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+FN_TMP_2r="/tmp/config-$(uuidgen)"
+copy_file "${FN_CONF_SYS}" "${FN_TMP_2r}" > /dev/null 2>&1
+read_config_file "${FN_TMP_2r}"
+rm_f_dir "${FN_TMP_2r}" > /dev/null 2>&1
 
 check_global_config
 

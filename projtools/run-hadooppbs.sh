@@ -2,7 +2,8 @@
 #####################################################################
 # run hadoop in HPC PBS
 #
-# To setup the hadoop, you need to first add the patch for it:
+# To setup the hadoop in HPC PBS environment, you need to install myhadoop,
+# and add the patch for the hadoop config files:
 #     cd software/bin/hadoop-2.7.1/etc/hadoop
 #     patch -p1 < ~/software/src/myhadoop-glennklockwood-git/myhadoop-2.2.0.patch
 #
@@ -127,7 +128,7 @@ EOF
     convert_avail_settings | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE -f tmp-opt-cores.awk
 }
 
-# get # of simulation tasks from the config files in folder projconfigs
+# get # of simulation tasks from the config files in folder specified by argument
 get_sim_tasks () {
     PARAM_DN_CONF=$1
     shift
@@ -149,7 +150,7 @@ get_sim_tasks () {
 }
 
 #get the # of needed nodes from config-xxx.sh file
-NEEDED_CORES=$(get_sim_tasks ../mytest)
+NEEDED_CORES=$(get_sim_tasks ${DN_TOP}/mytest)
 NEEDED_MEM_PER_CORE=1
 
 mr_trace "needed cores=$NEEDED_CORES"

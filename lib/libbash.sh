@@ -605,10 +605,12 @@ DANGER_EXEC=echo
 mr_trace () {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
+
 mr_exec_do () {
     mr_trace "$@"
     $@
 }
+
 mr_exec_skip () {
     mr_trace "DEBUG (skip) $@"
 }

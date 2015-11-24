@@ -28,7 +28,7 @@ my_getpath () {
   fi
 }
 
-mr_trace "1 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
+mr_trace "1 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}; FN_CONF_SYS=${FN_CONF_SYS}"
 
 if [ "${DN_TOP}" = "" ]; then
     #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
@@ -41,19 +41,9 @@ if [ "${DN_TOP}" = "" ]; then
     DN_TOP="$(my_getpath "${DN_EXEC}/../")"
     DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 fi
-
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
-fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
-fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    mr_trace "not found config file: ${FN_CONF_SYS}"
-fi
 #####################################################################
 
-mr_trace "2 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
+mr_trace "2 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}; FN_CONF_SYS=${FN_CONF_SYS}"
 
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 source ${DN_LIB}/libbash.sh
@@ -62,22 +52,33 @@ source ${DN_LIB}/libconfig.sh
 source ${DN_LIB}/libhadoop.sh
 source ${DN_EXEC}/libapp.sh
 
-mr_trace "3 DN_TOP=$DN_TOP;DN_EXEC=${DN_EXEC}"
+RET=$(is_file_or_dir "${FN_CONF_SYS}")
+if [ ! "${RET}" = "f" ]; then
+    FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
+    RET=$(is_file_or_dir "${FN_CONF_SYS}")
+    if [ ! "${RET}" = "f" ]; then
+        FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
+        RET=$(is_file_or_dir "${FN_CONF_SYS}")
+        if [ ! "${RET}" = "f" ]; then
+            mr_trace "not found config file: ${FN_CONF_SYS}"
+        fi
+    fi
+fi
+
+mr_trace "3 DN_TOP=$DN_TOP;DN_EXEC=${DN_EXEC}; FN_CONF_SYS=${FN_CONF_SYS}"
 
 #####################################################################
 # read basic config from mrsystem.conf
 # such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
 read_config_file "${FN_CONF_SYS}"
 
-mr_trace "4 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
+mr_trace "4 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}; FN_CONF_SYS=${FN_CONF_SYS}"
 
 #####################################################################
 
 PROGNAME=$(basename "$0")
 
-mr_trace "5 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
-
-mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
+mr_trace "5 DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; FN_CONF_SYS=${FN_CONF_SYS}; PROGNAME=${PROGNAME}; "
 
 #####################################################################
 if [ ! -d "${PROJ_HOME}" ]; then

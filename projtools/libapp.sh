@@ -442,11 +442,11 @@ libapp_prepare_execution_config () {
     local PARAM_FN_CONFIG_PROJ=$1
     shift
 
-    local FN_TMP="/tmp/config-$(uuidgen)"
+    local FN_TMP1="/tmp/config-$(uuidgen)"
     mr_trace "read proj config file: ${PARAM_FN_CONFIG_PROJ} ..."
-    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
-    read_config_file "${FN_TMP}"
-    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP1}" > /dev/null 2>&1
+    read_config_file "${FN_TMP1}"
+    rm_f_dir "${FN_TMP1}" > /dev/null 2>&1
 
     local RET=0
     RET=$(is_file_or_dir "${DN_COMM}")
@@ -522,10 +522,10 @@ run_one_ns2 () {
 
     # read in the config file for this test group
     # in this case, is to read the config for USE_MEDIUMPACKET
-    local FN_TMP="/tmp/config-$(uuidgen)"
-    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
-    read_config_file "${FN_TMP}"
-    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+    local FN_TMP2="/tmp/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONFIG_PROJ}" "${FN_TMP2}" > /dev/null 2>&1
+    read_config_file "${FN_TMP2}"
+    rm_f_dir "${FN_TMP2}" > /dev/null 2>&1
 
     # set the scratch dir, which is used to store temperary files.
     local RET=0
@@ -677,10 +677,10 @@ check_one_tcldir () {
     PARAM_FN_LOG_ERROR=$1
     shift
 
-    local FN_TMP="/tmp/config-$(uuidgen)"
-    copy_file "${PARAM_FN_CONF}" "${FN_TMP}" > /dev/null 2>&1
-    read_config_file "${FN_TMP}"
-    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+    local FN_TMP3="/tmp/config-$(uuidgen)"
+    copy_file "${PARAM_FN_CONF}" "${FN_TMP3}" > /dev/null 2>&1
+    read_config_file "${FN_TMP3}"
+    rm_f_dir "${FN_TMP3}" > /dev/null 2>&1
 
     FLG_ERR=1
     mr_trace "checking $(basename ${PARAM_DN_DEST}) ..."

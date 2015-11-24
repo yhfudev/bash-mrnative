@@ -371,10 +371,10 @@ plot_ns2_type () {
 
     "tpstat")
         local FN_CONFIG_PROJ=$ARG_FLOW_TYPE
-        local FN_TMP="/tmp/config-$(uuidgen)"
-        copy_file "${FN_CONFIG_PROJ}" "${FN_TMP}" > /dev/null 2>&1
-        read_config_file "${FN_TMP}"
-        rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+        local FN_TMP_c0="/tmp/config-$(uuidgen)"
+        copy_file "${FN_CONFIG_PROJ}" "${FN_TMP_c0}" > /dev/null 2>&1
+        read_config_file "${FN_TMP_c0}"
+        rm_f_dir "${FN_TMP_c0}" > /dev/null 2>&1
 
         local TMP_DEST=""
         local DN_SRC="${HDFF_DN_OUTPUT}/dataconf/"

@@ -36,10 +36,30 @@ fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
 DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
+
 #####################################################################
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
+
+#####################################################################
+if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_EXEC}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_EXEC}/mod-setenv-hadoop.sh"
+    exit 1
+fi
+
+#stop_hadoop
+#exit 0 # debug
+jps | grep NameNode
+if [ "$?" = "1" ]; then
+    #### Start the Hadoop cluster
+    start_hadoop
+fi
+#exit 0 # debug
+#hadoop dfsadmin -safemode leave
+#hdfs dfsadmin -safemode leave
 
 #####################################################################
 # read basic config from mrsystem.conf
@@ -79,30 +99,11 @@ sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}
 HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
 sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
 
-FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem.conf"
+FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
 make_dir "$(dirname ${FN_CONF_SYS})"
 copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
 
 check_global_config
-
-#####################################################################
-if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_EXEC}/mod-setenv-hadoop.sh
-else
-    mr_trace "Error: not found file ${DN_EXEC}/mod-setenv-hadoop.sh"
-    exit 1
-fi
-
-#stop_hadoop
-#exit 0 # debug
-jps | grep NameNode
-if [ "$?" = "1" ]; then
-    #### Start the Hadoop cluster
-    start_hadoop
-fi
-#exit 0 # debug
-#hadoop dfsadmin -safemode leave
-#hdfs dfsadmin -safemode leave
 
 # put the file to HDFS ...
 DN1="$(dirname ${HDFF_PATHTO_TAR_MRNATIVE})"

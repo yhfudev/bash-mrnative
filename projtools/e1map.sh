@@ -1,6 +1,6 @@
 #!/bin/bash
 #####################################################################
-# Run ns2 in a single machine using Map/Reduce paradigm -- Step 1 Map part
+# Run ns2 using Map/Reduce paradigm -- Step 1 Map part
 #
 # In this part, the script check the config file name, and
 # generate all of the TCL scripts files for ns2 and send the name of
@@ -47,39 +47,45 @@ if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
   DN_TOP="${DN_TOP_4HADOOP}"
   FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
+
+RET=$(is_file_or_dir "${FN_CONF_SYS}")
+if [ ! "${RET}" = "f" ]; then
     FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
+    RET=$(is_file_or_dir "${FN_CONF_SYS}")
+    if [ ! "${RET}" = "f" ]; then
+        FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
+        RET=$(is_file_or_dir "${FN_CONF_SYS}")
+        if [ ! "${RET}" = "f" ]; then
+            mr_trace "not found config file: ${FN_CONF_SYS}"
+        fi
+    fi
 fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    FN_CONF_SYS="${DN_TOP}/mrsystem.conf"
-fi
-if [ ! -f "${FN_CONF_SYS}" ]; then
-    mr_trace "not found config file: ${FN_CONF_SYS}"
-fi
+
 #####################################################################
 mr_trace "e1map, DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS}"
 
 RET0=$(is_file_or_dir "${FN_CONF_SYS}")
 if [ ! "$RET0" = "f" ]; then
+    echo -e "debug\t$(hostname)\tgenerated_config\t${FN_CONF_SYS}"
     mr_trace "Warning: not found config file '${FN_CONF_SYS}'!"
     mr_trace "generating new config file '${FN_CONF_SYS}' ..."
     generate_default_config | save_file "${FN_CONF_SYS}"
 fi
-FN_TMP="/tmp/config-$(uuidgen)"
-copy_file "${FN_CONF_SYS}" "${FN_TMP}" > /dev/null 2>&1
-read_config_file "${FN_TMP}"
+FN_TMP_1m="/tmp/config-$(uuidgen)"
+copy_file "${FN_CONF_SYS}" "${FN_TMP_1m}" 1>&2
+read_config_file "${FN_TMP_1m}"
 
-if [ $(is_local "${FN_TMP}") = l ]; then
-    #cat_file "${FN_TMP}" | awk -v P=debug -v H=$(hostname) '{print P "\t" H "\ttmpconfig____"$0}'
-    rm_f_dir "${FN_TMP}" > /dev/null 2>&1
+if [ $(is_local "${FN_TMP_1m}") = l ]; then
+    #cat_file "${FN_TMP_1m}" | awk -v P=debug -v H=$(hostname) '{print P "\t" H "\ttmpconfig____"$0}'
+    rm_f_dir "${FN_TMP_1m}" 1>&2
 else
-    echo -e "debug\tError_file_is_not_local\t${FN_TMP}"
+    echo -e "debug\tError_file_is_not_local\t${FN_TMP_1m}"
 fi
 check_global_config
 
 mr_trace "e1map, DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS}"
 mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
-#echo -e "debug\tFN_CONF_SYS=${FN_CONF_SYS},FN_TMP=${FN_TMP},HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
+#echo -e "debug\tFN_CONF_SYS=${FN_CONF_SYS},FN_TMP=${FN_TMP_1m},HDFF_FN_TAR_MRNATIVE=${HDFF_FN_TAR_MRNATIVE}"
 
 #####################################################################
 # generate session for this process and its children
