@@ -135,7 +135,17 @@ find_file() {
 
     local A=
     while [ ! "$1" = "" ]; do
-        A="$A \"$1\""
+        case $1 in
+        -maxdepth)
+            shift
+            if [[ ! "${PARAM_DN_SEARCH}" =~ ^hdfs:// ]] ; then
+                A="$A -maxdepth \"$1\""
+            fi
+            ;;
+        *)
+            A="$A \"$1\""
+            ;;
+        esac
         shift
     done
 
@@ -163,13 +173,43 @@ make_dir() {
     echo $?
 }
 
+rm_f_dir0() {
+    local PARAM_FN_INPUT=$1
+    shift
+
+    mr_trace "del dir: ${PARAM_FN_INPUT} ..."
+
+    # original code:
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
+    $MYEXEC rm -rf "${PARAM_FN_INPUT#file://}"
+}
+
 rm_f_dir() {
     local PARAM_FN_INPUT=$1
     shift
 
     mr_trace "del dir: ${PARAM_FN_INPUT} ..."
-    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
-    $MYEXEC rm -rf "${PARAM_FN_INPUT#file://}"
+
+    # original code:
+    #[[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
+    #$MYEXEC rm -rf "${PARAM_FN_INPUT#file://}"
+
+    local DN1=$(dirname "${PARAM_FN_INPUT}")
+    if [[ "${DN1}" =~ ":" ]] ; then
+        DN1=$(echo $DN1 | awk -F: '{print $2}')
+    fi
+    if [ "${DN1}" = "" ]; then
+        DN1=.
+    fi
+    # debug code:
+    find_file "${DN1}" -maxdepth 1 -name "$(basename "${PARAM_FN_INPUT}")" | while read a; do \
+        #mr_trace "process: ${a} ..."
+        if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] ; then \
+            $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${a#hdfs://}" ; \
+        else \
+            $MYEXEC rm -rf "${a#file://}" ; \
+        fi; \
+    done
 }
 
 # using rsync style of directory name:
