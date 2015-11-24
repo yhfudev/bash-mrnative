@@ -87,7 +87,7 @@ worker_stats_throughput () {
     shift
 
     #mr_trace plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
-    $MYEXEC plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" > /dev/null 2>&1
+    $MYEXEC plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" 1>&2
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
