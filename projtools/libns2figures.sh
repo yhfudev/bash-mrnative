@@ -42,7 +42,7 @@ generate_throughput_stats_file () {
     # the dumpFinalTCPStats is defined in networks.tcl
     # output format: "$label $bytesDel $arrivals $lossno $dropRate $notimeouts $toFreq $meanRTT $thruput 0 0 0"
     #
-    rm -f "${PARAM_FN_OUT_TPSTATS}"
+    rm_f_dir "${PARAM_FN_OUT_TPSTATS}"
     for num in $LIST_NODE_NUM ; do
         for sched in $LIST_SCHEDULERS ; do
             #DN_TEST="${PARAM_PREFIX}_${PARAM_TYPE}_${PARAM_SCHE}_${PARAM_NUM}"
@@ -60,7 +60,7 @@ generate_throughput_stats_file () {
                 continue
             fi
             # get the list of the files
-            rm -f "${FN_DAT_STATS}"
+            rm_f_dir "${FN_DAT_STATS}"
             LST=$(find_file "${PARAM_DN_BASE}/${DN_TEST}/" -name "${PARAM_FN_STAT}" | sort)
             if [ "${LST}" = "" ]; then
                 LST=$(find_file "${PARAM_DN_BASE}/${DN_TEST}/" -name "${PARAM_FN_TPFLOW}" | sort)
@@ -205,7 +205,7 @@ plot_pktdelay_queue () {
             copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' \
                 "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out.gz" | gzip -dc) | gzip > "${FNDAT}"
-            rm -f "${TMP_FILE}"
+            rm_f_dir "${TMP_FILE}"
         else
             RET=$(is_local "${PARAM_DN_TEST}/mediumpacket.out")
             if [ ! "${RET}" = "e" ]; then
@@ -213,14 +213,14 @@ plot_pktdelay_queue () {
                 copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
                 awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $2 - $3); } } } }' \
                     "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out") | gzip > "${FNDAT}"
-                rm -f "${TMP_FILE}"
+                rm_f_dir "${TMP_FILE}"
             fi
         fi
     fi
     if [ -f "${FNDAT}" ]; then
         plotgen_pdf "Downstream MAC Packets" "Queue Service Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pktqueue-${PARAM_DN_NAME}" "${FNGP}"
         plot_script "${FNGP}"
-        #rm -f "${FNDAT}"
+        #rm_f_dir "${FNDAT}"
     else
         mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
@@ -246,7 +246,7 @@ plot_pktdelay_trans () {
             copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
             awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' \
                 "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out.gz" | gzip -dc) | gzip > "${FNDAT}"
-            rm -f "${TMP_FILE}" > /dev/null 2>&1
+            rm_f_dir "${TMP_FILE}" > /dev/null
         else
             RET=$(is_local "${PARAM_DN_TEST}/mediumpacket.out")
             if [ ! "${RET}" = "e" ]; then
@@ -254,7 +254,7 @@ plot_pktdelay_trans () {
                 copy_file "${PARAM_DN_TEST}/nodemac.out" "${TMP_FILE}" > /dev/null 2>&1
                 awk 'NR==FNR{map[$1]=$2;next} { if ($6 in map){if (map[$6] == "cmts") { if (($7 > 0) && ($7 in map)) {printf("%.9f\n", $1 - $2); } } } }' \
                     "${TMP_FILE}" <(cat_file "${PARAM_DN_TEST}/mediumpacket.out") | gzip > "${FNDAT}"
-                rm -f "${TMP_FILE}" > /dev/null 2>&1
+                rm_f_dir "${TMP_FILE}" > /dev/null
             fi
         fi
     fi
@@ -262,7 +262,7 @@ plot_pktdelay_trans () {
     if [ -f "${FNDAT}" ]; then
         plotgen_pdf "Downstream MAC Packets" "Transfer Time (sec)" "Denseness" "${FNDAT}" "${PARAM_DN_DEST}/fig-pkttrans-${PARAM_DN_NAME}" "${FNGP}"
         plot_script "${FNGP}"
-        #rm -f "${FNDAT}"
+        #rm_f_dir "${FNDAT}"
     else
         mr_trace "Error: unable to find the generated data: ${FNDAT}"
     fi
@@ -394,7 +394,7 @@ plot_ns2_type () {
         gplot_draw_statfig "${FN_TP}"  7 "Average Throughput"    "Throughput (bps)" "fig-avgtp-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
         gplot_draw_statfig "${FN_TP}" 10 "Jain's Fairness Index" "JFI"              "fig-jfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
         gplot_draw_statfig "${FN_TP}" 11 "CFI"                   "CFI"              "fig-cfi-${ARG_PREFIX}-${ARG_TYPE}" "${DN_DEST#file://}"
-        #rm -f "${FN_TP}"
+        #rm_f_dir "${FN_TP}"
         cd "${DN_ORIG5}"
         cd "${DN_DEST#file://}"
         convert_eps2png

@@ -87,7 +87,7 @@ worker_stats_throughput () {
     shift
 
     #mr_trace plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}"
-    plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" > /dev/null 2>&1
+    $MYEXEC plot_ns2_type tpstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_CONFIG_FILE}" > /dev/null 2>&1
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
@@ -113,6 +113,8 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
   MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
 
   GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}"
+
+  mr_trace received: "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
 
   ERR=0
   case "${MR_CMD}" in

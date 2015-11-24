@@ -229,6 +229,8 @@ while read MR_CMD MR_CONFIG_FILE MR_PREFIX MR_TYPE MR_FLOW_TYPE MR_SCHEDULER MR_
   MR_SCHEDULER1=$( unquote_filename "${MR_SCHEDULER}" )
   GROUP_STATS="${MR_PREFIX1}|${MR_TYPE1}|${MR_SCHEDULER1}|${FN_CONFIG_FILE}|"
 
+  mr_trace received: "${MR_CMD}\t${MR_CONFIG_FILE}\t${MR_PREFIX}\t${MR_TYPE}\t${MR_FLOW_TYPE}\t${MR_SCHEDULER}\t${MR_NUM_NODE}"
+
   case "${MR_CMD}" in
   sim)
     worker_check_run "$(mp_get_session_id)" "${FN_CONFIG_FILE}" ${MR_PREFIX1} ${MR_TYPE1} ${MR_SCHEDULER1} ${MR_NUM_NODE} &

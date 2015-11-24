@@ -250,10 +250,8 @@ prepare_one_tcl_scripts () {
 
     PARAM_DN_TEST=$(simulation_directory "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_SCHE}" "${PARAM_NUM}")
     mr_trace "generate folder: ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    mr_trace "remove trash first: rm -rf ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    rm -rf   "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null 2>&1
-    mr_trace "mkdir -p ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
-    mkdir -p "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null 2>&1
+    rm_f_dir "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null
+    make_dir "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/" > /dev/null
 
     mr_trace "Copy common scripts and data files to ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/ ..."
     # Copy common scripts and data files from Common directory
@@ -426,8 +424,7 @@ prepare_one_tcl_scripts () {
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
     fi
 
-    mr_trace "rm -f ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/mediumpacket.out*"
-    rm -f "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/mediumpacket.out*"
+    rm_f_dir "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/mediumpacket.out*"
     if [ ! "${USE_MEDIUMPACKET}" = "1" ]; then
         ln -s /dev/null "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/mediumpacket.out"
     fi
@@ -464,9 +461,7 @@ libapp_prepare_execution_config () {
     mr_trace "prepare_all_tcl_scripts, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
     DN_TMP_CREATECONF="${HDFF_DN_SCRATCH}/tmp-createconf-$(uuidgen)"
-    mr_trace "remove tmp trash first: rm -rf ${DN_TMP_CREATECONF}"
     rm_f_dir "${DN_TMP_CREATECONF}" >/dev/null 2>&1
-    mr_trace "mkdir -p ${DN_TMP_CREATECONF}"
     make_dir "${DN_TMP_CREATECONF}" >/dev/null 2>&1
     mr_trace "LIST_NODE_NUM='${LIST_NODE_NUM}'"
     mr_trace "LIST_TYPES='${LIST_TYPES}'"
@@ -504,7 +499,7 @@ libapp_prepare_execution_config () {
         ;;
     esac
 
-    #rm -rf "${DN_TMP_CREATECONF}"
+    #rm_f_dir "${DN_TMP_CREATECONF}"
 
     mr_trace "DONE create config files"
 }
@@ -585,8 +580,7 @@ run_one_ns2 () {
     mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"
     if [ "${USE_MEDIUMPACKET}" = "1" ]; then
         if [ -f mediumpacket.out ]; then
-            mr_trace "rm -f mediumpacket.out.gz ..."
-            rm -f mediumpacket.out.gz > /dev/null 2>&1
+            rm_f_dir mediumpacket.out.gz > /dev/null
             mr_trace "compressing mediumpacket.out ..."
             gzip mediumpacket.out > /dev/null 2>&1
         else
@@ -594,7 +588,7 @@ run_one_ns2 () {
         fi
     else
         mr_trace "Warning: remove mediumpacket.out*!"
-        rm -f mediumpacket.out* > /dev/null 2>&1
+        rm_f_dir mediumpacket.out* > /dev/null
     fi
 
     cd "${DN_ORIG2}"
@@ -606,8 +600,7 @@ run_one_ns2 () {
             mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
             return
         fi
-        mr_trace "remove working dir: rm -f ${DN_WORKING} ..."
-        #rm -rf "${DN_WORKING}"
+        #rm_f_dir "${DN_WORKING}"
     fi
 }
 
