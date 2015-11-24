@@ -149,6 +149,7 @@ find_file() {
         shift
     done
 
+    mr_trace "PARAM_DN_SEARCH=${PARAM_DN_SEARCH}"
     if [[ "${PARAM_DN_SEARCH}" =~ ^hdfs:// ]] ; then
         eval "hadoop fs -find \"${HDFS_URL}${PARAM_DN_SEARCH#hdfs://}\" $A" | while read a; do echo "hdfs://${a#${HDFS_URL}}"; done
         return
@@ -196,7 +197,9 @@ rm_f_dir() {
 
     local DN1=$(dirname "${PARAM_FN_INPUT}")
     if [[ "${DN1}" =~ ":" ]] ; then
-        DN1=$(echo $DN1 | awk -F: '{print $2}')
+        if [[ "${PARAM_FN_INPUT}" =~ ^file:// ]] ; then
+            DN1=$(echo $DN1 | awk -F: '{print $2}')
+        fi
     fi
     if [ "${DN1}" = "" ]; then
         DN1=.
