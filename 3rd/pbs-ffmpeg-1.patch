@@ -1,0 +1,12 @@
+--- ffmpeg/configure	2014-03-27 14:20:05.000000000 -0400
++++ ffmpeg-modified/configure	2014-03-29 20:26:18.575898000 -0400
+@@ -4548,7 +4548,8 @@
+                                { check_lib2 "dlfcn.h" dlopen -ldl; } ||
+                                die "ERROR: LoadLibrary/dlopen not found for avisynth"; }
+ enabled decklink          && { check_header DeckLinkAPI.h || die "ERROR: DeckLinkAPI.h header not found"; }
+-enabled fontconfig        && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
++#enabled fontconfig        && require_pkg_config fontconfig "fontconfig/fontconfig.h" FcInit
++enabled fontconfig        && { check_header fontconfig/fontconfig.h || die "ERROR: fontconfig/fontconfig.h header not found"; }
+ enabled frei0r            && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+ enabled gnutls            && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+ enabled ladspa            && { check_header ladspa.h || die "ERROR: ladspa.h header not found"; }

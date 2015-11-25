@@ -1,0 +1,1843 @@
+# Auto-Build ffmpeg from source
+
+# Prerequist:
+# 1. basic compiler
+#  1) RedHat/CentOS:
+#     yum -y groupinstall "Development Tools"
+#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#  2) Debian/Ubuntu
+#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+
+######################################################################
+# define the directory stores all of the source code packages
+DN_SRC=$(PWD)/sources
+DN_TOP=$(PWD)
+DN_PATCH=$(PWD)/sources
+
+PREFIX=$(PWD)/target
+
+STRLOGO=furnaceyhfudev
+
+# GPU related:
+USE_GPU=0
+
+OPENCV_GPU_SUPPORT_CMAKE=
+OPENCV_GPU_SUPPORT_DEPEND=
+MEDIAMETRICS_GPU_SUPPORT_CONF=
+
+ifeq ($(USE_GPU),1)
+OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
+                          -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
+                          -D CUDA_GENERATION=Auto \
+                          -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 \
+                          -D WITH_CUBLAS=ON \
+                          -D WITH_NVCUVID=ON \
+                          -D CUDA_FAST_MATH=ON \
+                          $(NULL)
+OPENCV_GPU_SUPPORT_DEPEND= $(CUDASDK)-install
+MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
+endif
+
+
+empty:=
+space:= $(empty) $(empty)
+LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}'))
+
+#MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l )
+MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 2 + 1;}')
+
+ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
+		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig \
+		LD_LIBRARY_PATH="$(PREFIX)/lib:$(LD_PATH_SYS)" \
+		$(NULL)
+
+OSTYP:=$(shell uname -m)
+ifeq ($(OSTYP),x86_64)
+CMAKE_ARCH_FLAGS = -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSSE3=OFF
+else
+CMAKE_ARCH_FLAGS = -DENABLE_SSE=OFF -DENABLE_SSE2=OFF -DENABLE_SSSE3=OFF
+endif
+
+######################################################################
+#all: test
+all: get-sources ffmpeg opencv mediametrics
+
+.PHONY: clean
+
+$(DN_SRC)/created:
+	mkdir -p $(DN_SRC)
+	touch $(DN_SRC)/created
+
+######################################################################
+#CURL=curl -s -L -O
+WGET=wget -P $(DN_SRC)
+
+FL_DEPENDENCES_FFMPEG=
+FL_DEPENDENCES_FFMPEG_OTHERS=
+
+FL_SOURCES=
+FL_SOURCES_OTHERS=
+
+######################################################################
+ZLIB=zlib
+ZLIB_VERSION=1.2.8
+ZLIB_SRC=$(ZLIB)-$(ZLIB_VERSION).tar.gz
+ZLIB_URL=http://zlib.net/$(ZLIB_SRC)
+
+$(DN_SRC)/$(ZLIB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(ZLIB_URL)
+	touch $@
+$(ZLIB)-$(ZLIB_VERSION)/gzlib.c: $(DN_SRC)/$(ZLIB_SRC)
+	tar -xf $(DN_SRC)/$(ZLIB_SRC)
+	touch $@
+$(ZLIB)-$(ZLIB_VERSION)/zconf.h: $(ZLIB)-$(ZLIB_VERSION)/gzlib.c
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && ./configure --prefix=$(PREFIX)
+$(ZLIB)-$(ZLIB_VERSION)/libz.a: $(ZLIB)-$(ZLIB_VERSION)/zconf.h
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libz.a: $(ZLIB)-$(ZLIB_VERSION)/libz.a
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make install
+
+$(ZLIB)-uninstall: $(ZLIB)-$(ZLIB_VERSION)/libz.a
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make uninstall
+$(ZLIB)-install: $(PREFIX)/lib/libz.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(ZLIB_SRC)
+FL_DEPENDENCES_FFMPEG+=$(ZLIB)-install
+FL_UNINSTALL+=$(ZLIB)-uninstall
+
+########################################
+BZIP2=bzip2
+BZIP2_VERSION=1.0.6
+BZIP2_SRC=$(BZIP2)-$(BZIP2_VERSION).tar.gz
+BZIP2_URL=http://www.bzip.org/$(BZIP2_VERSION)/$(BZIP2_SRC)
+
+$(DN_SRC)/$(BZIP2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(BZIP2_URL)
+	touch $@
+$(BZIP2)-$(BZIP2_VERSION)/Makefile: $(DN_SRC)/$(BZIP2_SRC)
+	tar -xf $(DN_SRC)/$(BZIP2_SRC)
+	touch $@
+$(BZIP2)-$(BZIP2_VERSION)/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/Makefile
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
+$(PREFIX)/lib/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make install PREFIX=$(PREFIX)
+
+$(BZIP2)-uninstall: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make uninstall PREFIX=$(PREFIX)
+$(BZIP2)-install: $(PREFIX)/lib/libbz2.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(BZIP2_SRC)
+FL_DEPENDENCES_FFMPEG+=$(BZIP2)-install
+FL_UNINSTALL+=$(BZIP2)-uninstall
+
+########################################
+CMAKE=cmake
+
+CMAKE_VERSION=2.8.12.2
+CMAKE_VERSION_CONN=v2.8
+
+CMAKE_VERSION=3.2.3
+CMAKE_VERSION_CONN=v3.2
+
+CMAKE_SRC=$(CMAKE)-$(CMAKE_VERSION).tar.gz
+CMAKE_URL=http://www.cmake.org/files/$(CMAKE_VERSION_CONN)/$(CMAKE_SRC)
+
+FL_SOURCES+=$(DN_SRC)/$(CMAKE_SRC)
+
+FL_DEP_CMAKE= \
+	$(ZLIB)-install \
+	$(BZIP2)-install \
+	$(NULL)
+
+$(DN_SRC)/$(CMAKE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CMAKE_URL)
+	touch $@
+$(CMAKE)-$(CMAKE_VERSION)/configure: $(DN_SRC)/$(CMAKE_SRC)
+	tar -xf $(DN_SRC)/$(CMAKE_SRC)
+	touch $@
+$(CMAKE)-$(CMAKE_VERSION)/Makefile: $(CMAKE)-$(CMAKE_VERSION)/configure $(FL_DEP_CMAKE)
+	cd $(CMAKE)-$(CMAKE_VERSION)/ \
+		&& $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib \
+		./configure --prefix=$(PREFIX) --system-zlib --system-bzip2
+
+$(CMAKE)-$(CMAKE_VERSION)/bin/cmake: $(CMAKE)-$(CMAKE_VERSION)/Makefile
+	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX)/bin/cmake: $(CMAKE)-$(CMAKE_VERSION)/bin/cmake
+	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make install
+
+$(CMAKE)-uninstall: $(CMAKE)-$(CMAKE_VERSION)/cmake
+	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make uninstall
+$(CMAKE)-install: $(PREFIX)/bin/cmake
+	touch $@
+
+#FL_DEPENDENCES_FFMPEG+=$(CMAKE)-install
+FL_UNINSTALL+=$(CMAKE)-uninstall
+
+########################################
+YASM=yasm
+YASM_VERSION=1.2.0
+YASM_VERSION=1.3.0
+YASM_SRC=$(YASM)-$(YASM_VERSION).tar.gz
+YASM_URL=http://www.tortall.net/projects/yasm/releases/$(YASM_SRC)
+
+$(DN_SRC)/$(YASM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(YASM_URL)
+	touch $@
+$(YASM)-$(YASM_VERSION)/configure: $(DN_SRC)/$(YASM_SRC)
+	tar -xf $(DN_SRC)/$(YASM_SRC)
+	touch $@
+$(YASM)-$(YASM_VERSION)/Makefile: $(YASM)-$(YASM_VERSION)/configure
+	cd $(YASM)-$(YASM_VERSION)/ && ./configure --prefix=$(PREFIX)
+$(YASM)-$(YASM_VERSION)/yasm: $(YASM)-$(YASM_VERSION)/Makefile
+	cd $(YASM)-$(YASM_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/bin/yasm: $(YASM)-$(YASM_VERSION)/yasm
+	cd $(YASM)-$(YASM_VERSION)/ && make install
+
+$(YASM)-uninstall: $(YASM)-$(YASM_VERSION)/yasm
+	cd $(YASM)-$(YASM_VERSION)/ && make uninstall
+$(YASM)-install: $(PREFIX)/bin/yasm
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(YASM_SRC)
+FL_DEPENDENCES_FFMPEG+=$(YASM)-install
+FL_UNINSTALL+=$(YASM)-uninstall
+
+########################################
+LIBPNG=libpng
+#LIBPNG_VERSION=1.5.14
+#LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
+#LIBPNG_URL=http://downloads.sf.net/project/libpng/libpng15/older-releases/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
+LIBPNG_VERSION=1.6.19
+LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
+LIBPNG_URL=http://downloads.sourceforge.net/project/libpng/libpng16/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
+
+FL_DEP_LIBPNG= \
+	$(ZLIB)-install \
+	$(NULL)
+
+$(DN_SRC)/$(LIBPNG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBPNG_URL)
+	touch $@
+$(LIBPNG)-$(LIBPNG_VERSION)/configure: $(DN_SRC)/$(LIBPNG_SRC)
+	tar -xf $(DN_SRC)/$(LIBPNG_SRC)
+	touch $@
+#$(LIBPNG)-$(LIBPNG_VERSION)/configure: $(LIBPNG)-$(LIBPNG_VERSION)/configure.ac
+#	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && ./autogen.sh
+$(LIBPNG)-$(LIBPNG_VERSION)/Makefile: $(LIBPNG)-$(LIBPNG_VERSION)/configure $(FL_DEP_LIBPNG)
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && CPPFLAGS="-I$(PREFIX)/include -L$(PREFIX)/lib" LDFLAGS=-L$(PREFIX)/lib $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc: $(LIBPNG)-$(LIBPNG_VERSION)/Makefile
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/pkgconfig/libpng.pc: $(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make install
+
+$(LIBPNG)-uninstall: $(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make uninstall
+$(LIBPNG)-install: $(PREFIX)/lib/pkgconfig/libpng.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBPNG_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LIBPNG)-install
+FL_UNINSTALL+=$(LIBPNG)-uninstall
+
+########################################
+FREETYPE=freetype
+FREETYPE_VERSION=2.5.3
+FREETYPE_VERSION=2.5.5
+FREETYPE_SRC=$(FREETYPE)-$(FREETYPE_VERSION).tar.bz2
+FREETYPE_URL=http://sourceforge.net/projects/freetype/files/freetype2/$(FREETYPE_VERSION)/$(FREETYPE_SRC)
+
+# support libbz2 or not?
+FREETYPE_SUPPORT_BZ2_CONF="--with-bzip2=no"
+FREETYPE_SUPPORT_BZ2_PCLIB=""
+#FREETYPE_SUPPORT_BZ2_CONF="--with-bzip2=yes"
+#FREETYPE_SUPPORT_BZ2_PCLIB="-lbz2"
+
+$(DN_SRC)/$(FREETYPE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FREETYPE_URL)
+	touch $@
+$(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt: $(DN_SRC)/$(FREETYPE_SRC)
+	tar -xf $(DN_SRC)/$(FREETYPE_SRC)
+	touch $@
+$(FREETYPE)-$(FREETYPE_VERSION)/config.mk: $(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt
+	cd $(FREETYPE)-$(FREETYPE_VERSION)/ \
+	&& ./configure --prefix=$(PREFIX) \
+		--with-sysroot=$(PREFIX) \
+		--enable-static=yes \
+		--enable-shared=yes \
+		--with-harfbuzz=no \
+		$(FREETYPE_SUPPORT_BZ2_CONF)
+$(FREETYPE)-$(FREETYPE_VERSION)/objs/libfreetype.la: $(FREETYPE)-$(FREETYPE_VERSION)/config.mk
+	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfreetype.a: $(FREETYPE)-$(FREETYPE_VERSION)/objs/libfreetype.la
+	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && make install
+	sed -i 's/-L$${libdir} -lfreetype[^l]*$$/-L$${libdir} -lfreetype -lxml2 -lexpat -lpng $(FREETYPE_SUPPORT_BZ2_PCLIB)/' "$(PREFIX)/lib/pkgconfig/freetype2.pc"
+
+$(FREETYPE)-uninstall: $(FREETYPE)-$(FREETYPE_VERSION)/objs/libfreetype.la
+	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && make uninstall
+$(FREETYPE)-install: $(PREFIX)/lib/libfreetype.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FREETYPE_SRC)
+FL_DEPENDENCES_FFMPEG+=$(FREETYPE)-install
+FL_UNINSTALL+=$(FREETYPE)-uninstall
+
+########################################
+EXPAT=expat
+EXPAT_VERSION=2.1.0
+EXPAT_SRC=$(EXPAT)-$(EXPAT_VERSION).tar.gz
+EXPAT_URL=http://sourceforge.net/projects/expat/files/expat/$(EXPAT_VERSION)/$(EXPAT_SRC)
+
+$(DN_SRC)/$(EXPAT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(EXPAT_URL)
+	touch $@
+$(EXPAT)-$(EXPAT_VERSION)/README: $(DN_SRC)/$(EXPAT_SRC)
+	tar -xf $(DN_SRC)/$(EXPAT_SRC)
+	touch $@
+$(EXPAT)-$(EXPAT_VERSION)/Makefile: $(EXPAT)-$(EXPAT_VERSION)/README
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(EXPAT)-$(EXPAT_VERSION)/libexpat.la: $(EXPAT)-$(EXPAT_VERSION)/Makefile
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libexpat.a: $(EXPAT)-$(EXPAT_VERSION)/libexpat.la
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && make install
+
+$(EXPAT)-uninstall: $(EXPAT)-$(EXPAT_VERSION)/libexpat.la
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && make uninstall
+$(EXPAT)-install: $(PREFIX)/lib/libexpat.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(EXPAT_SRC)
+FL_DEPENDENCES_FFMPEG+=$(EXPAT)-install
+FL_UNINSTALL+=$(EXPAT)-uninstall
+
+########################################
+LIBXML2=libxml2
+LIBXML2_VERSION=2.9.1
+LIBXML2_VERSION=2.9.2
+LIBXML2_SRC=$(LIBXML2)-$(LIBXML2_VERSION).tar.gz
+LIBXML2_URL=http://xmlsoft.org/sources/$(LIBXML2_SRC)
+
+$(DN_SRC)/$(LIBXML2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXML2_URL)
+	touch $@
+$(LIBXML2)-$(LIBXML2_VERSION)/configure: $(DN_SRC)/$(LIBXML2_SRC)
+	tar -xf $(DN_SRC)/$(LIBXML2_SRC)
+	touch $@
+$(LIBXML2)-$(LIBXML2_VERSION)/Makefile: $(LIBXML2)-$(LIBXML2_VERSION)/configure
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && ./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --with-python=no --enable-static --enable-shared
+$(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la: $(LIBXML2)-$(LIBXML2_VERSION)/Makefile
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libxml2.a: $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make install
+
+$(LIBXML2)-uninstall: $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make uninstall
+$(LIBXML2)-install: $(PREFIX)/lib/libxml2.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXML2_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LIBXML2)-install
+FL_UNINSTALL+=$(LIBXML2)-uninstall
+
+########################################
+FONTCONF=fontconfig
+FONTCONF_VERSION=2.11.1
+FONTCONF_VERSION=2.11.93
+FONTCONF_SRC=$(FONTCONF)-$(FONTCONF_VERSION).tar.bz2
+FONTCONF_URL=http://www.freedesktop.org/software/fontconfig/release/$(FONTCONF_SRC)
+
+FL_DEP_FONTCONF= \
+	$(LIBPNG)-install \
+	$(LIBXML2)-install \
+	$(EXPAT)-install \
+	$(FREETYPE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(FONTCONF_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FONTCONF_URL)
+	touch $@
+$(FONTCONF)-$(FONTCONF_VERSION)/configure: $(DN_SRC)/$(FONTCONF_SRC)
+	tar -xf $(DN_SRC)/$(FONTCONF_SRC)
+	touch $@
+$(FONTCONF)-$(FONTCONF_VERSION)/Makefile: $(FONTCONF)-$(FONTCONF_VERSION)/configure $(FL_DEP_FONTCONF)
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared --disable-docs
+$(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la: $(FONTCONF)-$(FONTCONF_VERSION)/Makefile
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfontconfig.a: $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make install
+	sed -i 's/-L$${libdir} -lfontconfig[^l]*$$/-L$${libdir} -lfontconfig -lfreetype -lxml2 -lexpat -lpng/' "$(PREFIX)/lib/pkgconfig/fontconfig.pc"
+
+$(FONTCONF)-uninstall: $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make uninstall
+$(FONTCONF)-install: $(PREFIX)/lib/libfontconfig.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FONTCONF_SRC)
+FL_DEPENDENCES_FFMPEG+=$(FONTCONF)-install
+FL_UNINSTALL+=$(FONTCONF)-uninstall
+
+########################################
+GRAPHITE2=graphite2
+GRAPHITE2_VERSION=1.2.4
+GRAPHITE2_SRC=$(GRAPHITE2)-$(GRAPHITE2_VERSION).tgz
+GRAPHITE2_URL=http://sourceforge.net/projects/silgraphite/files/graphite2/$(GRAPHITE2_SRC)
+
+FL_DEP_GRAPHITE2= \
+	$(CMAKE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GRAPHITE2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GRAPHITE2_URL)
+	touch $@
+$(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake: $(DN_SRC)/$(GRAPHITE2_SRC)
+	tar -xf $(DN_SRC)/$(GRAPHITE2_SRC)
+	touch $@
+$(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake $(FL_DEP_GRAPHITE2)
+	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake $(CMAKE_ARCH_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) ..
+$(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile
+	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
+	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make install
+
+$(GRAPHITE2)-uninstall: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
+	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make uninstall
+$(GRAPHITE2)-install: $(PREFIX)/lib/libgraphite2.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GRAPHITE2_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(GRAPHITE2)-install
+FL_UNINSTALL+=$(GRAPHITE2)-uninstall
+
+########################################
+HARFBUZZ=harfbuzz
+HARFBUZZ_VERSION=0.9.9
+HARFBUZZ_VERSION=0.9.40
+HARFBUZZ_SRC=$(HARFBUZZ)-$(HARFBUZZ_VERSION).tar.bz2
+HARFBUZZ_URL=http://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SRC)
+
+FL_DEP_HARFBUZZ= \
+	$(LIBXML2)-install \
+	$(GRAPHITE2)-install \
+	$(NULL)
+
+$(DN_SRC)/$(HARFBUZZ_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HARFBUZZ_URL)
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION) &&
+
+$(DN_SRC)/$(HARFBUZZ_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HARFBUZZ_URL)
+	touch $@
+$(HARFBUZZ)-$(HARFBUZZ_VERSION)/configure: $(DN_SRC)/$(HARFBUZZ_SRC)
+	tar -xf $(DN_SRC)/$(HARFBUZZ_SRC)
+	touch $@
+$(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/configure $(FL_DEP_HARFBUZZ)
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared --with-gobject=no --with-graphite2
+$(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libharfbuzz.a: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make install
+
+$(HARFBUZZ)-uninstall: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make uninstall
+$(HARFBUZZ)-install: $(PREFIX)/lib/libharfbuzz.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(HARFBUZZ_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(HARFBUZZ)-install
+FL_UNINSTALL+=$(HARFBUZZ)-uninstall
+
+########################################
+# http://fribidi.org/download/fribidi-0.19.6.tar.bz2
+FRIBIDI=fribidi
+
+# automake 14:
+FRIBIDI_VERSION=0.19.6
+FRIBIDI_SRC=$(FRIBIDI)-$(FRIBIDI_VERSION).tar.bz2
+# automake 13:
+#FRIBIDI_VERSION=0.19.2
+#FRIBIDI_SRC=$(FRIBIDI)-$(FRIBIDI_VERSION).tar.gz
+
+FRIBIDI_URL=http://fribidi.org/download/$(FRIBIDI_SRC)
+
+$(DN_SRC)/$(FRIBIDI_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FRIBIDI_URL)
+	touch $@
+$(FRIBIDI)-$(FRIBIDI_VERSION)/configure: $(DN_SRC)/$(FRIBIDI_SRC)
+	tar -xf $(DN_SRC)/$(FRIBIDI_SRC)
+	touch $@
+$(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile: $(FRIBIDI)-$(FRIBIDI_VERSION)/configure
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared --with-glib=no
+$(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la: $(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfribidi.a: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make install
+
+$(FRIBIDI)-uninstall: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make uninstall
+$(FRIBIDI)-install: $(PREFIX)/lib/libfribidi.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FRIBIDI_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(FRIBIDI)-install
+FL_UNINSTALL+=$(FRIBIDI)-uninstall
+
+########################################
+LIBENCA=enca
+LIBENCA_VERSION=1.15
+LIBENCA_VERSION=1.16
+LIBENCA_SRC=$(LIBENCA)-$(LIBENCA_VERSION).tar.gz
+LIBENCA_URL=http://dl.cihar.com/enca/$(LIBENCA_SRC)
+
+$(DN_SRC)/$(LIBENCA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBENCA_URL)
+	touch $@
+$(LIBENCA)-$(LIBENCA_VERSION)/configure: $(DN_SRC)/$(LIBENCA_SRC)
+	tar -xf $(DN_SRC)/$(LIBENCA_SRC)
+	touch $@
+$(LIBENCA)-$(LIBENCA_VERSION)/Makefile: $(LIBENCA)-$(LIBENCA_VERSION)/configure
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && ./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --enable-static --enable-shared --disable-harfbuzz
+$(LIBENCA)-$(LIBENCA_VERSION)/src/enca: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libenca.a: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile $(LIBENCA)-$(LIBENCA_VERSION)/src/enca $(LIBENCA)-uninstall
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make install
+
+$(LIBENCA)-uninstall: $(LIBENCA)-$(LIBENCA_VERSION)/src/enca
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make uninstall
+$(LIBENCA)-install: $(PREFIX)/lib/libenca.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBENCA_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBENCA)-install
+FL_UNINSTALL+=$(LIBENCA)-uninstall
+
+########################################
+# --disable-harfbuzz since we don't need harfbuzz to function
+LIBASS=libass
+LIBASS_VERSION=0.10.2
+LIBASS_VERSION=0.12.2
+LIBASS_SRC=$(LIBASS)-$(LIBASS_VERSION).tar.gz
+#LIBASS_URL=https://libass.googlecode.com/files/$(LIBASS_SRC)
+LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
+#LIBASS_URL=https://github.com/libass/libass/releases/download/$(LIBASS_VERSION)/$(LIBASS_SRC)
+
+#$(PREFIX)/lib/libharfbuzz.a
+FL_DEP_LIBASS= \
+	$(FREETYPE)-install \
+	$(FRIBIDI)-install \
+	$(LIBENCA)-install \
+	$(YASM)-install \
+	$(NULL)
+
+# use release file:
+$(DN_SRC)/$(LIBASS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBASS_URL) -O $(LIBASS_SRC)
+	touch $@
+$(LIBASS)-$(LIBASS_VERSION)/README: $(DN_SRC)/$(LIBASS_SRC)
+	tar -xf $(DN_SRC)/$(LIBASS_SRC)
+	touch $@
+
+# use git instead
+LIBASS_VERSION=git
+LIBASS_SRC=$(LIBASS)-$(LIBASS_VERSION)/.git
+LIBASS_URL=https://github.com/libass/libass.git
+
+$(DN_SRC)/$(LIBASS_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBASS_SRC)" ]; then cd $(DN_SRC)/$(LIBASS)-$(LIBASS_VERSION) && git pull; else git clone $(LIBASS_URL) $(DN_SRC)/$(LIBASS)-$(LIBASS_VERSION); fi
+	touch $@
+
+$(LIBASS)-$(LIBASS_VERSION)/.git: $(DN_SRC)/$(LIBASS_SRC)
+	cd $(DN_SRC)/$(LIBASS)-$(LIBASS_VERSION) && git pull
+	if [ -d "$(LIBASS)-$(LIBASS_VERSION)" ]; then cd $(LIBASS)-$(LIBASS_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBASS)-$(LIBASS_VERSION)/ $(LIBASS)-$(LIBASS_VERSION); fi
+	touch $@
+
+$(LIBASS)-$(LIBASS_VERSION)/configure.ac: $(LIBASS)-$(LIBASS_VERSION)/.git $(FL_DEP_LIBASS)
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && git pull
+
+$(LIBASS)-$(LIBASS_VERSION)/configure: $(LIBASS)-$(LIBASS_VERSION)/configure.ac
+	cd $(LIBASS)-$(LIBASS_VERSION) && ./autogen.sh
+$(LIBASS)-$(LIBASS_VERSION)/Makefile: $(LIBASS)-$(LIBASS_VERSION)/configure
+	cd $(LIBASS)-$(LIBASS_VERSION) && FRIBIDI_CFLAGS="-I$(PREFIX)/include/fribidi" FRIBIDI_LIBS="-L$(PREFIX)/usr/lib" $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --enable-static --enable-shared --disable-harfbuzz
+	touch $@
+
+$(LIBASS)-$(LIBASS_VERSION)/libass/libass.la: $(LIBASS)-$(LIBASS_VERSION)/Makefile
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX)/lib/libass.a: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && make install
+
+$(LIBASS)-uninstall: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && make uninstall
+$(LIBASS)-install: $(PREFIX)/lib/libass.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBASS_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LIBASS)-install
+FL_UNINSTALL+=$(LIBASS)-uninstall
+
+########################################
+#http://git.xiph.org/speex.git
+LIBSPEEX=speex
+LIBSPEEX_VERSION=1.2rc1
+LIBSPEEX_VERSION=1.2rc2
+LIBSPEEX_SRC=$(LIBSPEEX)-$(LIBSPEEX_VERSION).tar.gz
+LIBSPEEX_URL=http://downloads.xiph.org/releases/speex/$(LIBSPEEX_SRC)
+
+$(DN_SRC)/$(LIBSPEEX_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSPEEX_URL)
+	touch $@
+$(LIBSPEEX)-$(LIBSPEEX_VERSION)/configure: $(DN_SRC)/$(LIBSPEEX_SRC)
+	tar -xf $(DN_SRC)/$(LIBSPEEX_SRC)
+	touch $@
+$(LIBSPEEX)-$(LIBSPEEX_VERSION)/Makefile: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/configure
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/Makefile
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libspeex.a: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make install
+
+$(LIBSPEEX)-uninstall: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make uninstall
+$(LIBSPEEX)-install: $(PREFIX)/lib/libspeex.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSPEEX_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LIBSPEEX)-install
+FL_UNINSTALL+=$(LIBSPEEX)-uninstall
+
+########################################
+OPUS=opus
+OPUS_VERSION=1.1
+OPUS_VERSION=1.1.1-beta
+OPUS_SRC=$(OPUS)-$(OPUS_VERSION).tar.gz
+OPUS_URL=http://downloads.xiph.org/releases/opus/$(OPUS_SRC)
+
+$(DN_SRC)/$(OPUS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPUS_URL)
+	touch $@
+$(OPUS)-$(OPUS_VERSION)/configure: $(DN_SRC)/$(OPUS_SRC)
+	tar -xf $(DN_SRC)/$(OPUS_SRC)
+	touch $@
+$(OPUS)-$(OPUS_VERSION)/Makefile: $(OPUS)-$(OPUS_VERSION)/configure
+	cd $(OPUS)-$(OPUS_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(OPUS)-$(OPUS_VERSION)/opus.pc: $(OPUS)-$(OPUS_VERSION)/Makefile
+	cd $(OPUS)-$(OPUS_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/pkgconfig/opus.pc: $(OPUS)-$(OPUS_VERSION)/opus.pc
+	cd $(OPUS)-$(OPUS_VERSION)/ && make install
+
+$(OPUS)-uninstall: $(OPUS)-$(OPUS_VERSION)/opus.pc
+	cd $(OPUS)-$(OPUS_VERSION)/ && make uninstall
+$(OPUS)-install: $(PREFIX)/lib/pkgconfig/opus.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPUS_SRC)
+FL_DEPENDENCES_FFMPEG+=$(OPUS)-install
+FL_UNINSTALL+=$(OPUS)-uninstall
+
+########################################
+LVPX=libvpx
+#LVPX_VERSION=1.3.0
+#LVPX_SRC=$(LVPX)-v$(LVPX_VERSION).tar.bz2
+#LVPX_URL=http://webm.googlecode.com/files/$(LVPX_SRC)
+
+FL_DEP_LVPX= \
+	$(YASM)-install \
+	$(NULL)
+
+LVPX_VERSION=git
+LVPX_SRC=$(LVPX)-$(LVPX_VERSION)/configure
+LVPX_URL=https://chromium.googlesource.com/webm/libvpx
+$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/created
+	git clone $(LVPX_URL) $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)
+	touch $@
+$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
+	cd $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/ && git pull
+#	rm -rf $(DN_TOP)/$(LVPX)*
+#	cp -r $(DN_SRC)/$(LVPX)-$(LVPX_VERSION) $(DN_TOP)/
+	if [ -d "$(LVPX)-$(LVPX_VERSION)" ]; then cd $(LVPX)-$(LVPX_VERSION) && git pull; else git clone $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/ $(LVPX)-$(LVPX_VERSION); fi
+	touch $@
+$(LVPX)-$(LVPX_VERSION)/Makefile: $(LVPX)-$(LVPX_VERSION)/configure $(FL_DEP_LVPX)
+#disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
+	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
+
+$(LVPX)-$(LVPX_VERSION)/libvpx.a: $(LVPX)-$(LVPX_VERSION)/Makefile
+	cd $(LVPX)-* && $(ENV_COMPILE) make $(MAKE_ARG)
+
+$(PREFIX)/lib/libvpx.a: $(LVPX)-$(LVPX_VERSION)/libvpx.a
+	cd $(LVPX)-* && make install
+
+$(LVPX)-uninstall: $(LVPX)-$(LVPX_VERSION)/libvpx.a
+	cd $(LVPX)-* && make uninstall
+$(LVPX)-install: $(PREFIX)/lib/libvpx.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
+FL_DEPENDENCES_FFMPEG+=$(LVPX)-install
+FL_UNINSTALL+=$(LVPX)-uninstall
+
+########################################
+LIBGSM=libgsm
+LIBGSM_VERSION=1.0.13
+LIBGSM_SRC=$(LIBGSM)_$(LIBGSM_VERSION).orig.tar.gz
+LIBGSM_URL=http://ftp.debian.org/debian/pool/main/libg/libgsm/$(LIBGSM_SRC)
+
+$(DN_SRC)/$(LIBGSM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBGSM_URL)
+	touch $@
+$(LIBGSM)-$(LIBGSM_VERSION)/Makefile: $(DN_SRC)/$(LIBGSM_SRC)
+	rm -rf gsm-*
+	tar -xf $(DN_SRC)/$(LIBGSM_SRC)
+	mv gsm-* $(LIBGSM)-$(LIBGSM_VERSION)
+	touch $@
+$(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/Makefile
+	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
+	touch $@
+$(PREFIX)/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
+	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && install -m 644 inc/gsm.h $(PREFIX)/include && install -m 644 lib/libgsm.a $(PREFIX)/lib
+
+$(LIBGSM)-uninstall: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
+	rm -f $(PREFIX)/include/gsm.h $(PREFIX)/lib/libgsm.a
+$(LIBGSM)-install: $(PREFIX)/lib/libgsm.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBGSM_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LIBGSM)-install
+FL_UNINSTALL+=$(LIBGSM)-uninstall
+
+########################################
+# no --enable-liba52 in ffmpeg anymore
+LIBA52=a52dec
+LIBA52_VERSION=0.7.4
+LIBA52_SRC=$(LIBA52)-$(LIBA52_VERSION).tar.gz
+LIBA52_URL=http://liba52.sourceforge.net/files/$(LIBA52_SRC)
+
+$(DN_SRC)/$(LIBA52_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBA52_URL)
+	touch $@
+$(LIBA52)-$(LIBA52_VERSION)/configure: $(DN_SRC)/$(LIBA52_SRC)
+	tar -xf $(DN_SRC)/$(LIBA52_SRC)
+	touch $@
+$(LIBA52)-$(LIBA52_VERSION)/Makefile: $(LIBA52)-$(LIBA52_VERSION)/configure
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la: $(LIBA52)-$(LIBA52_VERSION)/Makefile
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/liba52.a: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && make install
+
+$(LIBA52)-uninstall: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && make uninstall
+$(LIBA52)-install: $(PREFIX)/lib/liba52.a
+	touch $@
+
+FL_SOURCES_OTHERS+=$(DN_SRC)/$(LIBA52_SRC)
+FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
+FL_UNINSTALL_OTHERS+=$(LIBA52)-uninstall
+
+########################################
+FAAD=faad2
+FAAD_VERSION=2.7
+FAAD_SRC=$(FAAD)-$(FAAD_VERSION).tar.bz2
+FAAD_URL=http://sourceforge.net/projects/faac/files/$(FAAD)-src/$(FAAD)-$(FAAD_VERSION)/$(FAAD_SRC)
+
+$(DN_SRC)/$(FAAD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FAAD_URL)
+	touch $@
+$(FAAD)-$(FAAD_VERSION)/configure: $(DN_SRC)/$(FAAD_SRC)
+	tar -xf $(DN_SRC)/$(FAAD_SRC)
+	touch $@
+$(FAAD)-$(FAAD_VERSION)/Makefile: $(FAAD)-$(FAAD_VERSION)/configure
+	cd $(FAAD)-$(FAAD_VERSION)/ && sh ./bootstrap && ./configure --prefix=$(PREFIX) --enable-shared
+$(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la: $(FAAD)-$(FAAD_VERSION)/Makefile
+	cd $(FAAD)-$(FAAD_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfaad.a: $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la
+	cd $(FAAD)-$(FAAD_VERSION)/ && make install
+
+$(FAAD)-uninstall: $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la
+	cd $(FAAD)-$(FAAD_VERSION)/ && make uninstall
+$(FAAD)-install: $(PREFIX)/lib/libfaad.a
+	touch $@
+
+FL_SOURCES_OTHERS+=$(DN_SRC)/$(FAAD_SRC)
+FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
+FL_UNINSTALL_OTHERS+=$(FAAD)-uninstall
+
+########################################
+# libfaac is not updated for three years+
+# best open-source audio library is the fdk_acc library which is part of the Android project
+FAAC=faac
+FAAC_VERSION=1.28
+FAAC_SRC=$(FAAC)-$(FAAC_VERSION).tar.bz2
+FAAC_URL=http://sourceforge.net/projects/faac/files/faac-src/faac-$(FAAC_VERSION)/$(FAAC_SRC)
+
+$(DN_SRC)/$(FAAC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FAAC_URL)
+	touch $@
+$(FAAC)-$(FAAC_VERSION)/README: $(DN_SRC)/$(FAAC_SRC)
+	tar -xf $(DN_SRC)/$(FAAC_SRC)
+	touch $@
+#$(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(FAAC)-$(FAAC_VERSION)/README
+$(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(DN_SRC)/$(FAAC_SRC)
+	rm -rf $(FAAC)-$(FAAC_VERSION)/
+	tar -xf $(DN_SRC)/$(FAAC_SRC)
+#	cd $(FAAC)-$(FAAC_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch && patch -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch
+	cd $(FAAC)-$(FAAC_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch
+	touch $@
+$(FAAC)-$(FAAC_VERSION)/Makefile: $(FAAC)-$(FAAC_VERSION)/mypatched
+	cd $(FAAC)-$(FAAC_VERSION)/ && sh ./bootstrap && ./configure --prefix=$(PREFIX) --enable-shared
+	touch $@
+$(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la: $(FAAC)-$(FAAC_VERSION)/Makefile
+	cd $(FAAC)-$(FAAC_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfaac.a: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
+	cd $(FAAC)-$(FAAC_VERSION)/ && make install
+
+$(FAAC)-uninstall: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
+	cd $(FAAC)-$(FAAC_VERSION)/ && make uninstall
+$(FAAC)-install: $(PREFIX)/lib/libfaac.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FAAC_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(FAAC)-install
+FL_UNINSTALL_OTHERS+=$(FAAC)-uninstall
+
+########################################
+FDKAAC=fdk-aac
+FDKAAC_VERSION=0.1.4
+FDKAAC_SRC=$(FDKAAC)-$(FDKAAC_VERSION).tar.gz
+FDKAAC_URL=http://sourceforge.net/projects/opencore-amr/files/$(FDKAAC)/$(FDKAAC_SRC)
+
+$(DN_SRC)/$(FDKAAC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FDKAAC_URL)
+	touch $@
+$(FDKAAC)-$(FDKAAC_VERSION)/configure.ac: $(DN_SRC)/$(FDKAAC_SRC)
+	tar -xf $(DN_SRC)/$(FDKAAC_SRC)
+	touch $@
+$(FDKAAC)-$(FDKAAC_VERSION)/configure: $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && ./autogen.sh
+$(FDKAAC)-$(FDKAAC_VERSION)/Makefile: $(FDKAAC)-$(FDKAAC_VERSION)/configure
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && autoreconf && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la: $(FDKAAC)-$(FDKAAC_VERSION)/Makefile
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libfdk-aac.a: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make install
+
+$(FDKAAC)-uninstall: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make uninstall
+$(FDKAAC)-install: $(PREFIX)/lib/libfdk-aac.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FDKAAC_SRC)
+FL_DEPENDENCES_FFMPEG+=$(FDKAAC)-install
+FL_UNINSTALL+=$(FDKAAC)-uninstall
+
+########################################
+LAME=lame
+LAME_VERSION=3.99.5
+LAME_SRC=$(LAME)-$(LAME_VERSION).tar.gz
+LAME_URL=http://sourceforge.net/projects/lame/files/lame/3.99/$(LAME_SRC)
+
+$(DN_SRC)/$(LAME_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LAME_URL)
+	touch $@
+$(LAME)-$(LAME_VERSION)/configure: $(DN_SRC)/$(LAME_SRC)
+	tar -xf $(DN_SRC)/$(LAME_SRC)
+	touch $@
+$(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/configure
+	cd $(LAME)-$(LAME_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la: $(LAME)-$(LAME_VERSION)/Makefile
+	cd $(LAME)-$(LAME_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
+	cd $(LAME)-$(LAME_VERSION)/ && make install
+
+$(LAME)-uninstall: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
+	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
+$(LAME)-install: $(PREFIX)/lib/libmp3lame.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LAME_SRC)
+FL_DEPENDENCES_FFMPEG+=$(LAME)-install
+FL_UNINSTALL+=$(LAME)-uninstall
+
+########################################
+XVIDCORE=xvidcore
+XVIDCORE_VERSION=1.3.2
+XVIDCORE_VERSION=1.3.3
+XVIDCORE_SRC=$(XVIDCORE)-$(XVIDCORE_VERSION).tar.gz
+XVIDCORE_URL=http://downloads.xvid.org/downloads/$(XVIDCORE_SRC)
+#XVIDCORE_URL=http://ftp.br.debian.org/debian-multimedia/pool/main/x/xvidcore/xvidcore_1.3.3.orig.tar.gz
+#http://downloads.xvid.org/downloads/xvidcore-1.3.3.tar.gz
+
+$(DN_SRC)/$(XVIDCORE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XVIDCORE_URL)
+	touch $@
+$(XVIDCORE)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SRC)
+	tar -xf $(DN_SRC)/$(XVIDCORE_SRC)
+	touch $@
+$(XVIDCORE)/build/generic/platform.inc: $(XVIDCORE)/build/generic/configure
+	cd $(XVIDCORE)/build/generic && CFLAGS="-fPIC" ./configure --prefix=$(PREFIX) # --enable-shared --enable-static
+$(PREFIX)/lib/libxvidcore.a: $(XVIDCORE)/build/generic/platform.inc
+	cd $(XVIDCORE)/build/generic && make $(MAKE_ARG)
+	cd $(XVIDCORE)/build/generic && make install && rm -f $(PREFIX)/lib/libxvidcore.so.*
+
+$(XVIDCORE)-uninstall: $(XVIDCORE)/build/generic/platform.inc
+	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
+$(XVIDCORE)-install: $(PREFIX)/lib/libxvidcore.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XVIDCORE_SRC)
+FL_DEPENDENCES_FFMPEG+=$(XVIDCORE)-install
+FL_UNINSTALL+=$(XVIDCORE)-uninstall
+
+########################################
+# use opencore-amr instead
+AMRNB=amrnb
+AMRNB_VERSION=11.0.0.0
+AMRNB_SRC=$(AMRNB)-$(AMRNB_VERSION).tar.bz2
+AMRNB_URL=http://www.penguin.cz/~utx/ftp/amr/$(AMRNB_SRC)
+
+$(DN_SRC)/$(AMRNB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AMRNB_URL)
+	touch $@
+$(AMRNB)-$(AMRNB_VERSION)/configure: $(DN_SRC)/$(AMRNB_SRC)
+	tar -xf $(DN_SRC)/$(AMRNB_SRC)
+	touch $@
+$(AMRNB)-$(AMRNB_VERSION)/Makefile: $(AMRNB)-$(AMRNB_VERSION)/configure
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+$(AMRNB)-$(AMRNB_VERSION)/libamrnb.la: $(AMRNB)-$(AMRNB_VERSION)/Makefile
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libamrnb.a: $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && make install
+
+$(AMRNB)-uninstall: $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && make uninstall
+$(AMRNB)-install: $(PREFIX)/lib/libamrnb.a
+	touch $@
+
+FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRNB_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(AMRNB)-install
+FL_UNINSTALL+=$(AMRNB)-uninstall
+
+########################################
+# use opencore-amr instead
+AMRWB=amrwb
+AMRWB_VERSION=11.0.0.0
+AMRWB_SRC=$(AMRWB)-$(AMRWB_VERSION).tar.bz2
+AMRWB_URL=ftp://ftp.penguin.cz/pub/users/utx/amr/$(AMRWB_SRC)
+
+$(DN_SRC)/$(AMRWB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AMRWB_URL)
+	touch $@
+$(AMRWB)-$(AMRWB_VERSION)/configure: $(DN_SRC)/$(AMRWB_SRC)
+	tar -xf $(DN_SRC)/$(AMRWB_SRC)
+	touch $@
+$(AMRWB)-$(AMRWB_VERSION)/Makefile: $(AMRWB)-$(AMRWB_VERSION)/configure
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+$(AMRWB)-$(AMRWB_VERSION)/libamrwb.la: $(AMRWB)-$(AMRWB_VERSION)/Makefile
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libamrwb.a: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && make install
+
+$(AMRWB)-uninstall: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && make uninstall
+$(AMRWB)-install: $(PREFIX)/lib/libamrwb.a
+	touch $@
+
+FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRWB_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(AMRWB)-install
+FL_UNINSTALL+=$(AMRWB)-uninstall
+
+########################################
+OPENCOREAMR=opencore-amr
+OPENCOREAMR_VERSION=0.1.3
+OPENCOREAMR_SRC=$(OPENCOREAMR)-$(OPENCOREAMR_VERSION).tar.gz
+OPENCOREAMR_URL=http://sourceforge.net/projects/opencore-amr/files/opencore-amr/$(OPENCOREAMR_SRC)
+
+$(DN_SRC)/$(OPENCOREAMR_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPENCOREAMR_URL)
+	touch $@
+$(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/configure: $(DN_SRC)/$(OPENCOREAMR_SRC)
+	tar -xf $(DN_SRC)/$(OPENCOREAMR_SRC)
+	touch $@
+$(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/Makefile: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/configure
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+$(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/Makefile
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libopencore-amrnb.a: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make install
+
+$(OPENCOREAMR)-uninstall: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make uninstall
+$(OPENCOREAMR)-install: $(PREFIX)/lib/libopencore-amrnb.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPENCOREAMR_SRC)
+FL_DEPENDENCES_FFMPEG+=$(OPENCOREAMR)-install
+FL_UNINSTALL+=$(OPENCOREAMR)-uninstall
+
+########################################
+# add --disable-opencl to configure args, otherwise ffmpeg will complain 'libx264 not found'
+X264=x264
+#X264_VERSION=snapshot-20140316-2245
+#X264_SRC=$(X264)-$(X264_VERSION).tar.bz2
+X264_VERSION=last_stable_x264
+X264_SRC=last_x264.tar.bz2
+X264_SRC=last_stable_x264.tar.bz2
+X264_URL=http://download.videolan.org/pub/videolan/x264/snapshots/$(X264_SRC)
+
+$(DN_SRC)/$(X264_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(X264_URL)
+	touch $@
+$(X264)-$(X264_VERSION)/x264.h: $(DN_SRC)/$(X264_SRC)
+	rm -rf x264-*
+	tar -xf $(DN_SRC)/$(X264_SRC)
+	mv $(X264)-* $(X264)-$(X264_VERSION)
+	touch $@
+$(X264)-$(X264_VERSION)/libx264.a: $(X264)-$(X264_VERSION)/x264.h
+	#cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX) --disable-asm --enable-pic --disable-opencl --enable-static --enable-shared
+	cd $(X264)-$(X264_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libx264.a: $(X264)-$(X264_VERSION)/libx264.a
+	cd $(X264)-$(X264_VERSION)/ && make install
+
+$(X264)-uninstall: $(X264)-$(X264_VERSION)/libx264.a
+	cd $(X264)-$(X264_VERSION)/ && make uninstall
+$(X264)-install: $(PREFIX)/lib/libx264.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(X264_SRC)
+FL_DEPENDENCES_FFMPEG+=$(X264)-install
+FL_UNINSTALL+=$(X264)-uninstall
+
+########################################
+OGG=libogg
+OGG_VERSION=1.3.1
+OGG_VERSION=1.3.2
+OGG_SRC=$(OGG)-$(OGG_VERSION).tar.gz
+OGG_URL=http://downloads.xiph.org/releases/ogg/$(OGG_SRC)
+$(DN_SRC)/$(OGG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OGG_URL)
+	touch $@
+$(OGG)-$(OGG_VERSION)/configure: $(DN_SRC)/$(OGG_SRC)
+	tar -xf $(DN_SRC)/$(OGG_SRC)
+	touch $@
+$(OGG)-$(OGG_VERSION)/Makefile: $(OGG)-$(OGG_VERSION)/configure
+	cd $(OGG)-$(OGG_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(OGG)-$(OGG_VERSION)/src/libogg.la: $(OGG)-$(OGG_VERSION)/Makefile
+	cd $(OGG)-$(OGG_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libogg.a: $(OGG)-$(OGG_VERSION)/src/libogg.la
+	cd $(OGG)-$(OGG_VERSION)/ && make install
+
+$(OGG)-uninstall: $(OGG)-$(OGG_VERSION)/src/libogg.la
+	cd $(OGG)-$(OGG_VERSION)/ && make uninstall
+$(OGG)-install: $(PREFIX)/lib/libogg.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OGG_SRC)
+FL_DEPENDENCES_FFMPEG+=$(OGG)-install
+FL_UNINSTALL+=$(OGG)-uninstall
+
+########################################
+VORBIS=libvorbis
+VORBIS_VERSION=1.3.4
+VORBIS_VERSION=1.3.5
+VORBIS_SRC=$(VORBIS)-$(VORBIS_VERSION).tar.gz
+VORBIS_URL=http://downloads.xiph.org/releases/vorbis/$(VORBIS_SRC)
+
+FL_DEP_VORBIS= \
+	$(OGG)-install \
+	$(NULL)
+
+$(DN_SRC)/$(VORBIS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(VORBIS_URL)
+	touch $@
+$(VORBIS)-$(VORBIS_VERSION)/configure: $(DN_SRC)/$(VORBIS_SRC)
+	tar -xf $(DN_SRC)/$(VORBIS_SRC)
+	touch $@
+$(VORBIS)-$(VORBIS_VERSION)/Makefile: $(VORBIS)-$(VORBIS_VERSION)/configure $(FL_DEP_VORBIS)
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la: $(VORBIS)-$(VORBIS_VERSION)/Makefile
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libvorbis.a: $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && make install
+
+$(VORBIS)-uninstall: $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && make uninstall
+$(VORBIS)-install: $(PREFIX)/lib/libvorbis.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(VORBIS_SRC)
+FL_DEPENDENCES_FFMPEG+=$(VORBIS)-install
+FL_UNINSTALL+=$(VORBIS)-uninstall
+
+########################################
+THEORA=libtheora
+THEORA_VERSION=1.2.0alpha1
+THEORA_SRC=$(THEORA)-$(THEORA_VERSION).tar.gz
+THEORA_URL=http://downloads.xiph.org/releases/theora/$(THEORA_SRC)
+
+FL_DEP_THEORA= \
+	$(OGG)-install \
+	$(VORBIS)-install \
+	$(NULL)
+
+$(DN_SRC)/$(THEORA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(THEORA_URL)
+	touch $@
+$(THEORA)-$(THEORA_VERSION)/configure: $(DN_SRC)/$(THEORA_SRC)
+	tar -xf $(DN_SRC)/$(THEORA_SRC)
+	touch $@
+$(THEORA)-$(THEORA_VERSION)/Makefile: $(THEORA)-$(THEORA_VERSION)/configure $(FL_DEP_THEORA)
+	cd $(THEORA)-$(THEORA_VERSION)/ && $(ENV_COMPILE) ./autogen.sh \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples
+	touch $@
+$(THEORA)-$(THEORA_VERSION)/lib/libtheora.la: $(THEORA)-$(THEORA_VERSION)/Makefile
+	cd $(THEORA)-$(THEORA_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/libtheora.a: $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la
+	cd $(THEORA)-$(THEORA_VERSION)/ && make install
+	touch $@
+
+$(THEORA)-uninstall: $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la
+	cd $(THEORA)-$(THEORA_VERSION)/ && make uninstall
+$(THEORA)-install: $(PREFIX)/lib/libtheora.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(THEORA_SRC)
+FL_DEPENDENCES_FFMPEG+=$(THEORA)-install
+FL_UNINSTALL+=$(THEORA)-uninstall
+
+########################################
+
+# use release files
+FFMPEG=ffmpeg
+FFMPEG_VERSION=1.1
+FFMPEG_VERSION=2.1.4
+#FFMPEG_VERSION=2.6.3
+FFMPEG_VERSION=snapshot-git
+FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION).tar.bz2
+FFMPEG_URL=http://ffmpeg.org/releases/$(FFMPEG_SRC)
+#$(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
+#	$(WGET) -O $@ $(FFMPEG_URL)
+#	touch $@
+#$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
+#	rm -rf ffmpeg*
+#	tar -xf $(DN_SRC)/$(FFMPEG_SRC)
+#	mv ffmpeg* $(FFMPEG)-$(FFMPEG_VERSION)
+#	touch $@
+
+
+# use git instead
+FFMPEG_VERSION=git
+FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION)/.git
+FFMPEG_URL=git://source.ffmpeg.org/ffmpeg.git
+
+$(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(FFMPEG_SRC)" ]; then cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull; else git clone $(FFMPEG_URL) $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION); fi
+	touch $@
+
+$(FFMPEG)-$(FFMPEG_VERSION)/.git: $(DN_SRC)/$(FFMPEG_SRC)
+	cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull
+	if [ -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull; else git clone $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); fi
+	touch $@
+
+$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/.git
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git pull
+#	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
+	touch $@
+$(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
+# --enable-libxavs --enable-libvo-aacenc --enable-libvo-amrwbenc --enable-libmodplug
+# --enable-libbluray --enable-filters
+# add: --enable-librtmp --enable-x11grab
+#			--enable-static --enable-shared --extra-cflags=--static \
+#			--extra-cflags="-I$(PREFIX)/include -static" \
+#			--extra-ldflags="-L$(PREFIX)/lib -lfontconfig -lfreetype -lxml2 -lexpat -lpng -lm -static" \
+# add: sed -i 's/-L${libdir} -lfontconfig[^l]*$/-L${libdir} -lfontconfig -lfreetype -lxml2 -lpng -lbz2/' $(PREFIX)/lib/pkgconfig/fontconfig.pc
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
+		&& mkdir -p $(PREFIX)/tmp/ \
+		&& export TMPDIR="$(PREFIX)/tmp/" \
+		&& $(ENV_COMPILE) CFLAGS="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2`" \
+			LDFLAGS="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2`" \
+			./configure --extra-version=$(STRLOGO) \
+			--enable-static --enable-shared \
+			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2`" \
+			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2`" \
+			--prefix=$(PREFIX) \
+			--enable-version3 --enable-libopencore-amrnb --enable-libopencore-amrwb \
+			--enable-libvorbis --enable-libtheora --enable-libmp3lame --enable-libspeex\
+			--enable-libxvid --enable-libx264 \
+			--enable-gpl --enable-pthreads --enable-nonfree --enable-postproc --enable-libgsm \
+			--enable-libfdk-aac --enable-libvpx \
+			--enable-libopus --enable-bzlib --enable-zlib \
+			--enable-libass --enable-fontconfig --enable-libfreetype \
+			--disable-debug --disable-devices \
+			--disable-ffserver --disable-ffplay --disable-doc \
+			--enable-gray --enable-runtime-cpudetect \
+			$(NULL)
+
+$(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/config.mak
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX)/lib/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make install
+
+$(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(PREFIX)/lib/libavcodec.a
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX)/bin/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make install
+#	ldd $(PREFIX)/bin/ffmpeg
+#	$(PREFIX)/bin/ffmpeg -version
+
+$(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/tools/ && gcc -D_LARGEFILE_SOURCE qt-faststart.c -o qt-faststart
+$(PREFIX)/bin/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart
+	cp $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart $(PREFIX)/bin
+
+
+$(FFMPEG)-uninstall: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
+	rm -f $(PREFIX)/bin/qt-faststart
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make uninstall
+$(FFMPEG)-install: $(PREFIX)/lib/libavcodec.a $(PREFIX)/bin/ffmpeg $(PREFIX)/bin/qt-faststart
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FFMPEG_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(FFMPEG)-install
+FL_UNINSTALL+=$(FFMPEG)-uninstall
+
+
+########################################
+# ilmbase, An high dynamic-range image file format library
+ILMBASE=ilmbase
+ILMBASE_VERSION=2.2.0
+ILMBASE_SRC=$(ILMBASE)-$(ILMBASE_VERSION).tar.gz
+ILMBASE_URL=http://download.savannah.nongnu.org/releases/openexr/$(ILMBASE_SRC)
+
+$(DN_SRC)/$(ILMBASE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(ILMBASE_URL)
+	touch $@
+$(ILMBASE)-$(ILMBASE_VERSION)/configure: $(DN_SRC)/$(ILMBASE_SRC)
+	tar -xf $(DN_SRC)/$(ILMBASE_SRC)
+	touch $@
+$(ILMBASE)-$(ILMBASE_VERSION)/Makefile: $(ILMBASE)-$(ILMBASE_VERSION)/configure $(FL_DEP_ILMBASE)
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la: $(ILMBASE)-$(ILMBASE_VERSION)/Makefile
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/ilmbase.a: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make install
+
+$(ILMBASE)-uninstall: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make uninstall
+$(ILMBASE)-install: $(PREFIX)/lib/ilmbase.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(ILMBASE_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(ILMBASE)-install
+FL_UNINSTALL+=$(ILMBASE)-uninstall
+
+########################################
+# OpenEXR, a high dynamic-range (HDR) image file format
+# http://www.openexr.com/
+OPENEXR=openexr
+OPENEXR_VERSION=2.2.0
+OPENEXR_SRC=$(OPENEXR)-$(OPENEXR_VERSION).tar.gz
+OPENEXR_URL=http://download.savannah.nongnu.org/releases/openexr/$(OPENEXR_SRC)
+
+FL_DEP_OPENEXR= \
+	$(ZLIB)-install \
+	$(ILMBASE)-install \
+	$(NULL)
+
+# use released files
+#$(DN_SRC)/$(OPENEXR_SRC): $(DN_SRC)/created
+#	$(WGET) -O $@ -c $(OPENEXR_URL) -O $(DN_SRC)/$(OPENEXR_SRC)
+#	touch $@
+#$(OPENEXR)-$(OPENEXR_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENEXR_SRC)
+#	rm -rf OPENEXR*
+#	tar -xf $(DN_SRC)/$(OPENEXR_SRC)
+#	#mv OPENEXR* $(OPENEXR)-$(OPENEXR_VERSION)
+#	touch $@
+
+$(DN_SRC)/$(OPENEXR_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPENEXR_URL)
+	touch $@
+$(OPENEXR)-$(OPENEXR_VERSION)/README: $(DN_SRC)/$(OPENEXR_SRC)
+	tar -xf $(DN_SRC)/$(OPENEXR_SRC)
+	touch $@
+$(OPENEXR)-$(OPENEXR_VERSION)/configure: $(OPENEXR)-$(OPENEXR_VERSION)/README $(FL_DEP_OPENEXR)
+$(OPENEXR)-$(OPENEXR_VERSION)/Makefile: $(OPENEXR)-$(OPENEXR_VERSION)/configure
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la: $(OPENEXR)-$(OPENEXR_VERSION)/Makefile
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libIlmImf.a: $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make install
+
+$(OPENEXR)-uninstall: $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make uninstall
+$(OPENEXR)-install: $(PREFIX)/lib/libIlmImf.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPENEXR_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(OPENEXR)-install
+FL_UNINSTALL+=$(OPENEXR)-uninstall
+
+
+########################################
+# libraw1394
+LIBRAW1394=libraw1394
+LIBRAW1394_VERSION=2.1.1
+LIBRAW1394_SRC=$(LIBRAW1394)-$(LIBRAW1394_VERSION).tar.gz
+LIBRAW1394_URL=ftp://ftp.kernel.org/pub/linux/libs/ieee1394/$(LIBRAW1394_SRC)
+
+$(DN_SRC)/$(LIBRAW1394_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBRAW1394_URL)
+	touch $@
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure: $(DN_SRC)/$(LIBRAW1394_SRC)
+	tar -xf $(DN_SRC)/$(LIBRAW1394_SRC)
+	touch $@
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure $(FL_DEP_LIBRAW1394)
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libraw1394.a: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make install
+	libtool --finish $(PREFIX)/lib
+
+$(LIBRAW1394)-uninstall: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make uninstall
+$(LIBRAW1394)-install: $(PREFIX)/lib/libraw1394.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBRAW1394_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBRAW1394)-install
+FL_UNINSTALL+=$(LIBRAW1394)-uninstall
+
+
+
+########################################
+#http://ftp.gnu.org/pub/gnu/gperf/gperf-3.0.4.tar.gz
+GPERF=gperf
+GPERF_VERSION=3.0.4
+GPERF_SRC=$(GPERF)-$(GPERF_VERSION).tar.gz
+GPERF_URL=http://ftp.gnu.org/pub/gnu/gperf/$(GPERF_SRC)
+
+$(DN_SRC)/$(GPERF_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GPERF_URL)
+	touch $@
+$(GPERF)-$(GPERF_VERSION)/configure: $(DN_SRC)/$(GPERF_SRC)
+	tar -xf $(DN_SRC)/$(GPERF_SRC)
+	touch $@
+$(GPERF)-$(GPERF_VERSION)/Makefile: $(GPERF)-$(GPERF_VERSION)/configure $(FL_DEP_GPERF)
+	cd $(GPERF)-$(GPERF_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(GPERF)-$(GPERF_VERSION)/src/gperf: $(GPERF)-$(GPERF_VERSION)/Makefile
+	cd $(GPERF)-$(GPERF_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)src/gperf: $(GPERF)-$(GPERF_VERSION)/src/gperf
+	cd $(GPERF)-$(GPERF_VERSION)/ && make install
+
+$(GPERF)-uninstall: $(GPERF)-$(GPERF_VERSION)/src/gperf
+	cd $(GPERF)-$(GPERF_VERSION)/ && make uninstall
+$(GPERF)-install: $(PREFIX)src/gperf
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GPERF_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(GPERF)-install
+FL_UNINSTALL+=$(GPERF)-uninstall
+
+########################################
+# libudev
+# https://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-182.tar.gz
+LIBUDEV=udev
+LIBUDEV_VERSION=182
+LIBUDEV_SRC=$(LIBUDEV)-$(LIBUDEV_VERSION).tar.gz
+LIBUDEV_URL=https://www.kernel.org/pub/linux/utils/kernel/hotplug/$(LIBUDEV_SRC)
+
+# gperf
+FL_DEP_LIBUDEV=$(GPERF)-install
+
+$(DN_SRC)/$(LIBUDEV_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUDEV_URL)
+	touch $@
+
+$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
+	tar -xf $(DN_SRC)/$(LIBUDEV_SRC)
+	touch $@
+$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
+#	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	touch $@
+
+$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
+		&& aclocal && automake -ac && autoreconf \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) \
+		    --with-libdir=$(PREFIX)/lib \
+		    --with-systemdsystemunitdir=$(PREFIX)/lib/systemd/system/ \
+		$(NULL)
+	touch $@
+
+$(LIBUDEV)-$(LIBUDEV_VERSION)/libudev/libudev.a: $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libudev.a: $(LIBUDEV)-$(LIBUDEV_VERSION)/libudev/libudev.a
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make install
+
+$(LIBUDEV)-uninstall: $(LIBUDEV)-$(LIBUDEV_VERSION)/libudev/libudev.a
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make uninstall
+$(LIBUDEV)-install: $(PREFIX)/lib/libudev.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUDEV_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBUDEV)-install
+FL_UNINSTALL+=$(LIBUDEV)-uninstall
+
+########################################
+# libusb
+LIBUSB=libusb
+LIBUSB_VERSION=1.0.19
+LIBUSB_SRC=$(LIBUSB)-$(LIBUSB_VERSION).tar.bz2
+LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-$(LIBUSB_VERSION)/$(LIBUSB_SRC)
+
+
+FL_DEP_LIBUSB=$(LIBUDEV)-install
+
+$(DN_SRC)/$(LIBUSB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUSB_URL)
+	touch $@
+$(LIBUSB)-$(LIBUSB_VERSION)/configure: $(DN_SRC)/$(LIBUSB_SRC)
+	tar -xf $(DN_SRC)/$(LIBUSB_SRC)
+	touch $@
+$(LIBUSB)-$(LIBUSB_VERSION)/Makefile: $(LIBUSB)-$(LIBUSB_VERSION)/configure $(FL_DEP_LIBUSB)
+	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBUSB)-$(LIBUSB_VERSION)/libusb/libusb-1.0.la: $(LIBUSB)-$(LIBUSB_VERSION)/Makefile
+	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libusb-1.0.a: $(LIBUSB)-$(LIBUSB_VERSION)/libusb/libusb-1.0.la
+	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make install
+
+$(LIBUSB)-uninstall: $(LIBUSB)-$(LIBUSB_VERSION)/libusb/libusb-1.0.la
+	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make uninstall
+$(LIBUSB)-install: $(PREFIX)/lib/libusb-1.0.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUSB_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBUSB)-install
+FL_UNINSTALL+=$(LIBUSB)-uninstall
+
+########################################
+# libdc1394
+LIBDC1394=libdc1394
+LIBDC1394_VERSION=2.2.3
+LIBDC1394_SRC=$(LIBDC1394)-$(LIBDC1394_VERSION).tar.gz
+LIBDC1394_URL=http://sourceforge.net/projects/libdc1394/files/libdc1394-2/$(LIBDC1394_VERSION)/$(LIBDC1394_SRC)
+
+FL_DEP_LIBDC1394= \
+	$(LIBRAW1394)-install \
+	$(LIBUSB)-install \
+	$(NULL)
+
+$(DN_SRC)/$(LIBDC1394_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBDC1394_URL)
+	touch $@
+$(LIBDC1394)-$(LIBDC1394_VERSION)/configure: $(DN_SRC)/$(LIBDC1394_SRC)
+	tar -xf $(DN_SRC)/$(LIBDC1394_SRC)
+	touch $@
+$(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile: $(LIBDC1394)-$(LIBDC1394_VERSION)/configure $(FL_DEP_LIBDC1394)
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394.la: $(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libdc1394.a: $(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394.la
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && make install
+
+$(LIBDC1394)-uninstall: $(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394.la
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && make uninstall
+$(LIBDC1394)-install: $(PREFIX)/lib/libdc1394.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBDC1394_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBDC1394)-install
+FL_UNINSTALL+=$(LIBDC1394)-uninstall
+
+
+########################################
+# xine-lib
+# intel-tbb
+# gtkglext
+
+# libcl
+# eigen2
+# mesa
+# python2-numpy
+
+########################################
+# CUDA: NVIDIA's GPU proprietary programming toolkit
+# ref: https://wiki.archlinux.org/index.php/GPGPU
+# OpenCV 2.3.1 supports only CUDA 4.0.
+# OpenCV 2.4 supports CUDA 4.1 and 4.2.
+
+# https://aur.archlinux.org/packages/cu/cuda3.1-sdk/PKGBUILD
+CUDASDK31=cuda3
+CUDASDK31_VERSION=3.1
+CUDASDK31_VERSION_CONN=3_1
+CUDASDK31_SRC=gpucomputingsdk_$(CUDASDK31_VERSION)_linux.run
+CUDASDK31_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK31_VERSION_CONN)/sdk/$(CUDASDK31_SRC)
+$(DN_SRC)/$(CUDASDK31_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CUDASDK31_URL)
+	touch $@
+$(CUDASDK)-$(CUDASDK31_VERSION)/pkg: $(DN_SRC)/$(CUDASDK31_SRC)
+	@echo "Extracting CUDA SDK ..."
+	mkdir -p $(CUDASDK)-$(CUDASDK31_VERSION) \
+		&& cd $(CUDASDK)-$(CUDASDK31_VERSION) \
+		&& sh $(DN_SRC)/$(CUDASDK31_SRC) --noexec --keep \
+        && cd pkg/sdk/C/common \
+        && sed -i "s|/usr/local/cuda|$(PREFIX)/opt/$(CUDASDK31)|g" common.mk \
+        && make
+	touch $@
+$(CUDASDK31)-uninstall: $(CUDASDK31)-$(CUDASDK31_VERSION)/pkg
+	rm -rf  "$(PREFIX)/opt/$(CUDASDK31)/"
+$(CUDASDK31)-install: $(CUDASDK31)-$(CUDASDK31_VERSION)/pkg $(FL_DEP_CUDASDK31)
+	cd $(CUDASDK31)-$(CUDASDK31_VERSION)/ \
+		&& mkdir -p $(PREFIX)/opt/$(CUDASDK31)/ \
+		&& for i in pkg/sdk/* ; do \
+              cp "$i" "$(PREFIX)/opt/$(CUDASDK31)/" \
+           done
+
+# https://projects.archlinux.org/svntogit/community.git/tree/trunk/PKGBUILD?h=packages/cuda
+# http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/cuda_7.0.28_linux.run
+CUDASDK=cuda7
+CUDASDK_VERSION=7.0.28
+CUDASDK_VERSION_CONN=7_0
+CUDASDK_SRC=cuda_$(CUDASDK_VERSION)_linux.run
+CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_CONN)/Prod/local_installers/$(CUDASDK_SRC)
+# extracted SRC: cuda_7.0.28_linux.run --extract=extracted/
+#   NVIDIA-Linux-x86_64-346.46.run -- NVIDIA Accelerated Graphics Driver for Linux-x86_64
+#   cuda-linux64-rel-7.0.28-19326674.run -noprompt -prefix=$(pwd)/target
+#   cuda-samples-linux-7.0.28-19326674.run
+
+$(DN_SRC)/$(CUDASDK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CUDASDK_URL)
+	touch $@
+$(CUDASDK)-$(CUDASDK_VERSION)/pkg: $(DN_SRC)/$(CUDASDK_SRC)
+	@echo "Extracting CUDA SDK ..."
+	mkdir -p $(CUDASDK)-$(CUDASDK_VERSION)/extracted/ \
+		&& sh $(DN_SRC)/$(CUDASDK_SRC) --extract=$(shell pwd)/$(CUDASDK)-$(CUDASDK_VERSION)/extracted/  \
+		&& cd $(CUDASDK)-$(CUDASDK_VERSION)/ \
+		&& sh extracted/cuda-linux64-rel-*.run --noexec --keep \
+		&& sh extracted/cuda-samples-linux-*.run --noexec --keep \
+		&& sh extracted/NVIDIA-Linux-*.run --keep -x -a \
+		&& rm -rf nvdrv && ls | grep NVIDIA-Linux | while read A; do echo move $$A ...; mv $$A nvdrv ; done \
+        && sed  -e "s|/usr/share|$(PREFIX)/usr/share|g" \
+                -e 's|can_add_for_all_users;|1;|g' \
+                -e 's|=\\"$$prefix\\\"|=/opt/$(CUDASDK)|g' -e 's|Terminal=No|Terminal=false|g' -e 's|ParallelComputing|ParallelComputing;|g' \
+                -i pkg/install-linux.pl \
+		&& sed 's|\$$cudaprefix\\|\\/opt\\/$(CUDASDK)\\|g' -i pkg/install-sdk-linux.pl \
+        && find pkg -name '*.py' | xargs sed -i -e 's|env python|env python2|g' -e 's|bin/python|bin/python2|g'
+	touch $@
+
+$(CUDASDK)-uninstall: $(CUDASDK)-$(CUDASDK_VERSION)/pkg
+	rm -rf  "$(PREFIX)/opt/$(CUDASDK)/"
+$(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
+	cd $(CUDASDK)-$(CUDASDK_VERSION)/pkg \
+		&& perl install-linux.pl -prefix="$(PREFIX)/opt/$(CUDASDK)" -noprompt \
+		&& perl install-sdk-linux.pl -cudaprefix="$(PREFIX)/opt/$(CUDASDK)" -prefix="$(PREFIX)/opt/$(CUDASDK)/samples" -noprompt \
+		&& sed -i "/unsupported GNU/d" $(PREFIX)/opt/$(CUDASDK)/include/host_config.h \
+		&& cd .. \
+		&& cd nvdrv && cp lib* $(PREFIX)/opt/$(CUDASDK)/lib64/ \
+		&& ls | grep libcuda.so. | while read A; do (cd $(PREFIX)/opt/$(CUDASDK)/lib64/; ln -s $$A libcuda.so; ln -s $$A libcuda.so.1; cd $(PREFIX)/lib; ln -s ../opt/$(CUDASDK)/lib64/$$A libcuda.so; ln -s ../opt/$(CUDASDK)/lib64/$$A libcuda.so.1) ; done \
+		&& ls | grep libnvcuvid.so. | while read A; do (cd $(PREFIX)/opt/$(CUDASDK)/lib64/; ln -s $$A libnvcuvid.so; ln -s $$A libnvcuvid.so.1; cd $(PREFIX)/lib; ln -s ../opt/$(CUDASDK)/lib64/$$A libnvcuvid.so; ln -s ../opt/$(CUDASDK)/lib64/$$A libnvcuvid.so.1) ; done
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(CUDASDK)-install
+FL_UNINSTALL+=$(CUDASDK)-uninstall
+
+########################################
+# IPPICV
+IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
+ifdef SystemRoot
+   # windows
+   IPPICV_SRC_BASE=windows-b59f865d1ba16e8c84124e19d78eec57/ippicv_windows_20141027.zip
+else
+   ifeq ($(shell uname), Linux)
+      # linux
+      IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
+   else
+      # MAC?
+      IPPICV_SRC_BASE=macosx-9662fe0694a67e59491a0dcc82fa26e0/ippicv_macosx_20141027.tgz
+   endif
+endif
+IPPICV_SRC=$(notdir $(IPPICV_SRC_BASE))
+
+$(DN_SRC)/$(IPPICV_SRC):
+	wget -O $@ -c http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/$(IPPICV_SRC)
+
+########################################
+# refer: https://aur.archlinux.org/packages/op/opencv-cuda-all/PKGBUILD
+# https://aur.archlinux.org/packages/op/opencv-cuda-qt/PKGBUILD
+# https://projects.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/opencv
+
+OPENCV=opencv
+OPENCV_VERSION=2.4.8
+OPENCV_VERSION=2.4.11
+OPENCV_VERSION=2.4.10
+OPENCV_VERSION=2.4.9
+OPENCV_VERSION=3.0.0
+OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
+OPENCV_URL=https://github.com/Itseez/opencv/archive/$(OPENCV_VERSION).tar.gz
+#http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.8/opencv-2.4.8.zip
+
+FL_DEP_OPENCV= \
+	$(ZLIB)-install \
+	$(LIBPNG)-install \
+	$(LIBDC1394)-install \
+	$(XVIDCORE)-install \
+	$(CMAKE)-install \
+	$(PREFIX)/lib/libfaac.a \
+	$(FFMPEG)-install \
+	$(OPENEXR)-install \
+	$(OPENCV_GPU_SUPPORT_DEPEND) \
+	$(NULL)
+
+
+# options for gpu/cuda
+# -D WITH_QT=ON -D WITH_CUDA=ON -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 -D WITH_CUBLAS=ON -D WITH_NVCUVID=ON -D CUDA_FAST_MATH=ON
+# if nvidia card is old and has only 1:1 Compute Cappability
+
+
+# use released files
+$(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPENCV_URL) -O $(DN_SRC)/$(OPENCV_SRC)
+	touch $@
+$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
+	rm -rf opencv*
+	tar -xf $(DN_SRC)/$(OPENCV_SRC)
+	#mv opencv* $(OPENCV)-$(OPENCV_VERSION)
+	touch $@
+
+
+# use git instead
+#OPENCV_VERSION=git
+#OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION)/.git
+#OPENCV_URL=https://github.com/Itseez/opencv.git
+
+#$(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
+#	if [ -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); fi
+#	touch $@
+
+#$(OPENCV)-$(OPENCV_VERSION)/.git: $(DN_SRC)/$(OPENCV_SRC)
+#	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull
+#	if [ -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then cd $(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); fi
+
+#$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git $(FL_DEP_OPENCV)
+#	cd $(OPENCV)-$(OPENCV_VERSION)/ && git pull
+#	touch $@
+
+#$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md
+### END of git
+
+
+$(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_SRC)/$(IPPICV_SRC) $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt
+	mkdir -p $(dir $@)
+	cp $(DN_SRC)/$(IPPICV_SRC) $@
+
+$(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE)
+	cd $(OPENCV)-$(OPENCV_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+			-D CMAKE_BUILD_TYPE=RELEASE \
+			-D CMAKE_INSTALL_PREFIX=$(PREFIX) \
+			-D CMAKE_SKIP_RPATH=ON \
+			$(CMAKE_ARCH_FLAGS) \
+			-D CMAKE_VERBOSE_MAKEFILE=ON -D CMAKE_VERBOSE=ON \
+			-D BUILD_opencv_python=OFF -D WITH_QT=OFF \
+			-D BUILD_opencv_java=OFF -D BUILD_FAT_JAVA_LIB=OFF \
+			-D BUILD_opencv_nonfree=ON \
+			-D BUILD_opencv_superres=ON \
+			-D BUILD_EXAMPLES=ON \
+			-D INSTALL_C_EXAMPLES=ON \
+			-D BUILD_opencv_apps=OFF -D BUILD_ANDROID_EXAMPLES=OFF \
+			-D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_TESTS=OFF \
+			-D BUILD_ZLIB=ON \
+			-D BUILD_PNG=ON \
+			-D BUILD_TIFF=ON \
+			-D BUILD_JASPER=ON \
+			-D BUILD_JPEG=ON \
+			-D BUILD_OPENEXR=ON \
+			-D BUILD_SHARED_LIBS=ON \
+			-D BUILD_WITH_DEBUG_INFO=OFF \
+			$(OPENCV_GPU_SUPPORT_CMAKE) \
+			-D WITH_OPENCL=ON \
+			-D WITH_OPENGL=ON \
+			-D WITH_TBB=ON \
+			-D WITH_1394=ON \
+			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX)/include -D FFMPEG_LIB_DIR=$(PREFIX)/lib \
+			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			.. \
+			$(NULL)
+# -D BZIP2_LIBRARIES=$(PREFIX)/lib/libbz2.a
+
+$(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
+$(PREFIX)/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && make install
+	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX)/lib
+
+$(OPENCV)-uninstall: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && make uninstall
+$(OPENCV)-install: $(PREFIX)/lib/libopencv_core.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(OPENCV)-install
+FL_UNINSTALL+=$(OPENCV)-uninstall
+
+########################################
+MEDIAMETRICS=mediametrics
+
+FL_DEP_MEDIAMETRICS=$(OPENCV)-install
+
+####################
+MEDIAMETRICS_VERSION=0.2.0
+MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION).tar.gz
+MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics/archive/$(MEDIAMETRICS_SRC)
+
+FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS_SRC)
+
+$(DN_SRC)/$(MEDIAMETRICS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(MEDIAMETRICS_URL)
+	touch $@
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS_SRC)
+	tar -xf $(DN_SRC)/$(MEDIAMETRICS_SRC)
+	touch $@
+#$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
+#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
+#$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure $(FL_DEP_MEDIAMETRICS)
+#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib ./configure --prefix=$(PREFIX)
+
+####################
+MEDIAMETRICS_VERSION=git
+MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
+MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics.git
+
+FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
+
+$(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/created
+	git clone $(MEDIAMETRICS_URL) $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)
+	touch $@
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
+	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && git pull
+#	rm -rf $(DN_TOP)/$(MEDIAMETRICS)*
+#	cp -r $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) $(DN_TOP)/
+	if [ -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
+	touch $@
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib ./configure --prefix=$(PREFIX) $(MEDIAMETRICS_GPU_SUPPORT_CONF)
+####################
+
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX)/bin/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make install
+
+$(MEDIAMETRICS)-uninstall: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make uninstall
+$(MEDIAMETRICS)-install: $(PREFIX)/bin/mediametrics
+	touch $@
+
+#FL_DEPENDENCES_FFMPEG+=$(MEDIAMETRICS)-install
+FL_UNINSTALL+=$(MEDIAMETRICS)-uninstall
+
+########################################
+GPAC=gpac
+#GPAC_VERSION=0.5.0
+#GPAC_SRC=$(GPAC)-v$(GPAC_VERSION).tar.gz
+#GPAC_URL=http://sourceforge.net/projects/gpac/files/GPAC/GPAC%200.5.0/$(GPAC_SRC)
+
+GPAC_VERSION=svn
+GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/gpac/configure
+GPAC_URL=svn://svn.code.sf.net/p/gpac/code/trunk
+
+FL_DEP_GPAC= \
+	$(FREETYPE)-install \
+	$(XVIDCORE)-install \
+	$(THEORA)-install \
+	$(VORBIS)-install \
+	$(OGG)-install \
+	$(LIBPNG)-install \
+	$(ZLIB)-install \
+	$(CMAKE)-install \
+	$(FFMPEG)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure: $(DN_SRC)/created
+	svn checkout $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)
+	touch $@
+$(GPAC)-$(GPAC_VERSION)/gpac/configure: $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure
+#	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(GPAC)*
+	cp -r $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(GPAC)-$(GPAC_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	touch $@
+$(GPAC)-$(GPAC_VERSION)/mypatched: $(DN_PATCH)/pbs-gpac-svn-1.patch $(GPAC)-$(GPAC_VERSION)/gpac/configure
+	cd $(GPAC)-$(GPAC_VERSION)/ && svn revert -R .
+	cd $(GPAC)-$(GPAC_VERSION)/ && patch -p0 < $(DN_PATCH)/pbs-gpac-svn-1.patch
+	touch $@
+#SpiderMonkey --use-js=no,local
+# --disable-ttxt
+# --use-jpeg=no,local
+# --use-faad=no,local
+# --use-mad=no,local
+# --use-ffmpeg=no,local
+# --use-openjpeg=no,system,local
+# --use-a52=no,system,local
+# -lfaac -lx264
+$(GPAC)-$(GPAC_VERSION)/gpac/Makefile: $(GPAC)-$(GPAC_VERSION)/mypatched $(FL_DEP_GPAC)
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) \
+		--extra-cflags="-I$(PREFIX)/include" \
+		--extra-ldflags="-L$(PREFIX)/lib -lxvidcore -ltheora -lvorbis -logg -lfreetype -lpng -lz" \
+		--use-zlib=system \
+		--use-png=local \
+		--use-ft=local \
+		--use-ogg=system --use-vorbis=system --use-theora=system \
+		--use-ffmpeg=no --use-xvid=local \
+		--static-modules --enable-static-bin --static-mp4box \
+		--enable-player \
+		$(NULL)
+$(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/Makefile
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make $(MAKE_ARG)
+$(PREFIX)/bin/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make install
+
+$(GPAC)-uninstall: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make uninstall
+$(GPAC)-install: $(PREFIX)/bin/MP4Box
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure
+#FL_DEPENDENCES_FFMPEG+=$(GPAC)-install
+FL_UNINSTALL+=$(GPAC)-uninstall
+
+########################################
+.PHONY: get-sources
+
+$(DN_SRC)/created:
+	make -p $(DN_SRC)
+	touch $@
+
+get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
+
+ffmpeg: $(FFMPEG)-install
+
+opencv: $(OPENCV)-install
+
+mediametrics: $(MEDIAMETRICS)-install
+
+gpac: $(GPAC)-install
+
+uninstall: $(FL_UNINSTALL)
+
+clean:
+	@rm -rf target $(FL_DEPENDENCES_FFMPEG) $(FL_DEP_GPAC) $(FL_DEP_MEDIAMETRICS) $(FL_DEP_OPENCV)
+
+distclean: clean
+	@mkdir -p target/
+	@touch i_should_be_removed
+	@(echo "nullname" && ls) | grep -v run.sh | grep -v target | grep -v Makefile | grep -v distclean | grep -v sources | grep -v .patch | xargs sh -c 'mv "$$@" target'
+	@rm -rf target

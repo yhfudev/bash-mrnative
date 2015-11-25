@@ -1,0 +1,55 @@
+Index: gpac/applications/mp4box/Makefile
+===================================================================
+--- gpac/applications/mp4box/Makefile	(revision 5619)
++++ gpac/applications/mp4box/Makefile	(working copy)
+@@ -26,10 +26,10 @@
+ EXE=.exe
+ PROG=MP4Box$(EXE)
+ ifeq ($(MP4BOX_STATIC),yes)
++LINKFLAGS+=-lgpac_static $(EXTRALIBS)
+ ifneq ($(CONFIG_ZLIB),no)
+ LINKFLAGS+=-lz
+ endif
+-LINKFLAGS+=-lgpac_static $(EXTRALIBS)
+ else
+ LINKFLAGS+=-lgpac
+ endif
+@@ -39,10 +39,10 @@
+ EXT=
+ PROG=MP4Box
+ ifeq ($(MP4BOX_STATIC),yes)
++LINKFLAGS+=-lgpac_static $(EXTRALIBS) $(GPAC_SH_FLAGS)
+ ifneq ($(CONFIG_ZLIB),no)
+ LINKFLAGS+=-lz
+ endif
+-LINKFLAGS+=-lgpac_static $(EXTRALIBS) $(GPAC_SH_FLAGS)
+ 
+ # spidermonkey support
+ ifeq ($(CONFIG_JS),no)
+Index: gpac/configure
+===================================================================
+--- gpac/configure	(revision 5619)
++++ gpac/configure	(working copy)
+@@ -2355,7 +2355,7 @@
+     has_openhevc="no"
+     has_freenect="no"
+     has_platinum="no"
+-    disable_player="yes"
++    #disable_player="yes"
+ fi
+ 
+ if test "$cpu" = "sh4"; then
+Index: gpac/src/Makefile
+===================================================================
+--- gpac/src/Makefile	(revision 5619)
++++ gpac/src/Makefile	(working copy)
+@@ -212,6 +212,9 @@
+ 
+ CFLAGS+= -DGPAC_STATIC_MODULES
+ 
++OBJS+=../modules/vtt_in/vtt_in.o
++OBJS+=../modules/vtt_in/vtt_dec.o
++
+ OBJS+=../modules/aac_in/aac_in.o
+ ifneq ($(CONFIG_FAAD), no)
+ OBJS+=../modules/aac_in/faad_dec.o

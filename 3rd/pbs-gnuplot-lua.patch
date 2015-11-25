@@ -1,0 +1,21 @@
+diff -Nur gnuplot-5.0.1-origin/term/lua.trm gnuplot-5.0.1/term/lua.trm
+--- gnuplot-5.0.1-origin/term/lua.trm	2014-10-28 23:28:24.000000000 -0400
++++ gnuplot-5.0.1/term/lua.trm	2015-11-03 16:31:06.187871495 -0500
+@@ -251,7 +251,7 @@
+       msg = luaL_checkstring(L, 1);
+       break;
+     case 2:
+-      t_num = luaL_checkint(L, 1);
++      t_num = luaL_checkinteger(L, 1);
+       msg  = luaL_checkstring(L, 2);
+       break;
+     default:
+@@ -285,7 +285,7 @@
+       msg = luaL_checkstring(L, 1);
+       break;
+     case 2:
+-      t_num = luaL_checkint(L, 1);
++      t_num = luaL_checkinteger(L, 1);
+       msg = luaL_checkstring(L, 2);
+       break;
+     default:

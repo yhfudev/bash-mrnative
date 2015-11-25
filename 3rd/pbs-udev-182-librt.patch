@@ -1,0 +1,21 @@
+diff -Nur udev-182-origin/configure.ac udev-182/configure.ac
+--- udev-182-origin/configure.ac	2012-03-18 13:26:27.301301530 -0400
++++ udev-182/configure.ac	2015-11-03 21:24:47.091965485 -0500
+@@ -6,7 +6,7 @@
+        [http://www.kernel.org/pub/linux/utils/kernel/hotplug/udev.html])
+ AC_CONFIG_SRCDIR([src/udevd.c])
+ AC_CONFIG_AUX_DIR([build-aux])
+-AM_INIT_AUTOMAKE([check-news foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
++AM_INIT_AUTOMAKE([check-news foreign -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
+ AC_USE_SYSTEM_EXTENSIONS
+ AC_SYS_LARGEFILE
+ AC_CONFIG_MACRO_DIR([m4])
+@@ -21,7 +21,7 @@
+ AC_PATH_PROG([XSLTPROC], [xsltproc])
+ AM_CONDITIONAL(HAVE_XSLTPROC, test x"$XSLTPROC" != x)
+ 
+-AC_SEARCH_LIBS([clock_gettime], [rt], [], [AC_MSG_ERROR([POSIX RT library not found])])
++AC_SEARCH_LIBS([mq_open], [rt], [], [AC_MSG_ERROR([POSIX RT library not found])])
+ 
+ PKG_CHECK_MODULES(BLKID, blkid >= 2.20)
+ 

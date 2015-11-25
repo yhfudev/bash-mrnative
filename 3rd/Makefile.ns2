@@ -1,0 +1,422 @@
+# Auto-Build ns2 from source
+
+# Prerequist:
+# 1. basic compiler
+#  1) RedHat/CentOS:
+#     yum -y groupinstall "Development Tools"
+#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#  2) Debian/Ubuntu
+#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+
+######################################################################
+# define the directory stores all of the source code packages
+DN_SRC=$(PWD)/sources
+DN_TOP=$(PWD)
+DN_PATCH=$(PWD)/sources
+
+PREFIX=$(PWD)/target
+
+STRLOGO=yhfudev
+
+empty:=
+space:= $(empty) $(empty)
+LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}'))
+
+#MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l )
+MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 2 + 1;}')
+
+ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
+		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig \
+		LD_LIBRARY_PATH=$(PREFIX)/lib:$(LD_PATH_SYS) \
+		$(NULL)
+
+OSTYP:=$(shell uname -m)
+ifeq ($(OSTYP),x86_64)
+CMAKE_ARCH_FLAGS = -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSSE3=OFF
+else
+CMAKE_ARCH_FLAGS = -DENABLE_SSE=OFF -DENABLE_SSE2=OFF -DENABLE_SSSE3=OFF
+endif
+
+######################################################################
+#all: test
+all: get-sources ns2
+
+.PHONY: clean
+
+$(DN_SRC)/created:
+	mkdir -p $(DN_SRC)
+	touch $(DN_SRC)/created
+
+######################################################################
+#CURL=curl -s -L -O
+WGET=wget -P $(DN_SRC)
+
+FL_DEPENDENCES_FFMPEG=
+FL_DEPENDENCES_FFMPEG_OTHERS=
+
+FL_SOURCES=
+FL_SOURCES_OTHERS=
+
+######################################################################
+ZLIB=zlib
+ZLIB_VERSION=1.2.8
+ZLIB_SRC=$(ZLIB)-$(ZLIB_VERSION).tar.gz
+ZLIB_URL=http://zlib.net/$(ZLIB_SRC)
+
+$(DN_SRC)/$(ZLIB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(ZLIB_URL)
+	touch $@
+$(ZLIB)-$(ZLIB_VERSION)/gzlib.c: $(DN_SRC)/$(ZLIB_SRC)
+	tar -xf $(DN_SRC)/$(ZLIB_SRC)
+	touch $@
+$(ZLIB)-$(ZLIB_VERSION)/zconf.h: $(ZLIB)-$(ZLIB_VERSION)/gzlib.c
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && ./configure --prefix=$(PREFIX)
+$(ZLIB)-$(ZLIB_VERSION)/libz.a: $(ZLIB)-$(ZLIB_VERSION)/zconf.h
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libz.a: $(ZLIB)-$(ZLIB_VERSION)/libz.a
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make install
+
+$(ZLIB)-uninstall: $(ZLIB)-$(ZLIB_VERSION)/libz.a
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && make uninstall
+$(ZLIB)-install: $(PREFIX)/lib/libz.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(ZLIB_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(ZLIB)-install
+FL_UNINSTALL+=$(ZLIB)-uninstall
+
+########################################
+TCL=tcl
+TCL_VERSION=8.6.4
+#TCL_SRC=$(TCL)-core$(TCL_VERSION)-src.tar.gz
+#TCL_URL="http://downloads.sourceforge.net/sourceforge/tcl/$(TCL_SRC)"
+TCL_SRC=$(TCL)$(TCL_VERSION)-src.tar.gz
+TCL_URL="http://sourceforge.net/projects/tcl/files/Tcl/$(TCL_VERSION)/$(TCL_SRC)"
+
+FL_DEP_TCL= \
+	$(ZLIB)-install \
+	$(NULL)
+
+$(DN_SRC)/$(TCL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(TCL_URL)
+	touch $@
+$(TCL)-$(TCL_VERSION)/unix/configure: $(DN_SRC)/$(TCL_SRC)
+	tar -xf $(DN_SRC)/$(TCL_SRC)
+	mv $(TCL)$(TCL_VERSION) $(TCL)-$(TCL_VERSION)/
+	#cd $(TCL)-$(TCL_VERSION)/unix && ./bootstrap.sh
+	touch $@
+#$(TCL)-$(TCL_VERSION)/mypatched: $(DN_PATCH)/pbs-libTCL-libvpx.patch $(TCL)-$(TCL_VERSION)/unix/configure
+	#cd $(TCL)-$(TCL_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libTCL-libvpx.patch
+	#touch $@
+$(TCL)-$(TCL_VERSION)/unix/Makefile: $(TCL)-$(TCL_VERSION)/unix/configure $(FL_DEP_TCL)
+	cd $(TCL)-$(TCL_VERSION)/unix/ && ./configure --without-x --enable-gcc --disable-shared --prefix=/
+$(TCL)-$(TCL_VERSION)/unix/tclsh: $(TCL)-$(TCL_VERSION)/unix/Makefile
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make $(MAKE_ARG)
+$(PREFIX)/bin/tclsh: $(TCL)-$(TCL_VERSION)/unix/tclsh
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make INSTALL_ROOT=$(PREFIX) install install-private-headers
+
+$(TCL)-uninstall: $(TCL)-$(TCL_VERSION)/unix/tclsh
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make uninstall
+$(TCL)-install: $(PREFIX)/bin/tclsh
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(TCL_SRC)
+#FL_DEP_OTCL+=$(TCL)-install
+FL_UNINSTALL+=$(TCL)-uninstall
+
+########################################
+LIBXFT=libXft
+LIBXFT_VERSION=2.3.2
+LIBXFT_SRC=$(LIBXFT)-$(LIBXFT_VERSION).tar.gz
+LIBXFT_URL="http://www.x.org/releases/individual/lib/$(LIBXFT_SRC)"
+
+$(DN_SRC)/$(LIBXFT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXFT_URL)
+	touch $@
+$(LIBXFT)-$(LIBXFT_VERSION)/configure: $(DN_SRC)/$(LIBXFT_SRC)
+	tar -xf $(DN_SRC)/$(LIBXFT_SRC)
+	#mv $(LIBXFT)$(LIBXFT_VERSION) $(LIBXFT)-$(LIBXFT_VERSION)/
+	touch $@
+$(LIBXFT)-$(LIBXFT_VERSION)/Makefile: $(LIBXFT)-$(LIBXFT_VERSION)/configure $(FL_DEP_LIBXFT)
+	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && ./configure --prefix=/ --enable-static --disable-shared
+$(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la: $(LIBXFT)-$(LIBXFT_VERSION)/Makefile
+	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/$(LIBXFT).a: $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la
+	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make DESTDIR=$(PREFIX) install
+
+$(LIBXFT)-uninstall: $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).a
+	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
+$(LIBXFT)-install: $(PREFIX)/lib/$(LIBXFT).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXFT_SRC)
+#FL_DEP_GNUPLOT+=$(LIBXFT)-install
+FL_UNINSTALL+=$(LIBXFT)-uninstall
+
+########################################
+LIBXSS=libXScrnSaver
+LIBXSSLIB=libXss
+LIBXSS_VERSION=1.2.2
+LIBXSS_SRC=$(LIBXSS)-$(LIBXSS_VERSION).tar.gz
+LIBXSS_URL="http://www.x.org/releases/individual/lib/$(LIBXSS_SRC)"
+
+$(DN_SRC)/$(LIBXSS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXSS_URL)
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/configure: $(DN_SRC)/$(LIBXSS_SRC)
+	tar -xf $(DN_SRC)/$(LIBXSS_SRC)
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/Makefile: $(LIBXSS)-$(LIBXSS_VERSION)/configure
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
+	    && ./configure --prefix=/ --sysconfdir=/etc
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la: $(LIBXSS)-$(LIBXSS_VERSION)/Makefile $(FL_DEP_LIBXSS)
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX)/lib/$(LIBXSSLIB).a: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make DESTDIR=$(PREFIX) install
+
+$(LIBXSS)-uninstall: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
+$(LIBXSS)-install: $(PREFIX)/lib/$(LIBXSSLIB).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXSS_SRC)
+#FL_DEP_GNUPLOT+=$(LIBXSS)-install
+FL_UNINSTALL+=$(LIBXSS)-uninstall
+
+########################################
+LIBXT=libXt
+LIBXT_VERSION=1.1.5
+LIBXT_SRC=$(LIBXT)-$(LIBXT_VERSION).tar.gz
+LIBXT_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXT_SRC)"
+
+$(DN_SRC)/$(LIBXT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXT_URL)
+	touch $@
+$(LIBXT)-$(LIBXT_VERSION)/configure: $(DN_SRC)/$(LIBXT_SRC)
+	tar -xf $(DN_SRC)/$(LIBXT_SRC)
+	touch $@
+$(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure
+	cd $(LIBXT)-$(LIBXT_VERSION)/ && ./configure --prefix=/ --sysconfdir=/etc/ --disable-static
+	touch $@
+$(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile $(FL_DEP_LIBXT)
+	cd $(LIBXT)-$(LIBXT_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX)/lib/$(LIBXT).a: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
+	cd $(LIBXT)-$(LIBXT_VERSION)/ \
+	    && make DESTDIR=$(PREFIX) install \
+	    && install -m755 -d "$(PREFIX)/share/licenses/$(LIBXT)" \
+	    && install -m644 COPYING "$(PREFIX)/share/licenses/$(LIBXT)"
+
+$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
+	cd $(LIBXT)-$(LIBXT_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
+$(LIBXT)-install: $(PREFIX)/lib/$(LIBXT).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXT_SRC)
+#FL_DEP_GNUPLOT+=$(LIBXT)-install
+FL_UNINSTALL+=$(LIBXT)-uninstall
+
+########################################
+TK=tk
+TK_VERSION=8.6.4
+TK_SRC=$(TK)$(TK_VERSION)-src.tar.gz
+TK_URL="http://sourceforge.net/projects/tcl/files/Tcl/$(TK_VERSION)/$(TK_SRC)"
+
+FL_DEP_TK= \
+	$(TCL)-install \
+	$(LIBXSS)-install \
+	$(LIBXFT)-install \
+	$(NULL)
+
+$(DN_SRC)/$(TK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(TK_URL)
+	touch $@
+$(TK)-$(TK_VERSION)/unix/configure: $(DN_SRC)/$(TK_SRC)
+	tar -xf $(DN_SRC)/$(TK_SRC)
+	mv $(TK)$(TK_VERSION) $(TK)-$(TK_VERSION)/
+	#cd $(TK)-$(TK_VERSION)/ && ./bootstrap.sh
+	touch $@
+$(TK)-$(TK_VERSION)/unix/Makefile: $(TK)-$(TK_VERSION)/unix/configure $(FL_DEP_TK)
+	cd $(TK)-$(TK_VERSION)/unix && ./configure --without-x --enable-gcc --disable-shared --disable-rpath --enable-threads --prefix=$(PREFIX)
+$(TK)-$(TK_VERSION)/unix/wish: $(TK)-$(TK_VERSION)/unix/Makefile
+	cd $(TK)-$(TK_VERSION)/unix/ && make $(MAKE_ARG)
+$(PREFIX)/bin/wish: $(TK)-$(TK_VERSION)/unix/wish
+	cd $(TK)-$(TK_VERSION)/unix/ && make install
+
+$(TK)-uninstall: $(TK)-$(TK_VERSION)/unix/wish
+	cd $(TK)-$(TK_VERSION)/unix/ && make uninstall
+$(TK)-install: $(PREFIX)/bin/wish
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(TK_SRC)
+#FL_DEP_OTCL+=$(TK)-install
+FL_UNINSTALL+=$(TK)-uninstall
+
+########################################
+OTCL=otcl
+OTCL_VERSION=1.14
+OTCL_SRC=$(OTCL)-src-$(OTCL_VERSION).tar.gz
+OTCL_URL="http://sourceforge.net/projects/otcl-tclcl/files/OTcl/$(OTCL_VERSION)/$(OTCL_SRC)"
+
+FL_DEP_OTCL= \
+	$(TK)-install \
+	$(LIBXT)-install \
+	$(NULL)
+
+$(DN_SRC)/otcl-1.14-tcl86-compat.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://aur.archlinux.org/cgit/aur.git/plain/otcl-1.14-tcl86-compat.patch?h=otcl
+	touch $@
+
+$(DN_SRC)/$(OTCL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OTCL_URL)
+	touch $@
+$(OTCL)-$(OTCL_VERSION)/configure: $(DN_SRC)/$(OTCL_SRC)
+	tar -xf $(DN_SRC)/$(OTCL_SRC)
+	touch $@
+
+$(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL)-$(OTCL_VERSION)/configure
+	cd $(OTCL)-$(OTCL_VERSION)/ && patch -uNp1 < $(DN_SRC)/otcl-1.14-tcl86-compat.patch
+	touch $@
+
+	    && ./configure --prefix=/ --sysconfdir=/etc
+
+$(OTCL)-$(OTCL_VERSION)/Makefile: $(OTCL)-$(OTCL_VERSION)/mypatched $(OTCL)-$(OTCL_VERSION)/configure $(FL_DEP_OTCL)
+	#cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-lXft -lz -lpthread" ./configure --disable-static --enable-shlib --enable-release --prefix=$(PREFIX) --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=no --without-tk --x-libraries= --x-includes=
+	cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-lXft -lz -lpthread" ./configure --disable-static --enable-shlib --enable-release --prefix=/ --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
+$(OTCL)-$(OTCL_VERSION)/otclsh: $(OTCL)-$(OTCL_VERSION)/Makefile
+	cd $(OTCL)-$(OTCL_VERSION)/ && make LIB+="-L$(PREFIX)/lib `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(MAKE_ARG)
+$(PREFIX)/bin/otclsh: $(OTCL)-$(OTCL_VERSION)/otclsh
+	cd $(OTCL)-$(OTCL_VERSION)/ && make DESTDIR=$(PREFIX) install
+	chmod 644 $(PREFIX)/lib/*.a
+
+$(OTCL)-uninstall: $(OTCL)-$(OTCL_VERSION)/otclsh
+	cd $(OTCL)-$(OTCL_VERSION)/ && make uninstall
+$(OTCL)-install: $(PREFIX)/bin/otclsh
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OTCL_SRC)
+#FL_DEP_NS2+=$(OTCL)-install
+FL_UNINSTALL+=$(OTCL)-uninstall
+
+
+########################################
+TCLCL=tclcl
+TCLCL_VERSION=1.20
+TCLCL_SRC=$(TCLCL)-src-$(TCLCL_VERSION).tar.gz
+TCLCL_URL=http://sourceforge.net/projects/otcl-tclcl/files/TclCL/$(TCLCL_VERSION)/$(TCLCL_SRC)
+
+FL_DEP_TCLCL= \
+	$(OTCL)-install \
+	$(NULL)
+
+$(DN_SRC)/tclcl-1.20-tcl86-compat.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://aur.archlinux.org/cgit/aur.git/plain/tclcl-1.20-tcl86-compat.patch?h=tclcl
+	touch $@
+
+$(DN_SRC)/$(TCLCL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(TCLCL_URL)
+	touch $@
+
+$(TCLCL)-$(TCLCL_VERSION)/configure: $(DN_SRC)/$(TCLCL_SRC)
+	tar -xf $(DN_SRC)/$(TCLCL_SRC)
+	touch $@
+
+$(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(TCLCL)-$(TCLCL_VERSION)/configure
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && patch -uNp1 < $(DN_SRC)/tclcl-1.20-tcl86-compat.patch
+	touch $@
+
+$(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
+	#cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=$(PREFIX)/lib/tclcl/ --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX) --with-otcl=$(PREFIX) --with-tk=no --without-tk --x-libraries= --x-includes=
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=$(PREFIX)/lib/tclcl/ --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX) --with-otcl=$(PREFIX) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
+$(TCLCL)-$(TCLCL_VERSION)/tcl2c++: $(TCLCL)-$(TCLCL_VERSION)/Makefile
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/tclcl/bin/tcl2c++: $(TCLCL)-$(TCLCL_VERSION)/tcl2c++
+	cd $(TCLCL)-$(TCLCL_VERSION)/ \
+        && install -d $(PREFIX)/lib/tclcl/bin \
+        && install -d $(PREFIX)/lib/tclcl/include \
+        && install -d $(PREFIX)/lib/tclcl/lib
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && make install
+	chmod 644 $(PREFIX)/lib/tclcl/lib/*.a
+
+$(TCLCL)-uninstall: $(TCLCL)-$(TCLCL_VERSION)/tcl2c++
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && make uninstall
+$(TCLCL)-install: $(PREFIX)/lib/tclcl/bin/tcl2c++
+	touch $@
+
+
+FL_SOURCES+=$(DN_SRC)/$(TCLCL_SRC)
+FL_DEP_NS2+=$(TCLCL)-install
+FL_UNINSTALL+=$(TCLCL)-uninstall
+
+########################################
+# arch linux package: https://aur.archlinux.org/packages/ns/
+NS2=ns
+NS2_VERSION=2.35
+NS2_SRC=$(NS2)-src-$(NS2_VERSION).tar.gz
+NS2_URL=http://downloads.sourceforge.net/sourceforge/nsnam/ns-2/$(NS2_VERSION)/$(NS2_SRC)
+
+
+$(DN_SRC)/ns-2.35-getopts.patch: $(DN_SRC)/created
+	$(WGET) -O $(DN_SRC)/ns-2.35-getopts.patch       -c https://aur.archlinux.org/cgit/aur.git/plain/ns-2.35-getopts.patch?h=ns
+	$(WGET) -O $(DN_SRC)/ns-2.35-linkstate-erase.fix -c https://aur.archlinux.org/cgit/aur.git/plain/ns-2.35-linkstate-erase.fix?h=ns
+	$(WGET) -O $(DN_SRC)/ns-2.35-tcl86.patch         -c https://aur.archlinux.org/cgit/aur.git/plain/ns-2.35-tcl86.patch?h=ns
+	touch $@
+
+$(DN_SRC)/$(NS2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(NS2_URL)
+	touch $@
+$(NS2)-$(NS2_VERSION)/configure: $(DN_SRC)/$(NS2_SRC)
+	tar -xf $(DN_SRC)/$(NS2_SRC)
+	touch $@
+
+$(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VERSION)/configure
+	cd $(NS2)-$(NS2_VERSION)/ \
+	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-linkstate-erase.fix \
+	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-tcl86.patch \
+	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-getopts.patch
+	touch $@
+
+$(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/mypatched $(FL_DEP_NS2)
+	#cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=$(PREFIX) --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX)/lib/tclcl --without-tk --x-libraries= --x-includes=
+	cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=/ --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX)/lib/tclcl --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
+$(NS2)-$(NS2_VERSION)/ns: $(NS2)-$(NS2_VERSION)/Makefile
+	cd $(NS2)-$(NS2_VERSION)/ && make LIB+="-L$(PREFIX)/lib/tclcl/lib -L$(PREFIX)/lib -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
+$(PREFIX)/bin/ns: $(NS2)-$(NS2_VERSION)/ns
+	install -d $(PREFIX)/bin
+	install -d $(PREFIX)/share
+	install -d $(PREFIX)/man/man1
+	cd $(NS2)-$(NS2_VERSION)/ && make DESTDIR=$(PREFIX)/ install
+	#mv $(PREFIX)/man $(PREFIX)/share
+
+$(NS2)-uninstall: $(NS2)-$(NS2_VERSION)/ns
+	cd $(NS2)-$(NS2_VERSION)/ && make uninstall
+$(NS2)-install: $(PREFIX)/bin/ns
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NS2_SRC)
+#FL_DEP_NS2+=$(NS2)-install
+FL_UNINSTALL+=$(NS2)-uninstall
+
+########################################
+.PHONY: get-sources
+
+$(DN_SRC)/created:
+	make -p $(DN_SRC)
+	touch $@
+
+get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
+
+ns2: $(NS2)-install
+
+uninstall: $(FL_UNINSTALL)
+
+clean:
+	@rm -rf target $(FL_DEP_OTCL) $(FL_DEP_NS2)
+
+distclean: clean
+	@mkdir -p target/
+	@touch i_should_be_removed
+	@(echo "nullname" && ls) | grep -v run.sh | grep -v target | grep -v Makefile | grep -v distclean | grep -v sources | grep -v .patch | xargs sh -c 'mv "$$@" target'
+	@rm -rf target
