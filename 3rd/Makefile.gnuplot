@@ -13,78 +13,14 @@
 DN_SRC=$(PWD)/sources
 DN_TOP=$(PWD)
 DN_PATCH=$(PWD)/sources
-
 PREFIX=$(PWD)/target
-
 STRLOGO=yhfudev
 
-empty:=
-space:= $(empty) $(empty)
-LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}'))
-
-#MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l )
-MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 2 + 1;}')
-
-ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
-		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig \
-		LD_LIBRARY_PATH="$(PREFIX)/lib:$(LD_PATH_SYS)" \
-		$(NULL)
-
-OSTYP:=$(shell uname -m)
-ifeq ($(OSTYP),x86_64)
-CMAKE_ARCH_FLAGS = -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSSE3=OFF
-else
-CMAKE_ARCH_FLAGS = -DENABLE_SSE=OFF -DENABLE_SSE2=OFF -DENABLE_SSSE3=OFF
-endif
-
 ######################################################################
-#all: test
 all: get-sources gawk gnuplot
 
-.PHONY: clean
-
-$(DN_SRC)/created:
-	mkdir -p $(DN_SRC)
-	touch $(DN_SRC)/created
-
 ######################################################################
-#CURL=curl -s -L -O
-WGET=wget -P $(DN_SRC)
-
-FL_DEPENDENCES_FFMPEG=
-FL_DEPENDENCES_FFMPEG_OTHERS=
-
-FL_SOURCES=
-FL_SOURCES_OTHERS=
-
-########################################
-YASM=yasm
-YASM_VERSION=1.2.0
-YASM_VERSION=1.3.0
-YASM_SRC=$(YASM)-$(YASM_VERSION).tar.gz
-YASM_URL=http://www.tortall.net/projects/yasm/releases/$(YASM_SRC)
-
-$(DN_SRC)/$(YASM_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(YASM_URL)
-	touch $@
-$(YASM)-$(YASM_VERSION)/configure: $(DN_SRC)/$(YASM_SRC)
-	tar -xf $(DN_SRC)/$(YASM_SRC)
-	touch $@
-$(YASM)-$(YASM_VERSION)/Makefile: $(YASM)-$(YASM_VERSION)/configure
-	cd $(YASM)-$(YASM_VERSION)/ && ./configure --prefix=$(PREFIX)
-$(YASM)-$(YASM_VERSION)/yasm: $(YASM)-$(YASM_VERSION)/Makefile
-	cd $(YASM)-$(YASM_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/bin/yasm: $(YASM)-$(YASM_VERSION)/yasm
-	cd $(YASM)-$(YASM_VERSION)/ && make install
-
-$(YASM)-uninstall: $(YASM)-$(YASM_VERSION)/yasm
-	cd $(YASM)-$(YASM_VERSION)/ && make uninstall
-$(YASM)-install: $(PREFIX)/bin/yasm
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(YASM_SRC)
-#FL_DEP_GNUPLOT+=$(YASM)-install
-FL_UNINSTALL+=$(YASM)-uninstall
+include Makefile.common
 
 ########################################
 LIBXPM=libXpm
@@ -144,48 +80,6 @@ $(LIBTIFF)-install: $(PREFIX)/lib/libtiff.a
 FL_SOURCES+=$(DN_SRC)/$(LIBTIFF_SRC)
 #FL_DEP_GNUPLOT+=$(LIBTIFF)-install
 FL_UNINSTALL+=$(LIBTIFF)-uninstall
-
-########################################
-LVPX=libvpx
-#LVPX_VERSION=1.4.0
-#LVPX_SRC=$(LVPX)-v$(LVPX_VERSION).tar.bz2
-#LVPX_URL=http://webm.googlecode.com/files/$(LVPX_SRC)
-
-FL_DEP_LVPX= \
-	$(YASM)-install \
-	$(NULL)
-
-LVPX_VERSION=git
-LVPX_SRC=$(LVPX)-$(LVPX_VERSION)/configure
-LVPX_URL=https://chromium.googlesource.com/webm/libvpx
-$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/created
-	git clone $(LVPX_URL) $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)
-	touch $@
-$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
-	cd $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/ && git pull
-#	rm -rf $(DN_TOP)/$(LVPX)*
-#	cp -r $(DN_SRC)/$(LVPX)-$(LVPX_VERSION) $(DN_TOP)/
-	if [ -d "$(LVPX)-$(LVPX_VERSION)" ]; then cd $(LVPX)-$(LVPX_VERSION) && git pull; else git clone $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/ $(LVPX)-$(LVPX_VERSION); fi
-	touch $@
-$(LVPX)-$(LVPX_VERSION)/Makefile: $(LVPX)-$(LVPX_VERSION)/configure $(FL_DEP_LVPX)
-#disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
-#use shared:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
-	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --disable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
-
-$(LVPX)-$(LVPX_VERSION)/libvpx.a: $(LVPX)-$(LVPX_VERSION)/Makefile
-	cd $(LVPX)-* && $(ENV_COMPILE) make $(MAKE_ARG)
-
-$(PREFIX)/lib/libvpx.a: $(LVPX)-$(LVPX_VERSION)/libvpx.a
-	cd $(LVPX)-* && make install
-
-$(LVPX)-uninstall: $(LVPX)-$(LVPX_VERSION)/libvpx.a
-	cd $(LVPX)-* && make uninstall
-$(LVPX)-install: $(PREFIX)/lib/libvpx.a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
-FL_DEP_GNUPLOT+=$(LVPX)-install
-FL_UNINSTALL+=$(LVPX)-uninstall
 
 ########################################
 LUA=lua

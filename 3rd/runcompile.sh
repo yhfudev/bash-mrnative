@@ -47,6 +47,7 @@ compile_source () {
     sed -i "s|^PREFIX=.*$|PREFIX=${DN_TOP}/3rdbin/|g" Makefile 1>&2
     sed -i "s|^DN_PATCH=.*$|DN_PATCH=${DN_TOP}/3rd|g" Makefile 1>&2
     #sed -i "s|^USE_GPU=.*$|USE_GPU=1|g" Makefile 1>&2
+    cat "${DN_TOP}/3rd/${PARAM_MAKEFILE}" | grep ^include | awk '{print $2; }' | while read a ; do cp "${DN_TOP}/3rd/$a" .; done
 
     mkdir -p sources
     make get-sources 1>&2
