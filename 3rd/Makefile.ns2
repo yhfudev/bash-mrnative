@@ -46,11 +46,11 @@ $(TCL)-$(TCL_VERSION)/unix/configure: $(DN_SRC)/$(TCL_SRC)
 	#cd $(TCL)-$(TCL_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libTCL-libvpx.patch
 	#touch $@
 $(TCL)-$(TCL_VERSION)/unix/Makefile: $(TCL)-$(TCL_VERSION)/unix/configure $(FL_DEP_TCL)
-	cd $(TCL)-$(TCL_VERSION)/unix/ && ./configure --without-x --enable-gcc --disable-shared --prefix=/
+	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) ./configure --without-x --enable-gcc --disable-shared --prefix=$(PREFIX)
 $(TCL)-$(TCL_VERSION)/unix/tclsh: $(TCL)-$(TCL_VERSION)/unix/Makefile
 	cd $(TCL)-$(TCL_VERSION)/unix/ && make $(MAKE_ARG)
 $(PREFIX)/bin/tclsh: $(TCL)-$(TCL_VERSION)/unix/tclsh
-	cd $(TCL)-$(TCL_VERSION)/unix/ && make INSTALL_ROOT=$(PREFIX) install install-private-headers
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make install install-private-headers
 
 $(TCL)-uninstall: $(TCL)-$(TCL_VERSION)/unix/tclsh
 	cd $(TCL)-$(TCL_VERSION)/unix/ && make uninstall
@@ -60,100 +60,6 @@ $(TCL)-install: $(PREFIX)/bin/tclsh
 FL_SOURCES+=$(DN_SRC)/$(TCL_SRC)
 #FL_DEP_OTCL+=$(TCL)-install
 FL_UNINSTALL+=$(TCL)-uninstall
-
-########################################
-LIBXFT=libXft
-LIBXFT_VERSION=2.3.2
-LIBXFT_SRC=$(LIBXFT)-$(LIBXFT_VERSION).tar.gz
-LIBXFT_URL="http://www.x.org/releases/individual/lib/$(LIBXFT_SRC)"
-
-$(DN_SRC)/$(LIBXFT_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBXFT_URL)
-	touch $@
-$(LIBXFT)-$(LIBXFT_VERSION)/configure: $(DN_SRC)/$(LIBXFT_SRC)
-	tar -xf $(DN_SRC)/$(LIBXFT_SRC)
-	#mv $(LIBXFT)$(LIBXFT_VERSION) $(LIBXFT)-$(LIBXFT_VERSION)/
-	touch $@
-$(LIBXFT)-$(LIBXFT_VERSION)/Makefile: $(LIBXFT)-$(LIBXFT_VERSION)/configure $(FL_DEP_LIBXFT)
-	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && ./configure --prefix=/ --enable-static --disable-shared
-$(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la: $(LIBXFT)-$(LIBXFT_VERSION)/Makefile
-	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/$(LIBXFT).a: $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la
-	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make DESTDIR=$(PREFIX) install
-
-$(LIBXFT)-uninstall: $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).a
-	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
-$(LIBXFT)-install: $(PREFIX)/lib/$(LIBXFT).a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBXFT_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXFT)-install
-FL_UNINSTALL+=$(LIBXFT)-uninstall
-
-########################################
-LIBXSS=libXScrnSaver
-LIBXSSLIB=libXss
-LIBXSS_VERSION=1.2.2
-LIBXSS_SRC=$(LIBXSS)-$(LIBXSS_VERSION).tar.gz
-LIBXSS_URL="http://www.x.org/releases/individual/lib/$(LIBXSS_SRC)"
-
-$(DN_SRC)/$(LIBXSS_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBXSS_URL)
-	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/configure: $(DN_SRC)/$(LIBXSS_SRC)
-	tar -xf $(DN_SRC)/$(LIBXSS_SRC)
-	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/Makefile: $(LIBXSS)-$(LIBXSS_VERSION)/configure
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
-	    && ./configure --prefix=/ --sysconfdir=/etc
-	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la: $(LIBXSS)-$(LIBXSS_VERSION)/Makefile $(FL_DEP_LIBXSS)
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
-	    && make $(MAKE_ARG)
-$(PREFIX)/lib/$(LIBXSSLIB).a: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make DESTDIR=$(PREFIX) install
-
-$(LIBXSS)-uninstall: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
-$(LIBXSS)-install: $(PREFIX)/lib/$(LIBXSSLIB).a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBXSS_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXSS)-install
-FL_UNINSTALL+=$(LIBXSS)-uninstall
-
-########################################
-LIBXT=libXt
-LIBXT_VERSION=1.1.5
-LIBXT_SRC=$(LIBXT)-$(LIBXT_VERSION).tar.gz
-LIBXT_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXT_SRC)"
-
-$(DN_SRC)/$(LIBXT_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBXT_URL)
-	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/configure: $(DN_SRC)/$(LIBXT_SRC)
-	tar -xf $(DN_SRC)/$(LIBXT_SRC)
-	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure
-	cd $(LIBXT)-$(LIBXT_VERSION)/ && ./configure --prefix=/ --sysconfdir=/etc/ --disable-static
-	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile $(FL_DEP_LIBXT)
-	cd $(LIBXT)-$(LIBXT_VERSION)/ \
-	    && make $(MAKE_ARG)
-$(PREFIX)/lib/$(LIBXT).a: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
-	cd $(LIBXT)-$(LIBXT_VERSION)/ \
-	    && make DESTDIR=$(PREFIX) install \
-	    && install -m755 -d "$(PREFIX)/share/licenses/$(LIBXT)" \
-	    && install -m644 COPYING "$(PREFIX)/share/licenses/$(LIBXT)"
-
-$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
-	cd $(LIBXT)-$(LIBXT_VERSION)/ && make DESTDIR=$(PREFIX) uninstall
-$(LIBXT)-install: $(PREFIX)/lib/$(LIBXT).a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBXT_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXT)-install
-FL_UNINSTALL+=$(LIBXT)-uninstall
 
 ########################################
 TK=tk
@@ -176,7 +82,7 @@ $(TK)-$(TK_VERSION)/unix/configure: $(DN_SRC)/$(TK_SRC)
 	#cd $(TK)-$(TK_VERSION)/ && ./bootstrap.sh
 	touch $@
 $(TK)-$(TK_VERSION)/unix/Makefile: $(TK)-$(TK_VERSION)/unix/configure $(FL_DEP_TK)
-	cd $(TK)-$(TK_VERSION)/unix && ./configure --without-x --enable-gcc --disable-shared --disable-rpath --enable-threads --prefix=$(PREFIX)
+	cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) ./configure --enable-gcc --disable-shared --disable-rpath --enable-threads --prefix=$(PREFIX) #--without-x
 $(TK)-$(TK_VERSION)/unix/wish: $(TK)-$(TK_VERSION)/unix/Makefile
 	cd $(TK)-$(TK_VERSION)/unix/ && make $(MAKE_ARG)
 $(PREFIX)/bin/wish: $(TK)-$(TK_VERSION)/unix/wish
@@ -219,11 +125,11 @@ $(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL
 
 $(OTCL)-$(OTCL_VERSION)/Makefile: $(OTCL)-$(OTCL_VERSION)/mypatched $(OTCL)-$(OTCL_VERSION)/configure $(FL_DEP_OTCL)
 	#cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-lXft -lz -lpthread" ./configure --disable-static --enable-shlib --enable-release --prefix=$(PREFIX) --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=no --without-tk --x-libraries= --x-includes=
-	cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-lXft -lz -lpthread" ./configure --disable-static --enable-shlib --enable-release --prefix=/ --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
+	cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-L$(PREFIX)/lib -lXft -lz -lpthread" ./configure --enable-static --enable-shlib --enable-release --prefix=$(PREFIX) --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
 $(OTCL)-$(OTCL_VERSION)/otclsh: $(OTCL)-$(OTCL_VERSION)/Makefile
 	cd $(OTCL)-$(OTCL_VERSION)/ && make LIB+="-L$(PREFIX)/lib `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(MAKE_ARG)
 $(PREFIX)/bin/otclsh: $(OTCL)-$(OTCL_VERSION)/otclsh
-	cd $(OTCL)-$(OTCL_VERSION)/ && make DESTDIR=$(PREFIX) install
+	cd $(OTCL)-$(OTCL_VERSION)/ && make install
 	chmod 644 $(PREFIX)/lib/*.a
 
 $(OTCL)-uninstall: $(OTCL)-$(OTCL_VERSION)/otclsh
@@ -315,14 +221,14 @@ $(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VE
 
 $(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/mypatched $(FL_DEP_NS2)
 	#cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=$(PREFIX) --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX)/lib/tclcl --without-tk --x-libraries= --x-includes=
-	cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=/ --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX)/lib/tclcl --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
+	cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=$(PREFIX) --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX)/lib/tclcl --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX) --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/lib --x-includes=$(PREFIX)/include/X11/
 $(NS2)-$(NS2_VERSION)/ns: $(NS2)-$(NS2_VERSION)/Makefile
 	cd $(NS2)-$(NS2_VERSION)/ && make LIB+="-L$(PREFIX)/lib/tclcl/lib -L$(PREFIX)/lib -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
 $(PREFIX)/bin/ns: $(NS2)-$(NS2_VERSION)/ns
 	install -d $(PREFIX)/bin
 	install -d $(PREFIX)/share
 	install -d $(PREFIX)/man/man1
-	cd $(NS2)-$(NS2_VERSION)/ && make DESTDIR=$(PREFIX)/ install
+	cd $(NS2)-$(NS2_VERSION)/ && make install
 	#mv $(PREFIX)/man $(PREFIX)/share
 
 $(NS2)-uninstall: $(NS2)-$(NS2_VERSION)/ns
