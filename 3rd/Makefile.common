@@ -22,7 +22,7 @@ space:= $(empty) $(empty)
 LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}'))
 
 #MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l )
-MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 2 + 1;}')
+MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 1 + 1;}')
 
 ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
 		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig \

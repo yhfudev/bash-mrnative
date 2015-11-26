@@ -1039,6 +1039,110 @@ $(GL2PS)-install: $(PREFIX)/lib/libgl2ps.a
 FL_SOURCES+=$(DN_SRC)/$(GL2PS_SRC)
 FL_UNINSTALL+=$(GL2PS)-uninstall
 
+
+########################################
+# General purpose library and file format for storing scientific data
+# http://www.hdfgroup.org/HDF5/
+
+HDF5=hdf5
+HDF5_VERSION=1.8.16
+HDF5_SRC=$(HDF5)-$(HDF5_VERSION).tar.gz
+HDF5_URL=ftp://ftp.hdfgroup.org/HDF5/current/src/$(HDF5_SRC)
+
+$(DN_SRC)/$(HDF5_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HDF5_URL)
+	touch $@
+$(HDF5)-$(HDF5_VERSION)/configure: $(DN_SRC)/$(HDF5_SRC)
+	tar -xf $(DN_SRC)/$(HDF5_SRC)
+	touch $@
+
+# --enable-threadsafe
+$(HDF5)-$(HDF5_VERSION)/Makefile: $(HDF5)-$(HDF5_VERSION)/configure
+	cd $(HDF5)-$(HDF5_VERSION)/ \
+    && ./configure --prefix=$(PREFIX) \
+        --enable-hl \
+        --enable-linux-lfs \
+        --enable-production \
+        --with-pic \
+        --docdir=$(PREFIX)/share/doc/hdf5/ \
+        --with-pthread=$(PREFIX)/lib/ \
+        --disable-sharedlib-rpath
+$(HDF5)-$(HDF5_VERSION)/src/libhdf5.la: $(HDF5)-$(HDF5_VERSION)/Makefile
+	cd $(HDF5)-$(HDF5_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libhdf5.a: $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la
+	cd $(HDF5)-$(HDF5_VERSION)/ && make install
+
+$(HDF5)-uninstall: $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la
+	cd $(HDF5)-$(HDF5_VERSION)/ && make uninstall
+$(HDF5)-install: $(PREFIX)/lib/libhdf5.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(HDF5_SRC)
+FL_UNINSTALL+=$(HDF5)-uninstall
+
+########################################
+# gdal: A translator library for raster geospatial data formats
+# http://www.gdal.org/
+GDAL=gdal
+GDAL_VERSION=2.0.1
+GDAL_SRC=$(GDAL)-$(GDAL_VERSION).tar.gz
+GDAL_URL=http://download.osgeo.org/gdal/$(GDAL_VERSION)/$(GDAL_SRC)
+
+FL_DEP_GDAL= \
+	$(HDF5)-install \
+	$(LIBPNG)-install \
+	$(LIBTIFF)-install \
+	#$(sqlite)-install \
+	$(postgresql-libs)-install \
+	$(poppler)-install \
+	$(netcdf)-install \
+	$(libspatialite)-install \
+	$(libmariadbclient)-install \
+	$(libgeotiff)-install \
+	$(giflib)-install \
+	$(geos)-install \
+	$(curl)-install \
+	$(cfitsio)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GDAL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GDAL_URL)
+	touch $@
+$(GDAL)-$(GDAL_VERSION)/configure: $(DN_SRC)/$(GDAL_SRC)
+	tar -xf $(DN_SRC)/$(GDAL_SRC)
+	touch $@
+
+#       --with-netcdf \
+        --with-sqlite3 \
+        --with-geotiff \
+        --with-mysql \
+        --with-python \
+        --with-curl \
+        --with-perl \
+        --with-geos \
+        --with-poppler \
+        --with-spatialite
+$(GDAL)-$(GDAL_VERSION)/Makefile: $(GDAL)-$(GDAL_VERSION)/configure $(FL_DEP_GDAL)
+	cd $(GDAL)-$(GDAL_VERSION)/ \
+        && ./configure --prefix=$(PREFIX) --enable-static --disable-shared \
+        --with-hdf5 \
+        --with-libtiff \
+        --with-png \
+        $(NULL)
+
+$(GDAL)-$(GDAL_VERSION)/libgdal.la: $(GDAL)-$(GDAL_VERSION)/Makefile
+	cd $(GDAL)-$(GDAL_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libgdal.a: $(GDAL)-$(GDAL_VERSION)/libgdal.la
+	cd $(GDAL)-$(GDAL_VERSION)/ && make install
+
+$(GDAL)-uninstall: $(GDAL)-$(GDAL_VERSION)/libgdal.la
+	cd $(GDAL)-$(GDAL_VERSION)/ && make uninstall
+$(GDAL)-install: $(PREFIX)/lib/libgdal.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GDAL_SRC)
+FL_UNINSTALL+=$(GDAL)-uninstall
+
 ########################################
 # The Visualization Toolkit (VTK) is an open-source C++ library for 3D computer graphics, image processing, and visualization
 # http://www.vtk.org/
@@ -1057,11 +1161,13 @@ FL_DEP_VTK= \
 	$(LIBPNG)-install \
 	$(LIBTIFF)-install \
 	$(ZLIB)-install \
-	$(LIBXML2)-install \
 	$(THEORA)-install \
 	$(JSONCPP)-install \
 	$(GLEW)-install \
-	#$(TWISTED)-install \
+	$(GDAL)-install \
+	#$(LIBXML2)-install \
+	$(HDF5)-install \
+	$(TWISTED)-install \
 	$(ZOPE)-install \
 	$(SIX)-install \
 	$(AUTOBAHN)-install \
@@ -1089,11 +1195,17 @@ $(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(VTK_SRC)
             -DVTK_WRAP_JAVA:BOOL=ON \
             -DVTK_WRAP_PYTHON:BOOL=ON \
             -DVTK_WRAP_TCL:BOOL=ON \
+            -DBUILD_DOCUMENTATION:BOOL=ON \
+            -DDOCUMENTATION_HTML_HELP:BOOL=ON \
+            -DDOCUMENTATION_HTML_TARZ:BOOL=ON \
+            -DBUILD_EXAMPLES:BOOL=ON \
             -DVTK_USE_SYSTEM_TWISTED:BOOL=ON \
             -DVTK_USE_SYSTEM_ZOPE:BOOL=ON \
             -DVTK_USE_SYSTEM_SIX:BOOL=ON \
             -DVTK_USE_SYSTEM_AUTOBAHN:BOOL=ON \
             -DVTK_USE_SYSTEM_MPI4PY:BOOL=ON \
+            -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
+            -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
 
 $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
 	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
@@ -1104,24 +1216,18 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_
             -DPYTHON_EXECUTABLE:FILEPATH="`which python2`" \
             -DCMAKE_SKIP_RPATH=ON \
             -DBUILD_SHARED_LIBS:BOOL=ON \
-            -DBUILD_DOCUMENTATION:BOOL=ON \
-            -DDOCUMENTATION_HTML_HELP:BOOL=ON \
-            -DDOCUMENTATION_HTML_TARZ:BOOL=ON \
-            -DBUILD_EXAMPLES:BOOL=ON \
             -DVTK_USE_FFMPEG_ENCODER:BOOL=ON \
             -DVTK_BUILD_ALL_MODULES:BOOL=ON \
             -DVTK_USE_LARGE_DATA:BOOL=ON \
             -DCMAKE_CXX_FLAGS="-D__STDC_CONSTANT_MACROS" \
             -DVTK_CUSTOM_LIBRARY_SUFFIX="" \
             -DVTK_INSTALL_INCLUDE_DIR:PATH=include/vtk \
-            -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
             -DVTK_USE_SYSTEM_EXPAT:BOOL=ON \
             -DVTK_USE_SYSTEM_FREETYPE:BOOL=ON \
             -DVTK_USE_SYSTEM_JPEG:BOOL=ON \
             -DVTK_USE_SYSTEM_PNG:BOOL=ON \
             -DVTK_USE_SYSTEM_TIFF:BOOL=ON \
             -DVTK_USE_SYSTEM_ZLIB:BOOL=ON \
-            -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
             -DVTK_USE_SYSTEM_OGGTHEORA:BOOL=ON \
             -DVTK_USE_SYSTEM_GL2PS:BOOL=ON \
             -DVTK_USE_SYSTEM_GLEW:BOOL=ON \
