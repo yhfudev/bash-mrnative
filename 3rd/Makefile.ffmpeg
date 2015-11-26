@@ -10,9 +10,9 @@
 
 ######################################################################
 # define the directory stores all of the source code packages
-DN_SRC=$(PWD)/sources
+DN_SRC=$(PWD)/../sources
 DN_TOP=$(PWD)
-DN_PATCH=$(PWD)/sources
+DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=furnaceyhfudev
 
