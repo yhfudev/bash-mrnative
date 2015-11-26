@@ -53,35 +53,6 @@ FL_UNINSTALL+=$(LIBXPM)-uninstall
 
 
 ########################################
-LIBTIFF=libtiff
-LIBTIFF_VERSION=4.0.6
-LIBTIFF_SRC=$(LIBTIFF)-$(LIBTIFF_VERSION).tar.gz
-LIBTIFF_URL="http://download.osgeo.org/libtiff/tiff-$(LIBTIFF_VERSION).tar.gz"
-
-$(DN_SRC)/$(LIBTIFF_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBTIFF_URL)
-	touch $@
-$(LIBTIFF)-$(LIBTIFF_VERSION)/configure: $(DN_SRC)/$(LIBTIFF_SRC)
-	tar -xf $(DN_SRC)/$(LIBTIFF_SRC)
-	mv tiff-$(LIBTIFF_VERSION) $(LIBTIFF)-$(LIBTIFF_VERSION)/
-	touch $@
-$(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile: $(LIBTIFF)-$(LIBTIFF_VERSION)/configure $(FL_DEP_LIBTIFF)
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --disable-shared
-$(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make install
-
-$(LIBTIFF)-uninstall: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make uninstall
-$(LIBTIFF)-install: $(PREFIX)/lib/libtiff.a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBTIFF_SRC)
-#FL_DEP_GNUPLOT+=$(LIBTIFF)-install
-FL_UNINSTALL+=$(LIBTIFF)-uninstall
-
-########################################
 LUA=lua
 LUA_VERSION=5.3.1
 LUA_SRC=$(LUA)-$(LUA_VERSION).tar.gz

@@ -741,28 +741,16 @@ FL_DEPENDENCES_FFMPEG= \
     $(EXPAT)-install    \
     $(LIBXML2)-install  \
     $(FONTCONF)-install \
+    $(LVPX)-install     \
     $(NULL)
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
 
 
-FFMPEG_VERSION=1.1
-FFMPEG_VERSION=2.1.4
-#FFMPEG_VERSION=2.6.3
-FFMPEG_VERSION=snapshot-git
-FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION).tar.bz2
-FFMPEG_URL=http://ffmpeg.org/releases/$(FFMPEG_SRC)
-#$(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
-#	$(WGET) -O $@ $(FFMPEG_URL)
-#	touch $@
-#$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
-#	rm -rf ffmpeg*
-#	tar -xf $(DN_SRC)/$(FFMPEG_SRC)
-#	mv ffmpeg* $(FFMPEG)-$(FFMPEG_VERSION)
-#	touch $@
+USE_GIT_FFMPEG=1
 
+ifeq ($(USE_GIT_FFMPEG),1) # use git instead
 
-# use git instead
 FFMPEG_VERSION=git
 FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION)/.git
 FFMPEG_URL=git://source.ffmpeg.org/ffmpeg.git
@@ -780,6 +768,30 @@ $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git pull
 #	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
 	touch $@
+
+else
+
+FFMPEG_VERSION=1.1
+FFMPEG_VERSION=2.1.4
+FFMPEG_VERSION=2.8.2
+FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION).tar.bz2
+FFMPEG_URL=http://ffmpeg.org/releases/$(FFMPEG_SRC)
+
+$(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ $(FFMPEG_URL)
+	touch $@
+$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
+	rm -rf ffmpeg*
+	tar -xf $(DN_SRC)/$(FFMPEG_SRC)
+	#mv ffmpeg* $(FFMPEG)-$(FFMPEG_VERSION)
+	touch $@
+
+$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md
+	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
+	touch $@
+
+endif
+
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
 # --enable-libxavs --enable-libvo-aacenc --enable-libvo-amrwbenc --enable-libmodplug
 # --enable-libbluray --enable-filters
@@ -911,9 +923,222 @@ $(OPENEXR)-install: $(PREFIX)/lib/libIlmImf.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENEXR_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(OPENEXR)-install
 FL_UNINSTALL+=$(OPENEXR)-uninstall
 
+########################################
+# glew, The OpenGL Extension Wrangler Library
+# http://glew.sourceforge.net
+GLEW=glew
+GLEW_VERSION=1.13.0
+GLEW_SRC=$(GLEW)-$(GLEW_VERSION).tgz
+GLEW_URL=http://sourceforge.net/projects/glew/files/glew/$(GLEW_VERSION)/$(GLEW_SRC)
+
+FL_DEP_GLEW= \
+	$(LIBXMU)-install \
+	$(LIBXI)-install \
+	$(GLU)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GLEW_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GLEW_URL)
+	touch $@
+$(GLEW)-$(GLEW_VERSION)/Makefile: $(DN_SRC)/$(GLEW_SRC) $(FL_DEP_GLEW)
+	tar -xf $(DN_SRC)/$(GLEW_SRC)
+	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i 's|lib64|lib|' config/Makefile.linux
+	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i '/^.PHONY: .*\.pc$$/d' Makefile
+	touch $@
+$(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la: $(GLEW)-$(GLEW_VERSION)/Makefile
+	cd $(GLEW)-$(GLEW_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libIlmImf.a: $(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la
+	cd $(GLEW)-$(GLEW_VERSION)/ && make GLEW_DEST=$(PREFIX) install
+
+$(GLEW)-uninstall: $(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la
+	cd $(GLEW)-$(GLEW_VERSION)/ && make uninstall
+$(GLEW)-install: $(PREFIX)/lib/libIlmImf.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GLEW_SRC)
+FL_UNINSTALL+=$(GLEW)-uninstall
+
+########################################
+# JSONCPP, A C++ library for interacting with JSON
+# https://github.com/open-source-parsers/jsoncpp
+JSONCPP=jsoncpp
+JSONCPP_VERSION=1.6.5
+JSONCPP_SRC=$(JSONCPP)-$(JSONCPP_VERSION).tar.gz
+JSONCPP_URL=https://github.com/open-source-parsers/jsoncpp/archive/$(JSONCPP_VERSION).tar.gz
+
+FL_DEP_JSONCPP= \
+	$(CMAKE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(JSONCPP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(JSONCPP_URL)
+	touch $@
+$(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists.txt: $(DN_SRC)/$(JSONCPP_SRC)
+	tar -xf $(DN_SRC)/$(JSONCPP_SRC)
+	touch $@
+$(JSONCPP)-$(JSONCPP_VERSION)/Makefile: $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists.txt $(FL_DEP_JSONCPP)
+	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_STATIC_LIBS=OFF \
+            ..
+$(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la: $(JSONCPP)-$(JSONCPP_VERSION)/Makefile
+	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/libjsoncpp.so: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
+	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && make install
+
+$(JSONCPP)-uninstall: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
+	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && make uninstall
+$(JSONCPP)-install: $(PREFIX)/lib/libjsoncpp.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(JSONCPP_SRC)
+FL_UNINSTALL+=$(JSONCPP)-uninstall
+
+########################################
+# GL2PS, an OpenGL to PostScript printing library
+# http://geuz.org/gl2ps/
+GL2PS=gl2ps
+GL2PS_VERSION=1.3.9
+GL2PS_SRC=$(GL2PS)-$(GL2PS_VERSION).tgz
+GL2PS_URL=http://geuz.org/gl2ps/src/$(GL2PS_SRC)
+
+FL_DEP_GL2PS= \
+	$(CMAKE)-install \
+	$(LIBPNG)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GL2PS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GL2PS_URL)
+	touch $@
+$(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt: $(DN_SRC)/$(GL2PS_SRC)
+	tar -xf $(DN_SRC)/$(GL2PS_SRC)
+	mv GL2PS* $(GL2PS)-$(GL2PS_VERSION)
+	touch $@
+$(GL2PS)-$(GL2PS_VERSION)/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(FL_DEP_GL2PS)
+	cd $(GL2PS)-$(GL2PS_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_EXE_LINKER_FLAGS=-lm \
+            ..
+$(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la: $(GL2PS)-$(GL2PS_VERSION)/Makefile
+	cd $(GL2PS)-$(GL2PS_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
+	cd $(GL2PS)-$(GL2PS_VERSION)/build && make install
+
+$(GL2PS)-uninstall: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
+	cd $(GL2PS)-$(GL2PS_VERSION)/ && make uninstall
+$(GL2PS)-install: $(PREFIX)/lib/libgl2ps.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GL2PS_SRC)
+FL_UNINSTALL+=$(GL2PS)-uninstall
+
+########################################
+# The Visualization Toolkit (VTK) is an open-source C++ library for 3D computer graphics, image processing, and visualization
+# http://www.vtk.org/
+VTK=VTK
+VTK_VERSION=6.3.0
+VTK_SRC=$(VTK)-$(VTK_VERSION).tar.gz
+VTK_URL=http://www.vtk.org/files/release/6.3/$(VTK_SRC)
+
+FL_DEP_VTK= \
+	$(CMAKE)-install \
+	$(FFMPEG)-install \
+	$(GL2PS)-install \
+	$(EXPAT)-install \
+	$(FREETYPE)-install \
+	$(LIBJPEG)-install \
+	$(LIBPNG)-install \
+	$(LIBTIFF)-install \
+	$(ZLIB)-install \
+	$(LIBXML2)-install \
+	$(THEORA)-install \
+	$(JSONCPP)-install \
+	$(GLEW)-install \
+	#$(TWISTED)-install \
+	$(ZOPE)-install \
+	$(SIX)-install \
+	$(AUTOBAHN)-install \
+	$(MPI4PY)-install \
+	$(NULL)
+
+$(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)Data-$(VTK_VERSION).tar.gz
+	touch $@
+
+$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)LargeData-$(VTK_VERSION).tar.gz
+	touch $@
+
+$(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz #$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
+	$(WGET) -O $@ -c $(VTK_URL)
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(VTK_SRC)
+	tar -xf $(DN_SRC)/$(VTK_SRC)
+	#mv VTK* $(VTK)-$(VTK_VERSION)
+	touch $@
+
+#            -DVTK_QT_VERSION:STRING="5" \
+            -DVTK_WRAP_JAVA:BOOL=ON \
+            -DVTK_WRAP_PYTHON:BOOL=ON \
+            -DVTK_WRAP_TCL:BOOL=ON \
+            -DVTK_USE_SYSTEM_TWISTED:BOOL=ON \
+            -DVTK_USE_SYSTEM_ZOPE:BOOL=ON \
+            -DVTK_USE_SYSTEM_SIX:BOOL=ON \
+            -DVTK_USE_SYSTEM_AUTOBAHN:BOOL=ON \
+            -DVTK_USE_SYSTEM_MPI4PY:BOOL=ON \
+
+$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
+	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -Wno-dev \
+            -DPYTHON_EXECUTABLE:FILEPATH="`which python2`" \
+            -DCMAKE_SKIP_RPATH=ON \
+            -DBUILD_SHARED_LIBS:BOOL=ON \
+            -DBUILD_DOCUMENTATION:BOOL=ON \
+            -DDOCUMENTATION_HTML_HELP:BOOL=ON \
+            -DDOCUMENTATION_HTML_TARZ:BOOL=ON \
+            -DBUILD_EXAMPLES:BOOL=ON \
+            -DVTK_USE_FFMPEG_ENCODER:BOOL=ON \
+            -DVTK_BUILD_ALL_MODULES:BOOL=ON \
+            -DVTK_USE_LARGE_DATA:BOOL=ON \
+            -DCMAKE_CXX_FLAGS="-D__STDC_CONSTANT_MACROS" \
+            -DVTK_CUSTOM_LIBRARY_SUFFIX="" \
+            -DVTK_INSTALL_INCLUDE_DIR:PATH=include/vtk \
+            -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
+            -DVTK_USE_SYSTEM_EXPAT:BOOL=ON \
+            -DVTK_USE_SYSTEM_FREETYPE:BOOL=ON \
+            -DVTK_USE_SYSTEM_JPEG:BOOL=ON \
+            -DVTK_USE_SYSTEM_PNG:BOOL=ON \
+            -DVTK_USE_SYSTEM_TIFF:BOOL=ON \
+            -DVTK_USE_SYSTEM_ZLIB:BOOL=ON \
+            -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
+            -DVTK_USE_SYSTEM_OGGTHEORA:BOOL=ON \
+            -DVTK_USE_SYSTEM_GL2PS:BOOL=ON \
+            -DVTK_USE_SYSTEM_GLEW:BOOL=ON \
+            -DVTK_USE_SYSTEM_JSONCPP:BOOL=ON \
+            ..
+$(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/Makefile
+	cd $(VTK)-$(VTK_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so
+	cd $(VTK)-$(VTK_VERSION)/build && make install
+
+$(VTK)-uninstall: $(VTK)-$(VTK_VERSION)/build/libvtk.la
+	cd $(VTK)-$(VTK_VERSION)/ && make uninstall
+$(VTK)-install: $(PREFIX)/lib/libvtksys.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(VTK_SRC)
+FL_UNINSTALL+=$(VTK)-uninstall
 
 ########################################
 # xine-lib
@@ -1051,6 +1276,7 @@ FL_DEP_OPENCV= \
 	$(PREFIX)/lib/libfaac.a \
 	$(FFMPEG)-install \
 	$(OPENEXR)-install \
+	$(VTK)-install \
 	$(OPENCV_GPU_SUPPORT_DEPEND) \
 	$(NULL)
 
