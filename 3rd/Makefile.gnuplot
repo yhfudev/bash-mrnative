@@ -151,7 +151,7 @@ $(GD)-install: $(PREFIX)/bin/gd
 
 
 FL_SOURCES+=$(DN_SRC)/$(GD_SRC)
-FL_DEP_GNUPLOT+=$(GD)-install
+#FL_DEP_GNUPLOT+=$(GD)-install
 FL_UNINSTALL+=$(GD)-uninstall
 
 ########################################
@@ -159,6 +159,12 @@ GNUPLOT=gnuplot
 GNUPLOT_VERSION=5.0.1
 GNUPLOT_SRC=$(GNUPLOT)-$(GNUPLOT_VERSION).tar.gz
 GNUPLOT_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$(GNUPLOT_VERSION)/$(GNUPLOT_SRC)
+
+FL_DEP_GNUPLOT= \
+	$(LVPX)-install \
+	$(LIBTIFF)-install \
+	$(GD)-install \
+	$(NULL)
 
 $(DN_SRC)/$(GNUPLOT_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(GNUPLOT_URL)

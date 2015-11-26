@@ -105,7 +105,6 @@ $(BZIP2)-install: $(PREFIX)/lib/libbz2.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(BZIP2_SRC)
-FL_DEPENDENCES_FFMPEG+=$(BZIP2)-install
 FL_UNINSTALL+=$(BZIP2)-uninstall
 
 ########################################
@@ -177,7 +176,6 @@ $(YASM)-install: $(PREFIX)/bin/yasm
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(YASM_SRC)
-FL_DEPENDENCES_FFMPEG+=$(YASM)-install
 FL_UNINSTALL+=$(YASM)-uninstall
 
 ########################################
@@ -214,7 +212,6 @@ $(LIBPNG)-install: $(PREFIX)/lib/pkgconfig/libpng.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBPNG_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LIBPNG)-install
 FL_UNINSTALL+=$(LIBPNG)-uninstall
 
 ########################################
@@ -256,7 +253,6 @@ $(FREETYPE)-install: $(PREFIX)/lib/libfreetype.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FREETYPE_SRC)
-FL_DEPENDENCES_FFMPEG+=$(FREETYPE)-install
 FL_UNINSTALL+=$(FREETYPE)-uninstall
 
 ########################################
@@ -284,7 +280,6 @@ $(EXPAT)-install: $(PREFIX)/lib/libexpat.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(EXPAT_SRC)
-FL_DEPENDENCES_FFMPEG+=$(EXPAT)-install
 FL_UNINSTALL+=$(EXPAT)-uninstall
 
 
@@ -314,7 +309,6 @@ $(LIBXML2)-install: $(PREFIX)/lib/libxml2.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXML2_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LIBXML2)-install
 FL_UNINSTALL+=$(LIBXML2)-uninstall
 
 ########################################
@@ -351,7 +345,6 @@ $(FONTCONF)-install: $(PREFIX)/lib/libfontconfig.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FONTCONF_SRC)
-FL_DEPENDENCES_FFMPEG+=$(FONTCONF)-install
 FL_UNINSTALL+=$(FONTCONF)-uninstall
 
 
@@ -463,6 +456,37 @@ FL_SOURCES+=$(DN_SRC)/$(LIBUSB_SRC)
 FL_UNINSTALL+=$(LIBUSB)-uninstall
 
 ########################################
+# libraw1394
+LIBRAW1394=libraw1394
+LIBRAW1394_VERSION=2.1.1
+LIBRAW1394_SRC=$(LIBRAW1394)-$(LIBRAW1394_VERSION).tar.gz
+LIBRAW1394_URL=ftp://ftp.kernel.org/pub/linux/libs/ieee1394/$(LIBRAW1394_SRC)
+
+$(DN_SRC)/$(LIBRAW1394_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBRAW1394_URL)
+	touch $@
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure: $(DN_SRC)/$(LIBRAW1394_SRC)
+	tar -xf $(DN_SRC)/$(LIBRAW1394_SRC)
+	touch $@
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure $(FL_DEP_LIBRAW1394)
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/libraw1394.a: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make install
+	libtool --finish $(PREFIX)/lib
+
+$(LIBRAW1394)-uninstall: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make uninstall
+$(LIBRAW1394)-install: $(PREFIX)/lib/libraw1394.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBRAW1394_SRC)
+#FL_DEPENDENCES_FFMPEG+=$(LIBRAW1394)-install
+FL_UNINSTALL+=$(LIBRAW1394)-uninstall
+
+
+########################################
 # libdc1394
 LIBDC1394=libdc1394
 LIBDC1394_VERSION=2.2.3
@@ -499,17 +523,19 @@ FL_UNINSTALL+=$(LIBDC1394)-uninstall
 
 ########################################
 LVPX=libvpx
-#LVPX_VERSION=1.4.0
-#LVPX_SRC=$(LVPX)-v$(LVPX_VERSION).tar.bz2
-#LVPX_URL=http://webm.googlecode.com/files/$(LVPX_SRC)
 
 FL_DEP_LVPX= \
 	$(YASM)-install \
 	$(NULL)
 
+USE_GIT_LVPX=0
+
+ifeq ($(USE_GIT_LVPX),1) # use git instead
+
 LVPX_VERSION=git
 LVPX_SRC=$(LVPX)-$(LVPX_VERSION)/configure
 LVPX_URL=https://chromium.googlesource.com/webm/libvpx
+
 $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/created
 	git clone $(LVPX_URL) $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)
 	touch $@
@@ -519,6 +545,25 @@ $(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
 #	cp -r $(DN_SRC)/$(LVPX)-$(LVPX_VERSION) $(DN_TOP)/
 	if [ -d "$(LVPX)-$(LVPX_VERSION)" ]; then cd $(LVPX)-$(LVPX_VERSION) && git pull; else git clone $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/ $(LVPX)-$(LVPX_VERSION); fi
 	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
+else
+LVPX_VERSION=1.5.0
+LVPX_SRC=$(LVPX)-$(LVPX_VERSION).tar.gz
+LVPX_URL=http://webm.googlecode.com/files/$(LVPX_SRC)
+
+$(DN_SRC)/$(LVPX_SRC): $(DN_SRC)/created
+	git archive --format=tar --remote=https://chromium.googlesource.com/webm/libvpx v$(LVPX_VERSION) | gzip -9 > $(LVPX_SRC)
+	touch $@
+
+$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX_SRC)
+	tar -xf $(DN_SRC)/$(LVPX_SRC)
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LVPX_SRC)
+endif
+
+
 $(LVPX)-$(LVPX_VERSION)/Makefile: $(LVPX)-$(LVPX_VERSION)/configure $(FL_DEP_LVPX)
 #disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
 #use shared:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
@@ -535,8 +580,7 @@ $(LVPX)-uninstall: $(LVPX)-$(LVPX_VERSION)/libvpx.a
 $(LVPX)-install: $(PREFIX)/lib/libvpx.a
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
-FL_DEP_GNUPLOT+=$(LVPX)-install
+#FL_DEP_GNUPLOT+=$(LVPX)-install
 FL_UNINSTALL+=$(LVPX)-uninstall
 
 ########################################

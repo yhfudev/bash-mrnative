@@ -37,7 +37,7 @@ MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
 endif
 
 ######################################################################
-all: get-sources ffmpeg opencv mediametrics
+all: get-sources ffmpeg gpac mediametrics
 
 ######################################################################
 include Makefile.common
@@ -238,7 +238,6 @@ $(LIBASS)-install: $(PREFIX)/lib/libass.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBASS_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LIBASS)-install
 FL_UNINSTALL+=$(LIBASS)-uninstall
 
 ########################################
@@ -268,7 +267,6 @@ $(LIBSPEEX)-install: $(PREFIX)/lib/libspeex.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSPEEX_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LIBSPEEX)-install
 FL_UNINSTALL+=$(LIBSPEEX)-uninstall
 
 ########################################
@@ -297,7 +295,6 @@ $(OPUS)-install: $(PREFIX)/lib/pkgconfig/opus.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPUS_SRC)
-FL_DEPENDENCES_FFMPEG+=$(OPUS)-install
 FL_UNINSTALL+=$(OPUS)-uninstall
 
 ########################################
@@ -326,7 +323,6 @@ $(LIBGSM)-install: $(PREFIX)/lib/libgsm.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBGSM_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LIBGSM)-install
 FL_UNINSTALL+=$(LIBGSM)-uninstall
 
 ########################################
@@ -355,7 +351,6 @@ $(LIBA52)-install: $(PREFIX)/lib/liba52.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(LIBA52_SRC)
-FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
 FL_UNINSTALL_OTHERS+=$(LIBA52)-uninstall
 
 ########################################
@@ -383,7 +378,6 @@ $(FAAD)-install: $(PREFIX)/lib/libfaad.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(FAAD_SRC)
-FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
 FL_UNINSTALL_OTHERS+=$(FAAD)-uninstall
 
 ########################################
@@ -451,7 +445,6 @@ $(FDKAAC)-install: $(PREFIX)/lib/libfdk-aac.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FDKAAC_SRC)
-FL_DEPENDENCES_FFMPEG+=$(FDKAAC)-install
 FL_UNINSTALL+=$(FDKAAC)-uninstall
 
 ########################################
@@ -479,7 +472,6 @@ $(LAME)-install: $(PREFIX)/lib/libmp3lame.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LAME_SRC)
-FL_DEPENDENCES_FFMPEG+=$(LAME)-install
 FL_UNINSTALL+=$(LAME)-uninstall
 
 ########################################
@@ -509,7 +501,6 @@ $(XVIDCORE)-install: $(PREFIX)/lib/libxvidcore.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XVIDCORE_SRC)
-FL_DEPENDENCES_FFMPEG+=$(XVIDCORE)-install
 FL_UNINSTALL+=$(XVIDCORE)-uninstall
 
 ########################################
@@ -595,7 +586,6 @@ $(OPENCOREAMR)-install: $(PREFIX)/lib/libopencore-amrnb.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENCOREAMR_SRC)
-FL_DEPENDENCES_FFMPEG+=$(OPENCOREAMR)-install
 FL_UNINSTALL+=$(OPENCOREAMR)-uninstall
 
 ########################################
@@ -629,7 +619,6 @@ $(X264)-install: $(PREFIX)/lib/libx264.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(X264_SRC)
-FL_DEPENDENCES_FFMPEG+=$(X264)-install
 FL_UNINSTALL+=$(X264)-uninstall
 
 ########################################
@@ -657,7 +646,6 @@ $(OGG)-install: $(PREFIX)/lib/libogg.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OGG_SRC)
-FL_DEPENDENCES_FFMPEG+=$(OGG)-install
 FL_UNINSTALL+=$(OGG)-uninstall
 
 ########################################
@@ -690,7 +678,6 @@ $(VORBIS)-install: $(PREFIX)/lib/libvorbis.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(VORBIS_SRC)
-FL_DEPENDENCES_FFMPEG+=$(VORBIS)-install
 FL_UNINSTALL+=$(VORBIS)-uninstall
 
 ########################################
@@ -727,13 +714,38 @@ $(THEORA)-install: $(PREFIX)/lib/libtheora.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(THEORA_SRC)
-FL_DEPENDENCES_FFMPEG+=$(THEORA)-install
 FL_UNINSTALL+=$(THEORA)-uninstall
 
 ########################################
 
 # use release files
 FFMPEG=ffmpeg
+
+FL_DEPENDENCES_FFMPEG= \
+    $(VORBIS)-install  \
+    $(THEORA)-install  \
+    $(OGG)-install     \
+    $(X264)-install    \
+    $(OPENCOREAMR)-install \
+    $(XVIDCORE)-install \
+    $(LAME)-install     \
+    $(FDKAAC)-install   \
+    $(LIBGSM)-install   \
+    $(OPUS)-install     \
+    $(LIBSPEEX)-install \
+    $(LIBASS)-install   \
+    $(BZIP2)-install    \
+    $(YASM)-install     \
+    $(LIBPNG)-install   \
+    $(FREETYPE)-install \
+    $(EXPAT)-install    \
+    $(LIBXML2)-install  \
+    $(FONTCONF)-install \
+    $(NULL)
+FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
+FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
+
+
 FFMPEG_VERSION=1.1
 FFMPEG_VERSION=2.1.4
 #FFMPEG_VERSION=2.6.3
@@ -904,39 +916,6 @@ FL_UNINSTALL+=$(OPENEXR)-uninstall
 
 
 ########################################
-# libraw1394
-LIBRAW1394=libraw1394
-LIBRAW1394_VERSION=2.1.1
-LIBRAW1394_SRC=$(LIBRAW1394)-$(LIBRAW1394_VERSION).tar.gz
-LIBRAW1394_URL=ftp://ftp.kernel.org/pub/linux/libs/ieee1394/$(LIBRAW1394_SRC)
-
-$(DN_SRC)/$(LIBRAW1394_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBRAW1394_URL)
-	touch $@
-$(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure: $(DN_SRC)/$(LIBRAW1394_SRC)
-	tar -xf $(DN_SRC)/$(LIBRAW1394_SRC)
-	touch $@
-$(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure $(FL_DEP_LIBRAW1394)
-	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
-$(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile
-	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libraw1394.a: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
-	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make install
-	libtool --finish $(PREFIX)/lib
-
-$(LIBRAW1394)-uninstall: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/src/libraw1394.la
-	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make uninstall
-$(LIBRAW1394)-install: $(PREFIX)/lib/libraw1394.a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBRAW1394_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(LIBRAW1394)-install
-FL_UNINSTALL+=$(LIBRAW1394)-uninstall
-
-
-
-
-########################################
 # xine-lib
 # intel-tbb
 # gtkglext
@@ -1081,7 +1060,28 @@ FL_DEP_OPENCV= \
 # if nvidia card is old and has only 1:1 Compute Cappability
 
 
-# use released files
+USE_GIT_FFMPEG=1
+
+ifeq ($(USE_GIT_FFMPEG),1) # use git instead
+OPENCV_VERSION=git
+OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION)/.git
+OPENCV_URL=https://github.com/Itseez/opencv.git
+
+$(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); fi
+	touch $@
+
+$(OPENCV)-$(OPENCV_VERSION)/.git: $(DN_SRC)/$(OPENCV_SRC)
+	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull
+	if [ -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then cd $(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); fi
+
+$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git $(FL_DEP_OPENCV)
+	cd $(OPENCV)-$(OPENCV_VERSION)/ && git pull
+	touch $@
+
+$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md
+
+else # use released files
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(OPENCV_URL) -O $(DN_SRC)/$(OPENCV_SRC)
 	touch $@
@@ -1091,26 +1091,7 @@ $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
 	#mv opencv* $(OPENCV)-$(OPENCV_VERSION)
 	touch $@
 
-
-# use git instead
-#OPENCV_VERSION=git
-#OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION)/.git
-#OPENCV_URL=https://github.com/Itseez/opencv.git
-
-#$(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
-#	if [ -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); fi
-#	touch $@
-
-#$(OPENCV)-$(OPENCV_VERSION)/.git: $(DN_SRC)/$(OPENCV_SRC)
-#	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull
-#	if [ -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then cd $(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); fi
-
-#$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git $(FL_DEP_OPENCV)
-#	cd $(OPENCV)-$(OPENCV_VERSION)/ && git pull
-#	touch $@
-
-#$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md
-### END of git
+endif
 
 
 $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_SRC)/$(IPPICV_SRC) $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt
@@ -1166,7 +1147,6 @@ $(OPENCV)-install: $(PREFIX)/lib/libopencv_core.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(OPENCV)-install
 FL_UNINSTALL+=$(OPENCV)-uninstall
 
 ########################################
