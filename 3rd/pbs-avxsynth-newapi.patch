@@ -1,0 +1,37 @@
+diff --git a/plugins/avxffms2/src/avsutils.h b/plugins/avxffms2/src/avsutils.h
+index 15b530d..0689f16 100644
+--- a/plugins/avxffms2/src/avsutils.h
++++ b/plugins/avxffms2/src/avsutils.h
+@@ -23,7 +23,19 @@
+ 
+ extern "C" {
+ #include <libavcodec/avcodec.h>
++//#include <libavformat/avformat.h>
++#include <libavutil/pixfmt.h>
+ }
++#if 1
++#define PixelFormat AVPixelFormat
++#define PIX_FMT_NV21 AV_PIX_FMT_NV21
++#define PIX_FMT_NONE AV_PIX_FMT_NONE
++#define PIX_FMT_YUV420P AV_PIX_FMT_YUV420P
++#define PIX_FMT_YUYV422 AV_PIX_FMT_YUYV422
++#define PIX_FMT_BGR24   AV_PIX_FMT_BGR24
++#define PIX_FMT_RGB32   AV_PIX_FMT_RGB32
++#define PIX_FMT_HWACCEL 0
++#endif
+ 
+ #include <ffmscompat.h>
+ 
+diff --git a/plugins/avxffms2/src/videoutils.cpp b/plugins/avxffms2/src/videoutils.cpp
+index 4d5231d..c8e128d 100644
+--- a/plugins/avxffms2/src/videoutils.cpp
++++ b/plugins/avxffms2/src/videoutils.cpp
+@@ -18,7 +18,7 @@
+ //  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ //  THE SOFTWARE.
+ 
+-
++#include "avsutils.h"
+ #include "videoutils.h"
+ 
+ #include <algorithm>
