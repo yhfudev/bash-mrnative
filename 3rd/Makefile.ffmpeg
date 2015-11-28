@@ -191,6 +191,7 @@ LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
 #$(PREFIX)/lib/libharfbuzz.a
 FL_DEP_LIBASS= \
 	$(FREETYPE)-install \
+	$(FONTCONF)-install \
 	$(FRIBIDI)-install \
 	$(LIBENCA)-install \
 	$(YASM)-install \
@@ -284,14 +285,14 @@ $(OPUS)-$(OPUS_VERSION)/configure: $(DN_SRC)/$(OPUS_SRC)
 	touch $@
 $(OPUS)-$(OPUS_VERSION)/Makefile: $(OPUS)-$(OPUS_VERSION)/configure
 	cd $(OPUS)-$(OPUS_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
-$(OPUS)-$(OPUS_VERSION)/opus.pc: $(OPUS)-$(OPUS_VERSION)/Makefile
+$(OPUS)-$(OPUS_VERSION)/$(OPUS).pc: $(OPUS)-$(OPUS_VERSION)/Makefile
 	cd $(OPUS)-$(OPUS_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/opus.pc: $(OPUS)-$(OPUS_VERSION)/opus.pc
+$(PREFIX)/lib/pkgconfig/$(OPUS).pc: $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc
 	cd $(OPUS)-$(OPUS_VERSION)/ && make install
 
-$(OPUS)-uninstall: $(OPUS)-$(OPUS_VERSION)/opus.pc
+$(OPUS)-uninstall: $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc
 	cd $(OPUS)-$(OPUS_VERSION)/ && make uninstall
-$(OPUS)-install: $(PREFIX)/lib/pkgconfig/opus.pc
+$(OPUS)-install: $(PREFIX)/lib/pkgconfig/$(OPUS).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPUS_SRC)
@@ -476,8 +477,7 @@ FL_UNINSTALL+=$(LAME)-uninstall
 
 ########################################
 XVIDCORE=xvidcore
-XVIDCORE_VERSION=1.3.2
-XVIDCORE_VERSION=1.3.3
+XVIDCORE_VERSION=1.3.4
 XVIDCORE_SRC=$(XVIDCORE)-$(XVIDCORE_VERSION).tar.gz
 XVIDCORE_URL=http://downloads.xvid.org/downloads/$(XVIDCORE_SRC)
 #XVIDCORE_URL=http://ftp.br.debian.org/debian-multimedia/pool/main/x/xvidcore/xvidcore_1.3.3.orig.tar.gz
@@ -497,7 +497,7 @@ $(PREFIX)/lib/libxvidcore.a: $(XVIDCORE)/build/generic/platform.inc
 
 $(XVIDCORE)-uninstall: $(XVIDCORE)/build/generic/platform.inc
 	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
-$(XVIDCORE)-install: $(PREFIX)/lib/libxvidcore.a
+$(XVIDCORE)-install: $(PREFIX)/lib/libxvidcore.a $(XVIDCORE)-uninstall
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XVIDCORE_SRC)
@@ -589,6 +589,115 @@ FL_SOURCES+=$(DN_SRC)/$(OPENCOREAMR_SRC)
 FL_UNINSTALL+=$(OPENCOREAMR)-uninstall
 
 ########################################
+# VisualOn Adaptive Multi Rate Wideband (AMR-WB) encoder
+LIBVOAMRWBENC=vo-amrwbenc
+
+LIBVOAMRWBENC_VERSION=0.1.3
+LIBVOAMRWBENC_SRC=$(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION).tar.gz
+LIBVOAMRWBENC_URL=http://sourceforge.net/projects/opencore-amr/files/vo-amrwbenc/$(LIBVOAMRWBENC_SRC)
+
+$(DN_SRC)/$(LIBVOAMRWBENC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVOAMRWBENC_URL)
+	touch $@
+
+$(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAMRWBENC_SRC)
+	tar -xf $(DN_SRC)/$(LIBVOAMRWBENC_SRC)
+	#cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/Makefile: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure $(FL_DEP_LIBVOAMRWBENC)
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/Makefile
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBVOAMRWBENC).pc: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make install
+	touch $@
+
+$(LIBVOAMRWBENC)-uninstall: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make uninstall
+$(LIBVOAMRWBENC)-install: $(PREFIX)/lib/pkgconfig/$(LIBVOAMRWBENC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVOAMRWBENC_SRC)
+FL_UNINSTALL+=$(LIBVOAMRWBENC)-uninstall
+
+########################################
+# VisualOn Advanced Audio Coding (AAC) encoder"
+LIBVOAACENC=vo-aacenc
+
+LIBVOAACENC_VERSION=0.1.3
+LIBVOAACENC_SRC=$(LIBVOAACENC)-$(LIBVOAACENC_VERSION).tar.gz
+LIBVOAACENC_URL=http://sourceforge.net/projects/opencore-amr/files/vo-aacenc/$(LIBVOAACENC_SRC)
+
+$(DN_SRC)/$(LIBVOAACENC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVOAACENC_URL)
+	touch $@
+
+$(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAACENC_SRC)
+	tar -xf $(DN_SRC)/$(LIBVOAACENC_SRC)
+	#cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/Makefile: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure $(FL_DEP_LIBVOAACENC)
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/Makefile
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBVOAACENC).pc: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make install
+	touch $@
+
+$(LIBVOAACENC)-uninstall: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make uninstall
+$(LIBVOAACENC)-install: $(PREFIX)/lib/pkgconfig/$(LIBVOAACENC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVOAACENC_SRC)
+FL_UNINSTALL+=$(LIBVOAACENC)-uninstall
+
+########################################
+# Audio compression format with lossless, lossy and hybrid compression modes
+LIBWAVPACK=wavpack
+
+LIBWAVPACK_VERSION=4.75.2
+LIBWAVPACK_SRC=$(LIBWAVPACK)-$(LIBWAVPACK_VERSION).tar.bz2
+LIBWAVPACK_URL=http://www.wavpack.com/$(LIBWAVPACK_SRC)
+
+$(DN_SRC)/$(LIBWAVPACK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBWAVPACK_URL)
+	touch $@
+
+$(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure: $(DN_SRC)/$(LIBWAVPACK_SRC)
+	tar -xf $(DN_SRC)/$(LIBWAVPACK_SRC)
+	#cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/Makefile: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure $(FL_DEP_LIBWAVPACK)
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) #--disable-asm
+	touch $@
+$(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/Makefile
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBWAVPACK).pc: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make install
+	touch $@
+
+$(LIBWAVPACK)-uninstall: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make uninstall
+$(LIBWAVPACK)-install: $(PREFIX)/lib/pkgconfig/$(LIBWAVPACK).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBWAVPACK_SRC)
+FL_UNINSTALL+=$(LIBWAVPACK)-uninstall
+
+
+########################################
 # add --disable-opencl to configure args, otherwise ffmpeg will complain 'libx264 not found'
 X264=x264
 #X264_VERSION=snapshot-20140316-2245
@@ -622,41 +731,208 @@ FL_SOURCES+=$(DN_SRC)/$(X264_SRC)
 FL_UNINSTALL+=$(X264)-uninstall
 
 ########################################
-OGG=libogg
-OGG_VERSION=1.3.1
-OGG_VERSION=1.3.2
-OGG_SRC=$(OGG)-$(OGG_VERSION).tar.gz
-OGG_URL=http://downloads.xiph.org/releases/ogg/$(OGG_SRC)
-$(DN_SRC)/$(OGG_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(OGG_URL)
-	touch $@
-$(OGG)-$(OGG_VERSION)/configure: $(DN_SRC)/$(OGG_SRC)
-	tar -xf $(DN_SRC)/$(OGG_SRC)
-	touch $@
-$(OGG)-$(OGG_VERSION)/Makefile: $(OGG)-$(OGG_VERSION)/configure
-	cd $(OGG)-$(OGG_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
-$(OGG)-$(OGG_VERSION)/src/libogg.la: $(OGG)-$(OGG_VERSION)/Makefile
-	cd $(OGG)-$(OGG_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libogg.a: $(OGG)-$(OGG_VERSION)/src/libogg.la
-	cd $(OGG)-$(OGG_VERSION)/ && make install
+# x265: CLI tools for encoding H265/HEVC video streams
+# https://bitbucket.org/multicoreware/x265
+X265=x265
+X265_VERSION=1.8
+X265_SRC=$(X265)_$(X265_VERSION).tar.gz
+X265_URL=https://bitbucket.org/multicoreware/x265/downloads/$(X265_SRC)
 
-$(OGG)-uninstall: $(OGG)-$(OGG_VERSION)/src/libogg.la
-	cd $(OGG)-$(OGG_VERSION)/ && make uninstall
-$(OGG)-install: $(PREFIX)/lib/libogg.a
+FL_DEP_X265= \
+	$(YASM)-install \
+	$(CMAKE)-install \
+	$(NULL)
+
+USE_HG_X265=0
+
+ifeq ($(USE_HG_X265),1) # use mercurial instead
+
+X265_VERSION=hg
+X265_SRC=$(X265)-$(X265_VERSION)/.hg
+X265_URL=https://bitbucket.org/multicoreware/x265
+
+$(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(X265_SRC)" ]; then cd $(DN_SRC)/$(X265)-$(X265_VERSION) && hg pull; else hg clone $(X265_URL) $(DN_SRC)/$(X265)-$(X265_VERSION); fi
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(OGG_SRC)
-FL_UNINSTALL+=$(OGG)-uninstall
+$(X265)-$(X265_VERSION)/.hg: $(DN_SRC)/$(X265_SRC)
+	cd $(DN_SRC)/$(X265)-$(X265_VERSION) && hg pull
+	if [ -d "$(X265)-$(X265_VERSION)" ]; then cd $(X265)-$(X265_VERSION) && hg pull; else hg clone $(DN_SRC)/$(X265)-$(X265_VERSION)/ $(X265)-$(X265_VERSION); fi
+	touch $@
+
+$(X265)-$(X265_VERSION)/CMakeLists.txt: $(X265)-$(X265_VERSION)/.hg
+	touch $@
+else
+$(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(X265_URL)
+	touch $@
+$(X265)-$(X265_VERSION)/CMakeLists.txt: $(DN_SRC)/$(X265_SRC)
+	rm -rf $(X265)-*
+	tar -xf $(DN_SRC)/$(X265_SRC)
+	mv $(X265)* $(X265)-$(X265_VERSION)
+	touch $@
+endif
+
+$(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-10 && cd build-10 \
+		&& $(ENV_COMPILE) cmake ../source \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DHIGH_BIT_DEPTH='TRUE' \
+            -DEXPORT_C_API='FALSE' \
+            -DENABLE_CLI='FALSE' \
+            -DENABLE_SHARED='FALSE'
+$(X265)-$(X265_VERSION)/build-10/libx265.a: $(X265)-$(X265_VERSION)/build-10/Makefile
+	cd $(X265)-$(X265_VERSION)/build-10 && make $(MAKE_ARG)
+
+$(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-12 && cd build-12 \
+		&& $(ENV_COMPILE) cmake ../source \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DHIGH_BIT_DEPTH='TRUE' \
+            -DMAIN12='TRUE' \
+            -DEXPORT_C_API='FALSE' \
+            -DENABLE_CLI='FALSE' \
+            -DENABLE_SHARED='FALSE'
+$(X265)-$(X265_VERSION)/build-12/libx265.a: $(X265)-$(X265_VERSION)/build-12/Makefile
+	cd $(X265)-$(X265_VERSION)/build-12 && make $(MAKE_ARG)
+
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265) $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
+	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
+        && ln -s ../build-10/libx265.a libx265_main10.a \
+        && ln -s ../build-12/libx265.a libx265_main12.a \
+        && $(ENV_COMPILE) cmake ../source \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DENABLE_SHARED='TRUE' \
+            -DEXTRA_LIB='x265_main10.a;x265_main12.a' \
+            -DEXTRA_LINK_FLAGS='-L.' \
+            -DLINKED_10BIT='TRUE' \
+            -DLINKED_12BIT='TRUE'
+$(X265)-$(X265_VERSION)/build-8/libx265.a: $(X265)-$(X265_VERSION)/build-8/Makefile
+	cd $(X265)-$(X265_VERSION)/build-8 && make $(MAKE_ARG)
+
+$(PREFIX)/lib/libx265.a: $(X265)-$(X265_VERSION)/build-8/libx265.a
+	cd $(X265)-$(X265_VERSION)/build-8 && make install
+
+$(X265)-uninstall: $(X265)-$(X265_VERSION)/build-8/libx265.a
+	cd $(X265)-$(X265_VERSION)/build-8 && make uninstall
+$(X265)-install: $(PREFIX)/lib/libx265.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(X265_SRC)
+FL_UNINSTALL+=$(X265)-uninstall
+
+
+########################################
+# xavs
+# support yasm: https://github.com/Distrotech/xavs
+# dynamic lib patch: https://github.com/pld-linux/xavs/blob/master/xavs-dynamic-xavs.patch
+# https://github.com/OpenMandrivaAssociation/xavs
+# debian: https://github.com/yysfire/xavs-debian
+XAVS=xavs
+
+$(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://github.com/OpenMandrivaAssociation/xavs/raw/master/xavs-0.1.55-dont-strip-symbols.patch
+	touch $@
+$(DN_SRC)/xavs-dynamic-xavs.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://github.com/pld-linux/xavs/raw/master/xavs-dynamic-xavs.patch
+	touch $@
+
+USE_SVN_XAVS=1
+
+ifeq ($(USE_SVN_XAVS),1) # use svn instead
+XAVS_VERSION=svn
+XAVS_SRC=$(XAVS)-$(XAVS_VERSION)/.svn
+XAVS_URL=http://svn.code.sf.net/p/xavs/code/trunk
+
+$(DN_SRC)/$(XAVS_SRC): $(DN_SRC)/created
+	svn checkout $(XAVS_URL) $(DN_SRC)/$(XAVS)-$(XAVS_VERSION)
+	touch $@
+$(XAVS)-$(XAVS_VERSION)/configure: $(DN_SRC)/$(XAVS_SRC)
+#	cd $(DN_SRC)/$(XAVS)-$(XAVS_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(XAVS)*
+	cp -r $(DN_SRC)/$(XAVS)-$(XAVS_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(XAVS)-$(XAVS_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	#cd $(XAVS)-$(XAVS_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+
+else # use released files
+XAVS_VERSION=0.1.55
+XAVS_SRC=$(XAVS)-$(XAVS_VERSION).tar.xz
+XAVS_URL=https://github.com/OpenMandrivaAssociation/xavs/raw/master/$(XAVS_SRC)
+
+$(DN_SRC)/$(XAVS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XAVS_URL)
+	touch $@
+
+$(XAVS)-$(XAVS_VERSION)/configure: $(DN_SRC)/$(XAVS_SRC)
+	tar -xf $(DN_SRC)/$(XAVS_SRC)
+	#cd $(XAVS)-$(XAVS_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+endif
+
+$(XAVS)-$(XAVS_VERSION)/mypatched: $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patch $(DN_SRC)/xavs-dynamic-xavs.patch $(XAVS)-$(XAVS_VERSION)/configure
+	cd $(XAVS)-$(XAVS_VERSION)/ \
+        && patch -p1 < $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patch \
+        && patch -p1 < $(DN_SRC)/xavs-dynamic-xavs.patch \
+        && sed -i -e 's|$$(CC) -o $$@ $$(OBJCLI) $$(LDFLAGS) -L. -lxavs|$$(CC) -o $$@ $$(OBJCLI) -L. -lxavs $$(LDFLAGS)|' \
+            -e 's|xavs$$(EXE): $$(OBJCLI) $$(SONAME)|xavs$$(EXE): $$(OBJCLI) $$(SONAME) libxavs.a|' Makefile
+	touch $@
+
+$(XAVS)-$(XAVS_VERSION)/Makefile: $(XAVS)-$(XAVS_VERSION)/mypatched $(XAVS)-$(XAVS_VERSION)/configure $(FL_DEP_XAVS)
+	cd $(XAVS)-$(XAVS_VERSION)/ \
+		&& touch config.mak \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(XAVS)-$(XAVS_VERSION)/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/Makefile
+	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc
+	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make install
+	touch $@
+
+$(XAVS)-uninstall: $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc
+	cd $(XAVS)-$(XAVS_VERSION)/ && make uninstall
+$(XAVS)-install: $(PREFIX)/lib/pkgconfig/$(XAVS).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XAVS_SRC)
+FL_UNINSTALL+=$(XAVS)-uninstall
+
+
+########################################
+LIBOGG=libogg
+LIBOGG_VERSION=1.3.2
+LIBOGG_SRC=$(LIBOGG)-$(LIBOGG_VERSION).tar.gz
+LIBOGG_URL=http://downloads.xiph.org/releases/ogg/$(LIBOGG_SRC)
+$(DN_SRC)/$(LIBOGG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBOGG_URL)
+	touch $@
+$(LIBOGG)-$(LIBOGG_VERSION)/configure: $(DN_SRC)/$(LIBOGG_SRC)
+	tar -xf $(DN_SRC)/$(LIBOGG_SRC)
+	touch $@
+$(LIBOGG)-$(LIBOGG_VERSION)/Makefile: $(LIBOGG)-$(LIBOGG_VERSION)/configure
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+$(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la: $(LIBOGG)-$(LIBOGG_VERSION)/Makefile
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX)/lib/$(LIBOGG).a: $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make install
+
+$(LIBOGG)-uninstall: $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make uninstall
+$(LIBOGG)-install: $(PREFIX)/lib/$(LIBOGG).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBOGG_SRC)
+FL_UNINSTALL+=$(LIBOGG)-uninstall
 
 ########################################
 VORBIS=libvorbis
-VORBIS_VERSION=1.3.4
 VORBIS_VERSION=1.3.5
 VORBIS_SRC=$(VORBIS)-$(VORBIS_VERSION).tar.gz
 VORBIS_URL=http://downloads.xiph.org/releases/vorbis/$(VORBIS_SRC)
 
 FL_DEP_VORBIS= \
-	$(OGG)-install \
+	$(LIBOGG)-install \
 	$(NULL)
 
 $(DN_SRC)/$(VORBIS_SRC): $(DN_SRC)/created
@@ -687,7 +963,7 @@ THEORA_SRC=$(THEORA)-$(THEORA_VERSION).tar.gz
 THEORA_URL=http://downloads.xiph.org/releases/theora/$(THEORA_SRC)
 
 FL_DEP_THEORA= \
-	$(OGG)-install \
+	$(LIBOGG)-install \
 	$(VORBIS)-install \
 	$(NULL)
 
@@ -717,15 +993,1720 @@ FL_SOURCES+=$(DN_SRC)/$(THEORA_SRC)
 FL_UNINSTALL+=$(THEORA)-uninstall
 
 ########################################
+# log4cpp: A library of C++ classes for flexible logging to files, syslog, IDSA and other destinations.
+# http://log4cpp.sourceforge.net/
+LOG4CPP=log4cpp
 
+LOG4CPP_VERSION=1.1.1
+LOG4CPP_SRC=$(LOG4CPP)-$(LOG4CPP_VERSION).tar.gz
+LOG4CPP_URL=http://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/$(LOG4CPP_SRC)
+
+$(DN_SRC)/$(LOG4CPP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LOG4CPP_URL)
+	touch $@
+
+$(LOG4CPP)-$(LOG4CPP_VERSION)/configure: $(DN_SRC)/$(LOG4CPP_SRC)
+	tar -xf $(DN_SRC)/$(LOG4CPP_SRC)
+	mv $(LOG4CPP)* $(LOG4CPP)-$(LOG4CPP_VERSION)
+	#autoreconf -if
+	touch $@
+
+$(LOG4CPP)-$(LOG4CPP_VERSION)/Makefile: $(LOG4CPP)-$(LOG4CPP_VERSION)/configure $(FL_DEP_LOG4CPP)
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --disable-doxygen --disable-dot --without-idsa
+	touch $@
+$(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc: $(LOG4CPP)-$(LOG4CPP_VERSION)/Makefile
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LOG4CPP).pc: $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make install
+	touch $@
+
+$(LOG4CPP)-uninstall: $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make uninstall
+$(LOG4CPP)-install: $(PREFIX)/lib/pkgconfig/$(LOG4CPP).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LOG4CPP_SRC)
+FL_UNINSTALL+=$(LOG4CPP)-uninstall
+
+########################################
+# ffms2: A libav/ffmpeg based source library and Avisynth plugin for easy frame accurate access
+# https://github.com/FFMS/ffms2
+FFMS2=ffms2
+
+FFMS2_VERSION=2.22
+FFMS2_SRC=$(FFMS2)-$(FFMS2_VERSION).tar.gz
+FFMS2_URL=https://github.com/FFMS/ffms2/archive/$(FFMS2_VERSION).tar.gz
+
+$(DN_SRC)/$(FFMS2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FFMS2_URL)
+	touch $@
+
+$(FFMS2)-$(FFMS2_VERSION)/configure: $(DN_SRC)/$(FFMS2_SRC)
+	tar -xf $(DN_SRC)/$(FFMS2_SRC)
+	#autoreconf -if
+	touch $@
+
+$(FFMS2)-$(FFMS2_VERSION)/Makefile: $(FFMS2)-$(FFMS2_VERSION)/configure $(FL_DEP_FFMS2)
+	cd $(FFMS2)-$(FFMS2_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-avresample --enable-shared --disable-static
+	touch $@
+$(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/Makefile
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make install
+	touch $@
+
+$(FFMS2)-uninstall: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make uninstall
+$(FFMS2)-install: $(PREFIX)/lib/pkgconfig/$(FFMS2).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FFMS2_SRC)
+FL_UNINSTALL+=$(FFMS2)-uninstall
+
+########################################
+# AviSynth scripting engine
+AVXSYNTH=avxsynth
+
+FL_DEP_AVXSYNTH= \
+	$(YASM)-install \
+	$(LOG4CPP)-install \
+	$(FFMS2)-install \
+	$(NULL)
+
+USE_GIT_AVXSYNTH=1
+
+ifeq ($(USE_GIT_AVXSYNTH),1) # use git instead
+AVXSYNTH_VERSION=git
+AVXSYNTH_SRC=$(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git
+AVXSYNTH_URL=https://github.com/avxsynth/avxsynth.git
+
+$(DN_SRC)/$(AVXSYNTH_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(AVXSYNTH_SRC)" ]; then cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull; else git clone $(AVXSYNTH_URL) $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION); fi
+	touch $@
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git: $(DN_SRC)/$(AVXSYNTH_SRC)
+	cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull
+	if [ -d "$(AVXSYNTH)-$(AVXSYNTH_VERSION)" ]; then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull; else git clone $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION)/ $(AVXSYNTH)-$(AVXSYNTH_VERSION); fi
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git $(FL_DEP_AVXSYNTH)
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && git pull
+	touch $@
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && autoreconf -if
+	touch $@
+
+else # use released files
+AVXSYNTH_VERSION=1.0.0
+AVXSYNTH_SRC=$(AVXSYNTH)-$(AVXSYNTH_VERSION).tar.gz
+AVXSYNTH_URL=https://github.com/avxsynth/$(AVXSYNTH)/archive/$(AVXSYNTH_VERSION).tar.gz
+
+$(DN_SRC)/$(AVXSYNTH_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AVXSYNTH_URL)
+	touch $@
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure: $(DN_SRC)/$(AVXSYNTH_SRC)
+	tar -xf $(DN_SRC)/$(AVXSYNTH_SRC)
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched: $(DN_PATCH)/pbs-avxsynth-newapi.patch $(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-avxsynth-newapi.patch
+	touch $@
+
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/Makefile: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched $(FL_DEP_AVXSYNTH)
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples
+	touch $@
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/Makefile
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(AVXSYNTH).pc: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make install
+	touch $@
+
+$(AVXSYNTH)-uninstall: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make uninstall
+$(AVXSYNTH)-install: $(PREFIX)/lib/pkgconfig/$(AVXSYNTH).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(AVXSYNTH_SRC)
+FL_UNINSTALL+=$(AVXSYNTH)-uninstall
+
+
+########################################
+# gavl: A low level library, upon which multimedia APIs can be built.
+# http://gmerlin.sourceforge.net/
+GAVL=gavl
+
+USE_SVN_GAVL=1
+
+ifeq ($(USE_SVN_GAVL),1) # use svn instead
+GAVL_VERSION=svn
+GAVL_SRC=$(GAVL)-$(GAVL_VERSION)/.svn
+GAVL_URL=http://svn.code.sf.net/p/gmerlin/code/trunk/gavl
+
+$(DN_SRC)/$(GAVL_SRC): $(DN_SRC)/created
+	svn checkout $(GAVL_URL) $(DN_SRC)/$(GAVL)-$(GAVL_VERSION)
+	touch $@
+$(GAVL)-$(GAVL_VERSION)/configure: $(DN_SRC)/$(GAVL_SRC)
+#	cd $(DN_SRC)/$(GAVL)-$(GAVL_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(GAVL)*
+	cp -r $(DN_SRC)/$(GAVL)-$(GAVL_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(GAVL)-$(GAVL_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	cd $(GAVL)-$(GAVL_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+
+else # use released files
+GAVL_VERSION=1.4.0
+GAVL_SRC=$(GAVL)-$(GAVL_VERSION).tar.gz
+GAVL_URL=http://sourceforge.net/projects/gmerlin/files/gavl/$(GAVL_VERSION)/$(GAVL_SRC)
+
+$(DN_SRC)/$(GAVL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GAVL_URL)
+	touch $@
+
+$(GAVL)-$(GAVL_VERSION)/configure: $(DN_SRC)/$(GAVL_SRC)
+	tar -xf $(DN_SRC)/$(GAVL_SRC)
+	cd $(GAVL)-$(GAVL_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+endif
+
+#$(GAVL)-$(GAVL_VERSION)/mypatched: $(DN_PATCH)/pbs-GAVL-newapi.patch $(GAVL)-$(GAVL_VERSION)/configure
+	#cd $(GAVL)-$(GAVL_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-GAVL-newapi.patch
+	#touch $@
+
+$(GAVL)-$(GAVL_VERSION)/Makefile: $(GAVL)-$(GAVL_VERSION)/configure $(FL_DEP_GAVL)
+	cd $(GAVL)-$(GAVL_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --without-doxygen --with-cpuflags=none
+	touch $@
+$(GAVL)-$(GAVL_VERSION)/$(GAVL).pc: $(GAVL)-$(GAVL_VERSION)/Makefile
+	cd $(GAVL)-$(GAVL_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(GAVL).pc: $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc
+	cd $(GAVL)-$(GAVL_VERSION)/ && make install
+	touch $@
+
+$(GAVL)-uninstall: $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc
+	cd $(GAVL)-$(GAVL_VERSION)/ && make uninstall
+$(GAVL)-install: $(PREFIX)/lib/pkgconfig/$(GAVL).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GAVL_SRC)
+FL_UNINSTALL+=$(GAVL)-uninstall
+
+########################################
+FREI0R=frei0r
+
+FL_DEP_FREI0R= \
+	$(GAVL)-install \
+	$(NULL)
+
+USE_GIT_FREI0R=1
+
+ifeq ($(USE_GIT_FREI0R),1) # use git instead
+FREI0R_VERSION=git
+FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION)/.git
+FREI0R_URL=git://code.dyne.org/frei0r.git
+
+$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(FREI0R_SRC)" ]; then cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(FREI0R_URL) $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION); fi
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/.git: $(DN_SRC)/$(FREI0R_SRC)
+	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull
+	if [ -d "$(FREI0R)-$(FREI0R_VERSION)" ]; then cd $(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION)/ $(FREI0R)-$(FREI0R_VERSION); fi
+
+$(FREI0R)-$(FREI0R_VERSION)/README.md: $(FREI0R)-$(FREI0R_VERSION)/.git $(FL_DEP_FREI0R)
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && git pull
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/README.md
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && autoreconf -if
+	touch $@
+
+else # use released files
+FREI0R_VERSION=1.3
+FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION).tar.gz
+FREI0R_URL=http://www.piksel.no/frei0r/releases/frei0r-plugins-$(FREI0R_VERSION).tar.gz
+
+$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FREI0R_URL)
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/configure: $(DN_SRC)/$(FREI0R_SRC)
+	tar -xf $(DN_SRC)/$(FREI0R_SRC)
+	#cd $(FREI0R)-$(FREI0R_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+#$(FREI0R)-$(FREI0R_VERSION)/mypatched: $(DN_PATCH)/pbs-FREI0R-newapi.patch $(FREI0R)-$(FREI0R_VERSION)/configure
+	#cd $(FREI0R)-$(FREI0R_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-FREI0R-newapi.patch
+	#touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure $(FL_DEP_FREI0R)
+	cd $(FREI0R)-$(FREI0R_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/Makefile
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make install
+	touch $@
+
+$(FREI0R)-uninstall: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make uninstall
+$(FREI0R)-install: $(PREFIX)/lib/pkgconfig/$(FREI0R).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FREI0R_SRC)
+FL_UNINSTALL+=$(FREI0R)-uninstall
+
+
+########################################
+# ladspa
+LADSPA=ladspa
+
+LADSPA_VERSION=1.13
+LADSPA_SRC=$(LADSPA)-$(LADSPA_VERSION).tar.gz
+LADSPA_URL=https://github.com/OpenMandrivaAssociation/ladspa/raw/master/ladspa_sdk_$(LADSPA_VERSION).tgz
+
+$(DN_SRC)/$(LADSPA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LADSPA_URL)
+	touch $@
+
+$(LADSPA)-$(LADSPA_VERSION)/src/makefile: $(DN_SRC)/$(LADSPA_SRC)
+	tar -xf $(DN_SRC)/$(LADSPA_SRC)
+	mv $(LADSPA)* $(LADSPA)-$(LADSPA_VERSION)
+	touch $@
+
+$(DN_SRC)/fix-memleak-in-plugin-scanning.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/fix-memleak-in-plugin-scanning.patch?h=packages/ladspa
+	touch $@
+
+$(DN_SRC)/fallback-ladspa-path.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/fallback-ladspa-path.patch?h=packages/ladspa
+	touch $@
+
+$(LADSPA)-$(LADSPA_VERSION)/mypatched: $(DN_SRC)/fix-memleak-in-plugin-scanning.patch $(DN_SRC)/fallback-ladspa-path.patch $(LADSPA)-$(LADSPA_VERSION)/src/makefile
+	cd $(LADSPA)-$(LADSPA_VERSION)/ && patch -Np0 < $(DN_SRC)/fix-memleak-in-plugin-scanning.patch
+	cd $(LADSPA)-$(LADSPA_VERSION)/ && patch -p1 < $(DN_SRC)/fallback-ladspa-path.patch
+	sed -e 's/mkdirhier/mkdir -p/' -i $(LADSPA)-$(LADSPA_VERSION)/src/makefile
+	touch $@
+
+$(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so: $(LADSPA)-$(LADSPA_VERSION)/mypatched $(LADSPA)-$(LADSPA_VERSION)/src/makefile $(FL_DEP_LADSPA)
+	cd $(LADSPA)-$(LADSPA_VERSION)/src && make $(MAKE_ARG) targets
+	touch $@
+$(PREFIX)/lib/ladspa/amp.so: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
+	cd $(LADSPA)-$(LADSPA_VERSION)/src && make INSTALL_PLUGINS_DIR="$(PREFIX)/lib/ladspa/" \
+       INSTALL_INCLUDE_DIR="$(PREFIX)/include/" \
+       INSTALL_BINARY_DIR="$(PREFIX)/bin/" install
+	touch $@
+
+$(LADSPA)-uninstall: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
+	cd $(LADSPA)-$(LADSPA_VERSION)/ && make uninstall
+$(LADSPA)-install: $(PREFIX)/lib/ladspa/amp.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LADSPA_SRC)
+FL_UNINSTALL+=$(LADSPA)-uninstall
+
+########################################
+# FFTW: A library for computing the discrete Fourier transform (DFT)
+# http://www.fftw.org/
+FFTW=fftw
+
+FFTW_VERSION=3.3.4
+FFTW_SRC=$(FFTW)-$(FFTW_VERSION).tar.gz
+FFTW_URL=http://www.fftw.org/$(FFTW_SRC)
+
+$(DN_SRC)/$(FFTW_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FFTW_URL)
+	touch $@
+
+$(FFTW)-$(FFTW_VERSION)/configure: $(DN_SRC)/$(FFTW_SRC)
+	tar -xf $(DN_SRC)/$(FFTW_SRC)
+	#cd $(FFTW)-$(FFTW_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+
+$(FFTW)-$(FFTW_VERSION)/build-double/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
+	mkdir $(FFTW)-$(FFTW_VERSION)/build-double/ && cd $(FFTW)-$(FFTW_VERSION)/build-double/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-sse2 --enable-avx
+	touch $@
+$(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/Makefile
+	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make install
+	touch $@
+
+$(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
+	mkdir $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-long-double
+	touch $@
+$(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile
+	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make install
+	touch $@
+
+$(FFTW)-$(FFTW_VERSION)/build-single/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
+	mkdir $(FFTW)-$(FFTW_VERSION)/build-single/ && cd $(FFTW)-$(FFTW_VERSION)/build-single/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-float --enable-sse --enable-avx
+	touch $@
+$(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/Makefile
+	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && make install
+	touch $@
+
+$(FFTW)-uninstall: $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc
+	cd $(FFTW)-$(FFTW_VERSION)/ && make uninstall
+$(FFTW)-install: $(PREFIX)/lib/pkgconfig/fftw3.pc $(PREFIX)/lib/pkgconfig/fftw3l.pc $(PREFIX)/lib/pkgconfig/fftw3f.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FFTW_SRC)
+FL_UNINSTALL+=$(FFTW)-uninstall
+
+
+########################################
+LIBAACPLUS=libaacplus
+
+FL_DEPENDENCES_LIBAACPLUS= \
+    $(FFTW)-install  \
+    $(NULL)
+
+LIBAACPLUS_VERSION=2.0.2
+LIBAACPLUS_SRC=$(LIBAACPLUS)-$(LIBAACPLUS_VERSION).tar.gz
+LIBAACPLUS_URL=http://tipok.org.ua/downloads/media/aac+/libaacplus/$(LIBAACPLUS_SRC)
+
+$(DN_SRC)/$(LIBAACPLUS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBAACPLUS_URL)
+	touch $@
+
+$(DN_SRC)/26410-800.zip: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://www.3gpp.org/ftp/Specs/archive/26_series/26.410/26410-800.zip
+	touch $@
+
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure: $(DN_SRC)/$(LIBAACPLUS_SRC) $(DN_SRC)/26410-800.zip
+	tar -xf $(DN_SRC)/$(LIBAACPLUS_SRC)
+	cp $(DN_SRC)/26410-800.zip $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/src/26410-800.zip
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
+	    && for i in $$(find . -name 'Makefile.am');do sed 's|INCLUDES|AM_CPPFLAGS|g' -i $$i; done \
+	    && sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' configure.ac \
+	    && ./autogen.sh #autoreconf -if
+	touch $@
+
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure $(FL_DEP_LIBAACPLUS)
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-static=off
+	touch $@
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 #$(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make install
+	touch $@
+
+$(LIBAACPLUS)-uninstall: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make uninstall
+$(LIBAACPLUS)-install: $(PREFIX)/lib/pkgconfig/aacplus.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBAACPLUS_SRC)
+FL_UNINSTALL+=$(LIBAACPLUS)-uninstall
+
+
+########################################
+# Library to access Blu-Ray disks for video playback
+LIBBLURAY=libbluray
+
+FL_DEP_LIBBLURAY= \
+	$(LIBXML2)-install \
+	$(FREETYPE)-install \
+	$(FONTCONF)-install \
+	$(NULL)
+
+USE_GIT_LIBBLURAY=1
+
+ifeq ($(USE_GIT_LIBBLURAY),1) # use git instead
+LIBBLURAY_VERSION=git
+LIBBLURAY_SRC=$(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git
+LIBBLURAY_URL=git://git.videolan.org/$(LIBBLURAY).git
+
+$(DN_SRC)/$(LIBBLURAY_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBBLURAY_SRC)" ]; then cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull; else git clone $(LIBBLURAY_URL) $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION); fi
+	touch $@
+
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git: $(DN_SRC)/$(LIBBLURAY_SRC)
+	cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull
+	if [ -d "$(LIBBLURAY)-$(LIBBLURAY_VERSION)" ]; then cd $(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION)/ $(LIBBLURAY)-$(LIBBLURAY_VERSION); fi
+
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git $(FL_DEP_LIBBLURAY)
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && git pull
+	touch $@
+
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && autoreconf -if
+	touch $@
+
+else # use released files
+LIBBLURAY_VERSION=0.9.1
+LIBBLURAY_SRC=$(LIBBLURAY)-$(LIBBLURAY_VERSION).tar.bz2
+LIBBLURAY_URL=ftp://ftp.videolan.org/pub/videolan/libbluray/$(LIBBLURAY_VERSION)/$(LIBBLURAY_SRC)
+
+$(DN_SRC)/$(LIBBLURAY_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBBLURAY_URL)
+	touch $@
+
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(DN_SRC)/$(LIBBLURAY_SRC)
+	tar -xf $(DN_SRC)/$(LIBBLURAY_SRC)
+	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+#$(LIBBLURAY)-$(LIBBLURAY_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
+	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch
+	#touch $@
+
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure $(FL_DEP_LIBBLURAY)
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --disable-bdjava
+	touch $@
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBBLURAY).la: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make install
+	touch $@
+
+$(LIBBLURAY)-uninstall: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make uninstall
+$(LIBBLURAY)-install: $(PREFIX)/lib/$(LIBBLURAY).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBBLURAY_SRC)
+FL_UNINSTALL+=$(LIBBLURAY)-uninstall
+
+########################################
+# Bauer stereophonic-to-binaural DSP effect library
+# http://bs2b.sourceforge.net
+LIBBS2B=libbs2b
+
+USE_SVN_LIBBS2B=0
+
+ifeq ($(USE_SVN_LIBBS2B),1) # use svn instead
+LIBBS2B_VERSION=svn
+LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION)/.svn
+LIBBS2B_URL=http://svn.code.sf.net/p/bs2b/code/trunk/libbs2b
+
+$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
+	svn checkout $(LIBBS2B_URL) $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)
+	touch $@
+$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
+#	cd $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(LIBBS2B)*
+	cp -r $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(LIBBS2B)-$(LIBBS2B_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && ./autogen.sh #autoreconf -if
+	touch $@
+
+else # use released files
+LIBBS2B_VERSION=3.1.0
+LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION).tar.gz
+LIBBS2B_URL=http://sourceforge.net/projects/bs2b/files/libbs2b/$(LIBBS2B_VERSION)/$(LIBBS2B_SRC)
+
+$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBBS2B_URL)
+	touch $@
+
+$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
+	tar -xf $(DN_SRC)/$(LIBBS2B_SRC)
+	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+#$(LIBBS2B)-$(LIBBS2B_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBS2B-newapi.patch $(LIBBS2B)-$(LIBBS2B_VERSION)/configure
+	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBS2B-newapi.patch
+	#touch $@
+
+$(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile: $(LIBBS2B)-$(LIBBS2B_VERSION)/configure $(FL_DEP_LIBBS2B)
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make install
+	touch $@
+
+$(LIBBS2B)-uninstall: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make uninstall
+$(LIBBS2B)-install: $(PREFIX)/lib/$(LIBBS2B).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBBS2B_SRC)
+FL_UNINSTALL+=$(LIBBS2B)-uninstall
+
+########################################
+LIBID3TAG=libid3tag
+
+FL_DEP_LIBID3TAG= \
+	$(ZLIB)-install \
+	$(GPERF)-install \
+	$(NULL)
+
+LIBID3TAG_VERSION=0.15.1b
+LIBID3TAG_SRC=$(LIBID3TAG)-$(LIBID3TAG_VERSION).tar.gz
+LIBID3TAG_URL=ftp://ftp.mars.org/pub/mpeg/$(LIBID3TAG_SRC)
+
+$(DN_SRC)/libid3tag-10_utf16.diff: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/10_utf16.diff?h=packages/libid3tag
+	touch $@
+
+$(DN_SRC)/libid3tag-11_unknown_encoding.diff: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/11_unknown_encoding.diff?h=packages/libid3tag
+	touch $@
+
+$(DN_SRC)/libid3tag-CVE-2008-2109.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/CVE-2008-2109.patch?h=packages/libid3tag
+	touch $@
+
+$(DN_SRC)/libid3tag-id3tag.pc: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/id3tag.pc?h=packages/libid3tag
+	touch $@
+
+$(DN_SRC)/$(LIBID3TAG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBID3TAG_URL)
+	touch $@
+
+$(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure: $(DN_SRC)/$(LIBID3TAG_SRC) $(DN_SRC)/libid3tag-10_utf16.diff $(DN_SRC)/libid3tag-11_unknown_encoding.diff $(DN_SRC)/libid3tag-CVE-2008-2109.patch $(DN_SRC)/libid3tag-id3tag.pc
+	tar -xf $(DN_SRC)/$(LIBID3TAG_SRC)
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ \
+        && patch -p1 -i $(DN_SRC)/libid3tag-10_utf16.diff \
+        && patch -p1 -i $(DN_SRC)/libid3tag-11_unknown_encoding.diff \
+        && patch -Np0 -i $(DN_SRC)/libid3tag-CVE-2008-2109.patch \
+	#cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBID3TAG)-$(LIBID3TAG_VERSION)/Makefile: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure $(FL_DEP_LIBID3TAG)
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/Makefile
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBID3TAG).la: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make install && install -D -m644 $(DN_SRC)/libid3tag-id3tag.pc "$(PREFIX)/lib/pkgconfig/id3tag.pc"
+	touch $@
+
+$(LIBID3TAG)-uninstall: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make uninstall
+$(LIBID3TAG)-install: $(PREFIX)/lib/$(LIBID3TAG).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBID3TAG_SRC)
+FL_UNINSTALL+=$(LIBID3TAG)-uninstall
+
+########################################
+# Library that does image file loading and saving as well as rendering, manipulation, arbitrary polygon support
+# http://sourceforge.net/projects/enlightenment/
+IMLIB2=imlib2
+
+FL_DEP_IMLIB2= \
+	$(LIBTIFF)-install \
+	$(LIBPNG)-install \
+	$(LIBJPEG)-install \
+	$(GIFLIB)-install \
+	$(BZIP2)-install \
+	$(LIBID3TAG)-install \
+	$(FREETYPE)-install \
+	$(LIBXEXT)-install \
+	$(NULL)
+
+IMLIB2_VERSION=1.4.7
+IMLIB2_SRC=$(IMLIB2)-$(IMLIB2_VERSION).tar.gz
+IMLIB2_URL=http://sourceforge.net/projects/enlightenment/files/imlib2-src/$(IMLIB2_VERSION)/$(IMLIB2_SRC)
+
+$(DN_SRC)/$(IMLIB2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(IMLIB2_URL)
+	touch $@
+
+$(IMLIB2)-$(IMLIB2_VERSION)/configure: $(DN_SRC)/$(IMLIB2_SRC)
+	tar -xf $(DN_SRC)/$(IMLIB2_SRC)
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && sed -i 's/@my_libs@//' imlib2-config.in
+	#cd $(IMLIB2)-$(IMLIB2_VERSION)/ && autoreconf -if
+	touch $@
+
+#$(IMLIB2)-$(IMLIB2_VERSION)/mypatched: $(DN_PATCH)/pbs-IMLIB2-newapi.patch $(IMLIB2)-$(IMLIB2_VERSION)/configure
+	#cd $(IMLIB2)-$(IMLIB2_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-IMLIB2-newapi.patch
+	#touch $@
+
+$(IMLIB2)-$(IMLIB2_VERSION)/Makefile: $(IMLIB2)-$(IMLIB2_VERSION)/configure $(FL_DEP_IMLIB2)
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la: $(IMLIB2)-$(IMLIB2_VERSION)/Makefile
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(IMLIB2).la: $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make install
+	touch $@
+
+$(IMLIB2)-uninstall: $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make uninstall
+$(IMLIB2)-install: $(PREFIX)/lib/$(IMLIB2).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(IMLIB2_SRC)
+FL_UNINSTALL+=$(IMLIB2)-uninstall
+
+########################################
+LIBCACA=libcaca
+
+FL_DEP_LIBCACA= \
+	$(NCURSES)-install \
+	$(IMLIB2)-install \
+	$(NULL)
+
+USE_GIT_LIBCACA=0
+
+ifeq ($(USE_GIT_LIBCACA),1) # use git instead
+LIBCACA_VERSION=git
+LIBCACA_SRC=$(LIBCACA)-$(LIBCACA_VERSION)/.git
+LIBCACA_URL=git://git.zoy.org/$(LIBCACA).git
+
+$(DN_SRC)/$(LIBCACA_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBCACA_SRC)" ]; then cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull; else git clone $(LIBCACA_URL) $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION); fi
+	touch $@
+
+$(LIBCACA)-$(LIBCACA_VERSION)/.git: $(DN_SRC)/$(LIBCACA_SRC)
+	cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull
+	if [ -d "$(LIBCACA)-$(LIBCACA_VERSION)" ]; then cd $(LIBCACA)-$(LIBCACA_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION)/ $(LIBCACA)-$(LIBCACA_VERSION); fi
+
+$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(LIBCACA)-$(LIBCACA_VERSION)/.git $(FL_DEP_LIBCACA)
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && git pull
+	touch $@
+
+$(LIBCACA)-$(LIBCACA_VERSION)/configure: $(LIBCACA)-$(LIBCACA_VERSION)/README.md
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && autoreconf -if
+	touch $@
+
+else # use released files
+LIBCACA_VERSION=0.99.beta19
+LIBCACA_SRC=$(LIBCACA)-$(LIBCACA_VERSION).tar.gz
+LIBCACA_URL=http://libcaca.zoy.org/files/libcaca/$(LIBCACA_SRC)
+
+$(DN_SRC)/$(LIBCACA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCACA_URL)
+	touch $@
+
+$(LIBCACA)-$(LIBCACA_VERSION)/configure: $(DN_SRC)/$(LIBCACA_SRC)
+	tar -xf $(DN_SRC)/$(LIBCACA_SRC)
+	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+#$(LIBCACA)-$(LIBCACA_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBCACA-newapi.patch $(LIBCACA)-$(LIBCACA_VERSION)/configure
+	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBCACA-newapi.patch
+	#touch $@
+
+$(LIBCACA)-$(LIBCACA_VERSION)/Makefile: $(LIBCACA)-$(LIBCACA_VERSION)/configure $(FL_DEP_LIBCACA)
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
+	touch $@
+$(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/Makefile
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make install
+	touch $@
+
+$(LIBCACA)-uninstall: $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make uninstall
+$(LIBCACA)-install: $(PREFIX)/lib/$(LIBCACA).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCACA_SRC)
+FL_UNINSTALL+=$(LIBCACA)-uninstall
+
+########################################
+# Library that implements the different protocols (CDDBP, HTTP, SMTP) to access data on a CDDB server
+LIBCDDB=libcddb
+
+LIBCDDB_VERSION=1.3.2
+LIBCDDB_SRC=$(LIBCDDB)-$(LIBCDDB_VERSION).tar.bz2
+LIBCDDB_URL=http://downloads.sourceforge.net/sourceforge/$(LIBCDDB)/$(LIBCDDB_SRC)
+
+$(DN_SRC)/$(LIBCDDB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCDDB_URL)
+	touch $@
+
+$(LIBCDDB)-$(LIBCDDB_VERSION)/configure: $(DN_SRC)/$(LIBCDDB_SRC)
+	tar -xf $(DN_SRC)/$(LIBCDDB_SRC)
+	#cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && autoreconf -if
+	touch $@
+
+#$(LIBCDDB)-$(LIBCDDB_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBCDDB-newapi.patch $(LIBCDDB)-$(LIBCDDB_VERSION)/configure
+	#cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBCDDB-newapi.patch
+	#touch $@
+
+$(LIBCDDB)-$(LIBCDDB_VERSION)/Makefile: $(LIBCDDB)-$(LIBCDDB_VERSION)/configure $(FL_DEP_LIBCDDB)
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la: $(LIBCDDB)-$(LIBCDDB_VERSION)/Makefile
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBCDDB).la: $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make install
+	touch $@
+
+$(LIBCDDB)-uninstall: $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make uninstall
+$(LIBCDDB)-install: $(PREFIX)/lib/$(LIBCDDB).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCDDB_SRC)
+FL_UNINSTALL+=$(LIBCDDB)-uninstall
+
+########################################
+LIBCDIO=libcdio
+
+$(DN_SRC)/libcdio-0.83-linking.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/libcdio-0.83-linking.patch?h=packages/libcdio
+	touch $@
+
+USE_GIT_LIBCDIO=1
+
+ifeq ($(USE_GIT_LIBCDIO),1) # use git instead
+
+LIBCDIO_VERSION=git
+LIBCDIO_SRC=$(LIBCDIO)-$(LIBCDIO_VERSION)/.git
+LIBCDIO_URL=http://git.savannah.gnu.org/r/libcdio.git
+
+$(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBCDIO_SRC)" ]; then cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull; else git clone $(LIBCDIO_URL) $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION); fi
+	touch $@
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/.git: $(DN_SRC)/$(LIBCDIO_SRC)
+	cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull
+	if [ -d "$(LIBCDIO)-$(LIBCDIO_VERSION)" ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION)/ $(LIBCDIO)-$(LIBCDIO_VERSION); fi
+	touch $@
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/.git
+	#tar -xf $(DN_SRC)/$(LIBCDIO_SRC)
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
+	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
+	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
+	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && ./autogen.sh #&& autoreconf -if
+	touch $@
+
+else
+
+LIBCDIO_VERSION=0.93
+LIBCDIO_SRC=$(LIBCDIO)-$(LIBCDIO_VERSION).tar.bz2
+LIBCDIO_URL=http://downloads.sourceforge.net/sourceforge/$(LIBCDIO)/$(LIBCDIO_SRC)
+
+$(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCDIO_URL)
+	touch $@
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(DN_SRC)/$(LIBCDIO_SRC)
+	tar -xf $(DN_SRC)/$(LIBCDIO_SRC)
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
+	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
+	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
+	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && ./autogen.sh #&& autoreconf -if
+	touch $@
+endif
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(LIBCDIO)-$(LIBCDIO_VERSION)/configure
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && patch -p1 < $(DN_SRC)/libcdio-0.83-linking.patch
+	touch $@
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure $(FL_DEP_LIBCDIO)
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --without-cd-drive #--disable-vcd-info --enable-cpp-progs --disable-static
+	touch $@
+$(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make -j1 install
+	#sed -i "/LIBCDIO_SOURCE_PATH/s|.*|/* #undef LIBCDIO_SOURCE_PATH */|" $(PREFIX)/include/cdio/cdio_config.h
+	touch $@
+
+$(LIBCDIO)-uninstall: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make uninstall
+$(LIBCDIO)-install: $(PREFIX)/lib/pkgconfig/$(LIBCDIO).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCDIO_SRC)
+FL_UNINSTALL+=$(LIBCDIO)-uninstall
+
+
+########################################
+# Low-latency audio communication codec
+LIBCELT=celt
+
+FL_DEP_LIBCELT= \
+	$(LIBOGG)-install \
+	$(NULL)
+
+LIBCELT_VERSION=0.11.3
+LIBCELT_SRC=$(LIBCELT)-$(LIBCELT_VERSION).tar.gz
+LIBCELT_URL=http://downloads.us.xiph.org/releases/$(LIBCELT)/$(LIBCELT_SRC)
+
+$(DN_SRC)/$(LIBCELT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCELT_URL)
+	touch $@
+
+$(LIBCELT)-$(LIBCELT_VERSION)/configure: $(DN_SRC)/$(LIBCELT_SRC)
+	tar -xf $(DN_SRC)/$(LIBCELT_SRC)
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBCELT)-$(LIBCELT_VERSION)/Makefile: $(LIBCELT)-$(LIBCELT_VERSION)/configure $(FL_DEP_LIBCELT)
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-custom-modes
+	touch $@
+$(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc: $(LIBCELT)-$(LIBCELT_VERSION)/Makefile
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBCELT).pc: $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBCELT)-uninstall: $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make uninstall
+$(LIBCELT)-install: $(PREFIX)/lib/pkgconfig/$(LIBCELT).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCELT_SRC)
+FL_UNINSTALL+=$(LIBCELT)-uninstall
+
+
+
+########################################
+
+LIBGME=libgme
+
+LIBGME_VERSION=0.6.0
+LIBGME_SRC=$(LIBGME)-$(LIBGME_VERSION).tar.bz2
+LIBGME_URL=https://game-music-emu.googlecode.com/files/game-music-emu-$(LIBGME_VERSION).tar.bz2
+
+FL_DEP_LIBGME= \
+	$(CMAKE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(LIBGME_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBGME_URL)
+	touch $@
+$(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBGME_SRC)
+	tar -xf $(DN_SRC)/$(LIBGME_SRC)
+	mv game-music-emu* $(LIBGME)-$(LIBGME_VERSION)
+	touch $@
+$(LIBGME)-$(LIBGME_VERSION)/Makefile: $(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt $(FL_DEP_LIBGME)
+	cd $(LIBGME)-$(LIBGME_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            ..
+$(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/Makefile
+	cd $(LIBGME)-$(LIBGME_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/pkgconfig/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
+	cd $(LIBGME)-$(LIBGME_VERSION)/build && make install
+
+$(LIBGME)-uninstall: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
+	cd $(LIBGME)-$(LIBGME_VERSION)/ && make uninstall
+$(LIBGME)-install: $(PREFIX)/lib/pkgconfig/$(LIBGME).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBGME_SRC)
+FL_UNINSTALL+=$(LIBGME)-uninstall
+
+########################################
+# A MOD playing library
+LIBMODPLUG=libmodplug
+
+FL_DEP_LIBMODPLUG= \
+	#$(xxxxx)-install \
+	$(NULL)
+
+LIBMODPLUG_VERSION=0.8.8.5
+LIBMODPLUG_SRC=$(LIBMODPLUG)-$(LIBMODPLUG_VERSION).tar.gz
+LIBMODPLUG_URL=http://sourceforge.net/projects/modplug-xmms/files/libmodplug/$(LIBMODPLUG_VERSION)/$(LIBMODPLUG_SRC)
+
+$(DN_SRC)/$(LIBMODPLUG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBMODPLUG_URL)
+	touch $@
+
+$(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure: $(DN_SRC)/$(LIBMODPLUG_SRC)
+	tar -xf $(DN_SRC)/$(LIBMODPLUG_SRC)
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure $(FL_DEP_LIBMODPLUG)
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBMODPLUG)-uninstall: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make uninstall
+$(LIBMODPLUG)-install: $(PREFIX)/lib/pkgconfig/$(LIBMODPLUG).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBMODPLUG_SRC)
+FL_UNINSTALL+=$(LIBMODPLUG)-uninstall
+
+
+########################################
+LIBSCHROEDINGER=schroedinger
+
+FL_DEP_LIBSCHROEDINGER= \
+	#$(orc)-install \
+	$(NULL)
+
+LIBSCHROEDINGER_VERSION=1.0.11
+LIBSCHROEDINGER_SRC=$(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION).tar.gz
+LIBSCHROEDINGER_URL=https://launchpad.net/schroedinger/trunk/$(LIBSCHROEDINGER_VERSION)/+download/$(LIBSCHROEDINGER_SRC)
+
+$(DN_SRC)/$(LIBSCHROEDINGER_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSCHROEDINGER_URL)
+	touch $@
+
+$(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure: $(DN_SRC)/$(LIBSCHROEDINGER_SRC)
+	tar -xf $(DN_SRC)/$(LIBSCHROEDINGER_SRC)
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/Makefile: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure $(FL_DEP_LIBSCHROEDINGER)
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/Makefile
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBSCHROEDINGER).pc: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBSCHROEDINGER)-uninstall: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make uninstall
+$(LIBSCHROEDINGER)-install: $(PREFIX)/lib/pkgconfig/$(LIBSCHROEDINGER).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSCHROEDINGER_SRC)
+FL_UNINSTALL+=$(LIBSCHROEDINGER)-uninstall
+
+
+########################################
+# Super fast fixed-point MP3 encoder
+LIBSHINE=shine
+
+FL_DEP_LIBSHINE= \
+	#$(orc)-install \
+	$(NULL)
+
+LIBSHINE_VERSION=3.1.0
+LIBSHINE_SRC=$(LIBSHINE)-$(LIBSHINE_VERSION).tar.gz
+LIBSHINE_URL=https://github.com/toots/shine/archive/$(LIBSHINE_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBSHINE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSHINE_URL)
+	touch $@
+
+$(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(DN_SRC)/$(LIBSHINE_SRC)
+	tar -xf $(DN_SRC)/$(LIBSHINE_SRC)
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure $(FL_DEP_LIBSHINE)
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc: $(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBSHINE).pc: $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBSHINE)-uninstall: $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make uninstall
+$(LIBSHINE)-install: $(PREFIX)/lib/pkgconfig/$(LIBSHINE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSHINE_SRC)
+FL_UNINSTALL+=$(LIBSHINE)-uninstall
+
+
+########################################
+LIBSOXR=soxr
+
+LIBSOXR_VERSION=0.1.2
+LIBSOXR_SRC=$(LIBSOXR)-$(LIBSOXR_VERSION).tar.xz
+LIBSOXR_URL=http://sourceforge.net/projects/soxr/files/soxr-$(LIBSOXR_VERSION)-Source.tar.xz
+
+FL_DEP_LIBSOXR= \
+	$(CMAKE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(LIBSOXR_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSOXR_URL)
+	touch $@
+$(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBSOXR_SRC)
+	tar -xf $(DN_SRC)/$(LIBSOXR_SRC)
+	rm -f $(LIBSOXR)-install
+	mv $(LIBSOXR)* $(LIBSOXR)-$(LIBSOXR_VERSION)
+	touch $@
+$(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists.txt $(FL_DEP_LIBSOXR)
+	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_SHARED_LIBS=ON \
+            -DVISIBILITY_HIDDENL=ON \
+            -DWITH_AVFFT=ON \
+            -DWITH_DOUBLE_PRECISION=ON \
+            -DWITH_LSR_BINDINGS=ON \
+            -DWITH_OPENMP=ON \
+            -DWITH_PFFFT=ON \
+            -DWITH_SIMD=ON \
+            ..
+$(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile
+	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/pkgconfig/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
+	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && make install
+
+$(LIBSOXR)-uninstall: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
+	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && make uninstall
+$(LIBSOXR)-install: $(PREFIX)/lib/pkgconfig/$(LIBSOXR).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSOXR_SRC)
+FL_UNINSTALL+=$(LIBSOXR)-uninstall
+
+########################################
+# Free Lossless Audio Codec
+# http://flac.sourceforge.net/
+FLAC=flac
+
+FL_DEP_FLAC= \
+	$(LIBOGG)-install \
+	$(NULL)
+
+FLAC_VERSION=1.3.1
+FLAC_SRC=$(FLAC)-$(FLAC_VERSION).tar.xz
+FLAC_URL=http://downloads.xiph.org/releases/flac/$(FLAC_SRC)
+
+$(DN_SRC)/$(FLAC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FLAC_URL)
+	touch $@
+
+$(FLAC)-$(FLAC_VERSION)/configure: $(DN_SRC)/$(FLAC_SRC)
+	tar -xf $(DN_SRC)/$(FLAC_SRC)
+	cd $(FLAC)-$(FLAC_VERSION)/ && autoreconf -if
+	touch $@
+
+$(FLAC)-$(FLAC_VERSION)/Makefile: $(FLAC)-$(FLAC_VERSION)/configure $(FL_DEP_FLAC)
+	cd $(FLAC)-$(FLAC_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(FLAC)-$(FLAC_VERSION)/$(FLAC).pc: $(FLAC)-$(FLAC_VERSION)/Makefile
+	cd $(FLAC)-$(FLAC_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(FLAC).pc: $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc
+	cd $(FLAC)-$(FLAC_VERSION)/ && make -j1 install
+	touch $@
+
+$(FLAC)-uninstall: $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc
+	cd $(FLAC)-$(FLAC_VERSION)/ && make uninstall
+$(FLAC)-install: $(PREFIX)/lib/pkgconfig/$(FLAC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FLAC_SRC)
+FL_UNINSTALL+=$(FLAC)-uninstall
+
+########################################
+# An alternative implementation of Linux sound support
+# http://www.alsa-project.org
+LIBALSA=alsa-lib
+
+FL_DEP_LIBALSA= \
+	$(LIBOGG)-install \
+	$(NULL)
+
+LIBALSA_VERSION=1.1.0
+LIBALSA_SRC=$(LIBALSA)-$(LIBALSA_VERSION).tar.bz2
+LIBALSA_URL=ftp://ftp.alsa-project.org/pub/lib/$(LIBALSA_SRC)
+
+$(DN_SRC)/$(LIBALSA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBALSA_URL)
+	touch $@
+
+$(LIBALSA)-$(LIBALSA_VERSION)/configure: $(DN_SRC)/$(LIBALSA_SRC)
+	tar -xf $(DN_SRC)/$(LIBALSA_SRC)
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBALSA)-$(LIBALSA_VERSION)/Makefile: $(LIBALSA)-$(LIBALSA_VERSION)/configure $(FL_DEP_LIBALSA)
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --disable-python
+	touch $@
+$(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/Makefile
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBALSA)-uninstall: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make uninstall
+$(LIBALSA)-install: $(PREFIX)/lib/pkgconfig/$(LIBALSA).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBALSA_SRC)
+FL_UNINSTALL+=$(LIBALSA)-uninstall
+
+
+########################################
+LIBSNDFILE=libsndfile
+
+FL_DEP_LIBSNDFILE= \
+	$(LIBALSA)-install \
+	$(FLAC)-install \
+	$(VORBIS)-install \
+	$(NULL)
+
+LIBSNDFILE_VERSION=1.0.25
+LIBSNDFILE_SRC=$(LIBSNDFILE)-$(LIBSNDFILE_VERSION).tar.gz
+LIBSNDFILE_URL=http://www.mega-nerd.com/libsndfile/files/$(LIBSNDFILE_SRC)
+
+$(DN_SRC)/$(LIBSNDFILE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSNDFILE_URL)
+	touch $@
+
+$(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/configure: $(DN_SRC)/$(LIBSNDFILE_SRC)
+	tar -xf $(DN_SRC)/$(LIBSNDFILE_SRC)
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && autoreconf -if \
+	    && sed -i 's|#!/usr/bin/python|#!/usr/bin/python2|' \
+            src/binheader_writef_check.py \
+            src/create_symbols_file.py \
+            programs/test-sndfile-metadata-set.py
+	touch $@
+
+$(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/Makefile: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/configure $(FL_DEP_LIBSNDFILE)
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/Makefile
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBSNDFILE).pc: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBSNDFILE)-uninstall: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make uninstall
+$(LIBSNDFILE)-install: $(PREFIX)/lib/pkgconfig/$(LIBSNDFILE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSNDFILE_SRC)
+FL_UNINSTALL+=$(LIBSNDFILE)-uninstall
+
+
+########################################
+# An optimized MPEG Audio Layer 2 (MP2) encoder
+LIBTWOLAME=twolame
+
+FL_DEP_LIBTWOLAME= \
+	$(LIBSNDFILE)-install \
+	$(NULL)
+
+LIBTWOLAME_VERSION=0.3.13
+LIBTWOLAME_SRC=$(LIBTWOLAME)-$(LIBTWOLAME_VERSION).tar.gz
+LIBTWOLAME_URL=http://sourceforge.net/projects/twolame/files/twolame/$(LIBTWOLAME_VERSION)/$(LIBTWOLAME_SRC)
+
+$(DN_SRC)/$(LIBTWOLAME_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBTWOLAME_URL)
+	touch $@
+
+$(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure: $(DN_SRC)/$(LIBTWOLAME_SRC)
+	tar -xf $(DN_SRC)/$(LIBTWOLAME_SRC)
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/Makefile: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure $(FL_DEP_LIBTWOLAME)
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) #--disable-static
+	touch $@
+$(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/Makefile
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBTWOLAME).pc: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBTWOLAME)-uninstall: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make uninstall
+$(LIBTWOLAME)-install: $(PREFIX)/lib/pkgconfig/$(LIBTWOLAME).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBTWOLAME_SRC)
+FL_UNINSTALL+=$(LIBTWOLAME)-uninstall
+
+
+########################################
+LIBUTVIDEO=libutvideo
+
+FL_DEP_LIBUTVIDEO= \
+	#$(aaaaa)-install \
+	$(NULL)
+
+USE_GIT_LIBUTVIDEO=1
+
+ifeq ($(USE_GIT_LIBUTVIDEO),1) # use git instead
+LIBUTVIDEO_VERSION=git
+LIBUTVIDEO_SRC=$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git
+LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo.git
+
+$(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBUTVIDEO_SRC)" ]; then cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull; else git clone $(LIBUTVIDEO_URL) $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); fi
+	touch $@
+
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git: $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull
+	if [ -d "$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)" ]; then cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); fi
+
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git $(FL_DEP_LIBUTVIDEO)
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && git pull
+	touch $@
+
+else # use released files
+
+LIBUTVIDEO_VERSION=15.2.0
+LIBUTVIDEO_SRC=$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION).tar.gz
+LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo/archive/v$(LIBUTVIDEO_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUTVIDEO_URL)
+	touch $@
+
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	tar -xf $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	#cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && autoreconf -if
+	touch $@
+endif
+
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/Makefile: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure $(FL_DEP_LIBUTVIDEO)
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+	touch $@
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/Makefile
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBUTVIDEO).pc: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBUTVIDEO)-uninstall: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make uninstall
+$(LIBUTVIDEO)-install: $(PREFIX)/lib/pkgconfig/$(LIBUTVIDEO).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUTVIDEO_SRC)
+FL_UNINSTALL+=$(LIBUTVIDEO)-uninstall
+
+########################################
+# System Utilities Based on Sysfs
+SYSFSUTILS=sysfsutils
+
+SYSFSUTILS_VERSION=2.1.0
+SYSFSUTILS_SRC=$(SYSFSUTILS)-$(SYSFSUTILS_VERSION).tar.gz
+SYSFSUTILS_URL=http://sourceforge.net/projects/linux-diag/files/sysfsutils/$(SYSFSUTILS_VERSION)/$(SYSFSUTILS_SRC)
+
+$(DN_SRC)/$(SYSFSUTILS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(SYSFSUTILS_URL)
+	touch $@
+
+$(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure: $(DN_SRC)/$(SYSFSUTILS_SRC)
+	tar -xf $(DN_SRC)/$(SYSFSUTILS_SRC)
+	#cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && autoreconf -if
+	touch $@
+
+$(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure $(FL_DEP_SYSFSUTILS)
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man
+	touch $@
+$(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make -j1 install
+	touch $@
+
+$(SYSFSUTILS)-uninstall: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make uninstall
+$(SYSFSUTILS)-install: $(PREFIX)/lib/pkgconfig/$(SYSFSUTILS).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(SYSFSUTILS_SRC)
+FL_UNINSTALL+=$(SYSFSUTILS)-uninstall
+
+########################################
+# Userspace tools and conversion library for Video 4 Linux
+LIBV4L2=v4l-utils
+
+FL_DEP_LIBV4L2= \
+	$(LIBJPEG)-install \
+	$(SYSFSUTILS)-install \
+	$(NULL)
+
+LIBV4L2_VERSION=1.6.3
+LIBV4L2_SRC=$(LIBV4L2)-$(LIBV4L2_VERSION).tar.bz2
+LIBV4L2_URL=http://linuxtv.org/downloads/v4l-utils/$(LIBV4L2_SRC)
+
+$(DN_SRC)/$(LIBV4L2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBV4L2_URL)
+	touch $@
+
+$(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(DN_SRC)/$(LIBV4L2_SRC)
+	tar -xf $(DN_SRC)/$(LIBV4L2_SRC)
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure $(FL_DEP_LIBV4L2)
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+	touch $@
+$(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBV4L2)-uninstall: $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make uninstall
+$(LIBV4L2)-install: $(PREFIX)/lib/pkgconfig/$(LIBV4L2).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBV4L2_SRC)
+FL_UNINSTALL+=$(LIBV4L2)-uninstall
+
+
+########################################
+LIBVIDSTAB=libvidstab
+
+FL_DEP_LIBVIDSTAB= \
+	$(CMAKE)-install \
+	$(NULL)
+
+USE_GIT_LIBVIDSTAB=1
+
+ifeq ($(USE_GIT_LIBVIDSTAB),1) # use git instead
+LIBVIDSTAB_VERSION=git
+LIBVIDSTAB_SRC=$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git
+LIBVIDSTAB_URL=https://github.com/georgmartius/vid.stab.git
+
+$(DN_SRC)/$(LIBVIDSTAB_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBVIDSTAB_SRC)" ]; then cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull; else git clone $(LIBVIDSTAB_URL) $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); fi
+	touch $@
+
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git: $(DN_SRC)/$(LIBVIDSTAB_SRC)
+	cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull
+	if [ -d "$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)" ]; then cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); fi
+
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git $(FL_DEP_LIBVIDSTAB)
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && git pull
+	touch $@
+
+else # use released files
+
+LIBVIDSTAB_VERSION=1.1
+LIBVIDSTAB_VERSION=0.98b
+LIBVIDSTAB_SRC=$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION).tar.bz2
+LIBVIDSTAB_URL=https://github.com/georgmartius/vid.stab/archive/release-$(LIBVIDSTAB_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBVIDSTAB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVIDSTAB_URL)
+	touch $@
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBVIDSTAB_SRC)
+	tar -xf $(DN_SRC)/$(LIBVIDSTAB_SRC)
+	rm -f $(LIBVIDSTAB)-install
+	mv vid.stab* $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)
+	touch $@
+endif
+
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt $(FL_DEP_LIBVIDSTAB)
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            ..
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && make $(MAKE_ARG)
+$(PREFIX)/lib/pkgconfig/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && make install
+
+$(LIBVIDSTAB)-uninstall: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && make uninstall
+$(LIBVIDSTAB)-install: $(PREFIX)/lib/pkgconfig/$(LIBVIDSTAB).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVIDSTAB_SRC)
+FL_UNINSTALL+=$(LIBVIDSTAB)-uninstall
+
+
+########################################
+# Tool to download rtmp streams
+LIBRTMP=librtmp
+
+FL_DEP_LIBRTMP= \
+	#$(openssl)-install \
+	$(NULL)
+
+USE_GIT_LIBRTMP=1
+
+ifeq ($(USE_GIT_LIBRTMP),1) # use git instead
+
+LIBRTMP_VERSION=git
+LIBRTMP_SRC=$(LIBRTMP)-$(LIBRTMP_VERSION)/.git
+LIBRTMP_URL=git://git.ffmpeg.org/rtmpdump
+
+$(DN_SRC)/$(LIBRTMP_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBRTMP_SRC)" ]; then cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull; else git clone $(LIBRTMP_URL) $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION); fi
+	touch $@
+
+$(LIBRTMP)-$(LIBRTMP_VERSION)/.git: $(DN_SRC)/$(LIBRTMP_SRC)
+	cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull
+	if [ -d "$(LIBRTMP)-$(LIBRTMP_VERSION)" ]; then cd $(LIBRTMP)-$(LIBRTMP_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION)/ $(LIBRTMP)-$(LIBRTMP_VERSION); fi
+	touch $@
+
+$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(LIBRTMP)-$(LIBRTMP_VERSION)/.git
+	#tar -xf $(DN_SRC)/$(LIBRTMP_SRC)
+	touch $@
+
+else
+
+LIBRTMP_VERSION=20140918
+LIBRTMP_SRC=$(LIBRTMP)-$(LIBRTMP_VERSION).tar.bz2
+LIBRTMP_URL=git://git.ffmpeg.org/rtmpdump#commit=a1900c3
+
+$(DN_SRC)/$(LIBRTMP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBRTMP_URL)
+	touch $@
+
+$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(DN_SRC)/$(LIBRTMP_SRC)
+	tar -xf $(DN_SRC)/$(LIBRTMP_SRC)
+	touch $@
+endif
+
+$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make $(MAKE_ARG) all librtmp.pc
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=$(PREFIX) sbindir=$(PREFIX)/bin mandir=$(PREFIX)/share/man DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBRTMP)-uninstall: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/ && make uninstall
+$(LIBRTMP)-install: $(PREFIX)/lib/pkgconfig/$(LIBRTMP).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBRTMP_SRC)
+FL_UNINSTALL+=$(LIBRTMP)-uninstall
+
+########################################
+# VBI capture and decoding library
+LIBZVBI=zvbi
+
+FL_DEP_LIBZVBI= \
+	$(LIBPNG)-install \
+	#$(libx11)-install \
+	$(NULL)
+
+LIBZVBI_VERSION=0.2.35
+LIBZVBI_SRC=$(LIBZVBI)-$(LIBZVBI_VERSION).tar.bz2
+LIBZVBI_URL=http://sourceforge.net/projects/zapping/files/zvbi/$(LIBZVBI_VERSION)/$(LIBZVBI_SRC)
+
+$(DN_SRC)/$(LIBZVBI_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBZVBI_URL)
+	touch $@
+
+$(LIBZVBI)-$(LIBZVBI_VERSION)/configure: $(DN_SRC)/$(LIBZVBI_SRC)
+	tar -xf $(DN_SRC)/$(LIBZVBI_SRC)
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure $(FL_DEP_LIBZVBI)
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+	touch $@
+$(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBZVBI)-uninstall: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make uninstall
+$(LIBZVBI)-install: $(PREFIX)/lib/pkgconfig/$(LIBZVBI).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBZVBI_SRC)
+FL_UNINSTALL+=$(LIBZVBI)-uninstall
+
+########################################
+# Nvidia VDPAU library
+LIBVDPAU=libvdpau
+
+FL_DEP_LIBVDPAU= \
+	$(LIBXEXT)-install \
+	$(NULL)
+
+LIBVDPAU_VERSION=1.1.1
+LIBVDPAU_SRC=$(LIBVDPAU)-$(LIBVDPAU_VERSION).tar.bz2
+LIBVDPAU_URL=http://people.freedesktop.org/~aplattner/vdpau/$(LIBVDPAU_SRC)
+
+$(DN_SRC)/$(LIBVDPAU_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVDPAU_URL)
+	touch $@
+
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(DN_SRC)/$(LIBVDPAU_SRC)
+	tar -xf $(DN_SRC)/$(LIBVDPAU_SRC)
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure $(FL_DEP_LIBVDPAU)
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+	touch $@
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBVDPAU)-uninstall: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make uninstall
+$(LIBVDPAU)-install: $(PREFIX)/lib/pkgconfig/$(LIBVDPAU).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVDPAU_SRC)
+FL_UNINSTALL+=$(LIBVDPAU)-uninstall
+
+########################################
+LIBSODIUM=libsodium
+
+LIBSODIUM_VERSION=1.0.6
+LIBSODIUM_SRC=$(LIBSODIUM)-$(LIBSODIUM_VERSION).tar.gz
+LIBSODIUM_URL=http://download.dnscrypt.org/$(LIBSODIUM)/releases/$(LIBSODIUM_SRC)
+
+$(DN_SRC)/$(LIBSODIUM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSODIUM_URL)
+	touch $@
+
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure: $(DN_SRC)/$(LIBSODIUM_SRC)
+	tar -xf $(DN_SRC)/$(LIBSODIUM_SRC)
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure $(FL_DEP_LIBSODIUM)
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+	touch $@
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBSODIUM).pc: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBSODIUM)-uninstall: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make uninstall
+$(LIBSODIUM)-install: $(PREFIX)/lib/pkgconfig/$(LIBSODIUM).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSODIUM_SRC)
+FL_UNINSTALL+=$(LIBSODIUM)-uninstall
+
+########################################
+LIBZMQ=zeromq
+
+FL_DEP_LIBZMQ= \
+	$(LIBPGM)-install \
+	$(LIBSODIUM)-install \
+	#$(util-linux)-install \
+	$(NULL)
+
+LIBZMQ_VERSION=4.1.3
+LIBZMQ_SRC=$(LIBZMQ)-$(LIBZMQ_VERSION).tar.gz
+LIBZMQ_URL=http://download.zeromq.org/$(LIBZMQ_SRC)
+
+$(DN_SRC)/$(LIBZMQ_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBZMQ_URL)
+	touch $@
+
+$(LIBZMQ)-$(LIBZMQ_VERSION)/configure: $(DN_SRC)/$(LIBZMQ_SRC)
+	tar -xf $(DN_SRC)/$(LIBZMQ_SRC)
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && autoreconf -if \
+	    && sed -i 's/libzmq_werror="yes"/libzmq_werror="no"/' configure # for libsodium
+	touch $@
+
+$(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile: $(LIBZMQ)-$(LIBZMQ_VERSION)/configure $(FL_DEP_LIBZMQ)
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --with-pgm --with-libsodium --without-documentation
+	touch $@
+$(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc: $(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBZMQ).pc: $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBZMQ)-uninstall: $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make uninstall
+$(LIBZMQ)-install: $(PREFIX)/lib/pkgconfig/$(LIBZMQ).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBZMQ_SRC)
+FL_UNINSTALL+=$(LIBZMQ)-uninstall
+
+########################################
 # use release files
 FFMPEG=ffmpeg
 
 FL_DEPENDENCES_FFMPEG= \
     $(VORBIS)-install  \
     $(THEORA)-install  \
-    $(OGG)-install     \
+    $(LIBOGG)-install     \
     $(X264)-install    \
+    $(X265)-install    \
+	$(XAVS)-install    \
     $(OPENCOREAMR)-install \
     $(XVIDCORE)-install \
     $(LAME)-install     \
@@ -742,6 +2723,39 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBXML2)-install  \
     $(FONTCONF)-install \
     $(LVPX)-install     \
+    $(AVXSYNTH)-install \
+    $(LIBDC1394)-install \
+    $(PREFIX)/lib/libfaac.a \
+    $(FRIBIDI)-install  \
+    $(FREI0R)-install   \
+    $(LADSPA)-install   \
+    $(LIBAACPLUS)-install \
+    $(LIBBLURAY)-install  \
+    $(LIBBS2B)-install \
+    $(LIBCACA)-install \
+    $(FRIBIDI)-install \
+	$(LIBDC1394)-install \
+	$(LIBCDIO)-install \
+	$(LIBCELT)-install \
+	$(LIBGME)-install  \
+	$(LIBMODPLUG)-install  \
+	$(LIBOPENJPEG)-install \
+	$(LIBSCHROEDINGER)-install \
+	$(LIBSHINE)-install \
+	$(LIBSOXR)-install  \
+	$(LIBSPEEX)-install \
+	$(LIBTWOLAME)-install \
+	$(LIBUTVIDEO)-install \
+	$(LIBV4L2)-install    \
+	$(LIBVIDSTAB)-install \
+	$(LIBVOAACENC)-install   \
+	$(LIBVOAMRWBENC)-install \
+	$(LIBWAVPACK)-install \
+	$(LIBWEBP)-install \
+	$(LIBRTMP)-install \
+	$(LIBZVBI)-install \
+	$(LIBVDPAU)-install \
+	$(LIBZMQ)-install \
     $(NULL)
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
@@ -771,8 +2785,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-
 
 else
 
-FFMPEG_VERSION=1.1
-FFMPEG_VERSION=2.1.4
 FFMPEG_VERSION=2.8.2
 FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION).tar.bz2
 FFMPEG_URL=http://ffmpeg.org/releases/$(FFMPEG_SRC)
@@ -793,9 +2805,8 @@ $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-
 endif
 
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
-# --enable-libxavs --enable-libvo-aacenc --enable-libvo-amrwbenc --enable-libmodplug
-# --enable-libbluray --enable-filters
-# add: --enable-librtmp --enable-x11grab
+#  --enable-filters --enable-libiec61883 --enable-libopencv --enable-libpulse
+# add:
 #			--enable-static --enable-shared --extra-cflags=--static \
 #			--extra-cflags="-I$(PREFIX)/include -static" \
 #			--extra-ldflags="-L$(PREFIX)/lib -lfontconfig -lfreetype -lxml2 -lexpat -lpng -lm -static" \
@@ -803,16 +2814,59 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2`" \
-			LDFLAGS="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2`" \
+		&& $(ENV_COMPILE) CFLAGS="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
+			LDFLAGS="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
 			./configure --extra-version=$(STRLOGO) \
 			--enable-static --enable-shared \
-			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2`" \
-			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2`" \
+			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
+			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
 			--prefix=$(PREFIX) \
+			--enable-avisynth \
+			--enable-avresample \
+            --enable-decoder=atrac3 \
+            --enable-decoder=atrac3p \
+            --enable-dxva2 \
+            --enable-frei0r \
+            --enable-gnutls \
+            --enable-iconv \
+            --enable-ladspa \
+            --enable-libaacplus \
+            --enable-libbluray \
+            --enable-libbs2b \
+            --enable-libcaca \
+            --enable-libcdio \
+            --enable-libcelt \
+            --enable-libdc1394 \
+            --enable-libfaac \
+            --enable-libfribidi \
+            --enable-libgme \
+            --enable-libmodplug \
+            --enable-libopenjpeg \
+            --enable-librtmp \
+            --enable-libschroedinger \
+            --enable-libshine \
+            --enable-libsoxr \
+    --enable-libssh \
+            --enable-libtwolame \
+            --enable-libutvideo \
+            --enable-libv4l2 \
+            --enable-libvidstab \
+            --enable-libvo-aacenc \
+            --enable-libvo-amrwbenc \
+            --enable-libwavpack \
+            --enable-libwebp \
+            --enable-libzmq \
+            --enable-libzvbi \
+    --enable-openal \
+    --enable-opencl \
+    --enable-opengl \
+    --enable-openssl \
+            --enable-swresample \
+            --enable-vdpau \
+    --enable-x11grab \
 			--enable-version3 --enable-libopencore-amrnb --enable-libopencore-amrwb \
 			--enable-libvorbis --enable-libtheora --enable-libmp3lame --enable-libspeex\
-			--enable-libxvid --enable-libx264 \
+			--enable-libxvid --enable-libx264 --enable-libx265 --enable-libxavs \
 			--enable-gpl --enable-pthreads --enable-nonfree --enable-postproc --enable-libgsm \
 			--enable-libfdk-aac --enable-libvpx \
 			--enable-libopus --enable-bzlib --enable-zlib \
@@ -1092,6 +3146,7 @@ FL_DEP_GDAL= \
 	$(HDF5)-install \
 	$(LIBPNG)-install \
 	$(LIBTIFF)-install \
+	$(GIFLIB)-install \
 	#$(sqlite)-install \
 	$(postgresql-libs)-install \
 	$(poppler)-install \
@@ -1099,7 +3154,6 @@ FL_DEP_GDAL= \
 	$(libspatialite)-install \
 	$(libmariadbclient)-install \
 	$(libgeotiff)-install \
-	$(giflib)-install \
 	$(geos)-install \
 	$(curl)-install \
 	$(cfitsio)-install \
@@ -1174,6 +3228,31 @@ FL_DEP_VTK= \
 	$(MPI4PY)-install \
 	$(NULL)
 
+
+USE_GIT_VTK=1
+
+ifeq ($(USE_GIT_VTK),1) # use git instead
+VTK_VERSION=git
+VTK_SRC=$(VTK)-$(VTK_VERSION)/.git
+VTK_URL=https://gitlab.kitware.com/vtk/vtk.git
+
+$(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(VTK_SRC)" ]; then cd $(DN_SRC)/$(VTK)-$(VTK_VERSION) && git pull; else git clone $(VTK_URL) $(DN_SRC)/$(VTK)-$(VTK_VERSION); fi
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/.git: $(DN_SRC)/$(VTK_SRC)
+	cd $(DN_SRC)/$(VTK)-$(VTK_VERSION) && git pull
+	if [ -d "$(VTK)-$(VTK_VERSION)" ]; then cd $(VTK)-$(VTK_VERSION) && git pull; else git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION)/ $(VTK)-$(VTK_VERSION); fi
+
+$(VTK)-$(VTK_VERSION)/README.md: $(VTK)-$(VTK_VERSION)/.git $(FL_DEP_VTK)
+	cd $(VTK)-$(VTK_VERSION)/ && git pull
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(VTK)-$(VTK_VERSION)/README.md
+	touch $@
+
+else # use released files
+
 $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
 	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)Data-$(VTK_VERSION).tar.gz
 	touch $@
@@ -1190,6 +3269,7 @@ $(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(VTK_SRC)
 	tar -xf $(DN_SRC)/$(VTK_SRC)
 	#mv VTK* $(VTK)-$(VTK_VERSION)
 	touch $@
+endif
 
 #            -DVTK_QT_VERSION:STRING="5" \
             -DVTK_WRAP_JAVA:BOOL=ON \
@@ -1207,11 +3287,23 @@ $(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(VTK_SRC)
             -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
             -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
 
-$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
+$(DN_SRC)/vtk-gdal2api.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/community.git/plain/trunk/gdal2.patch?h=packages/vtk
+	touch $@
+$(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(VTK)-$(VTK_VERSION)/CMakeLists.txt
+	cd $(VTK)-$(VTK_VERSION)/ \
+	    && git status | grep modified | awk '{print $$2}' | xargs git checkout
+	cd $(VTK)-$(VTK_VERSION)/ \
+	    && patch -p1 < $(DN_SRC)/vtk-gdal2api.patch
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
 	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
-		&& $(ENV_COMPILE) cmake \
+		&& $(ENV_COMPILE) cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lx265 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lx265 -lxvidcore -lfreetype" \
             -Wno-dev \
             -DPYTHON_EXECUTABLE:FILEPATH="`which python2`" \
             -DCMAKE_SKIP_RPATH=ON \
@@ -1232,7 +3324,8 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_
             -DVTK_USE_SYSTEM_GL2PS:BOOL=ON \
             -DVTK_USE_SYSTEM_GLEW:BOOL=ON \
             -DVTK_USE_SYSTEM_JSONCPP:BOOL=ON \
-            ..
+            $(NULL)
+
 $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/Makefile
 	cd $(VTK)-$(VTK_VERSION)/build && make $(MAKE_ARG)
 $(PREFIX)/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so
@@ -1554,7 +3647,7 @@ FL_DEP_GPAC= \
 	$(XVIDCORE)-install \
 	$(THEORA)-install \
 	$(VORBIS)-install \
-	$(OGG)-install \
+	$(LIBOGG)-install \
 	$(LIBPNG)-install \
 	$(ZLIB)-install \
 	$(CMAKE)-install \

@@ -208,6 +208,84 @@ FL_SOURCES+=$(DN_SRC)/$(NASM_SRC)
 FL_UNINSTALL+=$(NASM)-uninstall
 
 ########################################
+# System V Release 4.0 curses emulation library
+NCURSES=ncurses
+
+NCURSES_VERSION=6.0
+NCURSES_SRC=$(NCURSES)-$(NCURSES_VERSION).tar.gz
+NCURSES_URL=ftp://invisible-island.net/ncurses/$(NCURSES_SRC)
+
+$(DN_SRC)/$(NCURSES_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(NCURSES_URL)
+	touch $@
+
+$(NCURSES)-$(NCURSES_VERSION)/configure: $(DN_SRC)/$(NCURSES_SRC)
+	tar -xf $(DN_SRC)/$(NCURSES_SRC)
+	#cd $(NCURSES)-$(NCURSES_VERSION)/ && autoreconf -if
+	touch $@
+
+#$(NCURSES)-$(NCURSES_VERSION)/mypatched: $(DN_PATCH)/pbs-NCURSES-newapi.patch $(NCURSES)-$(NCURSES_VERSION)/configure
+	#cd $(NCURSES)-$(NCURSES_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-NCURSES-newapi.patch
+	#touch $@
+
+$(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/configure $(FL_DEP_NCURSES)
+	cd $(NCURSES)-$(NCURSES_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
+	touch $@
+$(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/Makefile
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make install
+	touch $@
+
+$(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make uninstall
+$(NCURSES)-install: $(PREFIX)/lib/$(NCURSES).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NCURSES_SRC)
+FL_UNINSTALL+=$(NCURSES)-uninstall
+
+########################################
+# OpenPGM: implementation of the Pragmatic General Multicast (PGM, RFC3208)
+# http://code.google.com/p/openpgm
+LIBPGM=libpgm
+
+LIBPGM_VERSION=5.2.122
+LIBPGM_SRC=$(LIBPGM)-$(LIBPGM_VERSION).tar.gz
+LIBPGM_URL=http://openpgm.googlecode.com/files/$(LIBPGM_SRC)
+
+$(DN_SRC)/$(LIBPGM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBPGM_URL)
+	touch $@
+
+$(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/configure: $(DN_SRC)/$(LIBPGM_SRC)
+	tar -xf $(DN_SRC)/$(LIBPGM_SRC)
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && find . -type f -exec sed -i 's/python/python2/g' {} \+
+	#cd $(LIBPGM)-$(LIBPGM_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/configure $(FL_DEP_LIBPGM)
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make -j1 install
+	touch $@
+
+$(LIBPGM)-uninstall: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make uninstall
+$(LIBPGM)-install: $(PREFIX)/lib/pkgconfig/$(LIBPGM).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBPGM_SRC)
+FL_UNINSTALL+=$(LIBPGM)-uninstall
+
+########################################
 LIBPNG=libpng
 #LIBPNG_VERSION=1.5.14
 #LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
@@ -230,14 +308,14 @@ $(LIBPNG)-$(LIBPNG_VERSION)/configure: $(DN_SRC)/$(LIBPNG_SRC)
 #	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && ./autogen.sh
 $(LIBPNG)-$(LIBPNG_VERSION)/Makefile: $(LIBPNG)-$(LIBPNG_VERSION)/configure $(FL_DEP_LIBPNG)
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && CPPFLAGS="-I$(PREFIX)/include -L$(PREFIX)/lib" LDFLAGS=-L$(PREFIX)/lib $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
-$(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc: $(LIBPNG)-$(LIBPNG_VERSION)/Makefile
+$(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/Makefile
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/libpng.pc: $(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc
+$(PREFIX)/lib/pkgconfig/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make install
 
-$(LIBPNG)-uninstall: $(LIBPNG)-$(LIBPNG_VERSION)/libpng.pc
+$(LIBPNG)-uninstall: $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make uninstall
-$(LIBPNG)-install: $(PREFIX)/lib/pkgconfig/libpng.pc
+$(LIBPNG)-install: $(PREFIX)/lib/pkgconfig/$(LIBPNG).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBPNG_SRC)
@@ -257,7 +335,7 @@ $(LIBTIFF)-$(LIBTIFF_VERSION)/configure: $(DN_SRC)/$(LIBTIFF_SRC)
 	mv tiff-$(LIBTIFF_VERSION) $(LIBTIFF)-$(LIBTIFF_VERSION)/
 	touch $@
 $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile: $(LIBTIFF)-$(LIBTIFF_VERSION)/configure $(FL_DEP_LIBTIFF)
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --disable-shared
+	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
 $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/lib/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a
@@ -308,6 +386,137 @@ $(LIBJPEG)-install: $(PREFIX)/lib/libjpeg.a
 
 FL_SOURCES+=$(DN_SRC)/$(LIBJPEG_SRC)
 FL_UNINSTALL+=$(LIBJPEG)-uninstall
+
+########################################
+# An open source JPEG 2000 codec
+# http://www.openjpeg.org
+LIBOPENJPEG=openjpeg
+
+FL_DEP_LIBOPENJPEG= \
+	$(CMAKE)-install \
+	$(LIBTIFF)-install \
+	$(LIBPNG)-install \
+	$(NULL)
+
+LIBOPENJPEG_VERSION=2.1
+LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION).tar.gz
+LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg/archive/version.$(LIBOPENJPEG_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBOPENJPEG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBOPENJPEG_URL)
+	touch $@
+
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG_SRC)
+	tar -xf $(DN_SRC)/$(LIBOPENJPEG_SRC)
+	rm -f $(LIBOPENJPEG)-install
+	mv $(LIBOPENJPEG)* $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)
+	#cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/
+	touch $@
+
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt $(FL_DEP_LIBOPENJPEG)
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            ..
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make -j1 install
+	touch $@
+
+$(LIBOPENJPEG)-uninstall: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make uninstall
+$(LIBOPENJPEG)-install: $(PREFIX)/lib/pkgconfig/$(LIBOPENJPEG).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG_SRC)
+FL_UNINSTALL+=$(LIBOPENJPEG)-uninstall
+
+########################################
+# A library for reading and writing gif images
+GIFLIB=giflib
+
+GIFLIB_VERSION=5.1.1
+GIFLIB_SRC=$(GIFLIB)-$(GIFLIB_VERSION).tar.gz
+GIFLIB_URL=http://sourceforge.net/projects/giflib/files/$(GIFLIB_SRC)
+
+$(DN_SRC)/$(GIFLIB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GIFLIB_URL)
+	touch $@
+
+$(GIFLIB)-$(GIFLIB_VERSION)/configure: $(DN_SRC)/$(GIFLIB_SRC)
+	tar -xf $(DN_SRC)/$(GIFLIB_SRC)
+	#cd $(GIFLIB)-$(GIFLIB_VERSION)/ && autoreconf -if
+	touch $@
+
+$(GIFLIB)-$(GIFLIB_VERSION)/Makefile: $(GIFLIB)-$(GIFLIB_VERSION)/configure $(FL_DEP_GIFLIB)
+	cd $(GIFLIB)-$(GIFLIB_VERSION)/ \
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+	touch $@
+$(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la: $(GIFLIB)-$(GIFLIB_VERSION)/Makefile
+	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(GIFLIB).la: $(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la
+	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make install
+	touch $@
+
+$(GIFLIB)-uninstall: $(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la
+	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make uninstall
+$(GIFLIB)-install: $(PREFIX)/lib/$(GIFLIB).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GIFLIB_SRC)
+FL_UNINSTALL+=$(GIFLIB)-uninstall
+
+########################################
+LIBWEBP=libwebp
+
+FL_DEP_LIBWEBP= \
+	$(LIBPNG)-install \
+	$(LIBJPEG)-install \
+	$(LIBTIFF)-install \
+	$(GIFLIB)-install \
+	$(NULL)
+
+LIBWEBP_VERSION=0.4.4
+LIBWEBP_SRC=$(LIBWEBP)-$(LIBWEBP_VERSION).tar.gz
+LIBWEBP_URL=http://downloads.webmproject.org/releases/webp/$(LIBWEBP_SRC)
+
+$(DN_SRC)/$(LIBWEBP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBWEBP_URL)
+	touch $@
+
+$(LIBWEBP)-$(LIBWEBP_VERSION)/configure: $(DN_SRC)/$(LIBWEBP_SRC)
+	tar -xf $(DN_SRC)/$(LIBWEBP_SRC)
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBWEBP)-$(LIBWEBP_VERSION)/Makefile: $(LIBWEBP)-$(LIBWEBP_VERSION)/configure $(FL_DEP_LIBWEBP)
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) \
+            --enable-swap-16bit-csp \
+            --enable-experimental \
+            --enable-libwebpmux \
+            --enable-libwebpdemux \
+            --enable-libwebpdecoder \
+            --disable-static
+	touch $@
+$(LIBWEBP)-$(LIBWEBP_VERSION)/$(LIBWEBP).pc: $(LIBWEBP)-$(LIBWEBP_VERSION)/Makefile
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBWEBP).pc: $(LIBWEBP)-$(LIBWEBP_VERSION)/$(LIBWEBP).pc
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBWEBP)-uninstall: $(LIBWEBP)-$(LIBWEBP_VERSION)/$(LIBWEBP).pc
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && make uninstall
+$(LIBWEBP)-install: $(PREFIX)/lib/pkgconfig/$(LIBWEBP).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBWEBP_SRC)
+FL_UNINSTALL+=$(LIBWEBP)-uninstall
 
 ########################################
 FREETYPE=freetype
@@ -493,7 +702,7 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	touch $@
 
-$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
+$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
 		&& aclocal && automake -ac && autoreconf \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) \
