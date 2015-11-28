@@ -881,7 +881,7 @@ $(XAVS)-$(XAVS_VERSION)/mypatched: $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patc
 $(XAVS)-$(XAVS_VERSION)/Makefile: $(XAVS)-$(XAVS_VERSION)/mypatched $(XAVS)-$(XAVS_VERSION)/configure $(FL_DEP_XAVS)
 	cd $(XAVS)-$(XAVS_VERSION)/ \
 		&& touch config.mak \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-asm
 	touch $@
 $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/Makefile
 	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -1859,6 +1859,46 @@ FL_UNINSTALL+=$(LIBCDIO)-uninstall
 
 
 ########################################
+# CD paranoia libraries from libcdio
+LIBCDIOPARANOIA=libcdio-paranoia
+
+FL_DEP_LIBCDIOPARANOIA= \
+	$(LIBCDIO)-install \
+	$(NULL)
+
+LIBCDIOPARANOIA_VERSION=10.2+0.93+1
+LIBCDIOPARANOIA_SRC=$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION).tar.bz2
+LIBCDIOPARANOIA_URL=http://ftp.gnu.org/gnu/libcdio/$(LIBCDIOPARANOIA_SRC)
+
+$(DN_SRC)/$(LIBCDIOPARANOIA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCDIOPARANOIA_URL)
+	touch $@
+
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
+	tar -xf $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
+	#cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure $(FL_DEP_LIBCDIOPARANOIA)
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/$(LIBCDIOPARANOIA).la: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make -j1 install
+	touch $@
+
+$(LIBCDIOPARANOIA)-uninstall: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make uninstall
+$(LIBCDIOPARANOIA)-install: $(PREFIX)/lib/$(LIBCDIOPARANOIA).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
+FL_UNINSTALL+=$(LIBCDIOPARANOIA)-uninstall
+
+########################################
 # Low-latency audio communication codec
 LIBCELT=celt
 
@@ -1961,7 +2001,7 @@ $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure: $(DN_SRC)/$(LIBMODPLUG_SRC)
 
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure $(FL_DEP_LIBMODPLUG)
 	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
 	touch $@
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile
 	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make $(MAKE_ARG)
@@ -2525,10 +2565,9 @@ endif
 
 $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make $(MAKE_ARG) all librtmp.pc
-	touch $@
+
 $(PREFIX)/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
-	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=$(PREFIX) sbindir=$(PREFIX)/bin mandir=$(PREFIX)/share/man DESTDIR=$(PREFIX) install
-	touch $@
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=/ sbindir=/bin mandir=/share/man DESTDIR=$(PREFIX) install
 
 $(LIBRTMP)-uninstall: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/ && make uninstall
@@ -2696,6 +2735,178 @@ $(LIBZMQ)-install: $(PREFIX)/lib/pkgconfig/$(LIBZMQ).pc
 FL_SOURCES+=$(DN_SRC)/$(LIBZMQ_SRC)
 FL_UNINSTALL+=$(LIBZMQ)-uninstall
 
+
+########################################
+# Silicon Graphics Audio File Library
+AUDIOFILE=audiofile
+
+FL_DEP_AUDIOFILE= \
+	$(LIBALSA)-install \
+	$(FLAC)-install \
+	$(NULL)
+
+AUDIOFILE_VERSION=0.3.6
+AUDIOFILE_SRC=$(AUDIOFILE)-$(AUDIOFILE_VERSION).tar.gz
+AUDIOFILE_URL=http://audiofile.68k.org/$(AUDIOFILE_SRC)
+
+$(DN_SRC)/$(AUDIOFILE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AUDIOFILE_URL)
+	touch $@
+
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure: $(DN_SRC)/$(AUDIOFILE_SRC)
+	tar -xf $(DN_SRC)/$(AUDIOFILE_SRC)
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && autoreconf -if
+	touch $@
+
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure $(FL_DEP_AUDIOFILE)
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(AUDIOFILE).pc: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(AUDIOFILE)-uninstall: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make uninstall
+$(AUDIOFILE)-install: $(PREFIX)/lib/pkgconfig/$(AUDIOFILE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(AUDIOFILE_SRC)
+FL_UNINSTALL+=$(AUDIOFILE)-uninstall
+
+########################################
+# Freeswitch fork of iLBC codec
+LIBILBC=libilbc
+
+FL_DEP_LIBILBC= \
+	$(AUDIOFILE)-install \
+	$(NULL)
+
+LIBILBC_VERSION=git
+LIBILBC_SRC=$(LIBILBC)-$(LIBILBC_VERSION)/.git
+LIBILBC_URL=https://freeswitch.org/stash/scm/sd/libilbc.git
+
+$(DN_SRC)/$(LIBILBC_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBILBC_SRC)" ]; then cd $(DN_SRC)/$(LIBILBC)-$(LIBILBC_VERSION) && git pull; else git clone $(LIBILBC_URL) $(DN_SRC)/$(LIBILBC)-$(LIBILBC_VERSION); fi
+	touch $@
+
+$(LIBILBC_SRC): $(DN_SRC)/$(LIBILBC_SRC)
+	cd $(DN_SRC)/$(LIBILBC)-$(LIBILBC_VERSION) && git pull
+	if [ -d "$(LIBILBC)-$(LIBILBC_VERSION)" ]; then cd $(LIBILBC)-$(LIBILBC_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBILBC)-$(LIBILBC_VERSION)/ $(LIBILBC)-$(LIBILBC_VERSION); fi
+	touch $@
+
+$(LIBILBC)-$(LIBILBC_VERSION)/configure: $(LIBILBC_SRC)
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBILBC)-$(LIBILBC_VERSION)/Makefile: $(LIBILBC)-$(LIBILBC_VERSION)/configure $(FL_DEP_LIBILBC)
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --disable-doc --disable-static --disable-rpath
+	touch $@
+$(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/Makefile
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBILBC)-uninstall: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make uninstall
+$(LIBILBC)-install: $(PREFIX)/lib/pkgconfig/$(LIBILBC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBILBC_SRC)
+FL_UNINSTALL+=$(LIBILBC)-uninstall
+
+
+########################################
+# CMU Flite (festival-lite) is a small, fast run-time text to speech synthesis engine developed at CMU and primarily designed for small embedded machines and/or large servers
+# http://www.festvox.org/flite/
+# too big (include the data) to included in a package
+LIBFLITE=flite
+
+FL_DEP_LIBFLITE= \
+	#$(LIBALSA)-install \
+	$(NULL)
+
+LIBFLITE_VERSION=2.0.0
+LIBFLITE_SRC=$(LIBFLITE)-$(LIBFLITE_VERSION).tar.bz2
+LIBFLITE_URL=http://www.festvox.org/flite/packed/flite-2.0/flite-2.0.0-release.tar.bz2
+
+$(DN_SRC)/$(LIBFLITE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBFLITE_URL)
+	touch $@
+
+$(LIBFLITE)-$(LIBFLITE_VERSION)/configure: $(DN_SRC)/$(LIBFLITE_SRC)
+	tar -xf $(DN_SRC)/$(LIBFLITE_SRC)
+	rm -f $(LIBFLITE)-install
+	mv $(LIBFLITE)* $(LIBFLITE)-$(LIBFLITE_VERSION)
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && autoreconf -if
+	touch $@
+
+$(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure $(FL_DEP_LIBFLITE)
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc: $(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(LIBFLITE).pc: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBFLITE)-uninstall: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make uninstall
+$(LIBFLITE)-install: $(PREFIX)/lib/pkgconfig/$(LIBFLITE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBFLITE_SRC)
+FL_UNINSTALL+=$(LIBFLITE)-uninstall
+
+
+########################################
+# Free multimedia container format
+LIBNUT=libnut
+
+FL_DEP_LIBNUT= \
+	#$(aaaaa)-install \
+	$(NULL)
+
+LIBNUT_VERSION=git
+LIBNUT_SRC=$(LIBNUT)-$(LIBNUT_VERSION)/.git
+LIBNUT_URL=git://git.ffmpeg.org/nut.git
+
+$(DN_SRC)/$(LIBNUT_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(LIBNUT_SRC)" ]; then cd $(DN_SRC)/$(LIBNUT)-$(LIBNUT_VERSION) && git pull; else git clone $(LIBNUT_URL) $(DN_SRC)/$(LIBNUT)-$(LIBNUT_VERSION); fi
+	touch $@
+
+$(LIBNUT_SRC): $(DN_SRC)/$(LIBNUT_SRC)
+	cd $(DN_SRC)/$(LIBNUT)-$(LIBNUT_VERSION) && git pull
+	if [ -d "$(LIBNUT)-$(LIBNUT_VERSION)" ]; then cd $(LIBNUT)-$(LIBNUT_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBNUT)-$(LIBNUT_VERSION)/ $(LIBNUT)-$(LIBNUT_VERSION); fi
+	touch $@
+
+$(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile: $(LIBNUT_SRC) $(FL_DEP_LIBNUT)
+	touch $@
+$(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && CFLAGS+=" -fPIC" make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) libnut/libnut.so
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) nututils
+	touch $@
+$(PREFIX)/lib/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/ DESTDIR=$(PREFIX) install-libnut-shared
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/ DESTDIR=$(PREFIX) install
+	touch $@
+
+$(LIBNUT)-uninstall: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make uninstall
+$(LIBNUT)-install: $(PREFIX)/lib/$(LIBNUT).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBNUT_SRC)
+FL_UNINSTALL+=$(LIBNUT)-uninstall
+
 ########################################
 # use release files
 FFMPEG=ffmpeg
@@ -2735,7 +2946,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBCACA)-install \
     $(FRIBIDI)-install \
 	$(LIBDC1394)-install \
-	$(LIBCDIO)-install \
+	$(LIBCDIOPARANOIA)-install \
 	$(LIBCELT)-install \
 	$(LIBGME)-install  \
 	$(LIBMODPLUG)-install  \
@@ -2756,6 +2967,8 @@ FL_DEPENDENCES_FFMPEG= \
 	$(LIBZVBI)-install \
 	$(LIBVDPAU)-install \
 	$(LIBZMQ)-install \
+	$(LIBILBC)-install \
+	$(LIBNUT)-install \
     $(NULL)
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
@@ -2806,6 +3019,11 @@ endif
 
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
 #  --enable-filters --enable-libiec61883 --enable-libopencv --enable-libpulse
+    #--enable-libssh \
+    #--enable-openal \
+    #--enable-opencl \
+    #--enable-opengl \
+    #--enable-openssl \
 # add:
 #			--enable-static --enable-shared --extra-cflags=--static \
 #			--extra-cflags="-I$(PREFIX)/include -static" \
@@ -2846,7 +3064,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
             --enable-libschroedinger \
             --enable-libshine \
             --enable-libsoxr \
-    --enable-libssh \
             --enable-libtwolame \
             --enable-libutvideo \
             --enable-libv4l2 \
@@ -2857,12 +3074,9 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
             --enable-libwebp \
             --enable-libzmq \
             --enable-libzvbi \
-    --enable-openal \
-    --enable-opencl \
-    --enable-opengl \
-    --enable-openssl \
             --enable-swresample \
             --enable-vdpau \
+            --enable-libnut \
     --enable-x11grab \
 			--enable-version3 --enable-libopencore-amrnb --enable-libopencore-amrwb \
 			--enable-libvorbis --enable-libtheora --enable-libmp3lame --enable-libspeex\
@@ -3071,7 +3285,8 @@ $(DN_SRC)/$(GL2PS_SRC): $(DN_SRC)/created
 	touch $@
 $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt: $(DN_SRC)/$(GL2PS_SRC)
 	tar -xf $(DN_SRC)/$(GL2PS_SRC)
-	mv GL2PS* $(GL2PS)-$(GL2PS_VERSION)
+	rm -f $(GL2PS)-install
+	mv $(GL2PS)* $(GL2PS)-$(GL2PS_VERSION)
 	touch $@
 $(GL2PS)-$(GL2PS_VERSION)/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(FL_DEP_GL2PS)
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && mkdir -p build && cd build \
@@ -3083,7 +3298,7 @@ $(GL2PS)-$(GL2PS_VERSION)/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(F
 $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la: $(GL2PS)-$(GL2PS_VERSION)/Makefile
 	cd $(GL2PS)-$(GL2PS_VERSION)/build && make $(MAKE_ARG)
 $(PREFIX)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
-	cd $(GL2PS)-$(GL2PS_VERSION)/build && make install
+	cd $(GL2PS)-$(GL2PS_VERSION)/build && make -j1 install
 
 $(GL2PS)-uninstall: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && make uninstall
