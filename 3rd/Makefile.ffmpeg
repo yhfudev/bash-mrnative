@@ -814,7 +814,7 @@ endif
 $(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-10 && cd build-10 \
 		&& $(ENV_COMPILE) cmake ../source \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX)/usr \
             -DHIGH_BIT_DEPTH='TRUE' \
             -DEXPORT_C_API='FALSE' \
             -DENABLE_CLI='FALSE' \
@@ -825,7 +825,7 @@ $(X265)-$(X265_VERSION)/build-10/libx265.a: $(X265)-$(X265_VERSION)/build-10/Mak
 $(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-12 && cd build-12 \
 		&& $(ENV_COMPILE) cmake ../source \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX)/usr \
             -DHIGH_BIT_DEPTH='TRUE' \
             -DMAIN12='TRUE' \
             -DEXPORT_C_API='FALSE' \
@@ -842,7 +842,7 @@ $(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
         && rm -f libx265_main10.a && ln -s ../build-10/libx265.a libx265_main10.a \
         && rm -f libx265_main12.a && ln -s ../build-12/libx265.a libx265_main12.a \
         && $(ENV_COMPILE) cmake ../source \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX)/usr \
             -DENABLE_SHARED='TRUE' \
             -DEXTRA_LIB='x265_main10.a;x265_main12.a' \
             -DEXTRA_LINK_FLAGS='-L.' \

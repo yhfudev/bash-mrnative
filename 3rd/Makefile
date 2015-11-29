@@ -18,7 +18,7 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             $(NULL)
 
 # $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_TARGET_PREFIX")
-disttar = cd $(1) && ln -s $(2) $(3)-bin && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
+disttar = cd $(1) && ln -s $(2)-bin $(3) && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
 
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
@@ -32,10 +32,10 @@ ns2:
 dist-gzip: dist-gzip-ffmpeg dist-gzip-gnuplot dist-gzip-ns2
 
 dist-gzip-ffmpeg: ffmpeg
-	$(call disttar,$(DN_PWD),$<,$<-$(shell uname -m)-git)
+	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m))
 
 dist-gzip-gnuplot: gnuplot
-	$(call disttar,$(DN_PWD),$<,$<-$(shell uname -m)-5.0)
+	$(call disttar,$(DN_PWD),$<,$<-5.0-$(shell uname -m))
 
 dist-gzip-ns2: ns2
-	$(call disttar,$(DN_PWD),$<,ns-$(shell uname -m)-2.35)
+	$(call disttar,$(DN_PWD),$<,ns-2.35-$(shell uname -m))
