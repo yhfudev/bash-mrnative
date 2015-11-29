@@ -67,16 +67,15 @@ $(LUA)-$(LUA_VERSION)/Makefile: $(DN_SRC)/$(LUA_SRC)
 $(LUA)-$(LUA_VERSION)/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
 	cd $(LUA)-$(LUA_VERSION)/ \
 	    && make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
-$(PREFIX)/bin/lua: $(LUA)-$(LUA_VERSION)/lua
+$(PREFIX)/usr/bin/lua: $(LUA)-$(LUA_VERSION)/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX) INSTALL_MAN=$(PREFIX)/usr/share/man/man1 install
 
 $(LUA)-uninstall: $(LUA)-$(LUA_VERSION)/lua
-	cd $(LUA)-$(LUA_VERSION)/ && make uninstall
-$(LUA)-install: $(PREFIX)/bin/lua
+	cd $(LUA)-$(LUA_VERSION)/ && make INSTALL_TOP=$(PREFIX) uninstall
+$(LUA)-install: $(PREFIX)/usr/bin/lua
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LUA_SRC)
-#FL_DEP_GNUPLOT+=$(LUA)-install
 FL_UNINSTALL+=$(LUA)-uninstall
 
 ########################################
@@ -109,15 +108,15 @@ $(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VER
 	cd $(GD)-$(GD_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libgd-libvpx.patch
 	touch $@
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/mypatched $(FL_DEP_GD)
-	cd $(GD)-$(GD_VERSION)/ && ./configure --prefix=$(PREFIX) --with-vpx=$(PREFIX)  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX)
+	cd $(GD)-$(GD_VERSION)/ && ./configure --prefix=/usr --with-vpx=$(PREFIX)  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX)
 $(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
 	cd $(GD)-$(GD_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/bin/gd: $(GD)-$(GD_VERSION)/gd
-	cd $(GD)-$(GD_VERSION)/ && make install
+$(PREFIX)/usr/bin/gd: $(GD)-$(GD_VERSION)/gd
+	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(GD)-uninstall: $(GD)-$(GD_VERSION)/gd
-	cd $(GD)-$(GD_VERSION)/ && make uninstall
-$(GD)-install: $(PREFIX)/bin/gd
+	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GD)-install: $(PREFIX)/usr/bin/gd
 	touch $@
 
 
@@ -149,20 +148,19 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNU
 	touch $@
 
 $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && ./configure --prefix=$(PREFIX) --with-vpx=$(PREFIX) --with-tiff=$(PREFIX) --disable-rpath --disable-qt
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && ./configure --prefix=/usr --with-vpx=$(PREFIX) --with-tiff=$(PREFIX) --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make install
+$(PREFIX)/usr/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(GNUPLOT)-uninstall: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make uninstall
-$(GNUPLOT)-install: $(PREFIX)/bin/gnuplot
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GNUPLOT)-install: $(PREFIX)/usr/bin/gnuplot
 	touch $@
 
 
 FL_SOURCES+=$(DN_SRC)/$(GNUPLOT_SRC)
-#FL_DEP_GNUPLOT+=$(GNUPLOT)-install
 FL_UNINSTALL+=$(GNUPLOT)-uninstall
 
 
@@ -184,15 +182,15 @@ $(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
 #	touch $@
 
 $(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && ./configure --prefix=$(PREFIX) --libexecdir=$(PREFIX)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && ./configure --prefix=/usr --libexecdir=$(PREFIX)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
 $(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
 	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make install
+$(PREFIX)/usr/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(GNUAWK)-uninstall: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make uninstall
-$(GNUAWK)-install: $(PREFIX)/bin/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GNUAWK)-install: $(PREFIX)/usr/bin/gawk
 	touch $@
 
 

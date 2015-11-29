@@ -2943,14 +2943,14 @@ $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VER
 	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && CFLAGS+=" -fPIC" make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) libnut/libnut.so
 	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) nututils
 	touch $@
-$(PREFIX)/lib/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/ DESTDIR=$(PREFIX) install-libnut-shared
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/ DESTDIR=$(PREFIX) install
+$(PREFIX)/usr/lib/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/usr DESTDIR=$(PREFIX) install-libnut-shared
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=/usr DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBNUT)-uninstall: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make uninstall
-$(LIBNUT)-install: $(PREFIX)/lib/$(LIBNUT).a
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBNUT)-install: $(PREFIX)/usr/lib/$(LIBNUT).a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBNUT_SRC)
@@ -3087,7 +3087,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 			--enable-static --enable-shared \
 			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
 			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
-			--prefix=$(PREFIX) \
+			--prefix=/usr \
 			--enable-avisynth \
 			--enable-avresample \
             --enable-decoder=atrac3 \
@@ -3141,26 +3141,26 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 
 $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/config.mak
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX)/lib/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
-	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make install
+$(PREFIX)/usr/lib/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) install
 
 $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(PREFIX)/lib/libavcodec.a
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX)/bin/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
-	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make install
+$(PREFIX)/usr/bin/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) install
 #	ldd $(PREFIX)/bin/ffmpeg
 #	$(PREFIX)/bin/ffmpeg -version
 
 $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/tools/ && gcc -D_LARGEFILE_SOURCE qt-faststart.c -o qt-faststart
-$(PREFIX)/bin/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart
-	cp $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart $(PREFIX)/bin
+$(PREFIX)/usr/bin/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart
+	cp $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart $(PREFIX)/usr/bin/
 
 
 $(FFMPEG)-uninstall: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
-	rm -f $(PREFIX)/bin/qt-faststart
-	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make uninstall
-$(FFMPEG)-install: $(PREFIX)/lib/libavcodec.a $(PREFIX)/bin/ffmpeg $(PREFIX)/bin/qt-faststart
+	rm -f $(PREFIX)/usr/bin/qt-faststart
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) uninstall
+$(FFMPEG)-install: $(PREFIX)/usr/lib/libavcodec.a $(PREFIX)/usr/bin/ffmpeg $(PREFIX)/usr/bin/qt-faststart
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FFMPEG_SRC)
@@ -3182,15 +3182,15 @@ $(ILMBASE)-$(ILMBASE_VERSION)/configure: $(DN_SRC)/$(ILMBASE_SRC)
 	tar -xf $(DN_SRC)/$(ILMBASE_SRC)
 	touch $@
 $(ILMBASE)-$(ILMBASE_VERSION)/Makefile: $(ILMBASE)-$(ILMBASE_VERSION)/configure $(FL_DEP_ILMBASE)
-	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared
 $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la: $(ILMBASE)-$(ILMBASE_VERSION)/Makefile
 	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/ilmbase.a: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
-	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make install
+$(PREFIX)/usr/lib/ilmbase.a: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(ILMBASE)-uninstall: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
-	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make uninstall
-$(ILMBASE)-install: $(PREFIX)/lib/ilmbase.a
+	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(ILMBASE)-install: $(PREFIX)/usr/lib/ilmbase.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(ILMBASE_SRC)
@@ -3228,15 +3228,15 @@ $(OPENEXR)-$(OPENEXR_VERSION)/README: $(DN_SRC)/$(OPENEXR_SRC)
 	touch $@
 $(OPENEXR)-$(OPENEXR_VERSION)/configure: $(OPENEXR)-$(OPENEXR_VERSION)/README $(FL_DEP_OPENEXR)
 $(OPENEXR)-$(OPENEXR_VERSION)/Makefile: $(OPENEXR)-$(OPENEXR_VERSION)/configure
-	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared
 $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la: $(OPENEXR)-$(OPENEXR_VERSION)/Makefile
 	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libIlmImf.a: $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la
-	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make install
+$(PREFIX)/usr/lib/libIlmImf.a: $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(OPENEXR)-uninstall: $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la
-	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make uninstall
-$(OPENEXR)-install: $(PREFIX)/lib/libIlmImf.a
+	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(OPENEXR)-install: $(PREFIX)/usr/lib/libIlmImf.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENEXR_SRC)
@@ -3264,14 +3264,14 @@ $(GLEW)-$(GLEW_VERSION)/Makefile: $(DN_SRC)/$(GLEW_SRC) $(FL_DEP_GLEW)
 	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i 's|lib64|lib|' config/Makefile.linux
 	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i '/^.PHONY: .*\.pc$$/d' Makefile
 	touch $@
-$(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la: $(GLEW)-$(GLEW_VERSION)/Makefile
+$(GLEW)-$(GLEW_VERSION)/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/Makefile
 	cd $(GLEW)-$(GLEW_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libIlmImf.a: $(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la
-	cd $(GLEW)-$(GLEW_VERSION)/ && make GLEW_DEST=$(PREFIX) install
+$(PREFIX)/usr/lib/pkgconfig/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
+	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX) install
 
-$(GLEW)-uninstall: $(GLEW)-$(GLEW_VERSION)/IlmImf/libIlmImf.la
-	cd $(GLEW)-$(GLEW_VERSION)/ && make uninstall
-$(GLEW)-install: $(PREFIX)/lib/libIlmImf.a
+$(GLEW)-uninstall: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
+	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX) uninstall
+$(GLEW)-install: $(PREFIX)/usr/lib/pkgconfig/$(GLEW).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GLEW_SRC)
@@ -3377,7 +3377,7 @@ $(HDF5)-$(HDF5_VERSION)/configure: $(DN_SRC)/$(HDF5_SRC)
 # --enable-threadsafe
 $(HDF5)-$(HDF5_VERSION)/Makefile: $(HDF5)-$(HDF5_VERSION)/configure
 	cd $(HDF5)-$(HDF5_VERSION)/ \
-    && ./configure --prefix=$(PREFIX) \
+    && ./configure --prefix=/usr \
         --enable-hl \
         --enable-linux-lfs \
         --enable-production \
@@ -3387,12 +3387,12 @@ $(HDF5)-$(HDF5_VERSION)/Makefile: $(HDF5)-$(HDF5_VERSION)/configure
         --disable-sharedlib-rpath
 $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la: $(HDF5)-$(HDF5_VERSION)/Makefile
 	cd $(HDF5)-$(HDF5_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libhdf5.a: $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la
-	cd $(HDF5)-$(HDF5_VERSION)/ && make install
+$(PREFIX)/usr/lib/libhdf5.a: $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la
+	cd $(HDF5)-$(HDF5_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(HDF5)-uninstall: $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la
-	cd $(HDF5)-$(HDF5_VERSION)/ && make uninstall
-$(HDF5)-install: $(PREFIX)/lib/libhdf5.a
+	cd $(HDF5)-$(HDF5_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(HDF5)-install: $(PREFIX)/usr/lib/libhdf5.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(HDF5_SRC)
@@ -3442,7 +3442,7 @@ $(GDAL)-$(GDAL_VERSION)/configure: $(DN_SRC)/$(GDAL_SRC)
         --with-spatialite
 $(GDAL)-$(GDAL_VERSION)/Makefile: $(GDAL)-$(GDAL_VERSION)/configure $(FL_DEP_GDAL)
 	cd $(GDAL)-$(GDAL_VERSION)/ \
-        && ./configure --prefix=$(PREFIX) --enable-static --disable-shared \
+        && ./configure --prefix=/usr --enable-static --disable-shared \
         --with-hdf5 \
         --with-libtiff \
         --with-png \
@@ -3450,12 +3450,12 @@ $(GDAL)-$(GDAL_VERSION)/Makefile: $(GDAL)-$(GDAL_VERSION)/configure $(FL_DEP_GDA
 
 $(GDAL)-$(GDAL_VERSION)/libgdal.la: $(GDAL)-$(GDAL_VERSION)/Makefile
 	cd $(GDAL)-$(GDAL_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libgdal.a: $(GDAL)-$(GDAL_VERSION)/libgdal.la
-	cd $(GDAL)-$(GDAL_VERSION)/ && make install
+$(PREFIX)/usr/lib/libgdal.a: $(GDAL)-$(GDAL_VERSION)/libgdal.la
+	cd $(GDAL)-$(GDAL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(GDAL)-uninstall: $(GDAL)-$(GDAL_VERSION)/libgdal.la
-	cd $(GDAL)-$(GDAL_VERSION)/ && make uninstall
-$(GDAL)-install: $(PREFIX)/lib/libgdal.a
+	cd $(GDAL)-$(GDAL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GDAL)-install: $(PREFIX)/usr/lib/libgdal.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GDAL_SRC)
@@ -3837,23 +3837,23 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLis
 			-D WITH_OPENGL=ON \
 			-D WITH_TBB=ON \
 			-D WITH_1394=ON \
-			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX)/include -D FFMPEG_LIB_DIR=$(PREFIX)/lib \
-			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX)/usr/include -D FFMPEG_LIB_DIR=$(PREFIX)/usr/lib \
+			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX)/usr/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX)/usr/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX)/usr/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
 			.. \
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX)/lib/libbz2.a
 
 $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
-$(PREFIX)/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
+$(PREFIX)/usr/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && make install
-	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX)/lib
+	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX)/usr/lib
 
 $(OPENCV)-uninstall: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && make uninstall
-$(OPENCV)-install: $(PREFIX)/lib/libopencv_core.a
+$(OPENCV)-install: $(PREFIX)/usr/lib/libopencv_core.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
@@ -3880,7 +3880,7 @@ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS_S
 #$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
 #	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
 #$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure $(FL_DEP_MEDIAMETRICS)
-#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib ./configure --prefix=$(PREFIX)
+#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib ./configure --prefix=/usr
 
 ####################
 MEDIAMETRICS_VERSION=git
@@ -3901,20 +3901,20 @@ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS)-
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib ./configure --prefix=$(PREFIX) $(MEDIAMETRICS_GPU_SUPPORT_CONF)
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/usr/lib ./configure --prefix=/usr $(MEDIAMETRICS_GPU_SUPPORT_CONF)
 ####################
 
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX)/bin/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make install
+$(PREFIX)/usr/bin/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) install
 
 $(MEDIAMETRICS)-uninstall: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make uninstall
-$(MEDIAMETRICS)-install: $(PREFIX)/bin/mediametrics
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) uninstall
+$(MEDIAMETRICS)-install: $(PREFIX)/usr/bin/mediametrics
 	touch $@
 
-#FL_DEPENDENCES_FFMPEG+=$(MEDIAMETRICS)-install
+FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS_SRC)
 FL_UNINSTALL+=$(MEDIAMETRICS)-uninstall
 
 ########################################
@@ -3963,9 +3963,9 @@ $(GPAC)-$(GPAC_VERSION)/mypatched: $(DN_PATCH)/pbs-gpac-svn-1.patch $(GPAC)-$(GP
 # -lfaac -lx264
 $(GPAC)-$(GPAC_VERSION)/gpac/Makefile: $(GPAC)-$(GPAC_VERSION)/mypatched $(FL_DEP_GPAC)
 	cd $(GPAC)-$(GPAC_VERSION)/gpac/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) \
-		--extra-cflags="-I$(PREFIX)/include" \
-		--extra-ldflags="-L$(PREFIX)/lib -lxvidcore -ltheora -lvorbis -logg -lfreetype -lpng -lz" \
+		&& $(ENV_COMPILE) ./configure --prefix=/usr \
+		--extra-cflags="-I$(PREFIX)/usr/include" \
+		--extra-ldflags="-L$(PREFIX)/usr/lib -lxvidcore -ltheora -lvorbis -logg -lfreetype -lpng -lz" \
 		--use-zlib=system \
 		--use-png=local \
 		--use-ft=local \
@@ -3976,15 +3976,15 @@ $(GPAC)-$(GPAC_VERSION)/gpac/Makefile: $(GPAC)-$(GPAC_VERSION)/mypatched $(FL_DE
 		$(NULL)
 $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/Makefile
 	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make $(MAKE_ARG)
-$(PREFIX)/bin/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make install
+$(PREFIX)/usr/bin/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(GPAC)-uninstall: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make uninstall
-$(GPAC)-install: $(PREFIX)/bin/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GPAC)-install: $(PREFIX)/usr/bin/MP4Box
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure
+FL_SOURCES+=$(DN_SRC)/$(GPAC_SRC)
 #FL_DEPENDENCES_FFMPEG+=$(GPAC)-install
 FL_UNINSTALL+=$(GPAC)-uninstall
 
