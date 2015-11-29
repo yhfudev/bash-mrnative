@@ -24,9 +24,11 @@ LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}')
 #MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l )
 MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 1 + 1;}')
 
-ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
-		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig:$(PREFIX)/usr/lib/pkgconfig \
+ENV_COMPILE= PATH=$(PREFIX)/bin:$(PREFIX)/usr/bin:${PATH} \
+		PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig:$(PREFIX)/usr/lib/pkgconfig:${PKG_CONFIG_PATH} \
 		LD_LIBRARY_PATH=$(PREFIX)/lib:$(PREFIX)/usr/lib:$(LD_PATH_SYS) \
+		CPPFLAGS+="-I$(PREFIX)/include -I$(PREFIX)/usr/include/" \
+		LDFLAGS+="-L$(PREFIX)/lib -L$(PREFIX)/usr/lib/" \
 		$(NULL)
 
 OSTYP:=$(shell uname -m)
@@ -135,8 +137,7 @@ $(CMAKE)-$(CMAKE_VERSION)/configure: $(DN_SRC)/$(CMAKE_SRC)
 	touch $@
 $(CMAKE)-$(CMAKE_VERSION)/Makefile: $(CMAKE)-$(CMAKE_VERSION)/configure $(FL_DEP_CMAKE)
 	cd $(CMAKE)-$(CMAKE_VERSION)/ \
-		&& $(ENV_COMPILE) LDFLAGS=-L$(PREFIX)/lib \
-		./configure --prefix=/usr --system-zlib --system-bzip2
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --system-zlib --system-bzip2
 
 $(CMAKE)-$(CMAKE_VERSION)/bin/cmake: $(CMAKE)-$(CMAKE_VERSION)/Makefile
 	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -231,7 +232,7 @@ $(NCURSES)-$(NCURSES_VERSION)/configure: $(DN_SRC)/$(NCURSES_SRC)
 
 $(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/configure $(FL_DEP_NCURSES)
 	cd $(NCURSES)-$(NCURSES_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/usr/include" ./configure --prefix=/user --mandir=/usr/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
+		&& $(ENV_COMPILE) ./configure --prefix=/user --mandir=/usr/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
 	touch $@
 $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/Makefile
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
@@ -308,7 +309,7 @@ $(LIBPNG)-$(LIBPNG_VERSION)/configure: $(DN_SRC)/$(LIBPNG_SRC)
 #$(LIBPNG)-$(LIBPNG_VERSION)/configure: $(LIBPNG)-$(LIBPNG_VERSION)/configure.ac
 #	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && ./autogen.sh
 $(LIBPNG)-$(LIBPNG_VERSION)/Makefile: $(LIBPNG)-$(LIBPNG_VERSION)/configure $(FL_DEP_LIBPNG)
-	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && CPPFLAGS="-I$(PREFIX)/usr/include -L$(PREFIX)/usr/lib" LDFLAGS=-L$(PREFIX)/usr/lib $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared
 $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/Makefile
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/usr/lib/pkgconfig/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc
@@ -371,8 +372,7 @@ $(LIBJPEG)-$(LIBJPEG_VERSION)/configure: $(DN_SRC)/$(LIBJPEG_SRC)
 #	cd $(LIBJPEG)-$(LIBJPEG_VERSION)/ && ./autogen.sh
 $(LIBJPEG)-$(LIBJPEG_VERSION)/Makefile: $(LIBJPEG)-$(LIBJPEG_VERSION)/configure $(FL_DEP_LIBJPEG)
 	cd $(LIBJPEG)-$(LIBJPEG_VERSION)/ \
-	    && CPPFLAGS="-I$(PREFIX)/include -L$(PREFIX)/lib" LDFLAGS=-L$(PREFIX)/lib \
-	        $(ENV_COMPILE) ./configure --prefix=/usr --with-jpeg8 #--enable-static --enable-shared
+	    && $(ENV_COMPILE) ./configure --prefix=/usr --with-jpeg8 #--enable-static --enable-shared
 $(LIBJPEG)-$(LIBJPEG_VERSION)/libjpeg.la: $(LIBJPEG)-$(LIBJPEG_VERSION)/Makefile
 	cd $(LIBJPEG)-$(LIBJPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX)/usr/lib/libjpeg.a: $(LIBJPEG)-$(LIBJPEG_VERSION)/libjpeg.la
@@ -454,7 +454,7 @@ $(GIFLIB)-$(GIFLIB_VERSION)/configure: $(DN_SRC)/$(GIFLIB_SRC)
 
 $(GIFLIB)-$(GIFLIB_VERSION)/Makefile: $(GIFLIB)-$(GIFLIB_VERSION)/configure $(FL_DEP_GIFLIB)
 	cd $(GIFLIB)-$(GIFLIB_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/usr/include" ./configure --prefix=/usr
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la: $(GIFLIB)-$(GIFLIB_VERSION)/Makefile
 	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make $(MAKE_ARG)
