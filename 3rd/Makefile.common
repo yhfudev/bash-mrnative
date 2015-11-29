@@ -25,8 +25,8 @@ LD_PATH_SYS=$(subst $(space),,$(shell ldconfig -v | grep ^/ | awk '{print $$1}')
 MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0 / 1 + 1;}')
 
 ENV_COMPILE= PATH=$(PREFIX)/bin:${PATH} \
-		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig \
-		LD_LIBRARY_PATH=$(PREFIX)/lib:$(LD_PATH_SYS) \
+		PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:$(PREFIX)/lib/pkgconfig:$(PREFIX)/usr/lib/pkgconfig \
+		LD_LIBRARY_PATH=$(PREFIX)/lib:$(PREFIX)/usr/lib:$(LD_PATH_SYS) \
 		$(NULL)
 
 OSTYP:=$(shell uname -m)
@@ -236,7 +236,7 @@ $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/Makef
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
 	touch $@
 $(PREFIX)/lib/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && make DESTDIR=$(PREFIX)$(PREFIX) install
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make DESTDIR=$(PREFIX) install
 	touch $@
 
 $(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la

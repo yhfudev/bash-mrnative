@@ -99,14 +99,14 @@ $(HARFBUZZ)-$(HARFBUZZ_VERSION)/configure: $(DN_SRC)/$(HARFBUZZ_SRC)
 	tar -xf $(DN_SRC)/$(HARFBUZZ_SRC)
 	touch $@
 $(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/configure $(FL_DEP_HARFBUZZ)
-	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared --with-gobject=no --with-graphite2
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared --with-gobject=no --with-graphite2
 $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile
 	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/lib/libharfbuzz.a: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
-	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make install
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(HARFBUZZ)-uninstall: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
-	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make uninstall
+	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
 $(HARFBUZZ)-install: $(PREFIX)/lib/libharfbuzz.a
 	touch $@
 
@@ -134,14 +134,14 @@ $(FRIBIDI)-$(FRIBIDI_VERSION)/configure: $(DN_SRC)/$(FRIBIDI_SRC)
 	tar -xf $(DN_SRC)/$(FRIBIDI_SRC)
 	touch $@
 $(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile: $(FRIBIDI)-$(FRIBIDI_VERSION)/configure
-	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared --with-glib=no
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && ./configure --prefix=/usr --enable-static --enable-shared --with-glib=no
 $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la: $(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile
 	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/lib/libfribidi.a: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
-	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make install
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(FRIBIDI)-uninstall: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
-	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make uninstall
+	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
 $(FRIBIDI)-install: $(PREFIX)/lib/libfribidi.a
 	touch $@
 
@@ -163,15 +163,16 @@ $(LIBENCA)-$(LIBENCA_VERSION)/configure: $(DN_SRC)/$(LIBENCA_SRC)
 	tar -xf $(DN_SRC)/$(LIBENCA_SRC)
 	touch $@
 $(LIBENCA)-$(LIBENCA_VERSION)/Makefile: $(LIBENCA)-$(LIBENCA_VERSION)/configure
-	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && ./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --enable-static --enable-shared --disable-harfbuzz
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && ./configure --prefix=/usr --exec-prefix=/usr --oldincludedir=/usr/include --datadir=/usr --enable-static --enable-shared --disable-harfbuzz
 $(LIBENCA)-$(LIBENCA_VERSION)/src/enca: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile
 	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libenca.a: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile $(LIBENCA)-$(LIBENCA_VERSION)/src/enca $(LIBENCA)-uninstall
-	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make install
+$(PREFIX)/usr/lib/libenca.a: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile $(LIBENCA)-$(LIBENCA_VERSION)/src/enca $(LIBENCA)-uninstall
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBENCA)-uninstall: $(LIBENCA)-$(LIBENCA_VERSION)/src/enca
-	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make uninstall
-$(LIBENCA)-install: $(PREFIX)/lib/libenca.a
+	mkdir -p $(PREFIX)/usr/bin
+	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBENCA)-install: $(PREFIX)/usr/lib/libenca.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBENCA_SRC)
@@ -225,17 +226,17 @@ $(LIBASS)-$(LIBASS_VERSION)/configure.ac: $(LIBASS)-$(LIBASS_VERSION)/.git $(FL_
 $(LIBASS)-$(LIBASS_VERSION)/configure: $(LIBASS)-$(LIBASS_VERSION)/configure.ac
 	cd $(LIBASS)-$(LIBASS_VERSION) && ./autogen.sh
 $(LIBASS)-$(LIBASS_VERSION)/Makefile: $(LIBASS)-$(LIBASS_VERSION)/configure
-	cd $(LIBASS)-$(LIBASS_VERSION) && FRIBIDI_CFLAGS="-I$(PREFIX)/include/fribidi" FRIBIDI_LIBS="-L$(PREFIX)/usr/lib" $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --enable-static --enable-shared --disable-harfbuzz
+	cd $(LIBASS)-$(LIBASS_VERSION) && FRIBIDI_CFLAGS="-I$(PREFIX)/include/fribidi" FRIBIDI_LIBS="-L$(PREFIX)/usr/lib" $(ENV_COMPILE) ./configure --prefix=/usr --exec-prefix=/usr --oldincludedir=/usr/include --datadir=/usr --enable-static --enable-shared --disable-harfbuzz
 	touch $@
 
 $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la: $(LIBASS)-$(LIBASS_VERSION)/Makefile
 	cd $(LIBASS)-$(LIBASS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX)/lib/libass.a: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
-	cd $(LIBASS)-$(LIBASS_VERSION)/ && make install
+$(PREFIX)/usr/lib/libass.a: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBASS)-uninstall: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
-	cd $(LIBASS)-$(LIBASS_VERSION)/ && make uninstall
-$(LIBASS)-install: $(PREFIX)/lib/libass.a
+	cd $(LIBASS)-$(LIBASS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBASS)-install: $(PREFIX)/usr/lib/libass.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBASS_SRC)
@@ -256,15 +257,15 @@ $(LIBSPEEX)-$(LIBSPEEX_VERSION)/configure: $(DN_SRC)/$(LIBSPEEX_SRC)
 	tar -xf $(DN_SRC)/$(LIBSPEEX_SRC)
 	touch $@
 $(LIBSPEEX)-$(LIBSPEEX_VERSION)/Makefile: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/configure
-	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && ./configure --prefix=/usr --enable-static --enable-shared
 $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/Makefile
 	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libspeex.a: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la
-	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make install
+$(PREFIX)/usr/lib/libspeex.a: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBSPEEX)-uninstall: $(LIBSPEEX)-$(LIBSPEEX_VERSION)/libspeex/libspeex.la
-	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make uninstall
-$(LIBSPEEX)-install: $(PREFIX)/lib/libspeex.a
+	cd $(LIBSPEEX)-$(LIBSPEEX_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBSPEEX)-install: $(PREFIX)/usr/lib/libspeex.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSPEEX_SRC)
@@ -284,15 +285,15 @@ $(OPUS)-$(OPUS_VERSION)/configure: $(DN_SRC)/$(OPUS_SRC)
 	tar -xf $(DN_SRC)/$(OPUS_SRC)
 	touch $@
 $(OPUS)-$(OPUS_VERSION)/Makefile: $(OPUS)-$(OPUS_VERSION)/configure
-	cd $(OPUS)-$(OPUS_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(OPUS)-$(OPUS_VERSION)/ && ./configure --prefix=/usr --enable-static --enable-shared
 $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc: $(OPUS)-$(OPUS_VERSION)/Makefile
 	cd $(OPUS)-$(OPUS_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/$(OPUS).pc: $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc
-	cd $(OPUS)-$(OPUS_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(OPUS).pc: $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc
+	cd $(OPUS)-$(OPUS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(OPUS)-uninstall: $(OPUS)-$(OPUS_VERSION)/$(OPUS).pc
-	cd $(OPUS)-$(OPUS_VERSION)/ && make uninstall
-$(OPUS)-install: $(PREFIX)/lib/pkgconfig/$(OPUS).pc
+	cd $(OPUS)-$(OPUS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(OPUS)-install: $(PREFIX)/usr/lib/pkgconfig/$(OPUS).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPUS_SRC)
@@ -315,12 +316,12 @@ $(LIBGSM)-$(LIBGSM_VERSION)/Makefile: $(DN_SRC)/$(LIBGSM_SRC)
 $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/Makefile
 	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
 	touch $@
-$(PREFIX)/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
-	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && install -m 644 inc/gsm.h $(PREFIX)/include && install -m 644 lib/libgsm.a $(PREFIX)/lib
+$(PREFIX)/usr/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
+	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && install -m 644 inc/gsm.h $(PREFIX)/usr/include/ && install -m 644 lib/libgsm.a $(PREFIX)/usr/lib/
 
 $(LIBGSM)-uninstall: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
 	rm -f $(PREFIX)/include/gsm.h $(PREFIX)/lib/libgsm.a
-$(LIBGSM)-install: $(PREFIX)/lib/libgsm.a
+$(LIBGSM)-install: $(PREFIX)/usr/lib/libgsm.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBGSM_SRC)
@@ -340,15 +341,15 @@ $(LIBA52)-$(LIBA52_VERSION)/configure: $(DN_SRC)/$(LIBA52_SRC)
 	tar -xf $(DN_SRC)/$(LIBA52_SRC)
 	touch $@
 $(LIBA52)-$(LIBA52_VERSION)/Makefile: $(LIBA52)-$(LIBA52_VERSION)/configure
-	cd $(LIBA52)-$(LIBA52_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && ./configure --prefix=$/usr --enable-static --enable-shared
 $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la: $(LIBA52)-$(LIBA52_VERSION)/Makefile
 	cd $(LIBA52)-$(LIBA52_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/liba52.a: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
-	cd $(LIBA52)-$(LIBA52_VERSION)/ && make install
+$(PREFIX)/usr/lib/liba52.a: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBA52)-uninstall: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
-	cd $(LIBA52)-$(LIBA52_VERSION)/ && make uninstall
-$(LIBA52)-install: $(PREFIX)/lib/liba52.a
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBA52)-install: $(PREFIX)/usr/lib/liba52.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(LIBA52_SRC)
@@ -365,17 +366,18 @@ $(DN_SRC)/$(FAAD_SRC): $(DN_SRC)/created
 	touch $@
 $(FAAD)-$(FAAD_VERSION)/configure: $(DN_SRC)/$(FAAD_SRC)
 	tar -xf $(DN_SRC)/$(FAAD_SRC)
+	cd $(FAAD)-$(FAAD_VERSION)/ && sh ./bootstrap
 	touch $@
 $(FAAD)-$(FAAD_VERSION)/Makefile: $(FAAD)-$(FAAD_VERSION)/configure
-	cd $(FAAD)-$(FAAD_VERSION)/ && sh ./bootstrap && ./configure --prefix=$(PREFIX) --enable-shared
+	cd $(FAAD)-$(FAAD_VERSION)/ && ./configure --prefix=/usr --enable-shared
 $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la: $(FAAD)-$(FAAD_VERSION)/Makefile
 	cd $(FAAD)-$(FAAD_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libfaad.a: $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la
-	cd $(FAAD)-$(FAAD_VERSION)/ && make install
+$(PREFIX)/usr/lib/libfaad.a: $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la
+	cd $(FAAD)-$(FAAD_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(FAAD)-uninstall: $(FAAD)-$(FAAD_VERSION)/libfaad/libfaad.la
-	cd $(FAAD)-$(FAAD_VERSION)/ && make uninstall
-$(FAAD)-install: $(PREFIX)/lib/libfaad.a
+	cd $(FAAD)-$(FAAD_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FAAD)-install: $(PREFIX)/usr/lib/libfaad.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(FAAD_SRC)
@@ -396,23 +398,24 @@ $(FAAC)-$(FAAC_VERSION)/README: $(DN_SRC)/$(FAAC_SRC)
 	tar -xf $(DN_SRC)/$(FAAC_SRC)
 	touch $@
 #$(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(FAAC)-$(FAAC_VERSION)/README
-$(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(DN_SRC)/$(FAAC_SRC)
-	rm -rf $(FAAC)-$(FAAC_VERSION)/
-	tar -xf $(DN_SRC)/$(FAAC_SRC)
+$(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(FAAC)-$(FAAC_VERSION)/README
 #	cd $(FAAC)-$(FAAC_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch && patch -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch
 	cd $(FAAC)-$(FAAC_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch
 	touch $@
-$(FAAC)-$(FAAC_VERSION)/Makefile: $(FAAC)-$(FAAC_VERSION)/mypatched
-	cd $(FAAC)-$(FAAC_VERSION)/ && sh ./bootstrap && ./configure --prefix=$(PREFIX) --enable-shared
+$(FAAC)-$(FAAC_VERSION)/configure: $(FAAC)-$(FAAC_VERSION)/mypatched
+	cd $(FAAC)-$(FAAC_VERSION)/ && sh ./bootstrap
+	touch $@
+$(FAAC)-$(FAAC_VERSION)/Makefile: $(FAAC)-$(FAAC_VERSION)/configure
+	cd $(FAAC)-$(FAAC_VERSION)/ && ./configure --prefix=/usr --enable-shared
 	touch $@
 $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la: $(FAAC)-$(FAAC_VERSION)/Makefile
 	cd $(FAAC)-$(FAAC_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libfaac.a: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
-	cd $(FAAC)-$(FAAC_VERSION)/ && make install
+$(PREFIX)/usr/lib/libfaac.a: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
+	cd $(FAAC)-$(FAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(FAAC)-uninstall: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
-	cd $(FAAC)-$(FAAC_VERSION)/ && make uninstall
-$(FAAC)-install: $(PREFIX)/lib/libfaac.a
+	cd $(FAAC)-$(FAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FAAC)-install: $(PREFIX)/usr/lib/libfaac.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FAAC_SRC)
@@ -434,15 +437,15 @@ $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac: $(DN_SRC)/$(FDKAAC_SRC)
 $(FDKAAC)-$(FDKAAC_VERSION)/configure: $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac
 	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && ./autogen.sh
 $(FDKAAC)-$(FDKAAC_VERSION)/Makefile: $(FDKAAC)-$(FDKAAC_VERSION)/configure
-	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && autoreconf && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && autoreconf && ./configure --prefix=/usr --enable-static --enable-shared
 $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la: $(FDKAAC)-$(FDKAAC_VERSION)/Makefile
 	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libfdk-aac.a: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
-	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make install
+$(PREFIX)/usr/lib/libfdk-aac.a: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(FDKAAC)-uninstall: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
-	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make uninstall
-$(FDKAAC)-install: $(PREFIX)/lib/libfdk-aac.a
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FDKAAC)-install: $(PREFIX)/usr/lib/libfdk-aac.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FDKAAC_SRC)
@@ -478,15 +481,15 @@ $(LAME)-$(LAME_VERSION)/mypatched: $(DN_SRC)/lame-sse.patch $(LAME)-$(LAME_VERSI
 	touch $@
 
 $(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/mypatched $(FL_DEP_LAME)
-	cd $(LAME)-$(LAME_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-nasm --enable-static --enable-shared
+	cd $(LAME)-$(LAME_VERSION)/ && ./configure --prefix=/usr --enable-nasm --enable-static --enable-shared
 $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la: $(LAME)-$(LAME_VERSION)/Makefile
 	cd $(LAME)-$(LAME_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
-	cd $(LAME)-$(LAME_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
+	cd $(LAME)-$(LAME_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LAME)-uninstall: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
-	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
-$(LAME)-install: $(PREFIX)/lib/libmp3lame.a
+	cd $(LAME)-$(LAME_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LAME)-install: $(PREFIX)/usr/lib/libmp3lame.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LAME_SRC)
@@ -520,18 +523,18 @@ $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SR
 
 $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure $(FL_DEP_XVIDCORE)
 	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile
 	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
-	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(XVIDCORE)-uninstall: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
-	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make uninstall
-$(XVIDCORE)-install: $(PREFIX)/lib/pkgconfig/$(XVIDCORE).pc
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make -j1 DESTDIR=$(PREFIX) uninstall
+$(XVIDCORE)-install: $(PREFIX)/usr/lib/pkgconfig/$(XVIDCORE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XVIDCORE_SRC)
@@ -551,15 +554,15 @@ $(AMRNB)-$(AMRNB_VERSION)/configure: $(DN_SRC)/$(AMRNB_SRC)
 	tar -xf $(DN_SRC)/$(AMRNB_SRC)
 	touch $@
 $(AMRNB)-$(AMRNB_VERSION)/Makefile: $(AMRNB)-$(AMRNB_VERSION)/configure
-	cd $(AMRNB)-$(AMRNB_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && ./configure --prefix=/usr --enable-shared
 $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la: $(AMRNB)-$(AMRNB_VERSION)/Makefile
 	cd $(AMRNB)-$(AMRNB_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libamrnb.a: $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la
-	cd $(AMRNB)-$(AMRNB_VERSION)/ && make install
+$(PREFIX)/usr/lib/libamrnb.a: $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(AMRNB)-uninstall: $(AMRNB)-$(AMRNB_VERSION)/libamrnb.la
-	cd $(AMRNB)-$(AMRNB_VERSION)/ && make uninstall
-$(AMRNB)-install: $(PREFIX)/lib/libamrnb.a
+	cd $(AMRNB)-$(AMRNB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(AMRNB)-install: $(PREFIX)/usr/lib/libamrnb.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRNB_SRC)
@@ -580,15 +583,15 @@ $(AMRWB)-$(AMRWB_VERSION)/configure: $(DN_SRC)/$(AMRWB_SRC)
 	tar -xf $(DN_SRC)/$(AMRWB_SRC)
 	touch $@
 $(AMRWB)-$(AMRWB_VERSION)/Makefile: $(AMRWB)-$(AMRWB_VERSION)/configure
-	cd $(AMRWB)-$(AMRWB_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && ./configure --prefix=/usr --enable-shared
 $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la: $(AMRWB)-$(AMRWB_VERSION)/Makefile
 	cd $(AMRWB)-$(AMRWB_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libamrwb.a: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
-	cd $(AMRWB)-$(AMRWB_VERSION)/ && make install
+$(PREFIX)/usr/lib/libamrwb.a: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(AMRWB)-uninstall: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
-	cd $(AMRWB)-$(AMRWB_VERSION)/ && make uninstall
-$(AMRWB)-install: $(PREFIX)/lib/libamrwb.a
+	cd $(AMRWB)-$(AMRWB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(AMRWB)-install: $(PREFIX)/usr/lib/libamrwb.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRWB_SRC)
@@ -608,15 +611,15 @@ $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/configure: $(DN_SRC)/$(OPENCOREAMR_SRC)
 	tar -xf $(DN_SRC)/$(OPENCOREAMR_SRC)
 	touch $@
 $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/Makefile: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/configure
-	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-shared
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && ./configure --prefix=/usr --enable-shared
 $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/Makefile
 	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libopencore-amrnb.a: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la
-	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make install
+$(PREFIX)/usr/lib/libopencore-amrnb.a: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(OPENCOREAMR)-uninstall: $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/amrnb/libopencore-amrnb.la
-	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make uninstall
-$(OPENCOREAMR)-install: $(PREFIX)/lib/libopencore-amrnb.a
+	cd $(OPENCOREAMR)-$(OPENCOREAMR_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(OPENCOREAMR)-install: $(PREFIX)/usr/lib/libopencore-amrnb.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENCOREAMR_SRC)
@@ -641,18 +644,18 @@ $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAMRWBENC_S
 
 $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/Makefile: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure $(FL_DEP_LIBVOAMRWBENC)
 	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/Makefile
 	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBVOAMRWBENC).pc: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc
-	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBVOAMRWBENC).pc: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBVOAMRWBENC)-uninstall: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/$(LIBVOAMRWBENC).pc
-	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make uninstall
-$(LIBVOAMRWBENC)-install: $(PREFIX)/lib/pkgconfig/$(LIBVOAMRWBENC).pc
+	cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBVOAMRWBENC)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBVOAMRWBENC).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBVOAMRWBENC_SRC)
@@ -677,18 +680,18 @@ $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAACENC_SRC)
 
 $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/Makefile: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure $(FL_DEP_LIBVOAACENC)
 	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/Makefile
 	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBVOAACENC).pc: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc
-	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBVOAACENC).pc: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBVOAACENC)-uninstall: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/$(LIBVOAACENC).pc
-	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make uninstall
-$(LIBVOAACENC)-install: $(PREFIX)/lib/pkgconfig/$(LIBVOAACENC).pc
+	cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBVOAACENC)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBVOAACENC).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBVOAACENC_SRC)
@@ -713,18 +716,18 @@ $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure: $(DN_SRC)/$(LIBWAVPACK_SRC)
 
 $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/Makefile: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure $(FL_DEP_LIBWAVPACK)
 	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) #--disable-asm
+		&& $(ENV_COMPILE) ./configure --prefix=/usr #--disable-asm
 	touch $@
 $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/Makefile
 	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBWAVPACK).pc: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc
-	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBWAVPACK).pc: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBWAVPACK)-uninstall: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/$(LIBWAVPACK).pc
-	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make uninstall
-$(LIBWAVPACK)-install: $(PREFIX)/lib/pkgconfig/$(LIBWAVPACK).pc
+	cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBWAVPACK)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBWAVPACK).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBWAVPACK_SRC)
@@ -751,14 +754,14 @@ $(X264)-$(X264_VERSION)/x264.h: $(DN_SRC)/$(X264_SRC)
 	touch $@
 $(X264)-$(X264_VERSION)/libx264.a: $(X264)-$(X264_VERSION)/x264.h
 	#cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
-	cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX) --disable-asm --enable-pic --disable-opencl --enable-static --enable-shared
+	cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=/usr --disable-asm --enable-pic --disable-opencl --enable-static --enable-shared
 	cd $(X264)-$(X264_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libx264.a: $(X264)-$(X264_VERSION)/libx264.a
-	cd $(X264)-$(X264_VERSION)/ && make install
+$(PREFIX)/usr/lib/libx264.a: $(X264)-$(X264_VERSION)/libx264.a
+	cd $(X264)-$(X264_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(X264)-uninstall: $(X264)-$(X264_VERSION)/libx264.a
-	cd $(X264)-$(X264_VERSION)/ && make uninstall
-$(X264)-install: $(PREFIX)/lib/libx264.a
+	cd $(X264)-$(X264_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(X264)-install: $(PREFIX)/usr/lib/libx264.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(X264_SRC)
@@ -927,18 +930,18 @@ $(XAVS)-$(XAVS_VERSION)/mypatched: $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patc
 $(XAVS)-$(XAVS_VERSION)/Makefile: $(XAVS)-$(XAVS_VERSION)/mypatched $(XAVS)-$(XAVS_VERSION)/configure $(FL_DEP_XAVS)
 	cd $(XAVS)-$(XAVS_VERSION)/ \
 		&& touch config.mak \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-asm
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-shared --disable-asm
 	touch $@
 $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/Makefile
 	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc
-	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make install
+$(PREFIX)/usr/lib/pkgconfig/$(XAVS).pc: $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc
+	cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(XAVS)-uninstall: $(XAVS)-$(XAVS_VERSION)/$(XAVS).pc
-	cd $(XAVS)-$(XAVS_VERSION)/ && make uninstall
-$(XAVS)-install: $(PREFIX)/lib/pkgconfig/$(XAVS).pc
+	cd $(XAVS)-$(XAVS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(XAVS)-install: $(PREFIX)/usr/lib/pkgconfig/$(XAVS).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XAVS_SRC)
@@ -957,15 +960,15 @@ $(LIBOGG)-$(LIBOGG_VERSION)/configure: $(DN_SRC)/$(LIBOGG_SRC)
 	tar -xf $(DN_SRC)/$(LIBOGG_SRC)
 	touch $@
 $(LIBOGG)-$(LIBOGG_VERSION)/Makefile: $(LIBOGG)-$(LIBOGG_VERSION)/configure
-	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && ./configure --prefix=/usr --enable-static --enable-shared
 $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la: $(LIBOGG)-$(LIBOGG_VERSION)/Makefile
 	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/$(LIBOGG).a: $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la
-	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(LIBOGG).a: $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBOGG)-uninstall: $(LIBOGG)-$(LIBOGG_VERSION)/src/$(LIBOGG).la
-	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make uninstall
-$(LIBOGG)-install: $(PREFIX)/lib/$(LIBOGG).a
+	cd $(LIBOGG)-$(LIBOGG_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBOGG)-install: $(PREFIX)/usr/lib/$(LIBOGG).a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBOGG_SRC)
@@ -988,15 +991,15 @@ $(VORBIS)-$(VORBIS_VERSION)/configure: $(DN_SRC)/$(VORBIS_SRC)
 	tar -xf $(DN_SRC)/$(VORBIS_SRC)
 	touch $@
 $(VORBIS)-$(VORBIS_VERSION)/Makefile: $(VORBIS)-$(VORBIS_VERSION)/configure $(FL_DEP_VORBIS)
-	cd $(VORBIS)-$(VORBIS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared
 $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la: $(VORBIS)-$(VORBIS_VERSION)/Makefile
 	cd $(VORBIS)-$(VORBIS_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libvorbis.a: $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la
-	cd $(VORBIS)-$(VORBIS_VERSION)/ && make install
+$(PREFIX)/usr/lib/libvorbis.a: $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(VORBIS)-uninstall: $(VORBIS)-$(VORBIS_VERSION)/lib/libvorbis.la
-	cd $(VORBIS)-$(VORBIS_VERSION)/ && make uninstall
-$(VORBIS)-install: $(PREFIX)/lib/libvorbis.a
+	cd $(VORBIS)-$(VORBIS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(VORBIS)-install: $(PREFIX)/usr/lib/libvorbis.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(VORBIS_SRC)
@@ -1021,18 +1024,18 @@ $(THEORA)-$(THEORA_VERSION)/configure: $(DN_SRC)/$(THEORA_SRC)
 	touch $@
 $(THEORA)-$(THEORA_VERSION)/Makefile: $(THEORA)-$(THEORA_VERSION)/configure $(FL_DEP_THEORA)
 	cd $(THEORA)-$(THEORA_VERSION)/ && $(ENV_COMPILE) ./autogen.sh \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-static --enable-shared --disable-examples
 	touch $@
 $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la: $(THEORA)-$(THEORA_VERSION)/Makefile
 	cd $(THEORA)-$(THEORA_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/libtheora.a: $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la
-	cd $(THEORA)-$(THEORA_VERSION)/ && make install
+$(PREFIX)/usr/lib/libtheora.a: $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la
+	cd $(THEORA)-$(THEORA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(THEORA)-uninstall: $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la
-	cd $(THEORA)-$(THEORA_VERSION)/ && make uninstall
-$(THEORA)-install: $(PREFIX)/lib/libtheora.a
+	cd $(THEORA)-$(THEORA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(THEORA)-install: $(PREFIX)/usr/lib/libtheora.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(THEORA_SRC)
@@ -1059,18 +1062,18 @@ $(LOG4CPP)-$(LOG4CPP_VERSION)/configure: $(DN_SRC)/$(LOG4CPP_SRC)
 
 $(LOG4CPP)-$(LOG4CPP_VERSION)/Makefile: $(LOG4CPP)-$(LOG4CPP_VERSION)/configure $(FL_DEP_LOG4CPP)
 	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --disable-doxygen --disable-dot --without-idsa
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --disable-doxygen --disable-dot --without-idsa
 	touch $@
 $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc: $(LOG4CPP)-$(LOG4CPP_VERSION)/Makefile
 	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LOG4CPP).pc: $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc
-	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(LOG4CPP).pc: $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LOG4CPP)-uninstall: $(LOG4CPP)-$(LOG4CPP_VERSION)/$(LOG4CPP).pc
-	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make uninstall
-$(LOG4CPP)-install: $(PREFIX)/lib/pkgconfig/$(LOG4CPP).pc
+	cd $(LOG4CPP)-$(LOG4CPP_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LOG4CPP)-install: $(PREFIX)/usr/lib/pkgconfig/$(LOG4CPP).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LOG4CPP_SRC)
@@ -1096,18 +1099,18 @@ $(FFMS2)-$(FFMS2_VERSION)/configure: $(DN_SRC)/$(FFMS2_SRC)
 
 $(FFMS2)-$(FFMS2_VERSION)/Makefile: $(FFMS2)-$(FFMS2_VERSION)/configure $(FL_DEP_FFMS2)
 	cd $(FFMS2)-$(FFMS2_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-avresample --enable-shared --disable-static
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-avresample --enable-shared --disable-static
 	touch $@
 $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/Makefile
 	cd $(FFMS2)-$(FFMS2_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
-	cd $(FFMS2)-$(FFMS2_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FFMS2)-uninstall: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
-	cd $(FFMS2)-$(FFMS2_VERSION)/ && make uninstall
-$(FFMS2)-install: $(PREFIX)/lib/pkgconfig/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FFMS2)-install: $(PREFIX)/usr/lib/pkgconfig/$(FFMS2).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FFMS2_SRC)
@@ -1168,18 +1171,18 @@ $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched: $(DN_PATCH)/pbs-avxsynth-newapi.patch
 
 $(AVXSYNTH)-$(AVXSYNTH_VERSION)/Makefile: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched $(FL_DEP_AVXSYNTH)
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-static --enable-shared --disable-examples
 	touch $@
 $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/Makefile
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(AVXSYNTH).pc: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
-	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(AVXSYNTH).pc: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(AVXSYNTH)-uninstall: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
-	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make uninstall
-$(AVXSYNTH)-install: $(PREFIX)/lib/pkgconfig/$(AVXSYNTH).pc
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(AVXSYNTH)-install: $(PREFIX)/usr/lib/pkgconfig/$(AVXSYNTH).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(AVXSYNTH_SRC)
@@ -1230,18 +1233,18 @@ endif
 
 $(GAVL)-$(GAVL_VERSION)/Makefile: $(GAVL)-$(GAVL_VERSION)/configure $(FL_DEP_GAVL)
 	cd $(GAVL)-$(GAVL_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --without-doxygen --with-cpuflags=none
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --without-doxygen --with-cpuflags=none
 	touch $@
 $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc: $(GAVL)-$(GAVL_VERSION)/Makefile
 	cd $(GAVL)-$(GAVL_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(GAVL).pc: $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc
-	cd $(GAVL)-$(GAVL_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(GAVL).pc: $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc
+	cd $(GAVL)-$(GAVL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(GAVL)-uninstall: $(GAVL)-$(GAVL_VERSION)/$(GAVL).pc
-	cd $(GAVL)-$(GAVL_VERSION)/ && make uninstall
-$(GAVL)-install: $(PREFIX)/lib/pkgconfig/$(GAVL).pc
+	cd $(GAVL)-$(GAVL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(GAVL)-install: $(PREFIX)/usr/lib/pkgconfig/$(GAVL).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GAVL_SRC)
@@ -1298,18 +1301,18 @@ endif
 
 $(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure $(FL_DEP_FREI0R)
 	cd $(FREI0R)-$(FREI0R_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/Makefile
 	cd $(FREI0R)-$(FREI0R_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FREI0R)-uninstall: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && make uninstall
-$(FREI0R)-install: $(PREFIX)/lib/pkgconfig/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FREI0R)-install: $(PREFIX)/usr/lib/pkgconfig/$(FREI0R).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FREI0R_SRC)
@@ -1350,15 +1353,15 @@ $(LADSPA)-$(LADSPA_VERSION)/mypatched: $(DN_SRC)/fix-memleak-in-plugin-scanning.
 $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so: $(LADSPA)-$(LADSPA_VERSION)/mypatched $(LADSPA)-$(LADSPA_VERSION)/src/makefile $(FL_DEP_LADSPA)
 	cd $(LADSPA)-$(LADSPA_VERSION)/src && make $(MAKE_ARG) targets
 	touch $@
-$(PREFIX)/lib/ladspa/amp.so: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
-	cd $(LADSPA)-$(LADSPA_VERSION)/src && make INSTALL_PLUGINS_DIR="$(PREFIX)/lib/ladspa/" \
-       INSTALL_INCLUDE_DIR="$(PREFIX)/include/" \
-       INSTALL_BINARY_DIR="$(PREFIX)/bin/" install
+$(PREFIX)/usr/lib/ladspa/amp.so: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
+	cd $(LADSPA)-$(LADSPA_VERSION)/src && make INSTALL_PLUGINS_DIR="$(PREFIX)/usr/lib/ladspa/" \
+       INSTALL_INCLUDE_DIR="$(PREFIX)/usr/include/" \
+       INSTALL_BINARY_DIR="$(PREFIX)/usr/bin/" install
 	touch $@
 
 $(LADSPA)-uninstall: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
 	cd $(LADSPA)-$(LADSPA_VERSION)/ && make uninstall
-$(LADSPA)-install: $(PREFIX)/lib/ladspa/amp.so
+$(LADSPA)-install: $(PREFIX)/usr/lib/ladspa/amp.so
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LADSPA_SRC)
@@ -1384,40 +1387,40 @@ $(FFTW)-$(FFTW_VERSION)/configure: $(DN_SRC)/$(FFTW_SRC)
 
 $(FFTW)-$(FFTW_VERSION)/build-double/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
 	mkdir $(FFTW)-$(FFTW_VERSION)/build-double/ && cd $(FFTW)-$(FFTW_VERSION)/build-double/ \
-		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-sse2 --enable-avx
+		&& $(ENV_COMPILE) ../configure --prefix=/usr --enable-shared --enable-threads --enable-openmp --enable-sse2 --enable-avx
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc
-	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make install
+$(PREFIX)/usr/lib/pkgconfig/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
 	mkdir $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ \
-		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-long-double
+		&& $(ENV_COMPILE) ../configure --prefix=/usr --enable-shared --enable-threads --enable-openmp --enable-long-double
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc
-	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make install
+$(PREFIX)/usr/lib/pkgconfig/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FFTW)-$(FFTW_VERSION)/build-single/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
 	mkdir $(FFTW)-$(FFTW_VERSION)/build-single/ && cd $(FFTW)-$(FFTW_VERSION)/build-single/ \
-		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX) --enable-shared --enable-threads --enable-openmp --enable-float --enable-sse --enable-avx
+		&& $(ENV_COMPILE) ../configure --prefix=/usr --enable-shared --enable-threads --enable-openmp --enable-float --enable-sse --enable-avx
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc
-	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && make install
+$(PREFIX)/usr/lib/pkgconfig/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc
+	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FFTW)-uninstall: $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc
-	cd $(FFTW)-$(FFTW_VERSION)/ && make uninstall
-$(FFTW)-install: $(PREFIX)/lib/pkgconfig/fftw3.pc $(PREFIX)/lib/pkgconfig/fftw3l.pc $(PREFIX)/lib/pkgconfig/fftw3f.pc
+	cd $(FFTW)-$(FFTW_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FFTW)-install: $(PREFIX)/usr/lib/pkgconfig/fftw3.pc $(PREFIX)/usr/lib/pkgconfig/fftw3l.pc $(PREFIX)/usr/lib/pkgconfig/fftw3f.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FFTW_SRC)
@@ -1454,18 +1457,18 @@ $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure: $(DN_SRC)/$(LIBAACPLUS_SRC) $(DN_
 
 $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure $(FL_DEP_LIBAACPLUS)
 	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-static=off
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-static=off
 	touch $@
 $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile
 	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 #$(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
-	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make install
+$(PREFIX)/usr/lib/pkgconfig/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBAACPLUS)-uninstall: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
-	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make uninstall
-$(LIBAACPLUS)-install: $(PREFIX)/lib/pkgconfig/aacplus.pc
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBAACPLUS)-install: $(PREFIX)/usr/lib/pkgconfig/aacplus.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBAACPLUS_SRC)
@@ -1526,18 +1529,18 @@ endif
 
 $(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure $(FL_DEP_LIBBLURAY)
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --disable-bdjava
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --disable-bdjava
 	touch $@
 $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBBLURAY).la: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la
-	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(LIBBLURAY).la: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBBLURAY)-uninstall: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/$(LIBBLURAY).la
-	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make uninstall
-$(LIBBLURAY)-install: $(PREFIX)/lib/$(LIBBLURAY).la
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBBLURAY)-install: $(PREFIX)/usr/lib/$(LIBBLURAY).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBBLURAY_SRC)
@@ -1587,18 +1590,18 @@ endif
 
 $(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile: $(LIBBS2B)-$(LIBBS2B_VERSION)/configure $(FL_DEP_LIBBS2B)
 	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile
 	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBBS2B)-uninstall: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make uninstall
-$(LIBBS2B)-install: $(PREFIX)/lib/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBBS2B)-install: $(PREFIX)/usr/lib/$(LIBBS2B).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBBS2B_SRC)
@@ -1647,18 +1650,20 @@ $(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure: $(DN_SRC)/$(LIBID3TAG_SRC) $(DN_SRC
 
 $(LIBID3TAG)-$(LIBID3TAG_VERSION)/Makefile: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure $(FL_DEP_LIBID3TAG)
 	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/Makefile
 	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBID3TAG).la: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la
-	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make install && install -D -m644 $(DN_SRC)/libid3tag-id3tag.pc "$(PREFIX)/lib/pkgconfig/id3tag.pc"
+$(PREFIX)/usr/lib/$(LIBID3TAG).la: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ \
+        && make -j1 DESTDIR=$(PREFIX) install \
+        && install -D -m644 $(DN_SRC)/libid3tag-id3tag.pc "$(PREFIX)/usr/lib/pkgconfig/id3tag.pc"
 	touch $@
 
 $(LIBID3TAG)-uninstall: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/$(LIBID3TAG).la
-	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make uninstall
-$(LIBID3TAG)-install: $(PREFIX)/lib/$(LIBID3TAG).la
+	cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBID3TAG)-install: $(PREFIX)/usr/lib/$(LIBID3TAG).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBID3TAG_SRC)
@@ -1700,18 +1705,18 @@ $(IMLIB2)-$(IMLIB2_VERSION)/configure: $(DN_SRC)/$(IMLIB2_SRC)
 
 $(IMLIB2)-$(IMLIB2_VERSION)/Makefile: $(IMLIB2)-$(IMLIB2_VERSION)/configure $(FL_DEP_IMLIB2)
 	cd $(IMLIB2)-$(IMLIB2_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la: $(IMLIB2)-$(IMLIB2_VERSION)/Makefile
 	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(IMLIB2).la: $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la
-	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(IMLIB2).la: $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(IMLIB2)-uninstall: $(IMLIB2)-$(IMLIB2_VERSION)/$(IMLIB2).la
-	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make uninstall
-$(IMLIB2)-install: $(PREFIX)/lib/$(IMLIB2).la
+	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(IMLIB2)-install: $(PREFIX)/usr/lib/$(IMLIB2).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(IMLIB2_SRC)
@@ -1769,18 +1774,18 @@ endif
 
 $(LIBCACA)-$(LIBCACA_VERSION)/Makefile: $(LIBCACA)-$(LIBCACA_VERSION)/configure $(FL_DEP_LIBCACA)
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --mandir=/usr/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
 	touch $@
 $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/Makefile
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la
-	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBCACA)-uninstall: $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la
-	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make uninstall
-$(LIBCACA)-install: $(PREFIX)/lib/$(LIBCACA).la
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBCACA)-install: $(PREFIX)/usr/lib/$(LIBCACA).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCACA_SRC)
@@ -1809,18 +1814,18 @@ $(LIBCDDB)-$(LIBCDDB_VERSION)/configure: $(DN_SRC)/$(LIBCDDB_SRC)
 
 $(LIBCDDB)-$(LIBCDDB_VERSION)/Makefile: $(LIBCDDB)-$(LIBCDDB_VERSION)/configure $(FL_DEP_LIBCDDB)
 	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la: $(LIBCDDB)-$(LIBCDDB_VERSION)/Makefile
 	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBCDDB).la: $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la
-	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make install
+$(PREFIX)/usr/lib/$(LIBCDDB).la: $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBCDDB)-uninstall: $(LIBCDDB)-$(LIBCDDB_VERSION)/$(LIBCDDB).la
-	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make uninstall
-$(LIBCDDB)-install: $(PREFIX)/lib/$(LIBCDDB).la
+	cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBCDDB)-install: $(PREFIX)/usr/lib/$(LIBCDDB).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCDDB_SRC)
@@ -1885,19 +1890,19 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure $(FL_DEP_LIBCDIO)
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --without-cd-drive #--disable-vcd-info --enable-cpp-progs --disable-static
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --without-cd-drive #--disable-vcd-info --enable-cpp-progs --disable-static
 	touch $@
 $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	#sed -i "/LIBCDIO_SOURCE_PATH/s|.*|/* #undef LIBCDIO_SOURCE_PATH */|" $(PREFIX)/include/cdio/cdio_config.h
 	touch $@
 
 $(LIBCDIO)-uninstall: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make uninstall
-$(LIBCDIO)-install: $(PREFIX)/lib/pkgconfig/$(LIBCDIO).pc
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBCDIO)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBCDIO).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCDIO_SRC)
@@ -1927,18 +1932,18 @@ $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(DN_SRC)/$(LIBCDIOPARA
 
 $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure $(FL_DEP_LIBCDIOPARANOIA)
 	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile
 	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/$(LIBCDIOPARANOIA).la: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la
-	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/$(LIBCDIOPARANOIA).la: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBCDIOPARANOIA)-uninstall: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/$(LIBCDIOPARANOIA).la
-	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make uninstall
-$(LIBCDIOPARANOIA)-install: $(PREFIX)/lib/$(LIBCDIOPARANOIA).la
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBCDIOPARANOIA)-install: $(PREFIX)/usr/lib/$(LIBCDIOPARANOIA).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
@@ -1967,18 +1972,18 @@ $(LIBCELT)-$(LIBCELT_VERSION)/configure: $(DN_SRC)/$(LIBCELT_SRC)
 
 $(LIBCELT)-$(LIBCELT_VERSION)/Makefile: $(LIBCELT)-$(LIBCELT_VERSION)/configure $(FL_DEP_LIBCELT)
 	cd $(LIBCELT)-$(LIBCELT_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-custom-modes
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-custom-modes
 	touch $@
 $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc: $(LIBCELT)-$(LIBCELT_VERSION)/Makefile
 	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBCELT).pc: $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc
-	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBCELT).pc: $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBCELT)-uninstall: $(LIBCELT)-$(LIBCELT_VERSION)/$(LIBCELT).pc
-	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make uninstall
-$(LIBCELT)-install: $(PREFIX)/lib/pkgconfig/$(LIBCELT).pc
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBCELT)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBCELT).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCELT_SRC)
@@ -2045,18 +2050,18 @@ $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure: $(DN_SRC)/$(LIBMODPLUG_SRC)
 
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure $(FL_DEP_LIBMODPLUG)
 	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile
 	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc
-	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBMODPLUG).pc: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBMODPLUG)-uninstall: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/$(LIBMODPLUG).pc
-	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make uninstall
-$(LIBMODPLUG)-install: $(PREFIX)/lib/pkgconfig/$(LIBMODPLUG).pc
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBMODPLUG)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBMODPLUG).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBMODPLUG_SRC)
@@ -2085,18 +2090,18 @@ $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure: $(DN_SRC)/$(LIBSCHROEDI
 
 $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/Makefile: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure $(FL_DEP_LIBSCHROEDINGER)
 	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/Makefile
 	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBSCHROEDINGER).pc: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc
-	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBSCHROEDINGER).pc: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBSCHROEDINGER)-uninstall: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/$(LIBSCHROEDINGER).pc
-	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make uninstall
-$(LIBSCHROEDINGER)-install: $(PREFIX)/lib/pkgconfig/$(LIBSCHROEDINGER).pc
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBSCHROEDINGER)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBSCHROEDINGER).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSCHROEDINGER_SRC)
@@ -2126,18 +2131,18 @@ $(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(DN_SRC)/$(LIBSHINE_SRC)
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure $(FL_DEP_LIBSHINE)
 	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc: $(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile
 	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBSHINE).pc: $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc
-	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBSHINE).pc: $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBSHINE)-uninstall: $(LIBSHINE)-$(LIBSHINE_VERSION)/$(LIBSHINE).pc
-	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make uninstall
-$(LIBSHINE)-install: $(PREFIX)/lib/pkgconfig/$(LIBSHINE).pc
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBSHINE)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBSHINE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSHINE_SRC)
@@ -2215,18 +2220,18 @@ $(FLAC)-$(FLAC_VERSION)/configure: $(DN_SRC)/$(FLAC_SRC)
 
 $(FLAC)-$(FLAC_VERSION)/Makefile: $(FLAC)-$(FLAC_VERSION)/configure $(FL_DEP_FLAC)
 	cd $(FLAC)-$(FLAC_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc: $(FLAC)-$(FLAC_VERSION)/Makefile
 	cd $(FLAC)-$(FLAC_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(FLAC).pc: $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc
-	cd $(FLAC)-$(FLAC_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(FLAC).pc: $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc
+	cd $(FLAC)-$(FLAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(FLAC)-uninstall: $(FLAC)-$(FLAC_VERSION)/$(FLAC).pc
-	cd $(FLAC)-$(FLAC_VERSION)/ && make uninstall
-$(FLAC)-install: $(PREFIX)/lib/pkgconfig/$(FLAC).pc
+	cd $(FLAC)-$(FLAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(FLAC)-install: $(PREFIX)/usr/lib/pkgconfig/$(FLAC).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FLAC_SRC)
@@ -2256,18 +2261,18 @@ $(LIBALSA)-$(LIBALSA_VERSION)/configure: $(DN_SRC)/$(LIBALSA_SRC)
 
 $(LIBALSA)-$(LIBALSA_VERSION)/Makefile: $(LIBALSA)-$(LIBALSA_VERSION)/configure $(FL_DEP_LIBALSA)
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --disable-python
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --disable-python
 	touch $@
 $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/Makefile
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
-	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBALSA)-uninstall: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
-	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make uninstall
-$(LIBALSA)-install: $(PREFIX)/lib/pkgconfig/$(LIBALSA).pc
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBALSA)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBALSA).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBALSA_SRC)
@@ -2302,18 +2307,18 @@ $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/configure: $(DN_SRC)/$(LIBSNDFILE_SRC)
 
 $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/Makefile: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/configure $(FL_DEP_LIBSNDFILE)
 	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr
 	touch $@
 $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/Makefile
 	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBSNDFILE).pc: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc
-	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBSNDFILE).pc: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBSNDFILE)-uninstall: $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/$(LIBSNDFILE).pc
-	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make uninstall
-$(LIBSNDFILE)-install: $(PREFIX)/lib/pkgconfig/$(LIBSNDFILE).pc
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBSNDFILE)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBSNDFILE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSNDFILE_SRC)
@@ -2343,18 +2348,18 @@ $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure: $(DN_SRC)/$(LIBTWOLAME_SRC)
 
 $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/Makefile: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure $(FL_DEP_LIBTWOLAME)
 	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) #--disable-static
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr #--disable-static
 	touch $@
 $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/Makefile
 	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBTWOLAME).pc: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc
-	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBTWOLAME).pc: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBTWOLAME)-uninstall: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/$(LIBTWOLAME).pc
-	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make uninstall
-$(LIBTWOLAME)-install: $(PREFIX)/lib/pkgconfig/$(LIBTWOLAME).pc
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBTWOLAME)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBTWOLAME).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBTWOLAME_SRC)
@@ -2405,18 +2410,18 @@ endif
 
 $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/Makefile: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure $(FL_DEP_LIBUTVIDEO)
 	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/Makefile
 	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBUTVIDEO).pc: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc
-	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBUTVIDEO).pc: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBUTVIDEO)-uninstall: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/$(LIBUTVIDEO).pc
-	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make uninstall
-$(LIBUTVIDEO)-install: $(PREFIX)/lib/pkgconfig/$(LIBUTVIDEO).pc
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBUTVIDEO)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBUTVIDEO).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBUTVIDEO_SRC)
@@ -2441,18 +2446,18 @@ $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure: $(DN_SRC)/$(SYSFSUTILS_SRC)
 
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure $(FL_DEP_SYSFSUTILS)
 	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --mandir=$(PREFIX)/share/man
 	touch $@
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile
 	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc
-	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make -j1 install
+$(PREFIX)/usr/lib/pkgconfig/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(SYSFSUTILS)-uninstall: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc
-	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make uninstall
-$(SYSFSUTILS)-install: $(PREFIX)/lib/pkgconfig/$(SYSFSUTILS).pc
+	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(SYSFSUTILS)-install: $(PREFIX)/usr/lib/pkgconfig/$(SYSFSUTILS).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(SYSFSUTILS_SRC)
@@ -2482,18 +2487,18 @@ $(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(DN_SRC)/$(LIBV4L2_SRC)
 
 $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure $(FL_DEP_LIBV4L2)
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/usr --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBV4L2)-uninstall: $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc
-	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make uninstall
-$(LIBV4L2)-install: $(PREFIX)/lib/pkgconfig/$(LIBV4L2).pc
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBV4L2)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBV4L2).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBV4L2_SRC)
@@ -2610,12 +2615,12 @@ endif
 $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make $(MAKE_ARG) all librtmp.pc
 
-$(PREFIX)/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
-	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=/ sbindir=/bin mandir=/share/man DESTDIR=$(PREFIX) install
+$(PREFIX)/usr/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=/usr sbindir=/usr/bin mandir=/usr/share/man DESTDIR=$(PREFIX) install
 
 $(LIBRTMP)-uninstall: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/ && make uninstall
-$(LIBRTMP)-install: $(PREFIX)/lib/pkgconfig/$(LIBRTMP).pc
+$(LIBRTMP)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBRTMP).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBRTMP_SRC)
@@ -2645,18 +2650,18 @@ $(LIBZVBI)-$(LIBZVBI_VERSION)/configure: $(DN_SRC)/$(LIBZVBI_SRC)
 
 $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure $(FL_DEP_LIBZVBI)
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBZVBI)-uninstall: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
-	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make uninstall
-$(LIBZVBI)-install: $(PREFIX)/lib/pkgconfig/$(LIBZVBI).pc
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBZVBI)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBZVBI).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBZVBI_SRC)
@@ -2685,18 +2690,18 @@ $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(DN_SRC)/$(LIBVDPAU_SRC)
 
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure $(FL_DEP_LIBVDPAU)
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBVDPAU)-uninstall: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make uninstall
-$(LIBVDPAU)-install: $(PREFIX)/lib/pkgconfig/$(LIBVDPAU).pc
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBVDPAU)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBVDPAU).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBVDPAU_SRC)
@@ -2720,18 +2725,18 @@ $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure: $(DN_SRC)/$(LIBSODIUM_SRC)
 
 $(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure $(FL_DEP_LIBSODIUM)
 	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile
 	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBSODIUM).pc: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBSODIUM).pc: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc
 	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBSODIUM)-uninstall: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/$(LIBSODIUM).pc
-	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make uninstall
-$(LIBSODIUM)-install: $(PREFIX)/lib/pkgconfig/$(LIBSODIUM).pc
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBSODIUM)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBSODIUM).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSODIUM_SRC)
@@ -2762,18 +2767,18 @@ $(LIBZMQ)-$(LIBZMQ_VERSION)/configure: $(DN_SRC)/$(LIBZMQ_SRC)
 
 $(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile: $(LIBZMQ)-$(LIBZMQ_VERSION)/configure $(FL_DEP_LIBZMQ)
 	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --enable-shared --disable-static --with-pgm --with-libsodium --without-documentation
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --enable-shared --disable-static --with-pgm --with-libsodium --without-documentation
 	touch $@
 $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc: $(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile
 	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBZMQ).pc: $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBZMQ).pc: $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc
 	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBZMQ)-uninstall: $(LIBZMQ)-$(LIBZMQ_VERSION)/$(LIBZMQ).pc
-	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make uninstall
-$(LIBZMQ)-install: $(PREFIX)/lib/pkgconfig/$(LIBZMQ).pc
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBZMQ)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBZMQ).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBZMQ_SRC)
@@ -2804,18 +2809,18 @@ $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure: $(DN_SRC)/$(AUDIOFILE_SRC)
 
 $(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure $(FL_DEP_AUDIOFILE)
 	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile
 	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(AUDIOFILE).pc: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc
+$(PREFIX)/usr/lib/pkgconfig/$(AUDIOFILE).pc: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc
 	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(AUDIOFILE)-uninstall: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/$(AUDIOFILE).pc
-	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make uninstall
-$(AUDIOFILE)-install: $(PREFIX)/lib/pkgconfig/$(AUDIOFILE).pc
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(AUDIOFILE)-install: $(PREFIX)/usr/lib/pkgconfig/$(AUDIOFILE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(AUDIOFILE_SRC)
@@ -2848,18 +2853,18 @@ $(LIBILBC)-$(LIBILBC_VERSION)/configure: $(LIBILBC_SRC)
 
 $(LIBILBC)-$(LIBILBC_VERSION)/Makefile: $(LIBILBC)-$(LIBILBC_VERSION)/configure $(FL_DEP_LIBILBC)
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX) --disable-doc --disable-static --disable-rpath
+		&& $(ENV_COMPILE) ./configure --prefix=/usr --disable-doc --disable-static --disable-rpath
 	touch $@
 $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/Makefile
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBILBC)-uninstall: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
-	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make uninstall
-$(LIBILBC)-install: $(PREFIX)/lib/pkgconfig/$(LIBILBC).pc
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBILBC)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBILBC).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBILBC_SRC)
@@ -2893,18 +2898,18 @@ $(LIBFLITE)-$(LIBFLITE_VERSION)/configure: $(DN_SRC)/$(LIBFLITE_SRC)
 
 $(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure $(FL_DEP_LIBFLITE)
 	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+		&& $(ENV_COMPILE) ./configure --prefix=/usr
 	touch $@
 $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc: $(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile
 	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX)/lib/pkgconfig/$(LIBFLITE).pc: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
+$(PREFIX)/usr/lib/pkgconfig/$(LIBFLITE).pc: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
 	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 	touch $@
 
 $(LIBFLITE)-uninstall: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
-	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make uninstall
-$(LIBFLITE)-install: $(PREFIX)/lib/pkgconfig/$(LIBFLITE).pc
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBFLITE)-install: $(PREFIX)/usr/lib/pkgconfig/$(LIBFLITE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBFLITE_SRC)
