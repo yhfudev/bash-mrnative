@@ -98,10 +98,10 @@ $(BZIP2)-$(BZIP2_VERSION)/Makefile: $(DN_SRC)/$(BZIP2_SRC)
 $(BZIP2)-$(BZIP2_VERSION)/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/Makefile
 	cd $(BZIP2)-$(BZIP2_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
 $(PREFIX)/usr/lib/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
-	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=/usr install
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 PREFIX=$(PREFIX)/usr install
 
 $(BZIP2)-uninstall: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
-	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=/usr uninstall
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 PREFIX=$(PREFIX)/usr uninstall
 $(BZIP2)-install: $(PREFIX)/usr/lib/libbz2.a
 	touch $@
 
