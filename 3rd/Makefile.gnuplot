@@ -36,15 +36,15 @@ $(LIBXPM)-$(LIBXPM_VERSION)/configure: $(DN_SRC)/$(LIBXPM_SRC)
 	#mv $(LIBXPM)-$(LIBXPM_VERSION) $(LIBXPM)-$(LIBXPM_VERSION)/
 	touch $@
 $(LIBXPM)-$(LIBXPM_VERSION)/Makefile: $(LIBXPM)-$(LIBXPM_VERSION)/configure $(FL_DEP_LIBXPM)
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --disable-shared
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && ./configure --prefix=/usr --enable-static --disable-shared
 $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make install
+$(PREFIX)/usr/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
 
 $(LIBXPM)-uninstall: $(LIBXPM)-$(LIBXPM_VERSION)/LIBXPM
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make uninstall
-$(LIBXPM)-install: $(PREFIX)/lib/libxpm.a
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+$(LIBXPM)-install: $(PREFIX)/usr/lib/libxpm.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXPM_SRC)
@@ -68,7 +68,7 @@ $(LUA)-$(LUA_VERSION)/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
 	cd $(LUA)-$(LUA_VERSION)/ \
 	    && make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
 $(PREFIX)/usr/bin/lua: $(LUA)-$(LUA_VERSION)/lua
-	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX) INSTALL_MAN=$(PREFIX)/usr/share/man/man1 install
+	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX)/usr INSTALL_MAN=$(PREFIX)/usr/share/man/man1 install
 
 $(LUA)-uninstall: $(LUA)-$(LUA_VERSION)/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make INSTALL_TOP=$(PREFIX) uninstall
@@ -148,7 +148,7 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNU
 	touch $@
 
 $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && ./configure --prefix=/usr --with-vpx=$(PREFIX) --with-tiff=$(PREFIX) --disable-rpath --disable-qt
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && ./configure --prefix=/usr --with-vpx=$(PREFIX)/usr --with-tiff=$(PREFIX)/usr --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/usr/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot

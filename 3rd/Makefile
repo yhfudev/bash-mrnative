@@ -1,5 +1,5 @@
 
-all: ffmpeg gnuplot ns2
+all: dist-gzip #ffmpeg gnuplot ns2
 	echo "?=$?, @=$@, <=$<"
 
 DN_PWD=$(shell pwd)
@@ -17,6 +17,9 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             && $(MAKE) get-sources && $(MAKE) $(4) \
             $(NULL)
 
+# $(call disttar,"$(DN_PWD)","$(DN_TARGET)","TARGET_PREFIX")
+disttar = cd $(1) && ln -s $(2) $(3) && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
+
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
@@ -25,3 +28,15 @@ gnuplot:
 
 ns2:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
+
+dist-gzip: dist-gzip-ffmpeg dist-gzip-gnuplot dist-gzip-ns2
+
+dist-gzip-ffmpeg: ffmpeg
+	$(call disttar,$(DN_PWD),ffmpeg-bin,ffmpeg-bin-git)
+
+dist-gzip-gnuplot: gnuplot
+	$(call disttar,$(DN_PWD),gnuplot-bin,gnuplot-bin-5.0)
+
+dist-gzip-ns2: ns2
+	$(call disttar,$(DN_PWD),ns2-bin,ns-bin-2.35)
+
