@@ -3557,12 +3557,23 @@ endif
 $(DN_SRC)/vtk-gdal2api.patch: $(DN_SRC)/created
 	$(WGET) -O $@ https://projects.archlinux.org/svntogit/community.git/plain/trunk/gdal2.patch?h=packages/vtk
 	touch $@
-$(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(VTK)-$(VTK_VERSION)/CMakeLists.txt
+$(DN_SRC)/vtk-remove-vtkxdmf3.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://github.com/nschloe/VTK/commit/a98527dfe9ce23beebf386fab07caef99b911ede.patch
+	touch $@
+$(DN_SRC)/vtk-find-libxml2.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://github.com/nschloe/VTK/commit/6216f98a7124e12a2c1cefd113347f94b51f3c51.patch
+	touch $@
+FL_SOURCES+=$(DN_SRC)/vtk-gdal2api.patch
+FL_SOURCES+=$(DN_SRC)/vtk-remove-vtkxdmf3.patch
+FL_SOURCES+=$(DN_SRC)/vtk-find-libxml2.patch
+
+$(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remove-vtkxdmf3.patch $(DN_SRC)/vtk-find-libxml2.patch $(VTK)-$(VTK_VERSION)/CMakeLists.txt
 	cd $(VTK)-$(VTK_VERSION)/ \
 	    && git status | grep modified | awk '{print $$2}' | xargs git checkout
 	cd $(VTK)-$(VTK_VERSION)/ \
-	    && patch -p1 < $(DN_SRC)/vtk-gdal2api.patch \
-	    && rm -rf ThirdParty/libxml2 ThirdParty/hdf5
+	    && patch -Np1 -i $(DN_SRC)/vtk-remove-vtkxdmf3.patch \
+	    && patch -Np1 -i $(DN_SRC)/vtk-find-libxml2.patch \
+	    && patch -Np1 -i $(DN_SRC)/vtk-gdal2api.patch
 	touch $@
 
 $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)

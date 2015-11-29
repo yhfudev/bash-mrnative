@@ -230,13 +230,13 @@ $(NCURSES)-$(NCURSES_VERSION)/configure: $(DN_SRC)/$(NCURSES_SRC)
 
 $(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/configure $(FL_DEP_NCURSES)
 	cd $(NCURSES)-$(NCURSES_VERSION)/ \
-		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=$(PREFIX) --mandir=$(PREFIX)/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
+		&& $(ENV_COMPILE) CPPFLAGS="-I$(PREFIX)/include" ./configure --prefix=/ --mandir=/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
 	touch $@
 $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/Makefile
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
 	touch $@
 $(PREFIX)/lib/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && make install
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make DESTDIR=$(PREFIX)$(PREFIX) install
 	touch $@
 
 $(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
