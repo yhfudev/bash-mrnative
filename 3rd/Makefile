@@ -32,10 +32,10 @@ ns2:
 dist-gzip: dist-gzip-ffmpeg dist-gzip-gnuplot dist-gzip-ns2
 
 dist-gzip-ffmpeg: ffmpeg
-	$(call disttar,$(DN_PWD),$<,$<-bin-git)
+	$(call disttar,$(DN_PWD),$<,$<-$(shell uname -m)-git)
 
 dist-gzip-gnuplot: gnuplot
-	$(call disttar,$(DN_PWD),$<,$<-bin-5.0)
+	$(call disttar,$(DN_PWD),$<,$<-$(shell uname -m)-5.0)
 
 dist-gzip-ns2: ns2
-	$(call disttar,$(DN_PWD),$<,ns-bin-2.35)
+	$(call disttar,$(DN_PWD),$<,ns-$(shell uname -m)-2.35)

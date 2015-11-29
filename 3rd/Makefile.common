@@ -198,10 +198,10 @@ $(NASM)-$(NASM_VERSION)/Makefile: $(NASM)-$(NASM_VERSION)/configure
 $(NASM)-$(NASM_VERSION)/nasm: $(NASM)-$(NASM_VERSION)/Makefile
 	cd $(NASM)-$(NASM_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/usr/bin/nasm: $(NASM)-$(NASM_VERSION)/nasm
-	cd $(NASM)-$(NASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install install_rdf
+	cd $(NASM)-$(NASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) INSTALLROOT=$(PREFIX) install install_rdf
 
 $(NASM)-uninstall: $(NASM)-$(NASM_VERSION)/nasm
-	cd $(NASM)-$(NASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
+	cd $(NASM)-$(NASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX) INSTALLROOT=$(PREFIX) uninstall
 $(NASM)-install: $(PREFIX)/usr/bin/nasm
 	touch $@
 
