@@ -93,14 +93,15 @@ $(DN_SRC)/$(BZIP2_SRC): $(DN_SRC)/created
 	touch $@
 $(BZIP2)-$(BZIP2_VERSION)/Makefile: $(DN_SRC)/$(BZIP2_SRC)
 	tar -xf $(DN_SRC)/$(BZIP2_SRC)
+	sed -i -e 's|ln -s -f $$(PREFIX)/bin/|ln -s -f |' $@
 	touch $@
 $(BZIP2)-$(BZIP2_VERSION)/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/Makefile
 	cd $(BZIP2)-$(BZIP2_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
 $(PREFIX)/usr/lib/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
-	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=$(PREFIX) install
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=/usr install
 
 $(BZIP2)-uninstall: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
-	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=$(PREFIX) uninstall
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) PREFIX=/usr uninstall
 $(BZIP2)-install: $(PREFIX)/usr/lib/libbz2.a
 	touch $@
 
@@ -600,7 +601,7 @@ $(LIBXML2)-$(LIBXML2_VERSION)/configure: $(DN_SRC)/$(LIBXML2_SRC)
 	tar -xf $(DN_SRC)/$(LIBXML2_SRC)
 	touch $@
 $(LIBXML2)-$(LIBXML2_VERSION)/Makefile: $(LIBXML2)-$(LIBXML2_VERSION)/configure
-	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && ./configure --prefix=/usr --exec-prefix=$(PREFIX) --oldincludedir=$(PREFIX)/include --datadir=$(PREFIX)/usr --with-python=no --enable-static --enable-shared
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && ./configure --prefix=/usr --exec-prefix=/usr --oldincludedir=/usr/include --datadir=/usr --with-python=no --enable-static --enable-shared
 $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la: $(LIBXML2)-$(LIBXML2_VERSION)/Makefile
 	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/usr/lib/libxml2.a: $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la
