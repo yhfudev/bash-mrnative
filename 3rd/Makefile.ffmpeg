@@ -450,9 +450,21 @@ FL_UNINSTALL+=$(FDKAAC)-uninstall
 
 ########################################
 LAME=lame
+
+FL_DEP_LAME= \
+	$(NASM)-install \
+	$(NCURSES)-install \
+	$(NULL)
+
 LAME_VERSION=3.99.5
 LAME_SRC=$(LAME)-$(LAME_VERSION).tar.gz
 LAME_URL=http://sourceforge.net/projects/lame/files/lame/3.99/$(LAME_SRC)
+
+$(DN_SRC)/lame-sse.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/sse.patch?h=packages/lame
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/lame-sse.patch
 
 $(DN_SRC)/$(LAME_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LAME_URL)
@@ -460,12 +472,17 @@ $(DN_SRC)/$(LAME_SRC): $(DN_SRC)/created
 $(LAME)-$(LAME_VERSION)/configure: $(DN_SRC)/$(LAME_SRC)
 	tar -xf $(DN_SRC)/$(LAME_SRC)
 	touch $@
-$(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/configure
-	cd $(LAME)-$(LAME_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+
+$(LAME)-$(LAME_VERSION)/mypatched: $(DN_SRC)/lame-sse.patch $(LAME)-$(LAME_VERSION)/configure
+	cd $(LAME)-$(LAME_VERSION)/ && patch -Np1 -i $(DN_SRC)/lame-sse.patch
+	touch $@
+
+$(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/mypatched $(FL_DEP_LAME)
+	cd $(LAME)-$(LAME_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-nasm --enable-static --enable-shared
 $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la: $(LAME)-$(LAME_VERSION)/Makefile
 	cd $(LAME)-$(LAME_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX)/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
-	cd $(LAME)-$(LAME_VERSION)/ && make install
+	cd $(LAME)-$(LAME_VERSION)/ && make -j1 install
 
 $(LAME)-uninstall: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
 	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
@@ -476,7 +493,14 @@ FL_SOURCES+=$(DN_SRC)/$(LAME_SRC)
 FL_UNINSTALL+=$(LAME)-uninstall
 
 ########################################
+# XviD is an open source MPEG-4 video codec
+# http://www.xvid.org/
 XVIDCORE=xvidcore
+
+FL_DEP_XVIDCORE= \
+	$(NASM)-install \
+	$(NULL)
+
 XVIDCORE_VERSION=1.3.4
 XVIDCORE_SRC=$(XVIDCORE)-$(XVIDCORE_VERSION).tar.gz
 XVIDCORE_URL=http://downloads.xvid.org/downloads/$(XVIDCORE_SRC)
@@ -486,18 +510,28 @@ XVIDCORE_URL=http://downloads.xvid.org/downloads/$(XVIDCORE_SRC)
 $(DN_SRC)/$(XVIDCORE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(XVIDCORE_URL)
 	touch $@
-$(XVIDCORE)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SRC)
-	tar -xf $(DN_SRC)/$(XVIDCORE_SRC)
-	touch $@
-$(XVIDCORE)/build/generic/platform.inc: $(XVIDCORE)/build/generic/configure
-	cd $(XVIDCORE)/build/generic && CFLAGS="-fPIC" ./configure --prefix=$(PREFIX) # --enable-shared --enable-static
-$(PREFIX)/lib/libxvidcore.a: $(XVIDCORE)/build/generic/platform.inc
-	cd $(XVIDCORE)/build/generic && make $(MAKE_ARG)
-	cd $(XVIDCORE)/build/generic && make install && rm -f $(PREFIX)/lib/libxvidcore.so.*
 
-$(XVIDCORE)-uninstall: $(XVIDCORE)/build/generic/platform.inc
-	cd $(LAME)-$(LAME_VERSION)/ && make uninstall
-$(XVIDCORE)-install: $(PREFIX)/lib/libxvidcore.a $(XVIDCORE)-uninstall
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SRC)
+	tar -xf $(DN_SRC)/$(XVIDCORE_SRC)
+	rm -f $(XVIDCORE)-install
+	mv $(XVIDCORE)* $(XVIDCORE)-$(XVIDCORE_VERSION)
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ && autoreconf -if
+	touch $@
+
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure $(FL_DEP_XVIDCORE)
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX)
+	touch $@
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make $(MAKE_ARG)
+	touch $@
+$(PREFIX)/lib/pkgconfig/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make -j1 install
+	touch $@
+
+$(XVIDCORE)-uninstall: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && make uninstall
+$(XVIDCORE)-install: $(PREFIX)/lib/pkgconfig/$(XVIDCORE).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XVIDCORE_SRC)
@@ -743,7 +777,7 @@ FL_DEP_X265= \
 	$(CMAKE)-install \
 	$(NULL)
 
-USE_HG_X265=0
+USE_HG_X265=1
 
 ifeq ($(USE_HG_X265),1) # use mercurial instead
 
@@ -796,10 +830,13 @@ $(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.tx
 $(X265)-$(X265_VERSION)/build-12/libx265.a: $(X265)-$(X265_VERSION)/build-12/Makefile
 	cd $(X265)-$(X265_VERSION)/build-12 && make $(MAKE_ARG)
 
+
+ifeq ($(ARCHBITS),64) # 64 bit CPU
+
 $(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265) $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
-        && ln -s ../build-10/libx265.a libx265_main10.a \
-        && ln -s ../build-12/libx265.a libx265_main12.a \
+        && rm -f libx265_main10.a && ln -s ../build-10/libx265.a libx265_main10.a \
+        && rm -f libx265_main12.a && ln -s ../build-12/libx265.a libx265_main12.a \
         && $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
             -DENABLE_SHARED='TRUE' \
@@ -807,6 +844,15 @@ $(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
             -DEXTRA_LINK_FLAGS='-L.' \
             -DLINKED_10BIT='TRUE' \
             -DLINKED_12BIT='TRUE'
+else # 32 bit CPU
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
+        && $(ENV_COMPILE) cmake ../source \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DENABLE_SHARED='TRUE' \
+            -DEXTRA_LINK_FLAGS='-L.'
+endif
+
 $(X265)-$(X265_VERSION)/build-8/libx265.a: $(X265)-$(X265_VERSION)/build-8/Makefile
 	cd $(X265)-$(X265_VERSION)/build-8 && make $(MAKE_ARG)
 
@@ -1938,8 +1984,6 @@ $(LIBCELT)-install: $(PREFIX)/lib/pkgconfig/$(LIBCELT).pc
 FL_SOURCES+=$(DN_SRC)/$(LIBCELT_SRC)
 FL_UNINSTALL+=$(LIBCELT)-uninstall
 
-
-
 ########################################
 
 LIBGME=libgme
@@ -2064,7 +2108,7 @@ FL_UNINSTALL+=$(LIBSCHROEDINGER)-uninstall
 LIBSHINE=shine
 
 FL_DEP_LIBSHINE= \
-	#$(orc)-install \
+	#$(aaaaa)-install \
 	$(NULL)
 
 LIBSHINE_VERSION=3.1.0
@@ -3417,8 +3461,6 @@ FL_UNINSTALL+=$(GDAL)-uninstall
 # http://www.vtk.org/
 VTK=VTK
 VTK_VERSION=6.3.0
-VTK_SRC=$(VTK)-$(VTK_VERSION).tar.gz
-VTK_URL=http://www.vtk.org/files/release/6.3/$(VTK_SRC)
 
 FL_DEP_VTK= \
 	$(CMAKE)-install \
@@ -3434,39 +3476,17 @@ FL_DEP_VTK= \
 	$(JSONCPP)-install \
 	$(GLEW)-install \
 	$(GDAL)-install \
-	#$(LIBXML2)-install \
+	$(LIBXML2)-install \
 	$(HDF5)-install \
-	$(TWISTED)-install \
+	#$(TWISTED)-install \
 	$(ZOPE)-install \
 	$(SIX)-install \
 	$(AUTOBAHN)-install \
 	$(MPI4PY)-install \
 	$(NULL)
 
-
-USE_GIT_VTK=1
-
-ifeq ($(USE_GIT_VTK),1) # use git instead
-VTK_VERSION=git
-VTK_SRC=$(VTK)-$(VTK_VERSION)/.git
-VTK_URL=https://gitlab.kitware.com/vtk/vtk.git
-
-$(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(VTK_SRC)" ]; then cd $(DN_SRC)/$(VTK)-$(VTK_VERSION) && git pull; else git clone $(VTK_URL) $(DN_SRC)/$(VTK)-$(VTK_VERSION); fi
-	touch $@
-
-$(VTK)-$(VTK_VERSION)/.git: $(DN_SRC)/$(VTK_SRC)
-	cd $(DN_SRC)/$(VTK)-$(VTK_VERSION) && git pull
-	if [ -d "$(VTK)-$(VTK_VERSION)" ]; then cd $(VTK)-$(VTK_VERSION) && git pull; else git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION)/ $(VTK)-$(VTK_VERSION); fi
-
-$(VTK)-$(VTK_VERSION)/README.md: $(VTK)-$(VTK_VERSION)/.git $(FL_DEP_VTK)
-	cd $(VTK)-$(VTK_VERSION)/ && git pull
-	touch $@
-
-$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(VTK)-$(VTK_VERSION)/README.md
-	touch $@
-
-else # use released files
+FL_SOURCES+=$(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz
+FL_SOURCES+=$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 
 $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
 	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)Data-$(VTK_VERSION).tar.gz
@@ -3476,12 +3496,46 @@ $(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
 	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 	touch $@
 
+USE_GIT_VTK=0
+
+ifeq ($(USE_GIT_VTK),1) # use git instead
+VTK_VERSION_GIT=git
+VTK_SRC=$(VTK)-$(VTK_VERSION_GIT)/.git
+VTK_URL=https://gitlab.kitware.com/vtk/vtk.git
+
+$(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(VTK_SRC)" ]; then cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull; else git clone $(VTK_URL) $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT); fi
+	touch $@
+
+$(VTK)-$(VTK_VERSION_GIT)/.git: $(DN_SRC)/$(VTK_SRC)
+	cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull
+	if [ -d "$(VTK)-$(VTK_VERSION_GIT)" ]; then cd $(VTK)-$(VTK_VERSION_GIT) && git pull; else git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT)/ $(VTK)-$(VTK_VERSION_GIT); fi
+
+$(VTK)-$(VTK_VERSION_GIT)/README.md: $(VTK)-$(VTK_VERSION_GIT)/.git $(FL_DEP_VTK)
+	cd $(VTK)-$(VTK_VERSION_GIT)/ && git pull
+	touch $@
+
+$(VTK)-$(VTK_VERSION_GIT)/CMakeLists.txt: $(VTK)-$(VTK_VERSION_GIT)/README.md
+	touch $@
+
+VTK_VERSION:=$(VTK_VERSION_GIT)
+
+else # use released files
+VTK_VERSION=6.3.0
+VTK_SRC=$(VTK)-$(VTK_VERSION).tar.gz
+VTK_URL=http://www.vtk.org/files/release/6.3/$(VTK_SRC)
+
 $(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz #$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 	$(WGET) -O $@ -c $(VTK_URL)
 	touch $@
 
-$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(VTK_SRC)
+$(VTK)-$(VTK_VERSION)/.ExternalData: $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz $(DN_SRC)/$(VTK_SRC)
 	tar -xf $(DN_SRC)/$(VTK_SRC)
+	tar -xf $<
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(VTK)-$(VTK_VERSION)/.ExternalData
+	#tar -xf $(DN_SRC)/$(VTK_SRC)
 	#mv VTK* $(VTK)-$(VTK_VERSION)
 	touch $@
 endif
@@ -3499,8 +3553,6 @@ endif
             -DVTK_USE_SYSTEM_SIX:BOOL=ON \
             -DVTK_USE_SYSTEM_AUTOBAHN:BOOL=ON \
             -DVTK_USE_SYSTEM_MPI4PY:BOOL=ON \
-            -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
-            -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
 
 $(DN_SRC)/vtk-gdal2api.patch: $(DN_SRC)/created
 	$(WGET) -O $@ https://projects.archlinux.org/svntogit/community.git/plain/trunk/gdal2.patch?h=packages/vtk
@@ -3509,7 +3561,8 @@ $(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(VTK)-$(VTK_VERSI
 	cd $(VTK)-$(VTK_VERSION)/ \
 	    && git status | grep modified | awk '{print $$2}' | xargs git checkout
 	cd $(VTK)-$(VTK_VERSION)/ \
-	    && patch -p1 < $(DN_SRC)/vtk-gdal2api.patch
+	    && patch -p1 < $(DN_SRC)/vtk-gdal2api.patch \
+	    && rm -rf ThirdParty/libxml2 ThirdParty/hdf5
 	touch $@
 
 $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
@@ -3517,8 +3570,7 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(V
 		&& $(ENV_COMPILE) cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
-			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lx265 -lxvidcore -lfreetype" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX)/lib -lmp3lame -lvorbis -lfaac -lx264 -lx265 -lxvidcore -lfreetype" \
+            -DVTK_DATA_STORE:PATH=$(VTK)-$(VTK_VERSION)/.ExternalData \
             -Wno-dev \
             -DPYTHON_EXECUTABLE:FILEPATH="`which python2`" \
             -DCMAKE_SKIP_RPATH=ON \
@@ -3539,12 +3591,14 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(V
             -DVTK_USE_SYSTEM_GL2PS:BOOL=ON \
             -DVTK_USE_SYSTEM_GLEW:BOOL=ON \
             -DVTK_USE_SYSTEM_JSONCPP:BOOL=ON \
+            -DVTK_USE_SYSTEM_HDF5:BOOL=ON \
+            -DVTK_USE_SYSTEM_LIBXML2:BOOL=ON \
             $(NULL)
 
 $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/Makefile
-	cd $(VTK)-$(VTK_VERSION)/build && make $(MAKE_ARG)
+	cd $(VTK)-$(VTK_VERSION)/build && make -j1 #$(MAKE_ARG)
 $(PREFIX)/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so
-	cd $(VTK)-$(VTK_VERSION)/build && make install
+	cd $(VTK)-$(VTK_VERSION)/build && make -j1 install
 
 $(VTK)-uninstall: $(VTK)-$(VTK_VERSION)/build/libvtk.la
 	cd $(VTK)-$(VTK_VERSION)/ && make uninstall
