@@ -62,15 +62,15 @@ $(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake: $(DN_SRC)/$(GRAPHITE2_SRC)
 	touch $@
 $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake $(FL_DEP_GRAPHITE2)
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/ && mkdir -p build && cd build \
-		&& $(ENV_COMPILE) cmake $(CMAKE_ARCH_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX) ..
+		&& $(ENV_COMPILE) cmake $(CMAKE_ARCH_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ ..
 $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make install
 
 $(GRAPHITE2)-uninstall: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make uninstall
-$(GRAPHITE2)-install: $(PREFIX)/lib/libgraphite2.la
+$(GRAPHITE2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgraphite2.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GRAPHITE2_SRC)
@@ -103,12 +103,12 @@ $(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/config
 	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --with-gobject=no --with-graphite2
 $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/Makefile
 	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libharfbuzz.a: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libharfbuzz.a: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
 	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(HARFBUZZ)-uninstall: $(HARFBUZZ)-$(HARFBUZZ_VERSION)/src/libharfbuzz.la
 	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(HARFBUZZ)-install: $(PREFIX)/lib/libharfbuzz.a
+$(HARFBUZZ)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libharfbuzz.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(HARFBUZZ_SRC)
@@ -138,12 +138,12 @@ $(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile: $(FRIBIDI)-$(FRIBIDI_VERSION)/configure
 	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --with-glib=no
 $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la: $(FRIBIDI)-$(FRIBIDI_VERSION)/Makefile
 	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/lib/libfribidi.a: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfribidi.a: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
 	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(FRIBIDI)-uninstall: $(FRIBIDI)-$(FRIBIDI_VERSION)/lib/libfribidi.la
 	cd $(FRIBIDI)-$(FRIBIDI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(FRIBIDI)-install: $(PREFIX)/lib/libfribidi.a
+$(FRIBIDI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfribidi.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FRIBIDI_SRC)
@@ -190,7 +190,7 @@ LIBASS_SRC=$(LIBASS)-$(LIBASS_VERSION).tar.gz
 LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
 #LIBASS_URL=https://github.com/libass/libass/releases/download/$(LIBASS_VERSION)/$(LIBASS_SRC)
 
-#$(PREFIX)/lib/libharfbuzz.a
+#$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libharfbuzz.a
 FL_DEP_LIBASS= \
 	$(FREETYPE)-install \
 	$(FONTCONF)-install \
@@ -321,7 +321,7 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgsm.a: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libg
 	cd $(LIBGSM)-$(LIBGSM_VERSION)/ && install -m 644 inc/gsm.h $(PREFIX_DEST)/$(PREFIX_CONF)/include/ && install -m 644 lib/libgsm.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/
 
 $(LIBGSM)-uninstall: $(LIBGSM)-$(LIBGSM_VERSION)/lib/libgsm.a
-	rm -f $(PREFIX)/include/gsm.h $(PREFIX)/lib/libgsm.a
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/include/gsm.h $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgsm.a
 $(LIBGSM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgsm.a
 	touch $@
 
@@ -1086,6 +1086,10 @@ FL_UNINSTALL+=$(LOG4CPP)-uninstall
 # https://github.com/FFMS/ffms2
 FFMS2=ffms2
 
+FL_DEP_FFMS2= \
+	$(FFMPEG)-install \
+	$(NULL)
+
 FFMS2_VERSION=2.22
 FFMS2_SRC=$(FFMS2)-$(FFMS2_VERSION).tar.gz
 FFMS2_URL=https://github.com/FFMS/ffms2/archive/$(FFMS2_VERSION).tar.gz
@@ -1125,7 +1129,7 @@ AVXSYNTH=avxsynth
 FL_DEP_AVXSYNTH= \
 	$(YASM)-install \
 	$(LOG4CPP)-install \
-	$(FFMS2)-install \
+	#$(FFMS2)-install \
 	$(NULL)
 
 USE_GIT_AVXSYNTH=1
@@ -2014,16 +2018,16 @@ $(LIBGME)-$(LIBGME_VERSION)/Makefile: $(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt
 	cd $(LIBGME)-$(LIBGME_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
 $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/Makefile
 	cd $(LIBGME)-$(LIBGME_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
 	cd $(LIBGME)-$(LIBGME_VERSION)/build && make install
 
 $(LIBGME)-uninstall: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
 	cd $(LIBGME)-$(LIBGME_VERSION)/ && make uninstall
-$(LIBGME)-install: $(PREFIX)/lib/pkgconfig/$(LIBGME).pc
+$(LIBGME)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBGME).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBGME_SRC)
@@ -2174,7 +2178,7 @@ $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             -DBUILD_EXAMPLES=OFF \
             -DBUILD_SHARED_LIBS=ON \
             -DVISIBILITY_HIDDENL=ON \
@@ -2187,12 +2191,12 @@ $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists
             ..
 $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && make install
 
 $(LIBSOXR)-uninstall: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && make uninstall
-$(LIBSOXR)-install: $(PREFIX)/lib/pkgconfig/$(LIBSOXR).pc
+$(LIBSOXR)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBSOXR).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSOXR_SRC)
@@ -2554,16 +2558,16 @@ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
 $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/pkgconfig/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && make install
 
 $(LIBVIDSTAB)-uninstall: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && make uninstall
-$(LIBVIDSTAB)-install: $(PREFIX)/lib/pkgconfig/$(LIBVIDSTAB).pc
+$(LIBVIDSTAB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVIDSTAB).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBVIDSTAB_SRC)
@@ -2965,7 +2969,7 @@ FFMPEG=ffmpeg
 FL_DEPENDENCES_FFMPEG= \
     $(VORBIS)-install  \
     $(THEORA)-install  \
-    $(LIBOGG)-install     \
+    $(LIBOGG)-install  \
     $(X264)-install    \
     $(X265)-install    \
     $(XAVS)-install    \
@@ -2987,7 +2991,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LVPX)-install     \
     $(AVXSYNTH)-install \
     $(LIBDC1394)-install \
-    $(PREFIX)/lib/libfaac.a \
+    $(FAAC)-uninstall   \
     $(FRIBIDI)-install  \
     $(FREI0R)-install   \
     $(LADSPA)-install   \
@@ -3078,8 +3082,8 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 # add:
 #			--enable-static --enable-shared --extra-cflags=--static \
 #			--extra-cflags="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include -static" \
-#			--extra-ldflags="-L$(PREFIX)/lib -lfontconfig -lfreetype -lxml2 -lexpat -lpng -lm -static" \
-# add: sed -i 's/-L${libdir} -lfontconfig[^l]*$/-L${libdir} -lfontconfig -lfreetype -lxml2 -lpng -lbz2/' $(PREFIX)/lib/pkgconfig/fontconfig.pc
+#			--extra-ldflags="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lfontconfig -lfreetype -lxml2 -lexpat -lpng -lm -static" \
+# add: sed -i 's/-L${libdir} -lfontconfig[^l]*$/-L${libdir} -lfontconfig -lfreetype -lxml2 -lpng -lbz2/' $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/fontconfig.pc
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
@@ -3147,7 +3151,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(PREFIX)/lib/libavcodec.a
+$(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -3302,18 +3306,18 @@ $(JSONCPP)-$(JSONCPP_VERSION)/Makefile: $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             -DBUILD_SHARED_LIBS=ON \
             -DBUILD_STATIC_LIBS=OFF \
             ..
 $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la: $(JSONCPP)-$(JSONCPP_VERSION)/Makefile
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/libjsoncpp.so: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libjsoncpp.so: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && make install
 
 $(JSONCPP)-uninstall: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && make uninstall
-$(JSONCPP)-install: $(PREFIX)/lib/libjsoncpp.so
+$(JSONCPP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libjsoncpp.so
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(JSONCPP_SRC)
@@ -3344,17 +3348,17 @@ $(GL2PS)-$(GL2PS_VERSION)/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(F
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             -DCMAKE_EXE_LINKER_FLAGS=-lm \
             ..
 $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la: $(GL2PS)-$(GL2PS_VERSION)/Makefile
 	cd $(GL2PS)-$(GL2PS_VERSION)/build && make $(MAKE_ARG)
-$(PREFIX)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
 	cd $(GL2PS)-$(GL2PS_VERSION)/build && make -j1 install
 
 $(GL2PS)-uninstall: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && make uninstall
-$(GL2PS)-install: $(PREFIX)/lib/libgl2ps.a
+$(GL2PS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgl2ps.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GL2PS_SRC)
@@ -3386,7 +3390,7 @@ $(HDF5)-$(HDF5_VERSION)/Makefile: $(HDF5)-$(HDF5_VERSION)/configure
         --enable-production \
         --with-pic \
         --docdir=$(PREFIX)/share/doc/hdf5/ \
-        --with-pthread=$(PREFIX)/lib/ \
+        --with-pthread=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ \
         --disable-sharedlib-rpath
 $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la: $(HDF5)-$(HDF5_VERSION)/Makefile
 	cd $(HDF5)-$(HDF5_VERSION)/ && make $(MAKE_ARG)
@@ -3588,7 +3592,7 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(V
 	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=$(PREFIX) \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             -DVTK_DATA_STORE:PATH=$(VTK)-$(VTK_VERSION)/.ExternalData \
             -Wno-dev \
             -DPYTHON_EXECUTABLE:FILEPATH="`which python2`" \
@@ -3616,12 +3620,12 @@ $(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(V
 
 $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/Makefile
 	cd $(VTK)-$(VTK_VERSION)/build && make -j1 #$(MAKE_ARG)
-$(PREFIX)/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libvtksys.so: $(VTK)-$(VTK_VERSION)/build/lib/libvtksys.so
 	cd $(VTK)-$(VTK_VERSION)/build && make -j1 install
 
 $(VTK)-uninstall: $(VTK)-$(VTK_VERSION)/build/libvtk.la
 	cd $(VTK)-$(VTK_VERSION)/ && make uninstall
-$(VTK)-install: $(PREFIX)/lib/libvtksys.so
+$(VTK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libvtksys.so
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(VTK_SRC)
@@ -3711,8 +3715,24 @@ $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 		&& sed -i "/unsupported GNU/d" $(PREFIX)/opt/$(CUDASDK)/include/host_config.h \
 		&& cd .. \
 		&& cd nvdrv && cp lib* $(PREFIX)/opt/$(CUDASDK)/lib64/ \
-		&& ls | grep libcuda.so. | while read A; do (cd $(PREFIX)/opt/$(CUDASDK)/lib64/; ln -s $$A libcuda.so; ln -s $$A libcuda.so.1; cd $(PREFIX)/lib; ln -s ../opt/$(CUDASDK)/lib64/$$A libcuda.so; ln -s ../opt/$(CUDASDK)/lib64/$$A libcuda.so.1) ; done \
-		&& ls | grep libnvcuvid.so. | while read A; do (cd $(PREFIX)/opt/$(CUDASDK)/lib64/; ln -s $$A libnvcuvid.so; ln -s $$A libnvcuvid.so.1; cd $(PREFIX)/lib; ln -s ../opt/$(CUDASDK)/lib64/$$A libnvcuvid.so; ln -s ../opt/$(CUDASDK)/lib64/$$A libnvcuvid.so.1) ; done
+		&& ls | grep libcuda.so. | while read A; do ( \
+		        cd $(PREFIX)/opt/$(CUDASDK)/lib64/; \
+		        ln -s $$A libcuda.so; \
+		        ln -s $$A libcuda.so.1; \
+		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
+		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so; \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so.1 
+		    ) ; done \
+		&& ls | grep libnvcuvid.so. | while read A; do ( \
+		        cd $(PREFIX)/opt/$(CUDASDK)/lib64/; \
+		        ln -s $$A libnvcuvid.so; \
+		        ln -s $$A libnvcuvid.so.1; \
+		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
+		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so; \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so.1 \
+		    ) ; done
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
@@ -3760,7 +3780,7 @@ FL_DEP_OPENCV= \
 	$(LIBDC1394)-install \
 	$(XVIDCORE)-install \
 	$(CMAKE)-install \
-	$(PREFIX)/lib/libfaac.a \
+	$(FAAC)-install \
 	$(FFMPEG)-install \
 	$(OPENEXR)-install \
 	$(VTK)-install \
@@ -3846,7 +3866,7 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLis
 			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
 			.. \
 			$(NULL)
-# -D BZIP2_LIBRARIES=$(PREFIX)/lib/libbz2.a
+# -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
 
 $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1

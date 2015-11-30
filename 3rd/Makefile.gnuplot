@@ -182,7 +182,7 @@ $(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
 #	touch $@
 
 $(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
 $(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
 	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
