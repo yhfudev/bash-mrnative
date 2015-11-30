@@ -231,7 +231,9 @@ $(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VE
 	cd $(NS2)-$(NS2_VERSION)/ \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-linkstate-erase.fix \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-tcl86.patch \
-	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-getopts.patch
+	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-getopts.patch \
+	    && sed -e 's|char \* key = Tcl_GetHashKey|char \* key = (char \*) Tcl_GetHashKey|' -i pushback/ident-tree.h \
+	    $(NULL)
 	touch $@
 
 $(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched
@@ -259,10 +261,87 @@ FL_SOURCES+=$(DN_SRC)/$(NS2_SRC)
 FL_UNINSTALL+=$(NS2)-uninstall
 
 ########################################
+NS2DOCSIS=ns-docsis
+
+FL_DEP_NS2DOCSIS= \
+    $(TCLCL)-install   \
+    $(GNUAWK)-install  \
+    $(GNUPLOT)-install \
+    $(NULL)
+
+USE_SVN_NS2DOCSIS=1
+
+ifeq ($(USE_SVN_NS2DOCSIS),1) # use svn instead
+NS2DOCSIS_VERSION=svn
+NS2DOCSIS_SRC=$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/.svn
+NS2DOCSIS_URL=https://svn.cs.clemson.edu/repos/ns2docsis31/branches/ns2docsis-ds31profile
+
+$(DN_SRC)/$(NS2DOCSIS_SRC): $(DN_SRC)/created
+	svn checkout $(NS2DOCSIS_URL) $(DN_SRC)/$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)
+	touch $@
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure.in: $(DN_SRC)/$(NS2DOCSIS_SRC)
+#	cd $(DN_SRC)/$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(NS2DOCSIS)*
+	cp -r $(DN_SRC)/$(NS2DOCSIS)-$(NS2DOCSIS_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(NS2DOCSIS)-$(NS2DOCSIS_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	touch $@
+
+else # use released files
+
+NS2DOCSIS_VERSION=2.33
+NS2DOCSIS_SRC=$(NS2DOCSIS)-src-$(NS2DOCSIS_VERSION).tar.gz
+NS2DOCSIS_URL=http://downloads.sourceforge.net/sourceforge/nsnam/ns-2/$(NS2DOCSIS_VERSION)/$(NS2DOCSIS_SRC)
+
+$(DN_SRC)/$(NS2DOCSIS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(NS2DOCSIS_URL)
+	touch $@
+
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure.in: $(DN_SRC)/$(NS2DOCSIS_SRC)
+	tar -xf $(DN_SRC)/$(NS2DOCSIS_SRC)
+	touch $@
+endif
+
+#$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/configure.in
+	#cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ \
+	    #&& patch -uNp1 -i $(DN_SRC)/ns-2.35-linkstate-erase.fix \
+	    #&& patch -uNp1 -i $(DN_SRC)/ns-2.35-tcl86.patch \
+	    #&& patch -uNp1 -i $(DN_SRC)/ns-2.35-getopts.patch
+	#touch $@
+
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure.in
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ \
+	    && sed -e 's|char \* key = Tcl_GetHashKey|char \* key = (char \*) Tcl_GetHashKey|'  -i pushback/ident-tree.h \
+	    && sed -e 's|.*#define\s*TRACE_MEDIA_PKG.*$$|#define TRACE_MEDIA_PKG 1|'             -i mac/docsis/medium.cc \
+	    && autoconf #autoreconf -if
+	touch $@
+
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure $(FL_DEP_NS2DOCSIS)
+	#cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --without-tk --x-libraries= --x-includes=
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/man/man1
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	#mv $(PREFIX_DEST)/$(PREFIX_CONF)/man $(PREFIX_DEST)/$(PREFIX_CONF)/share
+
+$(NS2DOCSIS)-uninstall: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(NS2DOCSIS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NS2DOCSIS_SRC)
+FL_UNINSTALL+=$(NS2DOCSIS)-uninstall
+
+########################################
 
 get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
 
 ns2: $(NS2)-install
+
+ns2docsis: $(NS2DOCSIS)-install
 
 uninstall: $(FL_UNINSTALL)
 

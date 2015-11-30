@@ -1,6 +1,7 @@
 
-all: dist-gzip #ffmpeg gnuplot ns2
-	echo "?=$?, @=$@, <=$<"
+#all: dist-gzip #ffmpeg gnuplot ns2
+all:
+	echo "?=$?, @=$@, <=$<, #"
 
 DN_PWD=$(shell pwd)
 DN_SRC=sources
@@ -18,7 +19,7 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             $(NULL)
 
 # $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_TARGET_PREFIX")
-disttar = cd $(1) && ln -s $(2)-bin $(3) && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
+disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
 
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
@@ -27,7 +28,10 @@ gnuplot:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
 ns2:
-	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
+	$(call compile,$(DN_PWD),$(DN_SRC),$@,ns2)
+
+ns2docsis:
+	$(call compile,$(DN_PWD),$(DN_SRC),ns2,ns2docsis)
 
 dist-gzip: dist-gzip-ffmpeg dist-gzip-gnuplot dist-gzip-ns2
 
@@ -39,3 +43,6 @@ dist-gzip-gnuplot: gnuplot
 
 dist-gzip-ns2: ns2
 	$(call disttar,$(DN_PWD),$<,ns-2.35-$(shell uname -m))
+
+dist-gzip-ns2docsis: ns2docsis
+	$(call disttar,$(DN_PWD),ns2,ns-docsis-$(shell uname -m))
