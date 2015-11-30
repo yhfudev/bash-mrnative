@@ -3746,10 +3746,10 @@ CUDASDK31_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK31_VERS
 $(DN_SRC)/$(CUDASDK31_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(CUDASDK31_URL)
 	touch $@
-$(CUDASDK)-$(CUDASDK31_VERSION)/pkg: $(DN_SRC)/$(CUDASDK31_SRC)
+$(CUDASDK31)-$(CUDASDK31_VERSION)/pkg: $(DN_SRC)/$(CUDASDK31_SRC)
 	@echo "Extracting CUDA SDK ..."
-	mkdir -p $(CUDASDK)-$(CUDASDK31_VERSION) \
-		&& cd $(CUDASDK)-$(CUDASDK31_VERSION) \
+	mkdir -p $(CUDASDK31)-$(CUDASDK31_VERSION) \
+		&& cd $(CUDASDK31)-$(CUDASDK31_VERSION) \
 		&& sh $(DN_SRC)/$(CUDASDK31_SRC) --noexec --keep \
         && cd pkg/sdk/C/common \
         && sed -i "s|/usr/local/cuda|$(PREFIX)/opt/$(CUDASDK31)|g" common.mk \
@@ -3948,15 +3948,15 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLis
 			-D WITH_TBB=ON \
 			-D WITH_1394=ON \
 			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/include -D FFMPEG_LIB_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/lib \
-			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
 			.. \
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
 
 $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
-	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LIBRARY_PATH) make $(MAKE_ARG) VERBOSE=1
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && make install
 	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib
