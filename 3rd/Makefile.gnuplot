@@ -71,7 +71,7 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ INSTALL_MAN=$(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1 install
 
 $(LUA)-uninstall: $(LUA)-$(LUA_VERSION)/lua
-	cd $(LUA)-$(LUA_VERSION)/ && make INSTALL_TOP=$(PREFIX) uninstall
+	cd $(LUA)-$(LUA_VERSION)/ && make INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ uninstall
 $(LUA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua
 	touch $@
 
@@ -108,7 +108,7 @@ $(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VER
 	cd $(GD)-$(GD_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libgd-libvpx.patch
 	touch $@
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/mypatched $(FL_DEP_GD)
-	cd $(GD)-$(GD_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX)  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX)
+	cd $(GD)-$(GD_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
 $(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
 	cd $(GD)-$(GD_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd: $(GD)-$(GD_VERSION)/gd

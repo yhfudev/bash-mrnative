@@ -748,7 +748,7 @@ $(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt: $(DN_SRC)/$(FREETYPE_SRC)
 $(FREETYPE)-$(FREETYPE_VERSION)/config.mk: $(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt
 	cd $(FREETYPE)-$(FREETYPE_VERSION)/ \
 	&& ./configure --prefix=$(PREFIX_CONF) \
-		--with-sysroot=$(PREFIX) \
+		--with-sysroot=$(PREFIX_CONF) \
 		--enable-static=yes \
 		--enable-shared=yes \
 		--with-harfbuzz=no \
@@ -1098,9 +1098,9 @@ endif
 
 
 $(LVPX)-$(LVPX_VERSION)/Makefile: $(LVPX)-$(LVPX_VERSION)/configure $(FL_DEP_LVPX)
-#disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
+#disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
 	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --as=yasm --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
-#use static:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX) --enable-static --disable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
+#use static:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX_CONF) --enable-static --disable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --disable-vp9
 
 $(LVPX)-$(LVPX_VERSION)/libvpx.a: $(LVPX)-$(LVPX_VERSION)/Makefile
 	cd $(LVPX)-* && $(ENV_COMPILE) make $(MAKE_ARG)

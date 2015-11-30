@@ -755,7 +755,7 @@ $(X264)-$(X264_VERSION)/x264.h: $(DN_SRC)/$(X264_SRC)
 	mv $(X264)-* $(X264)-$(X264_VERSION)
 	touch $@
 $(X264)-$(X264_VERSION)/libx264.a: $(X264)-$(X264_VERSION)/x264.h
-	#cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX) --enable-static --enable-shared
+	#cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 	cd $(X264)-$(X264_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --disable-asm --enable-pic --disable-opencl --enable-static --enable-shared
 	cd $(X264)-$(X264_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libx264.a: $(X264)-$(X264_VERSION)/libx264.a
@@ -1905,7 +1905,7 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/Makef
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	#sed -i "/LIBCDIO_SOURCE_PATH/s|.*|/* #undef LIBCDIO_SOURCE_PATH */|" $(PREFIX)/include/cdio/cdio_config.h
+	#sed -i "/LIBCDIO_SOURCE_PATH/s|.*|/* #undef LIBCDIO_SOURCE_PATH */|" $(PREFIX_DEST)/$(PREFIX_CONF)/include/cdio/cdio_config.h
 	touch $@
 
 $(LIBCDIO)-uninstall: $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc
@@ -2454,7 +2454,7 @@ $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure: $(DN_SRC)/$(SYSFSUTILS_SRC)
 
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure $(FL_DEP_SYSFSUTILS)
 	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX)/share/man
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man
 	touch $@
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/$(SYSFSUTILS).pc: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile
 	cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && make $(MAKE_ARG)
@@ -2496,7 +2496,7 @@ $(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(DN_SRC)/$(LIBV4L2_SRC)
 
 $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure $(FL_DEP_LIBV4L2)
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX)/etc --sbindir=$(PREFIX_CONF)/bin --with-udevdir=$(PREFIX_CONF)/lib/udev --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc --sbindir=$(PREFIX_CONF)/bin --with-udevdir=$(PREFIX_CONF)/lib/udev --enable-shared --disable-static --enable-pic
 	touch $@
 $(LIBV4L2)-$(LIBV4L2_VERSION)/$(LIBV4L2).pc: $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && make $(MAKE_ARG)
@@ -2877,7 +2877,6 @@ $(LIBILBC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ilbc.pc
 FL_SOURCES+=$(DN_SRC)/$(LIBILBC_SRC)
 FL_UNINSTALL+=$(LIBILBC)-uninstall
 
-
 ########################################
 # CMU Flite (festival-lite) is a small, fast run-time text to speech synthesis engine developed at CMU and primarily designed for small embedded machines and/or large servers
 # http://www.festvox.org/flite/
@@ -2922,7 +2921,6 @@ $(LIBFLITE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBFLITE).pc
 FL_SOURCES+=$(DN_SRC)/$(LIBFLITE_SRC)
 FL_UNINSTALL+=$(LIBFLITE)-uninstall
 
-
 ########################################
 # Free multimedia container format
 LIBNUT=libnut
@@ -2947,8 +2945,8 @@ $(LIBNUT_SRC): $(DN_SRC)/$(LIBNUT_SRC)
 $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile: $(LIBNUT_SRC) $(FL_DEP_LIBNUT)
 	touch $@
 $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && CFLAGS+=" -fPIC" make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) libnut/libnut.so
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX) nututils
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && CFLAGS+=" -fPIC" make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX_CONF) libnut/libnut.so
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX_CONF) nututils
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
 	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && make -j1 -C src/trunk PREFIX=$(PREFIX_CONF) DESTDIR=$(PREFIX_DEST) install-libnut-shared
@@ -2962,7 +2960,6 @@ $(LIBNUT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBNUT).a
 
 FL_SOURCES+=$(DN_SRC)/$(LIBNUT_SRC)
 FL_UNINSTALL+=$(LIBNUT)-uninstall
-
 
 ########################################
 # DTS Coherent Acoustics decoder with support for HD extensions
@@ -2998,6 +2995,37 @@ $(LIBDCADEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).p
 
 FL_SOURCES+=$(DN_SRC)/$(LIBDCADEC_SRC)
 FL_UNINSTALL+=$(LIBDCADEC)-uninstall
+
+########################################
+# The NVENC Video Encoding API provides an interface to video encoder hardware on supported NVIDIA GPUs
+# https://developer.nvidia.com/nvidia-video-codec-sdk
+APINVENC=nvenc
+
+APINVENC_VERSION=5.0.1
+APINVENC_SRC=$(APINVENC)_$(APINVENC_VERSION)_sdk.zip
+APINVENC_URL=http://developer.download.nvidia.com/compute/nvenc/v5.0/$(APINVENC_SRC)
+
+$(DN_SRC)/$(APINVENC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(APINVENC_URL)
+	touch $@
+
+$(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h: $(DN_SRC)/$(APINVENC_SRC) $(FL_DEP_APINVENC)
+	unzip $(DN_SRC)/$(APINVENC_SRC)
+	rm -f $(APINVENC)-install
+	mv $(APINVENC)* $(APINVENC)-$(APINVENC_VERSION)
+	touch $@
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvCPUOPSys.h: $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h
+	install -Dm644 $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/* $(PREFIX_DEST)/$(PREFIX_CONF)/usr/include/
+	touch $@
+
+$(APINVENC)-uninstall: $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h
+
+$(APINVENC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/nvCPUOPSys.h
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(APINVENC_SRC)
+FL_UNINSTALL+=$(APINVENC)-uninstall
 
 ########################################
 # use release files
@@ -3061,6 +3089,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBNUT)-install \
     $(LIBDCADEC)-install \
     $(LIBXV)-install \
+    #$(APINVENC)-install \
     #$(LIBILBC)-install \
     #$(LIBFLITE)-install \
     #$(AVXSYNTH)-install \
@@ -3225,7 +3254,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/ffmp
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/qt-faststart: $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart
 	cp $(FFMPEG)-$(FFMPEG_VERSION)/tools/qt-faststart $(PREFIX_DEST)/$(PREFIX_CONF)/bin/
 
-
 $(FFMPEG)-uninstall: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
 	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/bin/qt-faststart
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -3235,7 +3263,6 @@ $(FFMPEG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a $(PREFIX_DEST)
 FL_SOURCES+=$(DN_SRC)/$(FFMPEG_SRC)
 #FL_DEPENDENCES_FFMPEG+=$(FFMPEG)-install
 FL_UNINSTALL+=$(FFMPEG)-uninstall
-
 
 ########################################
 # ilmbase, An high dynamic-range image file format library
@@ -3315,6 +3342,7 @@ FL_UNINSTALL+=$(OPENEXR)-uninstall
 # glew, The OpenGL Extension Wrangler Library
 # http://glew.sourceforge.net
 GLEW=glew
+
 GLEW_VERSION=1.13.0
 GLEW_SRC=$(GLEW)-$(GLEW_VERSION).tgz
 GLEW_URL=http://sourceforge.net/projects/glew/files/glew/$(GLEW_VERSION)/$(GLEW_SRC)
@@ -3336,10 +3364,10 @@ $(GLEW)-$(GLEW_VERSION)/Makefile: $(DN_SRC)/$(GLEW_SRC) $(FL_DEP_GLEW)
 $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/Makefile
 	cd $(GLEW)-$(GLEW_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
-	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX) install
+	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX_DEST)/$(PREFIX_CONF)/ install
 
 $(GLEW)-uninstall: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
-	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX) uninstall
+	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX_DEST)/$(PREFIX_CONF)/ uninstall
 $(GLEW)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GLEW).pc
 	touch $@
 
@@ -3451,7 +3479,7 @@ $(HDF5)-$(HDF5_VERSION)/Makefile: $(HDF5)-$(HDF5_VERSION)/configure
         --enable-linux-lfs \
         --enable-production \
         --with-pic \
-        --docdir=$(PREFIX)/share/doc/hdf5/ \
+        --docdir=$(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/hdf5/ \
         --with-pthread=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ \
         --disable-sharedlib-rpath
 $(HDF5)-$(HDF5_VERSION)/src/libhdf5.la: $(HDF5)-$(HDF5_VERSION)/Makefile
@@ -3783,8 +3811,8 @@ $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 		        ln -s $$A libcuda.so.1; \
 		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
 		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so; \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so.1 
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so;  \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so.1 \
 		    ) ; done \
 		&& ls | grep libnvcuvid.so. | while read A; do ( \
 		        cd $(PREFIX)/opt/$(CUDASDK)/lib64/; \
@@ -3792,7 +3820,7 @@ $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 		        ln -s $$A libnvcuvid.so.1; \
 		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
 		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so; \
+		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so;  \
 		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so.1 \
 		    ) ; done
 	touch $@
@@ -3853,10 +3881,9 @@ FL_DEP_OPENCV= \
 # -D WITH_QT=ON -D WITH_CUDA=ON -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 -D WITH_CUBLAS=ON -D WITH_NVCUVID=ON -D CUDA_FAST_MATH=ON
 # if nvidia card is old and has only 1:1 Compute Cappability
 
+USE_GIT_OPENCV=1
 
-USE_GIT_FFMPEG=1
-
-ifeq ($(USE_GIT_FFMPEG),1) # use git instead
+ifeq ($(USE_GIT_OPENCV),1) # use git instead
 OPENCV_VERSION=git
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION)/.git
 OPENCV_URL=https://github.com/Itseez/opencv.git
@@ -3887,7 +3914,6 @@ $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
 
 endif
 
-
 $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_SRC)/$(IPPICV_SRC) $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt
 	mkdir -p $(dir $@)
 	cp $(DN_SRC)/$(IPPICV_SRC) $@
@@ -3896,7 +3922,7 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLis
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
 			-D CMAKE_BUILD_TYPE=RELEASE \
-			-D CMAKE_INSTALL_PREFIX=$(PREFIX) \
+			-D CMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
 			-D CMAKE_SKIP_RPATH=ON \
 			$(CMAKE_ARCH_FLAGS) \
 			-D CMAKE_VERBOSE_MAKEFILE=ON -D CMAKE_VERBOSE=ON \
