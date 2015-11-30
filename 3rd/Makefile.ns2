@@ -50,15 +50,15 @@ $(TCL)-$(TCL_VERSION)/unix/configure: $(TCL)-$(TCL_VERSION)/README #$(TCL)-$(TCL
 	touch $@
 
 $(TCL)-$(TCL_VERSION)/unix/Makefile: $(TCL)-$(TCL_VERSION)/unix/configure $(FL_DEP_TCL)
-	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) ./configure --prefix=/usr --without-x --enable-gcc --disable-shared
+	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --without-x --enable-gcc --disable-shared
 $(TCL)-$(TCL_VERSION)/unix/tclsh: $(TCL)-$(TCL_VERSION)/unix/Makefile
 	cd $(TCL)-$(TCL_VERSION)/unix/ && make $(MAKE_ARG)
-$(PREFIX)/usr/bin/tclsh: $(TCL)-$(TCL_VERSION)/unix/tclsh
-	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX) install install-private-headers
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/tclsh: $(TCL)-$(TCL_VERSION)/unix/tclsh
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) install install-private-headers
 
 $(TCL)-uninstall: $(TCL)-$(TCL_VERSION)/unix/tclsh
-	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX) uninstall
-$(TCL)-install: $(PREFIX)/usr/bin/tclsh
+	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(TCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/tclsh
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(TCL_SRC)
@@ -90,15 +90,15 @@ $(TK)-$(TK_VERSION)/unix/configure: $(TK)-$(TK_VERSION)/README
 	touch $@
 
 $(TK)-$(TK_VERSION)/unix/Makefile: $(TK)-$(TK_VERSION)/unix/configure $(FL_DEP_TK)
-	cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) ./configure --prefix=/usr --enable-gcc --disable-shared --disable-rpath --enable-threads #--without-x
+	cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-gcc --disable-shared --disable-rpath --enable-threads #--without-x
 $(TK)-$(TK_VERSION)/unix/wish: $(TK)-$(TK_VERSION)/unix/Makefile
 	cd $(TK)-$(TK_VERSION)/unix/ && make $(MAKE_ARG)
-$(PREFIX)/usr/bin/wish: $(TK)-$(TK_VERSION)/unix/wish
-	cd $(TK)-$(TK_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX) install
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/wish: $(TK)-$(TK_VERSION)/unix/wish
+	cd $(TK)-$(TK_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(TK)-uninstall: $(TK)-$(TK_VERSION)/unix/wish
-	cd $(TK)-$(TK_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX) uninstall
-$(TK)-install: $(PREFIX)/usr/bin/wish
+	cd $(TK)-$(TK_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(TK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/wish
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(TK_SRC)
@@ -137,17 +137,17 @@ $(OTCL)-$(OTCL_VERSION)/configure: $(OTCL)-$(OTCL_VERSION)/mypatched
 	touch $@
 
 $(OTCL)-$(OTCL_VERSION)/Makefile: $(OTCL)-$(OTCL_VERSION)/configure $(FL_DEP_OTCL)
-	#cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-L$(PREFIX)/usr/lib -lXft -lz -lpthread" ./configure --prefix=/usr --disable-static --enable-shlib --enable-release --with-tcl=$(PREFIX)/usr --with-tcl-ver=$(TCL_VERSION) --with-tk=no --without-tk --x-libraries= --x-includes=
-	cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="$(LDFLAGS) -lXft -lz -lpthread" ./configure --prefix=/usr --enable-static --enable-shlib --enable-release --with-tcl=$(PREFIX)/usr --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX)/usr --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/usr/lib --x-includes=$(PREFIX)/usr/include/X11/
+	#cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lXft -lz -lpthread" ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-shlib --enable-release --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=no --without-tk --x-libraries= --x-includes=
+	cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="$(LDFLAGS) -lXft -lz -lpthread" ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shlib --enable-release --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(OTCL)-$(OTCL_VERSION)/otclsh: $(OTCL)-$(OTCL_VERSION)/Makefile
 	cd $(OTCL)-$(OTCL_VERSION)/ && make LIB+="$(LDFLAGS) `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(MAKE_ARG)
-$(PREFIX)/usr/bin/otclsh: $(OTCL)-$(OTCL_VERSION)/otclsh
-	cd $(OTCL)-$(OTCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
-	chmod 644 $(PREFIX)/usr/lib/*.a
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/otclsh: $(OTCL)-$(OTCL_VERSION)/otclsh
+	cd $(OTCL)-$(OTCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	chmod 644 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/*.a
 
 $(OTCL)-uninstall: $(OTCL)-$(OTCL_VERSION)/otclsh
-	cd $(OTCL)-$(OTCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
-$(OTCL)-install: $(PREFIX)/usr/bin/otclsh
+	cd $(OTCL)-$(OTCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(OTCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/otclsh
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OTCL_SRC)
@@ -182,21 +182,21 @@ $(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(T
 	touch $@
 
 $(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
-	#cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=/usr --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX) --with-otcl=$(PREFIX) --with-tk=no --without-tk --x-libraries= --x-includes=
-	cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=/usr --with-zlib=$(PREFIX)/usr --with-otcl=$(PREFIX)/usr --with-tcl=$(PREFIX)/usr --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX)/usr --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/usr/lib --x-includes=$(PREFIX)/usr/include/X11/
+	#cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-tcl=$(PREFIX) --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX) --with-otcl=$(PREFIX) --with-tk=no --without-tk --x-libraries= --x-includes=
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-zlib=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a: $(TCLCL)-$(TCLCL_VERSION)/Makefile
 	cd $(TCLCL)-$(TCLCL_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX)/usr/lib/libtclcl.a: $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtclcl.a: $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a
 	cd $(TCLCL)-$(TCLCL_VERSION)/ \
-        && install -d $(PREFIX)/usr/bin \
-        && install -d $(PREFIX)/usr/include \
-        && install -d $(PREFIX)/usr/lib
-	cd $(TCLCL)-$(TCLCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
-	chmod 644 $(PREFIX)/usr/lib/*.a
+        && install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin \
+        && install -d $(PREFIX_DEST)/$(PREFIX_CONF)/include \
+        && install -d $(PREFIX_DEST)/$(PREFIX_CONF)/lib
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	chmod 644 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/*.a
 
 $(TCLCL)-uninstall: $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a
-	cd $(TCLCL)-$(TCLCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
-$(TCLCL)-install: $(PREFIX)/usr/lib/libtclcl.a
+	cd $(TCLCL)-$(TCLCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(TCLCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtclcl.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(TCLCL_SRC)
@@ -239,20 +239,20 @@ $(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched
 	touch $@
 
 $(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/configure $(FL_DEP_NS2)
-	#cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=/usr --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX) --without-tk --x-libraries= --x-includes=
-	cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=/usr --with-otcl=$(PREFIX)/usr --with-tclcl=$(PREFIX)/usr --with-tcl=$(PREFIX)/usr --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX)/usr --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX)/usr/lib --x-includes=$(PREFIX)/usr/include/X11/
+	#cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX) --with-tclcl=$(PREFIX) --without-tk --x-libraries= --x-includes=
+	cd $(NS2)-$(NS2_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(NS2)-$(NS2_VERSION)/ns: $(NS2)-$(NS2_VERSION)/Makefile
 	cd $(NS2)-$(NS2_VERSION)/ && make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
-$(PREFIX)/usr/bin/ns: $(NS2)-$(NS2_VERSION)/ns
-	install -d $(PREFIX)/usr/bin
-	install -d $(PREFIX)/usr/share
-	install -d $(PREFIX)/usr/man/man1
-	cd $(NS2)-$(NS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) install
-	#mv $(PREFIX)/usr/man $(PREFIX)/share
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns: $(NS2)-$(NS2_VERSION)/ns
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/man/man1
+	cd $(NS2)-$(NS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	#mv $(PREFIX_DEST)/$(PREFIX_CONF)/man $(PREFIX)/share
 
 $(NS2)-uninstall: $(NS2)-$(NS2_VERSION)/ns
-	cd $(NS2)-$(NS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX) uninstall
-$(NS2)-install: $(PREFIX)/usr/bin/ns
+	cd $(NS2)-$(NS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(NS2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(NS2_SRC)
