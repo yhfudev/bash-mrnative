@@ -2864,16 +2864,14 @@ $(LIBILBC)-$(LIBILBC_VERSION)/Makefile: $(LIBILBC)-$(LIBILBC_VERSION)/configure 
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-doc --disable-static --disable-rpath
 	touch $@
-$(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/Makefile
+$(LIBILBC)-$(LIBILBC_VERSION)/ilbc.pc: $(LIBILBC)-$(LIBILBC_VERSION)/Makefile
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBILBC).pc: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ilbc.pc: $(LIBILBC)-$(LIBILBC_VERSION)/ilbc.pc
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
 
-$(LIBILBC)-uninstall: $(LIBILBC)-$(LIBILBC_VERSION)/$(LIBILBC).pc
+$(LIBILBC)-uninstall: $(LIBILBC)-$(LIBILBC_VERSION)/ilbc.pc
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBILBC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBILBC).pc
+$(LIBILBC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ilbc.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBILBC_SRC)
@@ -2965,6 +2963,42 @@ $(LIBNUT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBNUT).a
 FL_SOURCES+=$(DN_SRC)/$(LIBNUT_SRC)
 FL_UNINSTALL+=$(LIBNUT)-uninstall
 
+
+########################################
+# DTS Coherent Acoustics decoder with support for HD extensions
+# https://github.com/foo86/dcadec.git
+LIBDCADEC=dcadec
+
+FL_DEP_LIBDCADEC= \
+	#$(aaaa)-install \
+	$(NULL)
+
+LIBDCADEC_VERSION=0.1.0
+LIBDCADEC_SRC=$(LIBDCADEC)-$(LIBDCADEC_VERSION).tar.bz2
+LIBDCADEC_URL=https://github.com/foo86/dcadec/archive/v$(LIBDCADEC_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBDCADEC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBDCADEC_URL)
+	touch $@
+
+$(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile: $(DN_SRC)/$(LIBDCADEC_SRC) $(FL_DEP_LIBDCADEC)
+	tar -xf $(DN_SRC)/$(LIBDCADEC_SRC)
+	touch $@
+$(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile
+	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc
+	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' PREFIX='$(PREFIX_CONF)/' make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBDCADEC)-uninstall: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc
+	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' PREFIX='$(PREFIX_CONF)/' make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBDCADEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBDCADEC_SRC)
+FL_UNINSTALL+=$(LIBDCADEC)-uninstall
+
 ########################################
 # use release files
 FFMPEG=ffmpeg
@@ -3024,8 +3058,11 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBZVBI)-install \
     $(LIBVDPAU)-install \
     $(LIBZMQ)-install \
-    $(LIBILBC)-install \
     $(LIBNUT)-install \
+    $(LIBDCADEC)-install \
+    $(LIBXV)-install \
+    #$(LIBILBC)-install \
+    #$(LIBFLITE)-install \
     #$(AVXSYNTH)-install \
     $(NULL)
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
@@ -3076,12 +3113,14 @@ $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-
 endif
 
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
-#  --enable-filters --enable-libiec61883 --enable-libopencv --enable-libpulse
+#  --enable-filters --enable-libopencv --enable-libpulse
+# hardware: --disable-devices --disable-d3d11va --disable-vaapi --disable-vda --enable-videotoolbox \
+# --enable-chromaprint
+#  --enable-libiec61883  --enable-libkvazaar --enable-libmfx --enable-libopenh264 --enable-librubberband --enable-libquvi --enable-libstagefright-h264 --enable-libtesseract --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes --enable-libxcb-shape --enable-libzimg --disable-lzma --enable-decklink --enable-mmal --enable-nvenc
     #--enable-libssh \
-    #--enable-openal \
-    #--enable-opencl \
-    #--enable-opengl \
-    #--enable-openssl \
+    #--enable-openal --enable-opencl --enable-opengl --enable-openssl --disable-schannel --disable-sdl --disable-securetransport --disable-xlib
+#--enable-libilbc \
+--enable-libflite \
 # add:
 #			--enable-static --enable-shared --extra-cflags=--static \
 #			--extra-cflags="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include -static" \
@@ -3095,59 +3134,79 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 			./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--enable-static --enable-shared \
 			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
 			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
-			--enable-avisynth \
-			--enable-avresample \
+            \
+            --enable-version3 --enable-gpl --enable-nonfree \
+            \
+            --enable-static --enable-shared --enable-runtime-cpudetect --enable-gray \
+            \
+            --disable-ffserver --disable-ffplay \
+            \
+            --disable-doc --disable-htmlpages --disable-podpages \
+            \
+            --enable-avresample --enable-avdevice --enable-avcodec --enable-avformat --enable-swresample --enable-swscale --enable-postproc --enable-avfilter --enable-pthreads --enable-postproc \
+            --enable-network --enable-dct --enable-dwt --enable-lsp --enable-lzo --enable-mdct --enable-rdft --enable-fft --enable-faan --enable-pixelutils \
+            \
+            --enable-vdpau \
+            --enable-dxva2 \
+            \
             --enable-decoder=atrac3 \
             --enable-decoder=atrac3p \
-            --enable-dxva2 \
+            \
+            --enable-avisynth \
+            --enable-bzlib \
+            --enable-fontconfig \
             --enable-frei0r \
             --enable-gnutls \
             --enable-iconv \
             --enable-ladspa \
             --enable-libaacplus \
+            --enable-libass \
             --enable-libbluray \
             --enable-libbs2b \
             --enable-libcaca \
             --enable-libcdio \
             --enable-libcelt \
             --enable-libdc1394 \
+            --enable-libdcadec \
             --enable-libfaac \
+            --enable-libfdk-aac \
+            --enable-libfreetype \
             --enable-libfribidi \
             --enable-libgme \
+            --enable-libgsm \
             --enable-libmodplug \
+            --enable-libmp3lame \
+            --enable-libnut \
+            --enable-libopencore-amrnb --enable-libopencore-amrwb \
             --enable-libopenjpeg \
+            --enable-libopus \
             --enable-librtmp \
             --enable-libschroedinger \
             --enable-libshine \
             --enable-libsoxr \
+            --enable-libspeex \
+            --enable-libtheora \
             --enable-libtwolame \
             --enable-libutvideo \
             --enable-libv4l2 \
             --enable-libvidstab \
             --enable-libvo-aacenc \
             --enable-libvo-amrwbenc \
+            --enable-libvorbis \
+            --enable-libvpx \
             --enable-libwavpack \
             --enable-libwebp \
+            --enable-libx264 --enable-libx265 --enable-libxavs --enable-libxvid \
             --enable-libzmq \
             --enable-libzvbi \
             --enable-swresample \
-            --enable-vdpau \
-            --enable-libnut \
-    --enable-x11grab \
-			--enable-version3 --enable-libopencore-amrnb --enable-libopencore-amrwb \
-			--enable-libvorbis --enable-libtheora --enable-libmp3lame --enable-libspeex \
-			--enable-libxvid --enable-libx264 --enable-libx265 --enable-libxavs \
-			--enable-gpl --enable-pthreads --enable-nonfree --enable-postproc --enable-libgsm \
-			--enable-libfdk-aac --enable-libvpx \
-			--enable-libopus --enable-bzlib --enable-zlib \
-			--enable-libass --enable-fontconfig --enable-libfreetype \
-			--disable-debug --disable-devices \
-			--disable-ffserver --disable-ffplay --disable-doc \
-			--enable-gray --enable-runtime-cpudetect \
-			$(NULL)
+            --enable-x11grab \
+            --enable-zlib \
+            \
+            --disable-debug \
+            $(NULL)
 
 $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/config.mak
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -3786,10 +3845,9 @@ FL_DEP_OPENCV= \
 	$(FAAC)-install \
 	$(FFMPEG)-install \
 	$(OPENEXR)-install \
-	$(VTK)-install \
 	$(OPENCV_GPU_SUPPORT_DEPEND) \
+	#$(VTK)-install \
 	$(NULL)
-
 
 # options for gpu/cuda
 # -D WITH_QT=ON -D WITH_CUDA=ON -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 -D WITH_CUBLAS=ON -D WITH_NVCUVID=ON -D CUDA_FAST_MATH=ON
