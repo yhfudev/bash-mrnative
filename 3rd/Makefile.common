@@ -246,6 +246,175 @@ $(NASM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nasm
 FL_SOURCES+=$(DN_SRC)/$(NASM_SRC)
 FL_UNINSTALL+=$(NASM)-uninstall
 
+
+########################################
+# A GNU tool for automatically configuring source code
+# http://www.gnu.org/software/autoconf
+LIBTOOL=libtool
+
+FL_DEP_LIBTOOL= \
+	#$(aaaaa)-install \
+	$(NULL)
+
+LIBTOOL_VERSION=2.4.6
+LIBTOOL_SRC=$(LIBTOOL)-$(LIBTOOL_VERSION).tar.xz
+LIBTOOL_URL=ftp://ftp.gnu.org/pub/gnu/$(LIBTOOL)/$(LIBTOOL_SRC)
+
+$(DN_SRC)/$(LIBTOOL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBTOOL_URL)
+	touch $@
+
+$(LIBTOOL)-$(LIBTOOL_VERSION)/configure: $(DN_SRC)/$(LIBTOOL_SRC)
+	tar -xf $(DN_SRC)/$(LIBTOOL_SRC)
+	#autoreconf -if
+	touch $@
+
+$(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile: $(LIBTOOL)-$(LIBTOOL_VERSION)/configure $(FL_DEP_LIBTOOL)
+	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) lt_cv_sys_lib_dlsearch_path_spec="/usr/lib /usr/lib32"
+	touch $@
+$(LIBTOOL)-$(LIBTOOL_VERSION)/libtool: $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile
+	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtool: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtool
+	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBTOOL)-uninstall: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtool
+	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBTOOL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtool
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBTOOL_SRC)
+FL_UNINSTALL+=$(LIBTOOL)-uninstall
+
+########################################
+# The GNU macro processor
+# http://www.gnu.org/software/m4
+M4=m4
+
+FL_DEP_M4= \
+	$(M4)-install \
+	$(NULL)
+
+M4_VERSION=1.4.17
+M4_SRC=$(M4)-$(M4_VERSION).tar.xz
+M4_URL=ftp://ftp.gnu.org/gnu/$(M4)/$(M4_SRC)
+
+$(DN_SRC)/$(M4_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(M4_URL)
+	touch $@
+
+$(M4)-$(M4_VERSION)/configure: $(DN_SRC)/$(M4_SRC)
+	tar -xf $(DN_SRC)/$(M4_SRC)
+	#autoreconf -if
+	touch $@
+
+$(M4)-$(M4_VERSION)/Makefile: $(M4)-$(M4_VERSION)/configure $(FL_DEP_M4)
+	cd $(M4)-$(M4_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(M4)-$(M4_VERSION)/src/m4: $(M4)-$(M4_VERSION)/Makefile
+	cd $(M4)-$(M4_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/m4: $(M4)-$(M4_VERSION)/src/m4
+	cd $(M4)-$(M4_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(M4)-uninstall: $(M4)-$(M4_VERSION)/src/m4
+	cd $(M4)-$(M4_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(M4)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/m4
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(M4_SRC)
+FL_UNINSTALL+=$(M4)-uninstall
+
+########################################
+# A GNU tool for automatically configuring source code
+# http://www.gnu.org/software/autoconf
+AUTOCONF=autoconf
+
+FL_DEP_AUTOCONF= \
+	$(M4)-install \
+	$(LIBTOOL)-install \
+	$(NULL)
+
+AUTOCONF_VERSION=2.69
+AUTOCONF_SRC=$(AUTOCONF)-$(AUTOCONF_VERSION).tar.xz
+AUTOCONF_URL=ftp://ftp.gnu.org/gnu/$(AUTOCONF)/$(AUTOCONF_SRC)
+
+$(DN_SRC)/$(AUTOCONF_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AUTOCONF_URL)
+	touch $@
+
+$(AUTOCONF)-$(AUTOCONF_VERSION)/configure: $(DN_SRC)/$(AUTOCONF_SRC)
+	tar -xf $(DN_SRC)/$(AUTOCONF_SRC)
+	#autoreconf -if
+	touch $@
+
+$(AUTOCONF)-$(AUTOCONF_VERSION)/Makefile: $(AUTOCONF)-$(AUTOCONF_VERSION)/configure $(FL_DEP_AUTOCONF)
+	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(AUTOCONF)-$(AUTOCONF_VERSION)/bin/autoconf: $(AUTOCONF)-$(AUTOCONF_VERSION)/Makefile
+	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/autoconf: $(AUTOCONF)-$(AUTOCONF_VERSION)/bin/autoconf
+	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(AUTOCONF)-uninstall: $(AUTOCONF)-$(AUTOCONF_VERSION)/bin/autoconf
+	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(AUTOCONF)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/autoconf
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(AUTOCONF_SRC)
+FL_UNINSTALL+=$(AUTOCONF)-uninstall
+
+
+
+########################################
+# A GNU tool for automatically creating Makefiles
+# http://www.gnu.org/software/automake
+AUTOMAKE=automake
+
+FL_DEP_AUTOMAKE= \
+	$(AUTOCONF)-install \
+	$(NULL)
+
+AUTOMAKE_VERSION=1.15
+AUTOMAKE_SRC=$(AUTOMAKE)-$(AUTOMAKE_VERSION).tar.xz
+AUTOMAKE_URL=ftp://ftp.gnu.org/gnu/$(AUTOMAKE)/$(AUTOMAKE_SRC)
+
+$(DN_SRC)/$(AUTOMAKE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(AUTOMAKE_URL)
+	touch $@
+
+$(AUTOMAKE)-$(AUTOMAKE_VERSION)/configure: $(DN_SRC)/$(AUTOMAKE_SRC)
+	tar -xf $(DN_SRC)/$(AUTOMAKE_SRC)
+	#autoreconf -if
+	touch $@
+
+$(AUTOMAKE)-$(AUTOMAKE_VERSION)/Makefile: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/configure $(FL_DEP_AUTOMAKE)
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-avresample --enable-shared --disable-static
+	touch $@
+$(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/Makefile
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(AUTOMAKE)-uninstall: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(AUTOMAKE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(AUTOMAKE_SRC)
+FL_UNINSTALL+=$(AUTOMAKE)-uninstall
+
+
 ########################################
 # System V Release 4.0 curses emulation library
 NCURSES=ncurses
@@ -260,7 +429,7 @@ $(DN_SRC)/$(NCURSES_SRC): $(DN_SRC)/created
 
 $(NCURSES)-$(NCURSES_VERSION)/configure: $(DN_SRC)/$(NCURSES_SRC)
 	tar -xf $(DN_SRC)/$(NCURSES_SRC)
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
+	#cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
 	#cd $(NCURSES)-$(NCURSES_VERSION)/ && autoreconf -if
 	touch $@
 
@@ -276,11 +445,11 @@ $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/Makef
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(NCURSES).la: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) PKG_CONFIG_LIBDIR=$(PREFIX_CONF)/lib/pkgconfig install
 	touch $@
 
 $(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/$(NCURSES).la
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) PKG_CONFIG_LIBDIR=$(PREFIX_CONF)/lib/pkgconfig uninstall
 $(NCURSES)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(NCURSES).la
 	touch $@
 
@@ -691,6 +860,49 @@ FL_SOURCES+=$(DN_SRC)/$(GPERF_SRC)
 FL_UNINSTALL+=$(GPERF)-uninstall
 
 ########################################
+# gobject-introspection
+# https://live.gnome.org/GObjectIntrospection
+GOBJINTROSPEC=gobject-introspection
+
+GOBJINTROSPEC_VERSION=1.46.0
+GOBJINTROSPEC_SRC=$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION).tar.xz
+GOBJINTROSPEC_URL=http://ftp.gnome.org/pub/gnome/sources/$(GOBJINTROSPEC)/1.46/$(GOBJINTROSPEC_SRC)
+
+FL_DEP_GOBJINTROSPEC= \
+    #$(aaaaa)-install \
+    $(NULL)
+
+$(DN_SRC)/$(GOBJINTROSPEC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GOBJINTROSPEC_URL)
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac: $(DN_SRC)/$(GOBJINTROSPEC_SRC)
+	tar -xf $(DN_SRC)/$(GOBJINTROSPEC_SRC)
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac $(FL_DEP_GOBJINTROSPEC)
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && autoreconf -if
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-doctool
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(GOBJINTROSPEC)-uninstall: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GOBJINTROSPEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GOBJINTROSPEC_SRC)
+FL_UNINSTALL+=$(GOBJINTROSPEC)-uninstall
+
+########################################
 # libudev
 # https://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-182.tar.gz
 LIBUDEV=udev
@@ -699,7 +911,11 @@ LIBUDEV_SRC=$(LIBUDEV)-$(LIBUDEV_VERSION).tar.gz
 LIBUDEV_URL=https://www.kernel.org/pub/linux/utils/kernel/hotplug/$(LIBUDEV_SRC)
 
 # gperf
-FL_DEP_LIBUDEV=$(GPERF)-install
+FL_DEP_LIBUDEV= \
+    $(GPERF)-install \
+    #$(AUTOMAKE)-install \
+    #$(GOBJINTROSPEC)-install \
+    $(NULL)
 
 $(DN_SRC)/$(LIBUDEV_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBUDEV_URL)
@@ -711,18 +927,19 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
 $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
 #	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	#cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
 	touch $@
 
 $(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
-		&& aclocal && automake -ac && autoreconf -if
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && autoreconf -if
 	touch $@
 
 $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/configure $(FL_DEP_LIBUDEV)
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --enable-gudev \
-		    --with-libdir=$(PREFIX_CONF)/lib \
-		    --with-systemdsystemunitdir=$(PREFIX_CONF)/lib/systemd/system/ \
+            --with-libdir=$(PREFIX_CONF)/lib \
+            --with-systemdsystemunitdir=$(PREFIX_CONF)/lib/systemd/system/ \
+            --libexecdir=$(PREFIX_CONF)/lib/ \
 		$(NULL)
 	touch $@
 
