@@ -35,6 +35,7 @@ MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0
 ENV_COMPILE= PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH) \
 		PKG_CONFIG_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig:$(PKG_CONFIG_PATH) \
 		LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(LD_LIBRARY_PATH) \
+		CFLAGS+="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/" \
 		CPPFLAGS+="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/" \
 		LDFLAGS+="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/" \
 		$(NULL)
