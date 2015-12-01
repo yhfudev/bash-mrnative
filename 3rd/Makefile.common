@@ -246,10 +246,9 @@ $(NASM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nasm
 FL_SOURCES+=$(DN_SRC)/$(NASM_SRC)
 FL_UNINSTALL+=$(NASM)-uninstall
 
-
 ########################################
-# A GNU tool for automatically configuring source code
-# http://www.gnu.org/software/autoconf
+# A generic library support script
+# http://www.gnu.org/software/libtool
 LIBTOOL=libtool
 
 FL_DEP_LIBTOOL= \
@@ -271,18 +270,18 @@ $(LIBTOOL)-$(LIBTOOL_VERSION)/configure: $(DN_SRC)/$(LIBTOOL_SRC)
 
 $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile: $(LIBTOOL)-$(LIBTOOL_VERSION)/configure $(FL_DEP_LIBTOOL)
 	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) lt_cv_sys_lib_dlsearch_path_spec="/usr/lib /usr/lib32"
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) lt_cv_sys_lib_dlsearch_path_spec="$(PREFIX_CONF)/lib $(PREFIX_CONF)/lib32"
 	touch $@
-$(LIBTOOL)-$(LIBTOOL_VERSION)/libtool: $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile
+$(LIBTOOL)-$(LIBTOOL_VERSION)/libtoolize: $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile
 	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make $(MAKE_ARG)
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtool: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtool
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtoolize: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtoolize
 	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(LIBTOOL)-uninstall: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtool
+$(LIBTOOL)-uninstall: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtoolize
 	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBTOOL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtool
+$(LIBTOOL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtoolize
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBTOOL_SRC)
@@ -294,7 +293,7 @@ FL_UNINSTALL+=$(LIBTOOL)-uninstall
 M4=m4
 
 FL_DEP_M4= \
-	$(M4)-install \
+	#$(M4)-install \
 	$(NULL)
 
 M4_VERSION=1.4.17
@@ -370,8 +369,6 @@ $(AUTOCONF)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/autoconf
 
 FL_SOURCES+=$(DN_SRC)/$(AUTOCONF_SRC)
 FL_UNINSTALL+=$(AUTOCONF)-uninstall
-
-
 
 ########################################
 # A GNU tool for automatically creating Makefiles
@@ -457,36 +454,6 @@ FL_SOURCES+=$(DN_SRC)/$(NCURSES_SRC)
 FL_UNINSTALL+=$(NCURSES)-uninstall
 
 ########################################
-LIBXPM=libXpm
-LIBXPM_VERSION=3.5.11
-LIBXPM_SRC=$(LIBXPM)-$(LIBXPM_VERSION).tar.gz
-LIBXPM_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXPM_SRC)"
-
-$(DN_SRC)/$(LIBXPM_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBXPM_URL)
-	touch $@
-$(LIBXPM)-$(LIBXPM_VERSION)/configure: $(DN_SRC)/$(LIBXPM_SRC)
-	tar -xf $(DN_SRC)/$(LIBXPM_SRC)
-	#mv $(LIBXPM)-$(LIBXPM_VERSION) $(LIBXPM)-$(LIBXPM_VERSION)/
-	touch $@
-$(LIBXPM)-$(LIBXPM_VERSION)/Makefile: $(LIBXPM)-$(LIBXPM_VERSION)/configure $(FL_DEP_LIBXPM)
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
-$(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(LIBXPM)-uninstall: $(LIBXPM)-$(LIBXPM_VERSION)/LIBXPM
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXPM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBXPM_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXPM)-install
-FL_UNINSTALL+=$(LIBXPM)-uninstall
-
-
-########################################
 # OpenPGM: implementation of the Pragmatic General Multicast (PGM, RFC3208)
 # http://code.google.com/p/openpgm
 LIBPGM=libpgm
@@ -561,28 +528,29 @@ FL_SOURCES+=$(DN_SRC)/$(LIBPNG_SRC)
 FL_UNINSTALL+=$(LIBPNG)-uninstall
 
 ########################################
-LIBTIFF=libtiff
+LIBTIFF=tiff
 LIBTIFF_VERSION=4.0.6
 LIBTIFF_SRC=$(LIBTIFF)-$(LIBTIFF_VERSION).tar.gz
-LIBTIFF_URL="http://download.osgeo.org/libtiff/tiff-$(LIBTIFF_VERSION).tar.gz"
+LIBTIFF_URL="ftp://ftp.remotesensing.org/pub/libtiff/$(LIBTIFF_SRC)"
 
 $(DN_SRC)/$(LIBTIFF_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBTIFF_URL)
 	touch $@
 $(LIBTIFF)-$(LIBTIFF_VERSION)/configure: $(DN_SRC)/$(LIBTIFF_SRC)
 	tar -xf $(DN_SRC)/$(LIBTIFF_SRC)
-	mv tiff-$(LIBTIFF_VERSION) $(LIBTIFF)-$(LIBTIFF_VERSION)/
+	rm -f $(LIBTIFF)-install
+	#mv tiff-$(LIBTIFF_VERSION) $(LIBTIFF)-$(LIBTIFF_VERSION)/
 	touch $@
 $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile: $(LIBTIFF)-$(LIBTIFF_VERSION)/configure $(FL_DEP_LIBTIFF)
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
-$(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile
+$(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff-4.pc: $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtiff.a: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libtiff-4.pc: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff-4.pc
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBTIFF)-uninstall: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff.a
+$(LIBTIFF)-uninstall: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff-4.pc
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBTIFF)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtiff.a
+$(LIBTIFF)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libtiff-4.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBTIFF_SRC)
@@ -800,6 +768,7 @@ FL_UNINSTALL+=$(FREETYPE)-uninstall
 
 ########################################
 LIBXML2=libxml2
+
 LIBXML2_VERSION=2.9.3
 LIBXML2_SRC=$(LIBXML2)-$(LIBXML2_VERSION).tar.gz
 LIBXML2_URL=http://xmlsoft.org/sources/$(LIBXML2_SRC)
@@ -824,6 +793,38 @@ $(LIBXML2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxml2.a
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXML2_SRC)
 FL_UNINSTALL+=$(LIBXML2)-uninstall
+
+########################################
+LIBXSLT=libxslt
+
+FL_DEP_LIBXSLT= \
+	$(LIBXML2)-install \
+	$(NULL)
+
+LIBXSLT_VERSION=1.1.28
+LIBXSLT_SRC=$(LIBXSLT)-$(LIBXSLT_VERSION).tar.gz
+LIBXSLT_URL=http://xmlsoft.org/sources/$(LIBXSLT_SRC)
+
+$(DN_SRC)/$(LIBXSLT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXSLT_URL)
+	touch $@
+$(LIBXSLT)-$(LIBXSLT_VERSION)/configure: $(DN_SRC)/$(LIBXSLT_SRC)
+	tar -xf $(DN_SRC)/$(LIBXSLT_SRC)
+	touch $@
+$(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile: $(LIBXSLT)-$(LIBXSLT_VERSION)/configure
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --with-libxml-prefix=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
+$(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc: $(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBXSLT).pc: $(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBXSLT)-uninstall: $(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXSLT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBXSLT).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXSLT_SRC)
+FL_UNINSTALL+=$(LIBXSLT)-uninstall
 
 ########################################
 FONTCONF=fontconfig
@@ -1172,89 +1173,6 @@ $(LUA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua
 FL_SOURCES+=$(DN_SRC)/$(LUA_SRC)
 FL_UNINSTALL+=$(LUA)-uninstall
 
-########################################
-GD=gd
-GD_VERSION=2.1.1
-GD_SRC=$(GD)-$(GD_VERSION).tar.gz
-GD_URL="https://github.com/libgd/libgd/archive/$(GD_SRC)"
-
-LIBGD=libgd
-LIBGD_VERSION=2.1.1
-LIBGD_SRC=$(LIBGD)-$(LIBGD_VERSION).tar.gz
-LIBGD_URL="https://github.com/libgd/libgd/releases/download/gd-$(LIBGD_VERSION)/$(GD_SRC)"
-
-FL_DEP_GD= \
-	$(LUA)-install \
-	$(LIBXPM)-install \
-	$(LIBTIFF)-install \
-	$(LVPX)-install \
-	$(NULL)
-
-$(DN_SRC)/$(GD_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GD_URL)
-	touch $@
-$(GD)-$(GD_VERSION)/configure: $(DN_SRC)/$(GD_SRC)
-	tar -xf $(DN_SRC)/$(GD_SRC)
-	mv libgd-gd-$(GD_VERSION) $(GD)-$(GD_VERSION)/
-	cd $(GD)-$(GD_VERSION)/ && ./bootstrap.sh
-	touch $@
-$(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VERSION)/configure
-	cd $(GD)-$(GD_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libgd-libvpx.patch
-	touch $@
-$(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/mypatched $(FL_DEP_GD)
-	cd $(GD)-$(GD_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
-$(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
-	cd $(GD)-$(GD_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd: $(GD)-$(GD_VERSION)/gd
-	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(GD)-uninstall: $(GD)-$(GD_VERSION)/gd
-	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GD_SRC)
-#FL_DEP_GNUPLOT+=$(GD)-install
-FL_UNINSTALL+=$(GD)-uninstall
-
-########################################
-GNUPLOT=gnuplot
-GNUPLOT_VERSION=5.0.1
-GNUPLOT_SRC=$(GNUPLOT)-$(GNUPLOT_VERSION).tar.gz
-GNUPLOT_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$(GNUPLOT_VERSION)/$(GNUPLOT_SRC)
-
-FL_DEP_GNUPLOT= \
-	$(LVPX)-install \
-	$(LIBTIFF)-install \
-	$(GD)-install \
-	$(NULL)
-
-$(DN_SRC)/$(GNUPLOT_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GNUPLOT_URL)
-	touch $@
-$(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(DN_SRC)/$(GNUPLOT_SRC)
-	tar -xf $(DN_SRC)/$(GNUPLOT_SRC)
-	touch $@
-
-$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-gnuplot-lua.patch
-	touch $@
-
-$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
-$(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(GNUPLOT)-uninstall: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GNUPLOT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GNUPLOT_SRC)
-FL_UNINSTALL+=$(GNUPLOT)-uninstall
-
 
 ########################################
 GNUAWK=gawk
@@ -1398,17 +1316,170 @@ $(RENDERPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/$(RENDERPROTO).h
 FL_SOURCES+=$(DN_SRC)/$(RENDERPROTO_SRC)
 FL_UNINSTALL+=$(RENDERPROTO)-uninstall
 
+########################################
+SCRNSAVERPROTO=scrnsaverproto
+
+SCRNSAVERPROTO_VERSION=1.2.2
+SCRNSAVERPROTO_SRC=$(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION).tar.gz
+SCRNSAVERPROTO_URL="http://www.x.org/releases/individual/proto/$(SCRNSAVERPROTO_SRC)"
+
+$(DN_SRC)/$(SCRNSAVERPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(SCRNSAVERPROTO_URL)
+	touch $@
+$(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/configure: $(DN_SRC)/$(SCRNSAVERPROTO_SRC)
+	tar -xf $(DN_SRC)/$(SCRNSAVERPROTO_SRC)
+	#mv $(SCRNSAVERPROTO)$(SCRNSAVERPROTO_VERSION) $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/
+	touch $@
+$(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/Makefile: $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/configure $(FL_DEP_SCRNSAVERPROTO)
+	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/include/saverproto.h: $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/Makefile
+	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(SCRNSAVERPROTO)-uninstall: $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/Makefile
+	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(SCRNSAVERPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/saverproto.h
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(SCRNSAVERPROTO_SRC)
+FL_UNINSTALL+=$(SCRNSAVERPROTO)-uninstall
+
+
+########################################
+# X11 XKB extension wire protocol
+KBPROTO=kbproto
+
+KBPROTO_VERSION=1.0.7
+KBPROTO_SRC=$(KBPROTO)-$(KBPROTO_VERSION).tar.gz
+KBPROTO_URL="http://www.x.org/releases/individual/proto/$(KBPROTO_SRC)"
+
+$(DN_SRC)/$(KBPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(KBPROTO_URL)
+	touch $@
+$(KBPROTO)-$(KBPROTO_VERSION)/configure: $(DN_SRC)/$(KBPROTO_SRC)
+	tar -xf $(DN_SRC)/$(KBPROTO_SRC)
+	#mv $(KBPROTO)$(KBPROTO_VERSION) $(KBPROTO)-$(KBPROTO_VERSION)/
+	touch $@
+$(KBPROTO)-$(KBPROTO_VERSION)/Makefile: $(KBPROTO)-$(KBPROTO_VERSION)/configure $(FL_DEP_KBPROTO)
+	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/kbproto.pc: $(KBPROTO)-$(KBPROTO_VERSION)/Makefile
+	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(KBPROTO)-uninstall: $(KBPROTO)-$(KBPROTO_VERSION)/Makefile
+	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(KBPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/kbproto.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(KBPROTO_SRC)
+FL_UNINSTALL+=$(KBPROTO)-uninstall
+
+
+########################################
+# X.Org Autotools macros
+XUTILMACRO=util-macros
+
+XUTILMACRO_VERSION=1.19.0
+XUTILMACRO_SRC=$(XUTILMACRO)-$(XUTILMACRO_VERSION).tar.gz
+XUTILMACRO_URL="http://www.x.org/releases/individual/util/$(XUTILMACRO_SRC)"
+
+$(DN_SRC)/$(XUTILMACRO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XUTILMACRO_URL)
+	touch $@
+$(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure: $(DN_SRC)/$(XUTILMACRO_SRC)
+	tar -xf $(DN_SRC)/$(XUTILMACRO_SRC)
+	#mv $(XUTILMACRO)$(XUTILMACRO_VERSION) $(XUTILMACRO)-$(XUTILMACRO_VERSION)/
+	touch $@
+$(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure $(FL_DEP_XUTILMACRO)
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(XUTILMACRO)-uninstall: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XUTILMACRO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XUTILMACRO_SRC)
+FL_UNINSTALL+=$(XUTILMACRO)-uninstall
+
+########################################
+XPROTO=xproto
+
+FL_DEP_XPROTO= \
+	$(XUTILMACRO)-install \
+	$(NULL)
+
+XPROTO_VERSION=7.0.28
+XPROTO_SRC=$(XPROTO)-$(XPROTO_VERSION).tar.gz
+XPROTO_URL="http://www.x.org/releases/individual/proto/$(XPROTO_SRC)"
+
+$(DN_SRC)/$(XPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XPROTO_URL)
+	touch $@
+$(XPROTO)-$(XPROTO_VERSION)/configure: $(DN_SRC)/$(XPROTO_SRC)
+	tar -xf $(DN_SRC)/$(XPROTO_SRC)
+	#mv $(XPROTO)$(XPROTO_VERSION) $(XPROTO)-$(XPROTO_VERSION)/
+	touch $@
+$(XPROTO)-$(XPROTO_VERSION)/Makefile: $(XPROTO)-$(XPROTO_VERSION)/configure $(FL_DEP_XPROTO)
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc: $(XPROTO)-$(XPROTO_VERSION)/Makefile
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(XPROTO)-uninstall: $(XPROTO)-$(XPROTO_VERSION)/Makefile
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XPROTO_SRC)
+FL_UNINSTALL+=$(XPROTO)-uninstall
+
+########################################
+# XML-XCB protocol descriptions
+XCBPROTO=xcb-proto
+
+FL_DEP_XCBPROTO= \
+	$(LIBXML2)-install \
+	$(NULL)
+
+XCBPROTO_VERSION=1.11
+XCBPROTO_SRC=$(XCBPROTO)-$(XCBPROTO_VERSION).tar.gz
+XCBPROTO_URL="http://xcb.freedesktop.org/dist/$(XCBPROTO_SRC)"
+
+$(DN_SRC)/$(XCBPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XCBPROTO_URL)
+	touch $@
+$(XCBPROTO)-$(XCBPROTO_VERSION)/configure: $(DN_SRC)/$(XCBPROTO_SRC)
+	tar -xf $(DN_SRC)/$(XCBPROTO_SRC)
+	touch $@
+$(XCBPROTO)-$(XCBPROTO_VERSION)/Makefile: $(XCBPROTO)-$(XCBPROTO_VERSION)/configure $(FL_DEP_XCBPROTO)
+	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(XCBPROTO)-$(XCBPROTO_VERSION)/$(XCBPROTO).la: $(XCBPROTO)-$(XCBPROTO_VERSION)/Makefile
+	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(XCBPROTO).a: $(XCBPROTO)-$(XCBPROTO_VERSION)/$(XCBPROTO).la
+	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(XCBPROTO)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(XCBPROTO)"
+
+$(XCBPROTO)-uninstall: $(XCBPROTO)-$(XCBPROTO_VERSION)/$(XCBPROTO).la
+	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XCBPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(XCBPROTO).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XCBPROTO_SRC)
+FL_UNINSTALL+=$(XCBPROTO)-uninstall
 
 ########################################
 LIBXRENDER=libXrender
-LIBXRENDER_VERSION=0.9.9
-LIBXRENDER_SRC=$(LIBXRENDER)-$(LIBXRENDER_VERSION).tar.gz
-LIBXRENDER_URL="http://www.x.org/releases/individual/lib/$(LIBXRENDER_SRC)"
-
 
 FL_DEP_LIBXRENDER= \
 	$(RENDERPROTO)-install \
 	$(NULL)
+
+LIBXRENDER_VERSION=0.9.9
+LIBXRENDER_SRC=$(LIBXRENDER)-$(LIBXRENDER_VERSION).tar.gz
+LIBXRENDER_URL="http://www.x.org/releases/individual/lib/$(LIBXRENDER_SRC)"
 
 $(DN_SRC)/$(LIBXRENDER_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBXRENDER_URL)
@@ -1418,7 +1489,7 @@ $(LIBXRENDER)-$(LIBXRENDER_VERSION)/configure: $(DN_SRC)/$(LIBXRENDER_SRC)
 	#mv $(LIBXRENDER)$(LIBXRENDER_VERSION) $(LIBXRENDER)-$(LIBXRENDER_VERSION)/
 	touch $@
 $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/configure $(FL_DEP_LIBXRENDER)
-	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
+	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
 $(LIBXRENDER)-$(LIBXRENDER_VERSION)/$(LIBXRENDER).la: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXRENDER).a: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/$(LIBXRENDER).la
@@ -1469,39 +1540,366 @@ FL_SOURCES+=$(DN_SRC)/$(LIBXFT_SRC)
 FL_UNINSTALL+=$(LIBXFT)-uninstall
 
 ########################################
-LIBXSS=libXScrnSaver
-LIBXSSLIB=libXss
-LIBXSS_VERSION=1.2.2
-LIBXSS_SRC=$(LIBXSS)-$(LIBXSS_VERSION).tar.gz
-LIBXSS_URL="http://www.x.org/releases/individual/lib/$(LIBXSS_SRC)"
+# X11 Inter-Client Exchange library
+LIBICE=libICE
 
-$(DN_SRC)/$(LIBXSS_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBXSS_URL)
+FL_DEP_LIBICE= \
+	$(XPROTO)-install \
+	$(NULL)
+
+LIBICE_VERSION=1.0.9
+LIBICE_SRC=$(LIBICE)-$(LIBICE_VERSION).tar.gz
+LIBICE_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBICE_SRC)"
+
+$(DN_SRC)/$(LIBICE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBICE_URL)
 	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/configure: $(DN_SRC)/$(LIBXSS_SRC)
-	tar -xf $(DN_SRC)/$(LIBXSS_SRC)
+$(LIBICE)-$(LIBICE_VERSION)/configure: $(DN_SRC)/$(LIBICE_SRC)
+	tar -xf $(DN_SRC)/$(LIBICE_SRC)
 	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/Makefile: $(LIBXSS)-$(LIBXSS_VERSION)/configure
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
-	    && ./configure --prefix=$(PREFIX_CONF)/ --sysconfdir=/etc
+$(LIBICE)-$(LIBICE_VERSION)/Makefile: $(LIBICE)-$(LIBICE_VERSION)/configure $(FL_DEP_LIBICE)
+	cd $(LIBICE)-$(LIBICE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la: $(LIBXSS)-$(LIBXSS_VERSION)/Makefile $(FL_DEP_LIBXSS)
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
+$(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la: $(LIBICE)-$(LIBICE_VERSION)/Makefile
+	cd $(LIBICE)-$(LIBICE_VERSION)/ \
 	    && make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXSSLIB).a: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).a: $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la
+	cd $(LIBICE)-$(LIBICE_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBICE)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBICE)"
 
-$(LIBXSS)-uninstall: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
-	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXSS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXSSLIB).a
+$(LIBICE)-uninstall: $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la
+	cd $(LIBICE)-$(LIBICE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBICE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).a
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(LIBXSS_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXSS)-install
-FL_UNINSTALL+=$(LIBXSS)-uninstall
+FL_SOURCES+=$(DN_SRC)/$(LIBICE_SRC)
+FL_UNINSTALL+=$(LIBICE)-uninstall
+
+########################################
+# X11 Session Management library
+LIBSM=libSM
+
+FL_DEP_LIBSM= \
+	$(LIBICE)-install \
+	$(NULL)
+
+LIBSM_VERSION=1.2.2
+LIBSM_SRC=$(LIBSM)-$(LIBSM_VERSION).tar.gz
+LIBSM_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBSM_SRC)"
+
+$(DN_SRC)/$(LIBSM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBSM_URL)
+	touch $@
+$(LIBSM)-$(LIBSM_VERSION)/configure: $(DN_SRC)/$(LIBSM_SRC)
+	tar -xf $(DN_SRC)/$(LIBSM_SRC)
+	touch $@
+$(LIBSM)-$(LIBSM_VERSION)/Makefile: $(LIBSM)-$(LIBSM_VERSION)/configure $(FL_DEP_LIBSM)
+	cd $(LIBSM)-$(LIBSM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
+	touch $@
+$(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la: $(LIBSM)-$(LIBSM_VERSION)/Makefile
+	cd $(LIBSM)-$(LIBSM_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).a: $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la
+	cd $(LIBSM)-$(LIBSM_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBSM)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBSM)"
+
+$(LIBSM)-uninstall: $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la
+	cd $(LIBSM)-$(LIBSM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBSM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBSM_SRC)
+FL_UNINSTALL+=$(LIBSM)-uninstall
+
+########################################
+XTRANS=xtrans
+
+FL_DEP_XTRANS= \
+	#$(aaaa)-install \
+	$(NULL)
+
+XTRANS_VERSION=1.3.5
+XTRANS_SRC=$(XTRANS)-$(XTRANS_VERSION).tar.gz
+XTRANS_URL="http://xorg.freedesktop.org/releases/individual/lib/$(XTRANS_SRC)"
+
+$(DN_SRC)/$(XTRANS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XTRANS_URL)
+	touch $@
+$(XTRANS)-$(XTRANS_VERSION)/configure: $(DN_SRC)/$(XTRANS_SRC)
+	tar -xf $(DN_SRC)/$(XTRANS_SRC)
+	touch $@
+$(XTRANS)-$(XTRANS_VERSION)/Makefile: $(XTRANS)-$(XTRANS_VERSION)/configure $(FL_DEP_XTRANS)
+	cd $(XTRANS)-$(XTRANS_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
+	touch $@
+$(XTRANS)-$(XTRANS_VERSION)/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/Makefile
+	cd $(XTRANS)-$(XTRANS_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
+	cd $(XTRANS)-$(XTRANS_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(XTRANS)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(XTRANS)"
+
+$(XTRANS)-uninstall: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
+	cd $(XTRANS)-$(XTRANS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XTRANS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XTRANS_SRC)
+FL_UNINSTALL+=$(XTRANS)-uninstall
+
+
+########################################
+LIBPTHREADSTUBS=libpthread-stubs
+
+FL_DEP_LIBPTHREADSTUBS= \
+	#$(aaaaa)-install \
+	$(NULL)
+
+LIBPTHREADSTUBS_VERSION=0.3
+LIBPTHREADSTUBS_SRC=$(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION).tar.gz
+LIBPTHREADSTUBS_URL="http://xcb.freedesktop.org/dist/$(LIBPTHREADSTUBS_SRC)"
+
+$(DN_SRC)/$(LIBPTHREADSTUBS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBPTHREADSTUBS_URL)
+	touch $@
+$(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/configure: $(DN_SRC)/$(LIBPTHREADSTUBS_SRC)
+	tar -xf $(DN_SRC)/$(LIBPTHREADSTUBS_SRC)
+	touch $@
+$(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/configure $(FL_DEP_LIBPTHREADSTUBS)
+	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile
+	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc
+	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBPTHREADSTUBS)-uninstall: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc
+	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBPTHREADSTUBS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/pthread-stubs.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBPTHREADSTUBS_SRC)
+FL_UNINSTALL+=$(LIBPTHREADSTUBS)-uninstall
+
+
+########################################
+# X11 authorisation library
+LIBXAU=libXau
+
+FL_DEP_LIBXAU= \
+	$(XPROTO)-install \
+	$(LIBPTHREADSTUBS)-install \
+	$(NULL)
+
+LIBXAU_VERSION=1.0.8
+LIBXAU_SRC=$(LIBXAU)-$(LIBXAU_VERSION).tar.gz
+LIBXAU_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXAU_SRC)"
+
+$(DN_SRC)/$(LIBXAU_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXAU_URL)
+	touch $@
+$(LIBXAU)-$(LIBXAU_VERSION)/configure: $(DN_SRC)/$(LIBXAU_SRC)
+	tar -xf $(DN_SRC)/$(LIBXAU_SRC)
+	touch $@
+$(LIBXAU)-$(LIBXAU_VERSION)/Makefile: $(LIBXAU)-$(LIBXAU_VERSION)/configure $(FL_DEP_LIBXAU)
+	cd $(LIBXAU)-$(LIBXAU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static --without-doxygen
+	touch $@
+$(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/Makefile
+	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la
+	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXAU)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXAU)"
+
+$(LIBXAU)-uninstall: $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la
+	cd $(LIBXAU)-$(LIBXAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXAU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXAU).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXAU_SRC)
+FL_UNINSTALL+=$(LIBXAU)-uninstall
+
+
+########################################
+# X11 Display Manager Control Protocol library
+LIBXDMCP=libXdmcp
+
+FL_DEP_LIBXDMCP= \
+	$(XPROTO)-install \
+	$(NULL)
+
+LIBXDMCP_VERSION=1.1.2
+LIBXDMCP_SRC=$(LIBXDMCP)-$(LIBXDMCP_VERSION).tar.gz
+LIBXDMCP_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXDMCP_SRC)"
+
+$(DN_SRC)/$(LIBXDMCP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXDMCP_URL)
+	touch $@
+$(LIBXDMCP)-$(LIBXDMCP_VERSION)/configure: $(DN_SRC)/$(LIBXDMCP_SRC)
+	tar -xf $(DN_SRC)/$(LIBXDMCP_SRC)
+	touch $@
+$(LIBXDMCP)-$(LIBXDMCP_VERSION)/Makefile: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/configure $(FL_DEP_LIBXDMCP)
+	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
+	touch $@
+$(LIBXDMCP)-$(LIBXDMCP_VERSION)/$(LIBXDMCP).la: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/Makefile
+	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXDMCP).a: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/$(LIBXDMCP).la
+	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXDMCP)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXDMCP)"
+
+$(LIBXDMCP)-uninstall: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/$(LIBXDMCP).la
+	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXDMCP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXDMCP).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXDMCP_SRC)
+FL_UNINSTALL+=$(LIBXDMCP)-uninstall
+
+########################################
+# X11 client-side library
+LIBXCB=libxcb
+
+FL_DEP_LIBXCB= \
+	$(XUTILMACRO)-install \
+	$(XCBPROTO)-install \
+	$(LIBXSLT)-install \
+	$(LIBXAU)-install \
+	$(LIBXDMCP)-install \
+	$(NULL)
+
+LIBXCB_VERSION=1.11.1
+LIBXCB_SRC=$(LIBXCB)-$(LIBXCB_VERSION).tar.gz
+LIBXCB_URL="http://xcb.freedesktop.org/dist/$(LIBXCB_SRC)"
+
+$(DN_SRC)/$(LIBXCB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXCB_URL)
+	touch $@
+$(LIBXCB)-$(LIBXCB_VERSION)/configure: $(DN_SRC)/$(LIBXCB_SRC)
+	tar -xf $(DN_SRC)/$(LIBXCB_SRC)
+	touch $@
+$(LIBXCB)-$(LIBXCB_VERSION)/Makefile: $(LIBXCB)-$(LIBXCB_VERSION)/configure $(FL_DEP_LIBXCB)
+	cd $(LIBXCB)-$(LIBXCB_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-xinput --enable-xkb --disable-static
+	touch $@
+$(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/Makefile
+	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc
+	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXCB)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXCB)"
+
+$(LIBXCB)-uninstall: $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc
+	cd $(LIBXCB)-$(LIBXCB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXCB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xcb.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXCB_SRC)
+FL_UNINSTALL+=$(LIBXCB)-uninstall
+
+########################################
+LIBX11=libX11
+
+FL_DEP_LIBX11= \
+	$(XPROTO)-install \
+	$(KBPROTO)-install \
+	$(XTRANS)-install \
+	$(XEXTPROTO)-install \
+	$(INPUTPROTO)-install \
+	$(XUTILMACRO)-install \
+	$(LIBXCB)-install \
+	$(NULL)
+
+LIBX11_VERSION=1.6.3
+LIBX11_SRC=$(LIBX11)-$(LIBX11_VERSION).tar.gz
+LIBX11_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBX11_SRC)"
+
+$(DN_SRC)/$(LIBX11_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBX11_URL)
+	touch $@
+$(LIBX11)-$(LIBX11_VERSION)/configure: $(DN_SRC)/$(LIBX11_SRC)
+	tar -xf $(DN_SRC)/$(LIBX11_SRC)
+	touch $@
+$(LIBX11)-$(LIBX11_VERSION)/Makefile: $(LIBX11)-$(LIBX11_VERSION)/configure $(FL_DEP_LIBX11)
+	cd $(LIBX11)-$(LIBX11_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --disable-xf86bigfont --with-keysymdefdir=$(PREFIX_CONF)/include/X11/
+	touch $@
+$(LIBX11)-$(LIBX11_VERSION)/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/Makefile
+	cd $(LIBX11)-$(LIBX11_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/x11.pc
+	cd $(LIBX11)-$(LIBX11_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBX11)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBX11)"
+	touch $@
+
+$(LIBX11)-uninstall: $(LIBX11)-$(LIBX11_VERSION)/x11.pc
+	cd $(LIBX11)-$(LIBX11_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBX11)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/x11.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBX11_SRC)
+FL_UNINSTALL+=$(LIBX11)-uninstall
+
+########################################
+LIBXPM=libXpm
+
+FL_DEP_LIBXPM= \
+	$(XUTILMACRO)-install \
+	$(LIBX11)-install \
+	$(XPROTO)-install \
+	$(NULL)
+
+LIBXPM_VERSION=3.5.11
+LIBXPM_SRC=$(LIBXPM)-$(LIBXPM_VERSION).tar.gz
+LIBXPM_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXPM_SRC)"
+
+$(DN_SRC)/$(LIBXPM_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXPM_URL)
+	touch $@
+$(LIBXPM)-$(LIBXPM_VERSION)/configure: $(DN_SRC)/$(LIBXPM_SRC)
+	tar -xf $(DN_SRC)/$(LIBXPM_SRC)
+	#mv $(LIBXPM)-$(LIBXPM_VERSION) $(LIBXPM)-$(LIBXPM_VERSION)/
+	touch $@
+$(LIBXPM)-$(LIBXPM_VERSION)/Makefile: $(LIBXPM)-$(LIBXPM_VERSION)/configure $(FL_DEP_LIBXPM)
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
+$(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBXPM)-uninstall: $(LIBXPM)-$(LIBXPM_VERSION)/LIBXPM
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXPM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXPM_SRC)
+FL_UNINSTALL+=$(LIBXPM)-uninstall
 
 ########################################
 LIBXT=libXt
+
+# sm ice x11 xproto kbproto)
+FL_DEP_LIBXT= \
+	$(XUTILMACRO)-install \
+	$(LIBX11)-install \
+	$(LIBSM)-install \
+	$(XPROTO)-install \
+	$(KBPROTO)-install \
+	$(NULL)
+
 LIBXT_VERSION=1.1.5
 LIBXT_SRC=$(LIBXT)-$(LIBXT_VERSION).tar.gz
 LIBXT_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXT_SRC)"
@@ -1512,10 +1910,10 @@ $(DN_SRC)/$(LIBXT_SRC): $(DN_SRC)/created
 $(LIBXT)-$(LIBXT_VERSION)/configure: $(DN_SRC)/$(LIBXT_SRC)
 	tar -xf $(DN_SRC)/$(LIBXT_SRC)
 	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure
-	cd $(LIBXT)-$(LIBXT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --sysconfdir=/etc/ --disable-static
+$(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure $(FL_DEP_LIBXT)
+	cd $(LIBXT)-$(LIBXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile $(FL_DEP_LIBXT)
+$(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).a: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
@@ -1536,14 +1934,15 @@ FL_UNINSTALL+=$(LIBXT)-uninstall
 # libXext, X11 miscellaneous micro-utility library
 # http://xorg.freedesktop.org/
 LIBXEXT=libXext
-LIBXEXT_VERSION=1.3.3
-LIBXEXT_SRC=$(LIBXEXT)-$(LIBXEXT_VERSION).tar.gz
-LIBXEXT_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXEXT_SRC)
 
 FL_DEP_LIBXEXT= \
 	$(XEXTPROTO)-install \
 	$(LIBXT)-install \
 	$(NULL)
+
+LIBXEXT_VERSION=1.3.3
+LIBXEXT_SRC=$(LIBXEXT)-$(LIBXEXT_VERSION).tar.gz
+LIBXEXT_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXEXT_SRC)
 
 $(DN_SRC)/$(LIBXEXT_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBXEXT_URL)
@@ -1551,10 +1950,10 @@ $(DN_SRC)/$(LIBXEXT_SRC): $(DN_SRC)/created
 $(LIBXEXT)-$(LIBXEXT_VERSION)/configure: $(DN_SRC)/$(LIBXEXT_SRC)
 	tar -xf $(DN_SRC)/$(LIBXEXT_SRC)
 	touch $@
-$(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile: $(LIBXEXT)-$(LIBXEXT_VERSION)/configure
-	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --sysconfdir=/etc/ --disable-static
+$(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile: $(LIBXEXT)-$(LIBXEXT_VERSION)/configure $(FL_DEP_LIBXEXT)
+	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile $(FL_DEP_LIBXEXT)
+$(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).a: $(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la
@@ -1570,6 +1969,44 @@ $(LIBXEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).a
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXEXT_SRC)
 FL_UNINSTALL+=$(LIBXEXT)-uninstall
+
+########################################
+LIBXSS=libXScrnSaver
+LIBXSSLIB=libXss
+
+#x11 xext xextproto scrnsaverproto
+FL_DEP_LIBXSS= \
+	$(LIBXEXT)-install \
+	$(SCRNSAVERPROTO)-install \
+	$(NULL)
+
+LIBXSS_VERSION=1.2.2
+LIBXSS_SRC=$(LIBXSS)-$(LIBXSS_VERSION).tar.gz
+LIBXSS_URL="http://www.x.org/releases/individual/lib/$(LIBXSS_SRC)"
+
+$(DN_SRC)/$(LIBXSS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXSS_URL)
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/configure: $(DN_SRC)/$(LIBXSS_SRC)
+	tar -xf $(DN_SRC)/$(LIBXSS_SRC)
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/Makefile: $(LIBXSS)-$(LIBXSS_VERSION)/configure $(FL_DEP_LIBXSS)
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
+	    && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)/ --sysconfdir=/etc
+	touch $@
+$(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la: $(LIBXSS)-$(LIBXSS_VERSION)/Makefile
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
+	    && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXSSLIB).a: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBXSS)-uninstall: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
+	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXSS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXSSLIB).a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXSS_SRC)
+FL_UNINSTALL+=$(LIBXSS)-uninstall
 
 ########################################
 # LIBXMU, X11 miscellaneous micro-utility library
@@ -1590,10 +2027,10 @@ $(DN_SRC)/$(LIBXMU_SRC): $(DN_SRC)/created
 $(LIBXMU)-$(LIBXMU_VERSION)/configure: $(DN_SRC)/$(LIBXMU_SRC)
 	tar -xf $(DN_SRC)/$(LIBXMU_SRC)
 	touch $@
-$(LIBXMU)-$(LIBXMU_VERSION)/Makefile: $(LIBXMU)-$(LIBXMU_VERSION)/configure
-	cd $(LIBXMU)-$(LIBXMU_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --sysconfdir=/etc/ --disable-static
+$(LIBXMU)-$(LIBXMU_VERSION)/Makefile: $(LIBXMU)-$(LIBXMU_VERSION)/configure $(FL_DEP_LIBXMU)
+	cd $(LIBXMU)-$(LIBXMU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/Makefile $(FL_DEP_LIBXMU)
+$(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/Makefile
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).a: $(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la
@@ -1629,10 +2066,10 @@ $(DN_SRC)/$(LIBXI_SRC): $(DN_SRC)/created
 $(LIBXI)-$(LIBXI_VERSION)/configure: $(DN_SRC)/$(LIBXI_SRC)
 	tar -xf $(DN_SRC)/$(LIBXI_SRC)
 	touch $@
-$(LIBXI)-$(LIBXI_VERSION)/Makefile: $(LIBXI)-$(LIBXI_VERSION)/configure
-	cd $(LIBXI)-$(LIBXI_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --sysconfdir=/etc/ --disable-static
+$(LIBXI)-$(LIBXI_VERSION)/Makefile: $(LIBXI)-$(LIBXI_VERSION)/configure $(FL_DEP_LIBXI)
+	cd $(LIBXI)-$(LIBXI_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/Makefile $(FL_DEP_LIBXI)
+$(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/Makefile
 	cd $(LIBXI)-$(LIBXI_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).a: $(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la
@@ -1668,10 +2105,10 @@ $(DN_SRC)/$(LIBXV_SRC): $(DN_SRC)/created
 $(LIBXV)-$(LIBXV_VERSION)/configure: $(DN_SRC)/$(LIBXV_SRC)
 	tar -xf $(DN_SRC)/$(LIBXV_SRC)
 	touch $@
-$(LIBXV)-$(LIBXV_VERSION)/Makefile: $(LIBXV)-$(LIBXV_VERSION)/configure
-	cd $(LIBXV)-$(LIBXV_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --sysconfdir=/etc/ --disable-static
+$(LIBXV)-$(LIBXV_VERSION)/Makefile: $(LIBXV)-$(LIBXV_VERSION)/configure $(FL_DEP_LIBXV)
+	cd $(LIBXV)-$(LIBXV_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/Makefile $(FL_DEP_LIBXV)
+$(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/Makefile
 	cd $(LIBXV)-$(LIBXV_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).a: $(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la
@@ -1704,10 +2141,10 @@ $(DN_SRC)/$(GLU_SRC): $(DN_SRC)/created
 $(GLU)-$(GLU_VERSION)/configure: $(DN_SRC)/$(GLU_SRC)
 	tar -xf $(DN_SRC)/$(GLU_SRC)
 	touch $@
-$(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure
-	cd $(GLU)-$(GLU_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --disable-static
+$(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure $(FL_DEP_GLU)
+	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
 	touch $@
-$(GLU)-$(GLU_VERSION)/$(GLU).la: $(GLU)-$(GLU_VERSION)/Makefile $(FL_DEP_GLU)
+$(GLU)-$(GLU_VERSION)/$(GLU).la: $(GLU)-$(GLU_VERSION)/Makefile
 	cd $(GLU)-$(GLU_VERSION)/ \
 	    && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GLU).a: $(GLU)-$(GLU_VERSION)/$(GLU).la
@@ -1721,3 +2158,90 @@ $(GLU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GLU).a
 
 FL_SOURCES+=$(DN_SRC)/$(GLU_SRC)
 FL_UNINSTALL+=$(GLU)-uninstall
+
+
+########################################
+GD=gd
+GD_VERSION=2.1.1
+GD_SRC=$(GD)-$(GD_VERSION).tar.gz
+GD_URL="https://github.com/libgd/libgd/archive/$(GD_SRC)"
+
+LIBGD=libgd
+LIBGD_VERSION=2.1.1
+LIBGD_SRC=$(LIBGD)-$(LIBGD_VERSION).tar.gz
+LIBGD_URL="https://github.com/libgd/libgd/releases/download/gd-$(LIBGD_VERSION)/$(GD_SRC)"
+
+FL_DEP_GD= \
+	$(LUA)-install \
+	$(LIBXPM)-install \
+	$(LIBTIFF)-install \
+	$(LVPX)-install \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GD_URL)
+	touch $@
+$(GD)-$(GD_VERSION)/configure.ac: $(DN_SRC)/$(GD_SRC)
+	tar -xf $(DN_SRC)/$(GD_SRC)
+	rm -rf $(GD)-install $(GD)-$(GD_VERSION)/
+	mv libgd-gd* $(GD)-$(GD_VERSION)/
+	touch $@
+$(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VERSION)/configure.ac $(FL_DEP_GD)
+	cd $(GD)-$(GD_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libgd-libvpx.patch
+	touch $@
+$(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched
+	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./bootstrap.sh
+	touch $@
+$(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/configure
+	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
+$(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
+	cd $(GD)-$(GD_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd: $(GD)-$(GD_VERSION)/gd
+	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(GD)-uninstall: $(GD)-$(GD_VERSION)/gd
+	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GD_SRC)
+FL_UNINSTALL+=$(GD)-uninstall
+
+########################################
+GNUPLOT=gnuplot
+GNUPLOT_VERSION=5.0.1
+GNUPLOT_SRC=$(GNUPLOT)-$(GNUPLOT_VERSION).tar.gz
+GNUPLOT_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$(GNUPLOT_VERSION)/$(GNUPLOT_SRC)
+
+FL_DEP_GNUPLOT= \
+	$(LVPX)-install \
+	$(LIBTIFF)-install \
+	$(GD)-install \
+	$(NULL)
+
+$(DN_SRC)/$(GNUPLOT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GNUPLOT_URL)
+	touch $@
+$(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(DN_SRC)/$(GNUPLOT_SRC)
+	tar -xf $(DN_SRC)/$(GNUPLOT_SRC)
+	touch $@
+
+$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-gnuplot-lua.patch
+	touch $@
+
+$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
+$(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(GNUPLOT)-uninstall: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GNUPLOT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GNUPLOT_SRC)
+FL_UNINSTALL+=$(GNUPLOT)-uninstall

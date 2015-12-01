@@ -4,7 +4,7 @@
 # 1. basic compiler
 #  1) RedHat/CentOS:
 #     yum -y groupinstall "Development Tools"
-#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#     yum -y install gcc-c++ rpm-build rpmdevtools autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk # remove binutils-devel to avoid installing zlib-devel
 #  2) Debian/Ubuntu
 #     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
 
