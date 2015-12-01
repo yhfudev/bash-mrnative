@@ -2042,13 +2042,53 @@ $(LIBMODPLUG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBMODPLUG)
 FL_SOURCES+=$(DN_SRC)/$(LIBMODPLUG_SRC)
 FL_UNINSTALL+=$(LIBMODPLUG)-uninstall
 
+########################################
+# The Oil Runtime Compiler
+ORC=orc
+
+FL_DEP_ORC= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
+ORC_VERSION=0.4.24
+ORC_SRC=$(ORC)-$(ORC_VERSION).tar.xz
+ORC_URL=http://gstreamer.freedesktop.org/data/src/orc/$(ORC_SRC)
+
+$(DN_SRC)/$(ORC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(ORC_URL)
+	touch $@
+
+$(ORC)-$(ORC_VERSION)/configure.ac: $(DN_SRC)/$(ORC_SRC)
+	tar -xf $(DN_SRC)/$(ORC_SRC)
+	touch $@
+$(ORC)-$(ORC_VERSION)/configure: $(ORC)-$(ORC_VERSION)/configure.ac
+	cd $(ORC)-$(ORC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+$(ORC)-$(ORC_VERSION)/Makefile: $(ORC)-$(ORC_VERSION)/configure $(FL_DEP_ORC)
+	cd $(ORC)-$(ORC_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+	touch $@
+$(ORC)-$(ORC_VERSION)/$(ORC).pc: $(ORC)-$(ORC_VERSION)/Makefile
+	cd $(ORC)-$(ORC_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(ORC).pc: $(ORC)-$(ORC_VERSION)/$(ORC).pc
+	cd $(ORC)-$(ORC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+$(ORC)-uninstall: $(ORC)-$(ORC_VERSION)/$(ORC).pc
+	cd $(ORC)-$(ORC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(ORC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(ORC).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(ORC_SRC)
+FL_UNINSTALL+=$(ORC)-uninstall
+
 
 ########################################
 LIBSCHROEDINGER=schroedinger
 
 FL_DEP_LIBSCHROEDINGER= \
 	$(AUTOMAKE)-install \
-	#$(orc)-install \
+	$(ORC)-install \
 	$(NULL)
 
 LIBSCHROEDINGER_VERSION=1.0.11
@@ -2508,6 +2548,51 @@ $(SYSFSUTILS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(SYSFSUTILS)
 FL_SOURCES+=$(DN_SRC)/$(SYSFSUTILS_SRC)
 FL_UNINSTALL+=$(SYSFSUTILS)-uninstall
 
+
+########################################
+
+LIBICONV=libiconv
+
+LIBICONV_VERSION=1.14
+LIBICONV_SRC=$(LIBICONV)-$(LIBICONV_VERSION).tar.gz
+LIBICONV_URL=http://ftp.gnu.org/pub/gnu/$(LIBICONV)/$(LIBICONV_SRC)
+
+$(DN_SRC)/$(LIBICONV_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBICONV_URL)
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/configure.ac: $(DN_SRC)/$(LIBICONV_SRC)
+	tar -xf $(DN_SRC)/$(LIBICONV_SRC)
+	touch $@
+$(LIBICONV)-$(LIBICONV_VERSION)/mypatched: $(DN_PATCH)/pbs-libiconv-stdio.patch $(LIBICONV)-$(LIBICONV_VERSION)/configure.ac $(FL_DEP_LIBICONV)
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && patch -p1 -i $(DN_PATCH)/pbs-libiconv-stdio.patch
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/configure: $(LIBICONV)-$(LIBICONV_VERSION)/mypatched
+	#cd $(LIBICONV)-$(LIBICONV_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/Makefile: $(LIBICONV)-$(LIBICONV_VERSION)/configure
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-nls
+	touch $@
+$(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc: $(LIBICONV)-$(LIBICONV_VERSION)/Makefile
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBICONV).pc: $(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBICONV)-uninstall: $(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBICONV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBICONV).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBICONV_SRC)
+FL_UNINSTALL+=$(LIBICONV)-uninstall
+
+
+
 ########################################
 # Userspace tools and conversion library for Video 4 Linux
 # http://linuxtv.org/
@@ -2515,6 +2600,7 @@ LIBV4L2=v4l-utils
 
 FL_DEP_LIBV4L2= \
 	$(AUTOMAKE)-install \
+	$(LIBICONV)-install \
 	$(LIBJPEG)-install \
 	$(SYSFSUTILS)-install \
 	$(NULL)
@@ -2527,12 +2613,13 @@ $(DN_SRC)/$(LIBV4L2_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBV4L2_URL)
 	touch $@
 
-$(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(DN_SRC)/$(LIBV4L2_SRC)
+$(LIBV4L2)-$(LIBV4L2_VERSION)/configure.ac: $(DN_SRC)/$(LIBV4L2_SRC)
 	tar -xf $(DN_SRC)/$(LIBV4L2_SRC)
+	touch $@
+$(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure.ac $(FL_DEP_LIBV4L2)
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
-
-$(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure $(FL_DEP_LIBV4L2)
+$(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure
 	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc --sbindir=$(PREFIX_CONF)/bin --with-udevdir=$(PREFIX_CONF)/lib/udev --enable-shared --disable-static --enable-pic
 	touch $@
