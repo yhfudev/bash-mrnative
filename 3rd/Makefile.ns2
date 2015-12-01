@@ -31,6 +31,7 @@ TCL_SRC=$(TCL)$(TCL_VERSION)-src.tar.gz
 TCL_URL="http://sourceforge.net/projects/tcl/files/Tcl/$(TCL_VERSION)/$(TCL_SRC)"
 
 FL_DEP_TCL= \
+	$(AUTOMAKE)-install \
 	$(ZLIB)-install \
 	$(NULL)
 
@@ -71,6 +72,7 @@ TK_SRC=$(TK)$(TK_VERSION)-src.tar.gz
 TK_URL="http://sourceforge.net/projects/tcl/files/Tcl/$(TK_VERSION)/$(TK_SRC)"
 
 FL_DEP_TK= \
+	$(AUTOMAKE)-install \
 	$(TCL)-install \
 	$(LIBXSS)-install \
 	$(LIBXFT)-install \
@@ -111,6 +113,7 @@ OTCL_SRC=$(OTCL)-src-$(OTCL_VERSION).tar.gz
 OTCL_URL="http://sourceforge.net/projects/otcl-tclcl/files/OTcl/$(OTCL_VERSION)/$(OTCL_SRC)"
 
 FL_DEP_OTCL= \
+	$(AUTOMAKE)-install \
 	$(TK)-install \
 	$(LIBXT)-install \
 	$(NULL)
@@ -210,6 +213,7 @@ NS2_SRC=$(NS2)-src-$(NS2_VERSION).tar.gz
 NS2_URL=http://downloads.sourceforge.net/sourceforge/nsnam/ns-2/$(NS2_VERSION)/$(NS2_SRC)
 
 FL_DEP_NS2= \
+	$(AUTOMAKE)-install \
     $(TCLCL)-install \
     $(NULL)
 

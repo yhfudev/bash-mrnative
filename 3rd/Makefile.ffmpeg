@@ -192,6 +192,7 @@ LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
 
 #$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libharfbuzz.a
 FL_DEP_LIBASS= \
+	$(AUTOMAKE)-install \
 	$(FREETYPE)-install \
 	$(FONTCONF)-install \
 	$(FRIBIDI)-install \
@@ -223,9 +224,11 @@ $(LIBASS)-$(LIBASS_VERSION)/.git: $(DN_SRC)/$(LIBASS_SRC)
 
 $(LIBASS)-$(LIBASS_VERSION)/configure.ac: $(LIBASS)-$(LIBASS_VERSION)/.git $(FL_DEP_LIBASS)
 	cd $(LIBASS)-$(LIBASS_VERSION)/ && git pull
+	touch $@
 
 $(LIBASS)-$(LIBASS_VERSION)/configure: $(LIBASS)-$(LIBASS_VERSION)/configure.ac
-	cd $(LIBASS)-$(LIBASS_VERSION) && ./autogen.sh
+	cd $(LIBASS)-$(LIBASS_VERSION) && $(ENV_COMPILE) ./autogen.sh
+	touch $@
 $(LIBASS)-$(LIBASS_VERSION)/Makefile: $(LIBASS)-$(LIBASS_VERSION)/configure
 	cd $(LIBASS)-$(LIBASS_VERSION) && FRIBIDI_CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/fribidi" FRIBIDI_LIBS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --enable-static --enable-shared --disable-harfbuzz
 	touch $@
@@ -367,7 +370,7 @@ $(DN_SRC)/$(FAAD_SRC): $(DN_SRC)/created
 	touch $@
 $(FAAD)-$(FAAD_VERSION)/configure: $(DN_SRC)/$(FAAD_SRC)
 	tar -xf $(DN_SRC)/$(FAAD_SRC)
-	cd $(FAAD)-$(FAAD_VERSION)/ && sh ./bootstrap
+	cd $(FAAD)-$(FAAD_VERSION)/ && $(ENV_COMPILE) sh ./bootstrap
 	touch $@
 $(FAAD)-$(FAAD_VERSION)/Makefile: $(FAAD)-$(FAAD_VERSION)/configure
 	cd $(FAAD)-$(FAAD_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-shared
@@ -404,7 +407,7 @@ $(FAAC)-$(FAAC_VERSION)/mypatched: $(DN_PATCH)/pbs-faac-1.28-1.patch $(FAAC)-$(F
 	cd $(FAAC)-$(FAAC_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-faac-1.28-1.patch
 	touch $@
 $(FAAC)-$(FAAC_VERSION)/configure: $(FAAC)-$(FAAC_VERSION)/mypatched
-	cd $(FAAC)-$(FAAC_VERSION)/ && sh ./bootstrap
+	cd $(FAAC)-$(FAAC_VERSION)/ && $(ENV_COMPILE) sh ./bootstrap
 	touch $@
 $(FAAC)-$(FAAC_VERSION)/Makefile: $(FAAC)-$(FAAC_VERSION)/configure
 	cd $(FAAC)-$(FAAC_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-shared
@@ -425,6 +428,11 @@ FL_UNINSTALL_OTHERS+=$(FAAC)-uninstall
 
 ########################################
 FDKAAC=fdk-aac
+
+FL_DEP_FDKAAC= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
 FDKAAC_VERSION=0.1.4
 FDKAAC_SRC=$(FDKAAC)-$(FDKAAC_VERSION).tar.gz
 FDKAAC_URL=http://sourceforge.net/projects/opencore-amr/files/$(FDKAAC)/$(FDKAAC_SRC)
@@ -435,10 +443,10 @@ $(DN_SRC)/$(FDKAAC_SRC): $(DN_SRC)/created
 $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac: $(DN_SRC)/$(FDKAAC_SRC)
 	tar -xf $(DN_SRC)/$(FDKAAC_SRC)
 	touch $@
-$(FDKAAC)-$(FDKAAC_VERSION)/configure: $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac
-	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && ./autogen.sh
+$(FDKAAC)-$(FDKAAC_VERSION)/configure: $(FDKAAC)-$(FDKAAC_VERSION)/configure.ac $(FL_DEP_FDKAAC)
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
 $(FDKAAC)-$(FDKAAC_VERSION)/Makefile: $(FDKAAC)-$(FDKAAC_VERSION)/configure
-	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && autoreconf && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
+	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && $(ENV_COMPILE) autoreconf -if && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la: $(FDKAAC)-$(FDKAAC_VERSION)/Makefile
 	cd $(FDKAAC)-$(FDKAAC_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfdk-aac.a: $(FDKAAC)-$(FDKAAC_VERSION)/libfdk-aac.la
@@ -502,6 +510,7 @@ FL_UNINSTALL+=$(LAME)-uninstall
 XVIDCORE=xvidcore
 
 FL_DEP_XVIDCORE= \
+	$(AUTOMAKE)-install \
 	$(YASM)-install \
 	#$(NASM)-install \
 	$(NULL)
@@ -520,7 +529,7 @@ $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SR
 	tar -xf $(DN_SRC)/$(XVIDCORE_SRC)
 	rm -f $(XVIDCORE)-install
 	mv $(XVIDCORE)* $(XVIDCORE)-$(XVIDCORE_VERSION)
-	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ && autoreconf -if
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure $(FL_DEP_XVIDCORE)
@@ -531,6 +540,7 @@ $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc: $(XVIDCORE)-$(XVID
 	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XVIDCORE).pc: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/$(XVIDCORE).pc
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxvidcore.so*
 	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
@@ -641,7 +651,7 @@ $(DN_SRC)/$(LIBVOAMRWBENC_SRC): $(DN_SRC)/created
 
 $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAMRWBENC_SRC)
 	tar -xf $(DN_SRC)/$(LIBVOAMRWBENC_SRC)
-	#cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && autoreconf -if
+	#cd $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/Makefile: $(LIBVOAMRWBENC)-$(LIBVOAMRWBENC_VERSION)/configure $(FL_DEP_LIBVOAMRWBENC)
@@ -677,7 +687,7 @@ $(DN_SRC)/$(LIBVOAACENC_SRC): $(DN_SRC)/created
 
 $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure: $(DN_SRC)/$(LIBVOAACENC_SRC)
 	tar -xf $(DN_SRC)/$(LIBVOAACENC_SRC)
-	#cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && autoreconf -if
+	#cd $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/Makefile: $(LIBVOAACENC)-$(LIBVOAACENC_VERSION)/configure $(FL_DEP_LIBVOAACENC)
@@ -713,7 +723,7 @@ $(DN_SRC)/$(LIBWAVPACK_SRC): $(DN_SRC)/created
 
 $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure: $(DN_SRC)/$(LIBWAVPACK_SRC)
 	tar -xf $(DN_SRC)/$(LIBWAVPACK_SRC)
-	#cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && autoreconf -if
+	#cd $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/Makefile: $(LIBWAVPACK)-$(LIBWAVPACK_VERSION)/configure $(FL_DEP_LIBWAVPACK)
@@ -903,7 +913,7 @@ $(XAVS)-$(XAVS_VERSION)/configure: $(DN_SRC)/$(XAVS_SRC)
 	rm -rf $(DN_TOP)/$(XAVS)*
 	cp -r $(DN_SRC)/$(XAVS)-$(XAVS_VERSION) $(DN_TOP)/
 #	@find $(DN_TOP)/$(XAVS)-$(XAVS_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
-	#cd $(XAVS)-$(XAVS_VERSION)/ && ./autogen.sh #autoreconf -if
+	#cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -917,7 +927,7 @@ $(DN_SRC)/$(XAVS_SRC): $(DN_SRC)/created
 
 $(XAVS)-$(XAVS_VERSION)/configure: $(DN_SRC)/$(XAVS_SRC)
 	tar -xf $(DN_SRC)/$(XAVS_SRC)
-	#cd $(XAVS)-$(XAVS_VERSION)/ && ./autogen.sh #autoreconf -if
+	#cd $(XAVS)-$(XAVS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1009,24 +1019,28 @@ FL_UNINSTALL+=$(VORBIS)-uninstall
 
 ########################################
 THEORA=libtheora
-THEORA_VERSION=1.2.0alpha1
+#THEORA_VERSION=1.2.0alpha1
+THEORA_VERSION=1.1.1
 THEORA_SRC=$(THEORA)-$(THEORA_VERSION).tar.gz
 THEORA_URL=http://downloads.xiph.org/releases/theora/$(THEORA_SRC)
 
 FL_DEP_THEORA= \
 	$(LIBOGG)-install \
 	$(VORBIS)-install \
+	$(AUTOMAKE)-install \
 	$(NULL)
 
 $(DN_SRC)/$(THEORA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(THEORA_URL)
 	touch $@
-$(THEORA)-$(THEORA_VERSION)/configure: $(DN_SRC)/$(THEORA_SRC)
+$(THEORA)-$(THEORA_VERSION)/configure.ac: $(DN_SRC)/$(THEORA_SRC)
 	tar -xf $(DN_SRC)/$(THEORA_SRC)
 	touch $@
-$(THEORA)-$(THEORA_VERSION)/Makefile: $(THEORA)-$(THEORA_VERSION)/configure $(FL_DEP_THEORA)
-	cd $(THEORA)-$(THEORA_VERSION)/ && $(ENV_COMPILE) ./autogen.sh \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-examples
+$(THEORA)-$(THEORA_VERSION)/configure: $(THEORA)-$(THEORA_VERSION)/configure.ac $(FL_DEP_THEORA)
+	#cd $(THEORA)-$(THEORA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+$(THEORA)-$(THEORA_VERSION)/Makefile: $(THEORA)-$(THEORA_VERSION)/configure
+	cd $(THEORA)-$(THEORA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-examples
 	touch $@
 $(THEORA)-$(THEORA_VERSION)/lib/libtheora.la: $(THEORA)-$(THEORA_VERSION)/Makefile
 	cd $(THEORA)-$(THEORA_VERSION)/ && make $(MAKE_ARG)
@@ -1059,7 +1073,7 @@ $(DN_SRC)/$(LOG4CPP_SRC): $(DN_SRC)/created
 $(LOG4CPP)-$(LOG4CPP_VERSION)/configure: $(DN_SRC)/$(LOG4CPP_SRC)
 	tar -xf $(DN_SRC)/$(LOG4CPP_SRC)
 	mv $(LOG4CPP)* $(LOG4CPP)-$(LOG4CPP_VERSION)
-	#autoreconf -if
+	#$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LOG4CPP)-$(LOG4CPP_VERSION)/Makefile: $(LOG4CPP)-$(LOG4CPP_VERSION)/configure $(FL_DEP_LOG4CPP)
@@ -1087,6 +1101,7 @@ FL_UNINSTALL+=$(LOG4CPP)-uninstall
 FFMS2=ffms2
 
 FL_DEP_FFMS2= \
+	$(AUTOMAKE)-install \
 	$(FFMPEG)-install \
 	$(NULL)
 
@@ -1100,7 +1115,7 @@ $(DN_SRC)/$(FFMS2_SRC): $(DN_SRC)/created
 
 $(FFMS2)-$(FFMS2_VERSION)/configure: $(DN_SRC)/$(FFMS2_SRC)
 	tar -xf $(DN_SRC)/$(FFMS2_SRC)
-	#autoreconf -if
+	#$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(FFMS2)-$(FFMS2_VERSION)/Makefile: $(FFMS2)-$(FFMS2_VERSION)/configure $(FL_DEP_FFMS2)
@@ -1127,9 +1142,9 @@ FL_UNINSTALL+=$(FFMS2)-uninstall
 AVXSYNTH=avxsynth
 
 FL_DEP_AVXSYNTH= \
+	$(AUTOMAKE)-install \
 	$(YASM)-install \
 	$(LOG4CPP)-install \
-	$(AUTOMAKE)-install \
 	#$(FFMS2)-install \
 	$(NULL)
 
@@ -1202,6 +1217,10 @@ FL_UNINSTALL+=$(AVXSYNTH)-uninstall
 # http://gmerlin.sourceforge.net/
 GAVL=gavl
 
+FL_DEP_GAVL= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
 USE_SVN_GAVL=1
 
 ifeq ($(USE_SVN_GAVL),1) # use svn instead
@@ -1217,7 +1236,7 @@ $(GAVL)-$(GAVL_VERSION)/configure: $(DN_SRC)/$(GAVL_SRC)
 	rm -rf $(DN_TOP)/$(GAVL)*
 	cp -r $(DN_SRC)/$(GAVL)-$(GAVL_VERSION) $(DN_TOP)/
 #	@find $(DN_TOP)/$(GAVL)-$(GAVL_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
-	cd $(GAVL)-$(GAVL_VERSION)/ && ./autogen.sh #autoreconf -if
+	cd $(GAVL)-$(GAVL_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1231,7 +1250,7 @@ $(DN_SRC)/$(GAVL_SRC): $(DN_SRC)/created
 
 $(GAVL)-$(GAVL_VERSION)/configure: $(DN_SRC)/$(GAVL_SRC)
 	tar -xf $(DN_SRC)/$(GAVL_SRC)
-	cd $(GAVL)-$(GAVL_VERSION)/ && ./autogen.sh #autoreconf -if
+	cd $(GAVL)-$(GAVL_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1262,6 +1281,7 @@ FL_UNINSTALL+=$(GAVL)-uninstall
 FREI0R=frei0r
 
 FL_DEP_FREI0R= \
+	$(AUTOMAKE)-install \
 	$(GAVL)-install \
 	$(NULL)
 
@@ -1285,7 +1305,7 @@ $(FREI0R)-$(FREI0R_VERSION)/README.md: $(FREI0R)-$(FREI0R_VERSION)/.git $(FL_DEP
 	touch $@
 
 $(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/README.md
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && autoreconf -if
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1299,7 +1319,7 @@ $(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
 
 $(FREI0R)-$(FREI0R_VERSION)/configure: $(DN_SRC)/$(FREI0R_SRC)
 	tar -xf $(DN_SRC)/$(FREI0R_SRC)
-	#cd $(FREI0R)-$(FREI0R_VERSION)/ && autoreconf -if
+	#cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1390,7 +1410,7 @@ $(DN_SRC)/$(FFTW_SRC): $(DN_SRC)/created
 
 $(FFTW)-$(FFTW_VERSION)/configure: $(DN_SRC)/$(FFTW_SRC)
 	tar -xf $(DN_SRC)/$(FFTW_SRC)
-	#cd $(FFTW)-$(FFTW_VERSION)/ && ./autogen.sh #autoreconf -if
+	#cd $(FFTW)-$(FFTW_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(FFTW)-$(FFTW_VERSION)/build-double/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
@@ -1439,7 +1459,8 @@ FL_UNINSTALL+=$(FFTW)-uninstall
 LIBAACPLUS=libaacplus
 
 FL_DEPENDENCES_LIBAACPLUS= \
-    $(FFTW)-install  \
+    $(AUTOMAKE)-install \
+    $(FFTW)-install \
     $(NULL)
 
 LIBAACPLUS_VERSION=2.0.2
@@ -1460,7 +1481,7 @@ $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure: $(DN_SRC)/$(LIBAACPLUS_SRC) $(DN_
 	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
 	    && for i in $$(find . -name 'Makefile.am');do sed 's|INCLUDES|AM_CPPFLAGS|g' -i $$i; done \
 	    && sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' configure.ac \
-	    && ./autogen.sh #autoreconf -if
+	    && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure $(FL_DEP_LIBAACPLUS)
@@ -1468,7 +1489,7 @@ $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static=off
 	touch $@
 $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile
-	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 #$(MAKE_ARG)
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && $(ENV_COMPILE) make -j1 #$(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/aacplus.pc: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/aacplus.pc
 	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -1488,6 +1509,7 @@ FL_UNINSTALL+=$(LIBAACPLUS)-uninstall
 LIBBLURAY=libbluray
 
 FL_DEP_LIBBLURAY= \
+	$(AUTOMAKE)-install \
 	$(LIBXML2)-install \
 	$(FREETYPE)-install \
 	$(FONTCONF)-install \
@@ -1513,7 +1535,7 @@ $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.
 	touch $@
 
 $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md
-	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && autoreconf -if
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1527,7 +1549,7 @@ $(DN_SRC)/$(LIBBLURAY_SRC): $(DN_SRC)/created
 
 $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(DN_SRC)/$(LIBBLURAY_SRC)
 	tar -xf $(DN_SRC)/$(LIBBLURAY_SRC)
-	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && autoreconf -if
+	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1553,67 +1575,6 @@ $(LIBBLURAY)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBBLURAY).la
 
 FL_SOURCES+=$(DN_SRC)/$(LIBBLURAY_SRC)
 FL_UNINSTALL+=$(LIBBLURAY)-uninstall
-
-########################################
-# Bauer stereophonic-to-binaural DSP effect library
-# http://bs2b.sourceforge.net
-LIBBS2B=libbs2b
-
-USE_SVN_LIBBS2B=0
-
-ifeq ($(USE_SVN_LIBBS2B),1) # use svn instead
-LIBBS2B_VERSION=svn
-LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION)/.svn
-LIBBS2B_URL=http://svn.code.sf.net/p/bs2b/code/trunk/libbs2b
-
-$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
-	svn checkout $(LIBBS2B_URL) $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)
-	touch $@
-$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
-#	cd $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)/ && svn update
-	rm -rf $(DN_TOP)/$(LIBBS2B)*
-	cp -r $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION) $(DN_TOP)/
-#	@find $(DN_TOP)/$(LIBBS2B)-$(LIBBS2B_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && ./autogen.sh #autoreconf -if
-	touch $@
-
-else # use released files
-LIBBS2B_VERSION=3.1.0
-LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION).tar.gz
-LIBBS2B_URL=http://sourceforge.net/projects/bs2b/files/libbs2b/$(LIBBS2B_VERSION)/$(LIBBS2B_SRC)
-
-$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBBS2B_URL)
-	touch $@
-
-$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
-	tar -xf $(DN_SRC)/$(LIBBS2B_SRC)
-	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && autoreconf -if
-	touch $@
-endif
-
-#$(LIBBS2B)-$(LIBBS2B_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBS2B-newapi.patch $(LIBBS2B)-$(LIBBS2B_VERSION)/configure
-	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBS2B-newapi.patch
-	#touch $@
-
-$(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile: $(LIBBS2B)-$(LIBBS2B_VERSION)/configure $(FL_DEP_LIBBS2B)
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
-	touch $@
-$(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(LIBBS2B)-uninstall: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
-	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBBS2B)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBBS2B).la
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBBS2B_SRC)
-FL_UNINSTALL+=$(LIBBS2B)-uninstall
 
 ########################################
 LIBID3TAG=libid3tag
@@ -1653,7 +1614,7 @@ $(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure: $(DN_SRC)/$(LIBID3TAG_SRC) $(DN_SRC
         && patch -p1 -i $(DN_SRC)/libid3tag-10_utf16.diff \
         && patch -p1 -i $(DN_SRC)/libid3tag-11_unknown_encoding.diff \
         && patch -Np0 -i $(DN_SRC)/libid3tag-CVE-2008-2109.patch \
-	#cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && autoreconf -if
+	#cd $(LIBID3TAG)-$(LIBID3TAG_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBID3TAG)-$(LIBID3TAG_VERSION)/Makefile: $(LIBID3TAG)-$(LIBID3TAG_VERSION)/configure $(FL_DEP_LIBID3TAG)
@@ -1704,7 +1665,7 @@ $(DN_SRC)/$(IMLIB2_SRC): $(DN_SRC)/created
 $(IMLIB2)-$(IMLIB2_VERSION)/configure: $(DN_SRC)/$(IMLIB2_SRC)
 	tar -xf $(DN_SRC)/$(IMLIB2_SRC)
 	cd $(IMLIB2)-$(IMLIB2_VERSION)/ && sed -i 's/@my_libs@//' imlib2-config.in
-	#cd $(IMLIB2)-$(IMLIB2_VERSION)/ && autoreconf -if
+	#cd $(IMLIB2)-$(IMLIB2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 #$(IMLIB2)-$(IMLIB2_VERSION)/mypatched: $(DN_PATCH)/pbs-IMLIB2-newapi.patch $(IMLIB2)-$(IMLIB2_VERSION)/configure
@@ -1734,6 +1695,7 @@ FL_UNINSTALL+=$(IMLIB2)-uninstall
 LIBCACA=libcaca
 
 FL_DEP_LIBCACA= \
+	$(AUTOMAKE)-install \
 	$(NCURSES)-install \
 	$(IMLIB2)-install \
 	$(NULL)
@@ -1758,7 +1720,7 @@ $(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(LIBCACA)-$(LIBCACA_VERSION)/.git $(FL
 	touch $@
 
 $(LIBCACA)-$(LIBCACA_VERSION)/configure: $(LIBCACA)-$(LIBCACA_VERSION)/README.md
-	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && autoreconf -if
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1772,7 +1734,7 @@ $(DN_SRC)/$(LIBCACA_SRC): $(DN_SRC)/created
 
 $(LIBCACA)-$(LIBCACA_VERSION)/configure: $(DN_SRC)/$(LIBCACA_SRC)
 	tar -xf $(DN_SRC)/$(LIBCACA_SRC)
-	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && autoreconf -if
+	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1813,7 +1775,7 @@ $(DN_SRC)/$(LIBCDDB_SRC): $(DN_SRC)/created
 
 $(LIBCDDB)-$(LIBCDDB_VERSION)/configure: $(DN_SRC)/$(LIBCDDB_SRC)
 	tar -xf $(DN_SRC)/$(LIBCDDB_SRC)
-	#cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && autoreconf -if
+	#cd $(LIBCDDB)-$(LIBCDDB_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 #$(LIBCDDB)-$(LIBCDDB_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBCDDB-newapi.patch $(LIBCDDB)-$(LIBCDDB_VERSION)/configure
@@ -1842,6 +1804,10 @@ FL_UNINSTALL+=$(LIBCDDB)-uninstall
 ########################################
 LIBCDIO=libcdio
 
+FL_DEP_LIBCDIO= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
 $(DN_SRC)/libcdio-0.83-linking.patch: $(DN_SRC)/created
 	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/libcdio-0.83-linking.patch?h=packages/libcdio
 	touch $@
@@ -1869,7 +1835,7 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/.git
 	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
 	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
 	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && ./autogen.sh #&& autoreconf -if
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else
@@ -1888,7 +1854,7 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(DN_SRC)/$(LIBCDIO_SRC)
 	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
 	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
 	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && ./autogen.sh #&& autoreconf -if
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -1935,7 +1901,7 @@ $(DN_SRC)/$(LIBCDIOPARANOIA_SRC): $(DN_SRC)/created
 
 $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
 	tar -xf $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
-	#cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && autoreconf -if
+	#cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure $(FL_DEP_LIBCDIOPARANOIA)
@@ -1962,6 +1928,7 @@ FL_UNINSTALL+=$(LIBCDIOPARANOIA)-uninstall
 LIBCELT=celt
 
 FL_DEP_LIBCELT= \
+	$(AUTOMAKE)-install \
 	$(LIBOGG)-install \
 	$(NULL)
 
@@ -1975,7 +1942,7 @@ $(DN_SRC)/$(LIBCELT_SRC): $(DN_SRC)/created
 
 $(LIBCELT)-$(LIBCELT_VERSION)/configure: $(DN_SRC)/$(LIBCELT_SRC)
 	tar -xf $(DN_SRC)/$(LIBCELT_SRC)
-	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && autoreconf -if
+	cd $(LIBCELT)-$(LIBCELT_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBCELT)-$(LIBCELT_VERSION)/Makefile: $(LIBCELT)-$(LIBCELT_VERSION)/configure $(FL_DEP_LIBCELT)
@@ -2040,7 +2007,7 @@ FL_UNINSTALL+=$(LIBGME)-uninstall
 LIBMODPLUG=libmodplug
 
 FL_DEP_LIBMODPLUG= \
-	#$(xxxxx)-install \
+	$(AUTOMAKE)-install \
 	$(NULL)
 
 LIBMODPLUG_VERSION=0.8.8.5
@@ -2053,7 +2020,7 @@ $(DN_SRC)/$(LIBMODPLUG_SRC): $(DN_SRC)/created
 
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure: $(DN_SRC)/$(LIBMODPLUG_SRC)
 	tar -xf $(DN_SRC)/$(LIBMODPLUG_SRC)
-	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && autoreconf -if
+	cd $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/Makefile: $(LIBMODPLUG)-$(LIBMODPLUG_VERSION)/configure $(FL_DEP_LIBMODPLUG)
@@ -2080,6 +2047,7 @@ FL_UNINSTALL+=$(LIBMODPLUG)-uninstall
 LIBSCHROEDINGER=schroedinger
 
 FL_DEP_LIBSCHROEDINGER= \
+	$(AUTOMAKE)-install \
 	#$(orc)-install \
 	$(NULL)
 
@@ -2093,7 +2061,7 @@ $(DN_SRC)/$(LIBSCHROEDINGER_SRC): $(DN_SRC)/created
 
 $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure: $(DN_SRC)/$(LIBSCHROEDINGER_SRC)
 	tar -xf $(DN_SRC)/$(LIBSCHROEDINGER_SRC)
-	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && autoreconf -if
+	cd $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/Makefile: $(LIBSCHROEDINGER)-$(LIBSCHROEDINGER_VERSION)/configure $(FL_DEP_LIBSCHROEDINGER)
@@ -2121,7 +2089,7 @@ FL_UNINSTALL+=$(LIBSCHROEDINGER)-uninstall
 LIBSHINE=shine
 
 FL_DEP_LIBSHINE= \
-	#$(aaaaa)-install \
+	$(AUTOMAKE)-install \
 	$(NULL)
 
 LIBSHINE_VERSION=3.1.0
@@ -2134,7 +2102,7 @@ $(DN_SRC)/$(LIBSHINE_SRC): $(DN_SRC)/created
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(DN_SRC)/$(LIBSHINE_SRC)
 	tar -xf $(DN_SRC)/$(LIBSHINE_SRC)
-	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && autoreconf -if
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure $(FL_DEP_LIBSHINE)
@@ -2210,6 +2178,7 @@ FL_UNINSTALL+=$(LIBSOXR)-uninstall
 FLAC=flac
 
 FL_DEP_FLAC= \
+	$(AUTOMAKE)-install \
 	$(LIBOGG)-install \
 	$(NULL)
 
@@ -2223,7 +2192,7 @@ $(DN_SRC)/$(FLAC_SRC): $(DN_SRC)/created
 
 $(FLAC)-$(FLAC_VERSION)/configure: $(DN_SRC)/$(FLAC_SRC)
 	tar -xf $(DN_SRC)/$(FLAC_SRC)
-	cd $(FLAC)-$(FLAC_VERSION)/ && autoreconf -if
+	cd $(FLAC)-$(FLAC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(FLAC)-$(FLAC_VERSION)/Makefile: $(FLAC)-$(FLAC_VERSION)/configure $(FL_DEP_FLAC)
@@ -2251,6 +2220,7 @@ FL_UNINSTALL+=$(FLAC)-uninstall
 LIBALSA=alsa-lib
 
 FL_DEP_LIBALSA= \
+	$(AUTOMAKE)-install \
 	$(LIBOGG)-install \
 	$(NULL)
 
@@ -2264,7 +2234,7 @@ $(DN_SRC)/$(LIBALSA_SRC): $(DN_SRC)/created
 
 $(LIBALSA)-$(LIBALSA_VERSION)/configure: $(DN_SRC)/$(LIBALSA_SRC)
 	tar -xf $(DN_SRC)/$(LIBALSA_SRC)
-	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && autoreconf -if
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBALSA)-$(LIBALSA_VERSION)/Makefile: $(LIBALSA)-$(LIBALSA_VERSION)/configure $(FL_DEP_LIBALSA)
@@ -2291,6 +2261,7 @@ FL_UNINSTALL+=$(LIBALSA)-uninstall
 LIBSNDFILE=libsndfile
 
 FL_DEP_LIBSNDFILE= \
+	$(AUTOMAKE)-install \
 	$(LIBALSA)-install \
 	$(FLAC)-install \
 	$(VORBIS)-install \
@@ -2306,7 +2277,7 @@ $(DN_SRC)/$(LIBSNDFILE_SRC): $(DN_SRC)/created
 
 $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/configure: $(DN_SRC)/$(LIBSNDFILE_SRC)
 	tar -xf $(DN_SRC)/$(LIBSNDFILE_SRC)
-	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && autoreconf -if \
+	cd $(LIBSNDFILE)-$(LIBSNDFILE_VERSION)/ && $(ENV_COMPILE) autoreconf -if \
 	    && sed -i 's|#!/usr/bin/python|#!/usr/bin/python2|' \
             src/binheader_writef_check.py \
             src/create_symbols_file.py \
@@ -2332,12 +2303,12 @@ $(LIBSNDFILE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBSNDFILE)
 FL_SOURCES+=$(DN_SRC)/$(LIBSNDFILE_SRC)
 FL_UNINSTALL+=$(LIBSNDFILE)-uninstall
 
-
 ########################################
 # An optimized MPEG Audio Layer 2 (MP2) encoder
 LIBTWOLAME=twolame
 
 FL_DEP_LIBTWOLAME= \
+	$(AUTOMAKE)-install \
 	$(LIBSNDFILE)-install \
 	$(NULL)
 
@@ -2351,7 +2322,7 @@ $(DN_SRC)/$(LIBTWOLAME_SRC): $(DN_SRC)/created
 
 $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure: $(DN_SRC)/$(LIBTWOLAME_SRC)
 	tar -xf $(DN_SRC)/$(LIBTWOLAME_SRC)
-	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && autoreconf -if
+	cd $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/Makefile: $(LIBTWOLAME)-$(LIBTWOLAME_VERSION)/configure $(FL_DEP_LIBTWOLAME)
@@ -2373,6 +2344,72 @@ $(LIBTWOLAME)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTWOLAME)
 FL_SOURCES+=$(DN_SRC)/$(LIBTWOLAME_SRC)
 FL_UNINSTALL+=$(LIBTWOLAME)-uninstall
 
+
+########################################
+# Bauer stereophonic-to-binaural DSP effect library
+# http://bs2b.sourceforge.net
+LIBBS2B=libbs2b
+
+FL_DEP_LIBBS2B= \
+	$(LIBSNDFILE)-install \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
+USE_SVN_LIBBS2B=0
+
+ifeq ($(USE_SVN_LIBBS2B),1) # use svn instead
+LIBBS2B_VERSION=svn
+LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION)/.svn
+LIBBS2B_URL=http://svn.code.sf.net/p/bs2b/code/trunk/libbs2b
+
+$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
+	svn checkout $(LIBBS2B_URL) $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)
+	touch $@
+$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
+#	cd $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(LIBBS2B)*
+	cp -r $(DN_SRC)/$(LIBBS2B)-$(LIBBS2B_VERSION) $(DN_TOP)/
+#	@find $(DN_TOP)/$(LIBBS2B)-$(LIBBS2B_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+else # use released files
+LIBBS2B_VERSION=3.1.0
+LIBBS2B_SRC=$(LIBBS2B)-$(LIBBS2B_VERSION).tar.gz
+LIBBS2B_URL=http://sourceforge.net/projects/bs2b/files/libbs2b/$(LIBBS2B_VERSION)/$(LIBBS2B_SRC)
+
+$(DN_SRC)/$(LIBBS2B_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBBS2B_URL)
+	touch $@
+
+$(LIBBS2B)-$(LIBBS2B_VERSION)/configure: $(DN_SRC)/$(LIBBS2B_SRC)
+	tar -xf $(DN_SRC)/$(LIBBS2B_SRC)
+	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+endif
+
+#$(LIBBS2B)-$(LIBBS2B_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBS2B-newapi.patch $(LIBBS2B)-$(LIBBS2B_VERSION)/configure
+	#cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBS2B-newapi.patch
+	#touch $@
+
+$(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile: $(LIBBS2B)-$(LIBBS2B_VERSION)/configure $(FL_DEP_LIBBS2B)
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/Makefile
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBBS2B).la: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBBS2B)-uninstall: $(LIBBS2B)-$(LIBBS2B_VERSION)/$(LIBBS2B).la
+	cd $(LIBBS2B)-$(LIBBS2B_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBBS2B)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBBS2B).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBBS2B_SRC)
+FL_UNINSTALL+=$(LIBBS2B)-uninstall
 
 ########################################
 LIBUTVIDEO=libutvideo
@@ -2412,7 +2449,7 @@ $(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
 
 $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
 	tar -xf $(DN_SRC)/$(LIBUTVIDEO_SRC)
-	#cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && autoreconf -if
+	#cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
@@ -2449,7 +2486,7 @@ $(DN_SRC)/$(SYSFSUTILS_SRC): $(DN_SRC)/created
 
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure: $(DN_SRC)/$(SYSFSUTILS_SRC)
 	tar -xf $(DN_SRC)/$(SYSFSUTILS_SRC)
-	#cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && autoreconf -if
+	#cd $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/Makefile: $(SYSFSUTILS)-$(SYSFSUTILS_VERSION)/configure $(FL_DEP_SYSFSUTILS)
@@ -2477,6 +2514,7 @@ FL_UNINSTALL+=$(SYSFSUTILS)-uninstall
 LIBV4L2=v4l-utils
 
 FL_DEP_LIBV4L2= \
+	$(AUTOMAKE)-install \
 	$(LIBJPEG)-install \
 	$(SYSFSUTILS)-install \
 	$(NULL)
@@ -2491,7 +2529,7 @@ $(DN_SRC)/$(LIBV4L2_SRC): $(DN_SRC)/created
 
 $(LIBV4L2)-$(LIBV4L2_VERSION)/configure: $(DN_SRC)/$(LIBV4L2_SRC)
 	tar -xf $(DN_SRC)/$(LIBV4L2_SRC)
-	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && autoreconf -if
+	cd $(LIBV4L2)-$(LIBV4L2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBV4L2)-$(LIBV4L2_VERSION)/Makefile: $(LIBV4L2)-$(LIBV4L2_VERSION)/configure $(FL_DEP_LIBV4L2)
@@ -2640,6 +2678,7 @@ FL_UNINSTALL+=$(LIBRTMP)-uninstall
 LIBZVBI=zvbi
 
 FL_DEP_LIBZVBI= \
+	$(AUTOMAKE)-install \
 	$(LIBPNG)-install \
 	#$(libx11)-install \
 	$(NULL)
@@ -2654,7 +2693,7 @@ $(DN_SRC)/$(LIBZVBI_SRC): $(DN_SRC)/created
 
 $(LIBZVBI)-$(LIBZVBI_VERSION)/configure: $(DN_SRC)/$(LIBZVBI_SRC)
 	tar -xf $(DN_SRC)/$(LIBZVBI_SRC)
-	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && autoreconf -if
+	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure $(FL_DEP_LIBZVBI)
@@ -2681,6 +2720,7 @@ FL_UNINSTALL+=$(LIBZVBI)-uninstall
 LIBVDPAU=libvdpau
 
 FL_DEP_LIBVDPAU= \
+	$(AUTOMAKE)-install \
 	$(LIBXEXT)-install \
 	$(NULL)
 
@@ -2694,7 +2734,7 @@ $(DN_SRC)/$(LIBVDPAU_SRC): $(DN_SRC)/created
 
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(DN_SRC)/$(LIBVDPAU_SRC)
 	tar -xf $(DN_SRC)/$(LIBVDPAU_SRC)
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && autoreconf -if
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure $(FL_DEP_LIBVDPAU)
@@ -2719,6 +2759,10 @@ FL_UNINSTALL+=$(LIBVDPAU)-uninstall
 ########################################
 LIBSODIUM=libsodium
 
+FL_DEP_LIBSODIUM= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
 LIBSODIUM_VERSION=1.0.6
 LIBSODIUM_SRC=$(LIBSODIUM)-$(LIBSODIUM_VERSION).tar.gz
 LIBSODIUM_URL=http://download.dnscrypt.org/$(LIBSODIUM)/releases/$(LIBSODIUM_SRC)
@@ -2729,7 +2773,7 @@ $(DN_SRC)/$(LIBSODIUM_SRC): $(DN_SRC)/created
 
 $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure: $(DN_SRC)/$(LIBSODIUM_SRC)
 	tar -xf $(DN_SRC)/$(LIBSODIUM_SRC)
-	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && autoreconf -if
+	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure $(FL_DEP_LIBSODIUM)
@@ -2755,6 +2799,7 @@ FL_UNINSTALL+=$(LIBSODIUM)-uninstall
 LIBZMQ=zeromq
 
 FL_DEP_LIBZMQ= \
+	$(AUTOMAKE)-install \
 	$(LIBPGM)-install \
 	$(LIBSODIUM)-install \
 	#$(util-linux)-install \
@@ -2770,7 +2815,7 @@ $(DN_SRC)/$(LIBZMQ_SRC): $(DN_SRC)/created
 
 $(LIBZMQ)-$(LIBZMQ_VERSION)/configure: $(DN_SRC)/$(LIBZMQ_SRC)
 	tar -xf $(DN_SRC)/$(LIBZMQ_SRC)
-	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && autoreconf -if \
+	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && $(ENV_COMPILE) autoreconf -if \
 	    && sed -i 's/libzmq_werror="yes"/libzmq_werror="no"/' configure # for libsodium
 	touch $@
 
@@ -2799,6 +2844,7 @@ FL_UNINSTALL+=$(LIBZMQ)-uninstall
 AUDIOFILE=audiofile
 
 FL_DEP_AUDIOFILE= \
+	$(AUTOMAKE)-install \
 	$(LIBALSA)-install \
 	$(FLAC)-install \
 	$(NULL)
@@ -2813,7 +2859,7 @@ $(DN_SRC)/$(AUDIOFILE_SRC): $(DN_SRC)/created
 
 $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure: $(DN_SRC)/$(AUDIOFILE_SRC)
 	tar -xf $(DN_SRC)/$(AUDIOFILE_SRC)
-	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && autoreconf -if
+	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure $(FL_DEP_AUDIOFILE)
@@ -2840,6 +2886,7 @@ FL_UNINSTALL+=$(AUDIOFILE)-uninstall
 LIBILBC=libilbc
 
 FL_DEP_LIBILBC= \
+	$(AUTOMAKE)-install \
 	$(AUDIOFILE)-install \
 	$(NULL)
 
@@ -2857,7 +2904,7 @@ $(LIBILBC_SRC): $(DN_SRC)/$(LIBILBC_SRC)
 	touch $@
 
 $(LIBILBC)-$(LIBILBC_VERSION)/configure: $(LIBILBC_SRC)
-	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && autoreconf -if
+	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBILBC)-$(LIBILBC_VERSION)/Makefile: $(LIBILBC)-$(LIBILBC_VERSION)/configure $(FL_DEP_LIBILBC)
@@ -2884,6 +2931,7 @@ FL_UNINSTALL+=$(LIBILBC)-uninstall
 LIBFLITE=flite
 
 FL_DEP_LIBFLITE= \
+	$(AUTOMAKE)-install \
 	#$(LIBALSA)-install \
 	$(NULL)
 
@@ -2899,7 +2947,7 @@ $(LIBFLITE)-$(LIBFLITE_VERSION)/configure: $(DN_SRC)/$(LIBFLITE_SRC)
 	tar -xf $(DN_SRC)/$(LIBFLITE_SRC)
 	rm -f $(LIBFLITE)-install
 	mv $(LIBFLITE)* $(LIBFLITE)-$(LIBFLITE_VERSION)
-	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && autoreconf -if
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure $(FL_DEP_LIBFLITE)
@@ -3972,7 +4020,10 @@ FL_UNINSTALL+=$(OPENCV)-uninstall
 ########################################
 MEDIAMETRICS=mediametrics
 
-FL_DEP_MEDIAMETRICS=$(OPENCV)-install
+FL_DEP_MEDIAMETRICS= \
+	$(AUTOMAKE)-install \
+	$(OPENCV)-install \
+	$(NULL)
 
 ####################
 MEDIAMETRICS_VERSION=0.2.0
@@ -3988,7 +4039,7 @@ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS_S
 	tar -xf $(DN_SRC)/$(MEDIAMETRICS_SRC)
 	touch $@
 #$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
-#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
+#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
 #$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure $(FL_DEP_MEDIAMETRICS)
 #	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 
@@ -4009,7 +4060,7 @@ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS)-
 	if [ -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
 	touch $@
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && ./autogen.sh
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) $(MEDIAMETRICS_GPU_SUPPORT_CONF)
 ####################
