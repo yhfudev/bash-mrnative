@@ -76,9 +76,9 @@ $(ZLIB)-$(ZLIB_VERSION)/gzlib.c: $(DN_SRC)/$(ZLIB_SRC)
 	tar -xf $(DN_SRC)/$(ZLIB_SRC)
 	touch $@
 $(ZLIB)-$(ZLIB_VERSION)/zconf.h: $(ZLIB)-$(ZLIB_VERSION)/gzlib.c
-	cd $(ZLIB)-$(ZLIB_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(ZLIB)-$(ZLIB_VERSION)/libz.a: $(ZLIB)-$(ZLIB_VERSION)/zconf.h
-	cd $(ZLIB)-$(ZLIB_VERSION)/ && make $(MAKE_ARG)
+	cd $(ZLIB)-$(ZLIB_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libz.a: $(ZLIB)-$(ZLIB_VERSION)/libz.a
 	cd $(ZLIB)-$(ZLIB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -106,7 +106,7 @@ $(BZIP2)-$(BZIP2_VERSION)/Makefile: $(DN_SRC)/$(BZIP2_SRC)
 	sed -i -e 's|ln -s -f $$(PREFIX)/bin/|ln -s -f |' $@
 	touch $@
 $(BZIP2)-$(BZIP2_VERSION)/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/Makefile
-	cd $(BZIP2)-$(BZIP2_VERSION)/ && make $(MAKE_ARG) CC="gcc -fPIC"
+	cd $(BZIP2)-$(BZIP2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) CC="gcc -fPIC"
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a: $(BZIP2)-$(BZIP2_VERSION)/libbz2.a
 	cd $(BZIP2)-$(BZIP2_VERSION)/ && make -j1 PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ install
 
@@ -131,9 +131,9 @@ $(EXPAT)-$(EXPAT_VERSION)/README: $(DN_SRC)/$(EXPAT_SRC)
 	tar -xf $(DN_SRC)/$(EXPAT_SRC)
 	touch $@
 $(EXPAT)-$(EXPAT_VERSION)/Makefile: $(EXPAT)-$(EXPAT_VERSION)/README
-	cd $(EXPAT)-$(EXPAT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(EXPAT)-$(EXPAT_VERSION)/libexpat.la: $(EXPAT)-$(EXPAT_VERSION)/Makefile
-	cd $(EXPAT)-$(EXPAT_VERSION)/ && make $(MAKE_ARG)
+	cd $(EXPAT)-$(EXPAT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libexpat.a: $(EXPAT)-$(EXPAT_VERSION)/libexpat.la
 	cd $(EXPAT)-$(EXPAT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -203,9 +203,9 @@ $(YASM)-$(YASM_VERSION)/configure: $(DN_SRC)/$(YASM_SRC)
 	tar -xf $(DN_SRC)/$(YASM_SRC)
 	touch $@
 $(YASM)-$(YASM_VERSION)/Makefile: $(YASM)-$(YASM_VERSION)/configure
-	cd $(YASM)-$(YASM_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(YASM)-$(YASM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(YASM)-$(YASM_VERSION)/yasm: $(YASM)-$(YASM_VERSION)/Makefile
-	cd $(YASM)-$(YASM_VERSION)/ && make $(MAKE_ARG)
+	cd $(YASM)-$(YASM_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/yasm: $(YASM)-$(YASM_VERSION)/yasm
 	cd $(YASM)-$(YASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -232,9 +232,9 @@ $(NASM)-$(NASM_VERSION)/configure: $(DN_SRC)/$(NASM_SRC)
 	tar -xf $(DN_SRC)/$(NASM_SRC)
 	touch $@
 $(NASM)-$(NASM_VERSION)/Makefile: $(NASM)-$(NASM_VERSION)/configure
-	cd $(NASM)-$(NASM_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(NASM)-$(NASM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(NASM)-$(NASM_VERSION)/nasm: $(NASM)-$(NASM_VERSION)/Makefile
-	cd $(NASM)-$(NASM_VERSION)/ && make $(MAKE_ARG)
+	cd $(NASM)-$(NASM_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nasm: $(NASM)-$(NASM_VERSION)/nasm
 	cd $(NASM)-$(NASM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) INSTALLROOT=$(PREFIX_DEST) install install_rdf
 
@@ -273,7 +273,7 @@ $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile: $(LIBTOOL)-$(LIBTOOL_VERSION)/configure 
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) lt_cv_sys_lib_dlsearch_path_spec="$(PREFIX_CONF)/lib $(PREFIX_CONF)/lib32"
 	touch $@
 $(LIBTOOL)-$(LIBTOOL_VERSION)/libtoolize: $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile
-	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/libtoolize: $(LIBTOOL)-$(LIBTOOL_VERSION)/libtoolize
 	cd $(LIBTOOL)-$(LIBTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -313,7 +313,7 @@ $(PKGCONFIG)-$(PKGCONFIG_VERSION)/Makefile: $(PKGCONFIG)-$(PKGCONFIG_VERSION)/co
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-internal-glib
 	touch $@
 $(PKGCONFIG)-$(PKGCONFIG_VERSION)/$(PKGCONFIG): $(PKGCONFIG)-$(PKGCONFIG_VERSION)/Makefile
-	cd $(PKGCONFIG)-$(PKGCONFIG_VERSION)/ && make $(MAKE_ARG)
+	cd $(PKGCONFIG)-$(PKGCONFIG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/$(PKGCONFIG): $(PKGCONFIG)-$(PKGCONFIG_VERSION)/$(PKGCONFIG)
 	cd $(PKGCONFIG)-$(PKGCONFIG_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -354,7 +354,7 @@ $(M4)-$(M4_VERSION)/Makefile: $(M4)-$(M4_VERSION)/configure $(FL_DEP_M4)
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(M4)-$(M4_VERSION)/src/m4: $(M4)-$(M4_VERSION)/Makefile
-	cd $(M4)-$(M4_VERSION)/ && make $(MAKE_ARG)
+	cd $(M4)-$(M4_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/m4: $(M4)-$(M4_VERSION)/src/m4
 	cd $(M4)-$(M4_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -396,7 +396,7 @@ $(AUTOCONF)-$(AUTOCONF_VERSION)/Makefile: $(AUTOCONF)-$(AUTOCONF_VERSION)/config
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(AUTOCONF)-$(AUTOCONF_VERSION)/bin/autoconf: $(AUTOCONF)-$(AUTOCONF_VERSION)/Makefile
-	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && make $(MAKE_ARG)
+	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/autoconf: $(AUTOCONF)-$(AUTOCONF_VERSION)/bin/autoconf
 	cd $(AUTOCONF)-$(AUTOCONF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -438,7 +438,7 @@ $(AUTOMAKE)-$(AUTOMAKE_VERSION)/Makefile: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/config
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-avresample --enable-shared --disable-static
 	touch $@
 $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/Makefile
-	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make $(MAKE_ARG)
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
 	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -480,7 +480,7 @@ $(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/configure 
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
 	touch $@
 $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/Makefile
-	cd $(NCURSES)-$(NCURSES_VERSION)/ && make $(MAKE_ARG)
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) PKG_CONFIG_LIBDIR=$(PREFIX_CONF)/lib/pkgconfig install
@@ -518,7 +518,7 @@ $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile: $(LIBPGM)-$(LIBPGM_VERSION)/op
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile
-	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make $(MAKE_ARG)
+	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc
 	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -556,7 +556,7 @@ $(LIBPNG)-$(LIBPNG_VERSION)/configure: $(DN_SRC)/$(LIBPNG_SRC)
 $(LIBPNG)-$(LIBPNG_VERSION)/Makefile: $(LIBPNG)-$(LIBPNG_VERSION)/configure $(FL_DEP_LIBPNG)
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/Makefile
-	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBPNG).pc: $(LIBPNG)-$(LIBPNG_VERSION)/$(LIBPNG).pc
 	cd $(LIBPNG)-$(LIBPNG_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -583,9 +583,9 @@ $(LIBTIFF)-$(LIBTIFF_VERSION)/configure: $(DN_SRC)/$(LIBTIFF_SRC)
 	#mv tiff-$(LIBTIFF_VERSION) $(LIBTIFF)-$(LIBTIFF_VERSION)/
 	touch $@
 $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile: $(LIBTIFF)-$(LIBTIFF_VERSION)/configure $(FL_DEP_LIBTIFF)
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
+	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff-4.pc: $(LIBTIFF)-$(LIBTIFF_VERSION)/Makefile
-	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libtiff-4.pc: $(LIBTIFF)-$(LIBTIFF_VERSION)/libtiff-4.pc
 	cd $(LIBTIFF)-$(LIBTIFF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -667,7 +667,7 @@ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile: $(LIBOPENJPEG)-$(LIBOPENJP
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
 $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile
-	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make $(MAKE_ARG)
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc
 	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make install
@@ -703,7 +703,7 @@ $(GIFLIB)-$(GIFLIB_VERSION)/Makefile: $(GIFLIB)-$(GIFLIB_VERSION)/configure $(FL
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la: $(GIFLIB)-$(GIFLIB_VERSION)/Makefile
-	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make $(MAKE_ARG)
+	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GIFLIB).la: $(GIFLIB)-$(GIFLIB_VERSION)/$(GIFLIB).la
 	cd $(GIFLIB)-$(GIFLIB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -752,7 +752,7 @@ $(LIBWEBP)-$(LIBWEBP_VERSION)/Makefile: $(LIBWEBP)-$(LIBWEBP_VERSION)/configure 
             --disable-static
 	touch $@
 $(LIBWEBP)-$(LIBWEBP_VERSION)/$(LIBWEBP).pc: $(LIBWEBP)-$(LIBWEBP_VERSION)/Makefile
-	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBWEBP).pc: $(LIBWEBP)-$(LIBWEBP_VERSION)/$(LIBWEBP).pc
 	cd $(LIBWEBP)-$(LIBWEBP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -787,14 +787,14 @@ $(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt: $(DN_SRC)/$(FREETYPE_SRC)
 	touch $@
 $(FREETYPE)-$(FREETYPE_VERSION)/config.mk: $(FREETYPE)-$(FREETYPE_VERSION)/CMakeLists.txt
 	cd $(FREETYPE)-$(FREETYPE_VERSION)/ \
-	&& ./configure --prefix=$(PREFIX_CONF) \
+	&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
 		--with-sysroot=$(PREFIX_CONF) \
 		--enable-static=yes \
 		--enable-shared=yes \
 		--with-harfbuzz=no \
 		$(FREETYPE_SUPPORT_BZ2_CONF)
 $(FREETYPE)-$(FREETYPE_VERSION)/objs/libfreetype.la: $(FREETYPE)-$(FREETYPE_VERSION)/config.mk
-	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && make $(MAKE_ARG)
+	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfreetype.a: $(FREETYPE)-$(FREETYPE_VERSION)/objs/libfreetype.la
 	cd $(FREETYPE)-$(FREETYPE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	sed -i 's/-L$${libdir} -lfreetype[^l]*$$/-L$${libdir} -lfreetype -lxml2 -lexpat -lpng $(FREETYPE_SUPPORT_BZ2_PCLIB)/' "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/freetype2.pc"
@@ -822,9 +822,9 @@ $(LIBXML2)-$(LIBXML2_VERSION)/configure: $(DN_SRC)/$(LIBXML2_SRC)
 	tar -xf $(DN_SRC)/$(LIBXML2_SRC)
 	touch $@
 $(LIBXML2)-$(LIBXML2_VERSION)/Makefile: $(LIBXML2)-$(LIBXML2_VERSION)/configure
-	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
 $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la: $(LIBXML2)-$(LIBXML2_VERSION)/Makefile
-	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxml2.a: $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la
 	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -854,9 +854,9 @@ $(LIBXSLT)-$(LIBXSLT_VERSION)/configure: $(DN_SRC)/$(LIBXSLT_SRC)
 	tar -xf $(DN_SRC)/$(LIBXSLT_SRC)
 	touch $@
 $(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile: $(LIBXSLT)-$(LIBXSLT_VERSION)/configure
-	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --with-libxml-prefix=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --with-libxml-prefix=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
 $(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc: $(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile
-	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBXSLT).pc: $(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc
 	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -888,9 +888,9 @@ $(FONTCONF)-$(FONTCONF_VERSION)/configure: $(DN_SRC)/$(FONTCONF_SRC)
 	tar -xf $(DN_SRC)/$(FONTCONF_SRC)
 	touch $@
 $(FONTCONF)-$(FONTCONF_VERSION)/Makefile: $(FONTCONF)-$(FONTCONF_VERSION)/configure $(FL_DEP_FONTCONF)
-	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CPPFLAGS+="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype`" ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CPPFLAGS+="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype`" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
 $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la: $(FONTCONF)-$(FONTCONF_VERSION)/Makefile
-	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make $(MAKE_ARG)
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfontconfig.a: $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la
 	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	sed -i 's/-L$${libdir} -lfontconfig[^l]*$$/-L$${libdir} -lfontconfig -lfreetype -lxml2 -lexpat -lpng/' "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/fontconfig.pc"
@@ -920,7 +920,7 @@ $(GPERF)-$(GPERF_VERSION)/configure: $(DN_SRC)/$(GPERF_SRC)
 $(GPERF)-$(GPERF_VERSION)/Makefile: $(GPERF)-$(GPERF_VERSION)/configure $(FL_DEP_GPERF)
 	cd $(GPERF)-$(GPERF_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(GPERF)-$(GPERF_VERSION)/src/gperf: $(GPERF)-$(GPERF_VERSION)/Makefile
-	cd $(GPERF)-$(GPERF_VERSION)/ && make $(MAKE_ARG)
+	cd $(GPERF)-$(GPERF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gperf: $(GPERF)-$(GPERF_VERSION)/src/gperf
 	cd $(GPERF)-$(GPERF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -963,7 +963,7 @@ $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile: $(GOBJINTROSPEC)-$(GOBJINTRO
 	touch $@
 
 $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make $(MAKE_ARG)
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
 	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -974,6 +974,49 @@ $(GOBJINTROSPEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTR
 
 FL_SOURCES+=$(DN_SRC)/$(GOBJINTROSPEC_SRC)
 FL_UNINSTALL+=$(GOBJINTROSPEC)-uninstall
+
+########################################
+
+LIBICONV=libiconv
+
+LIBICONV_VERSION=1.14
+LIBICONV_SRC=$(LIBICONV)-$(LIBICONV_VERSION).tar.gz
+LIBICONV_URL=http://ftp.gnu.org/pub/gnu/$(LIBICONV)/$(LIBICONV_SRC)
+
+$(DN_SRC)/$(LIBICONV_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBICONV_URL)
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/configure.ac: $(DN_SRC)/$(LIBICONV_SRC)
+	tar -xf $(DN_SRC)/$(LIBICONV_SRC)
+	touch $@
+$(LIBICONV)-$(LIBICONV_VERSION)/mypatched: $(DN_PATCH)/pbs-libiconv-stdio.patch $(LIBICONV)-$(LIBICONV_VERSION)/configure.ac $(FL_DEP_LIBICONV)
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && patch -p1 -i $(DN_PATCH)/pbs-libiconv-stdio.patch
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/configure: $(LIBICONV)-$(LIBICONV_VERSION)/mypatched
+	#cd $(LIBICONV)-$(LIBICONV_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBICONV)-$(LIBICONV_VERSION)/Makefile: $(LIBICONV)-$(LIBICONV_VERSION)/configure
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-nls
+	touch $@
+$(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc: $(LIBICONV)-$(LIBICONV_VERSION)/Makefile
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBICONV).pc: $(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBICONV)-uninstall: $(LIBICONV)-$(LIBICONV_VERSION)/$(LIBICONV).pc
+	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBICONV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBICONV).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBICONV_SRC)
+FL_UNINSTALL+=$(LIBICONV)-uninstall
+
 
 ########################################
 GETTEXT=gettext
@@ -1004,7 +1047,7 @@ $(GETTEXT)-$(GETTEXT_VERSION)/Makefile: $(GETTEXT)-$(GETTEXT_VERSION)/configure
 	touch $@
 
 $(GETTEXT)-$(GETTEXT_VERSION)/$(GETTEXT)-1.0.pc: $(GETTEXT)-$(GETTEXT_VERSION)/Makefile
-	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && make $(MAKE_ARG)
+	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GETTEXT)-1.0.pc: $(GETTEXT)-$(GETTEXT_VERSION)/$(GETTEXT)-1.0.pc
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1061,7 +1104,7 @@ $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile: $(UTILLINUX)-$(UTILLINUX_VERSION)/co
 	touch $@
 
 $(UTILLINUX)-$(UTILLINUX_VERSION)/blkid.pc: $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile
-	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && make $(MAKE_ARG)
+	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/blkid.pc: $(UTILLINUX)-$(UTILLINUX_VERSION)/blkid.pc
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install install-usrlib_execLTLIBRARIES
 
@@ -1109,7 +1152,7 @@ $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure 
 	touch $@
 
 $(LIBKMOD)-$(LIBKMOD_VERSION)/$(LIBKMOD).pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile
-	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBKMOD).pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/$(LIBKMOD).pc
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1141,7 +1184,7 @@ $(LIBUSB)-$(LIBUSB_VERSION)/configure: $(DN_SRC)/$(LIBUSB_SRC)
 $(LIBUSB)-$(LIBUSB_VERSION)/Makefile: $(LIBUSB)-$(LIBUSB_VERSION)/configure $(FL_DEP_LIBUSB)
 	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make distclean; $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared #--disable-shared
 $(LIBUSB)-$(LIBUSB_VERSION)/libusb-1.0.pc: $(LIBUSB)-$(LIBUSB_VERSION)/Makefile
-	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libusb-1.0.pc: $(LIBUSB)-$(LIBUSB_VERSION)/libusb-1.0.pc
 	cd $(LIBUSB)-$(LIBUSB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1187,7 +1230,7 @@ $(USBUTILS)-$(USBUTILS_VERSION)/Makefile: $(USBUTILS)-$(USBUTILS_VERSION)/config
 	touch $@
 
 $(USBUTILS)-$(USBUTILS_VERSION)/$(USBUTILS).pc: $(USBUTILS)-$(USBUTILS_VERSION)/Makefile
-	cd $(USBUTILS)-$(USBUTILS_VERSION)/ && make $(MAKE_ARG)
+	cd $(USBUTILS)-$(USBUTILS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(USBUTILS).pc: $(USBUTILS)-$(USBUTILS_VERSION)/$(USBUTILS).pc
 	cd $(USBUTILS)-$(USBUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1241,7 +1284,7 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/configure 
 	touch $@
 
 $(LIBUDEV)-$(LIBUDEV_VERSION)/src/udev.pc: $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/udev.pc: $(LIBUDEV)-$(LIBUDEV_VERSION)/src/udev.pc
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1269,7 +1312,7 @@ $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure: $(DN_SRC)/$(LIBRAW1394_SRC)
 $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure $(FL_DEP_LIBRAW1394)
 	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(LIBRAW1394)-$(LIBRAW1394_VERSION)/libraw1394.pc: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile
-	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBRAW1394).pc: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/$(LIBRAW1394).pc
 	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1395,7 +1438,7 @@ $(LUA)-$(LUA_VERSION)/Makefile: $(DN_SRC)/$(LUA_SRC)
 	touch $@
 $(LUA)-$(LUA_VERSION)/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
 	cd $(LUA)-$(LUA_VERSION)/ \
-	    && make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
+	    && $(ENV_COMPILE) make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ INSTALL_MAN=$(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1 install
 
@@ -1426,9 +1469,9 @@ $(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
 #	touch $@
 
 $(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
 $(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make $(MAKE_ARG)
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
 	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1455,7 +1498,7 @@ $(XEXTPROTO)-$(XEXTPROTO_VERSION)/configure: $(DN_SRC)/$(XEXTPROTO_SRC)
 	#mv $(XEXTPROTO)$(XEXTPROTO_VERSION) $(XEXTPROTO)-$(XEXTPROTO_VERSION)/
 	touch $@
 $(XEXTPROTO)-$(XEXTPROTO_VERSION)/Makefile: $(XEXTPROTO)-$(XEXTPROTO_VERSION)/configure $(FL_DEP_XEXTPROTO)
-	cd $(XEXTPROTO)-$(XEXTPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(XEXTPROTO)-$(XEXTPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/$(XEXTPROTO).h: $(XEXTPROTO)-$(XEXTPROTO_VERSION)/Makefile
 	cd $(XEXTPROTO)-$(XEXTPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1482,7 +1525,7 @@ $(INPUTPROTO)-$(INPUTPROTO_VERSION)/configure: $(DN_SRC)/$(INPUTPROTO_SRC)
 	#mv $(INPUTPROTO)$(INPUTPROTO_VERSION) $(INPUTPROTO)-$(INPUTPROTO_VERSION)/
 	touch $@
 $(INPUTPROTO)-$(INPUTPROTO_VERSION)/Makefile: $(INPUTPROTO)-$(INPUTPROTO_VERSION)/configure $(FL_DEP_INPUTPROTO)
-	cd $(INPUTPROTO)-$(INPUTPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(INPUTPROTO)-$(INPUTPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/$(INPUTPROTO).h: $(INPUTPROTO)-$(INPUTPROTO_VERSION)/Makefile
 	cd $(INPUTPROTO)-$(INPUTPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1510,7 +1553,7 @@ $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/configure: $(DN_SRC)/$(VIDEOPROTO_SRC)
 	#mv $(VIDEOPROTO)$(VIDEOPROTO_VERSION) $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/
 	touch $@
 $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/Makefile: $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/configure $(FL_DEP_VIDEOPROTO)
-	cd $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/$(VIDEOPROTO).h: $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/Makefile
 	cd $(VIDEOPROTO)-$(VIDEOPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1538,7 +1581,7 @@ $(RENDERPROTO)-$(RENDERPROTO_VERSION)/configure: $(DN_SRC)/$(RENDERPROTO_SRC)
 	#mv $(RENDERPROTO)$(RENDERPROTO_VERSION) $(RENDERPROTO)-$(RENDERPROTO_VERSION)/
 	touch $@
 $(RENDERPROTO)-$(RENDERPROTO_VERSION)/Makefile: $(RENDERPROTO)-$(RENDERPROTO_VERSION)/configure $(FL_DEP_RENDERPROTO)
-	cd $(RENDERPROTO)-$(RENDERPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(RENDERPROTO)-$(RENDERPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/$(RENDERPROTO).h: $(RENDERPROTO)-$(RENDERPROTO_VERSION)/Makefile
 	cd $(RENDERPROTO)-$(RENDERPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1565,7 +1608,7 @@ $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/configure: $(DN_SRC)/$(SCRNSAVERPROT
 	#mv $(SCRNSAVERPROTO)$(SCRNSAVERPROTO_VERSION) $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/
 	touch $@
 $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/Makefile: $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/configure $(FL_DEP_SCRNSAVERPROTO)
-	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/saverproto.h: $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/Makefile
 	cd $(SCRNSAVERPROTO)-$(SCRNSAVERPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1594,7 +1637,7 @@ $(KBPROTO)-$(KBPROTO_VERSION)/configure: $(DN_SRC)/$(KBPROTO_SRC)
 	#mv $(KBPROTO)$(KBPROTO_VERSION) $(KBPROTO)-$(KBPROTO_VERSION)/
 	touch $@
 $(KBPROTO)-$(KBPROTO_VERSION)/Makefile: $(KBPROTO)-$(KBPROTO_VERSION)/configure $(FL_DEP_KBPROTO)
-	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/kbproto.pc: $(KBPROTO)-$(KBPROTO_VERSION)/Makefile
 	cd $(KBPROTO)-$(KBPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1623,7 +1666,7 @@ $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure: $(DN_SRC)/$(XUTILMACRO_SRC)
 	#mv $(XUTILMACRO)$(XUTILMACRO_VERSION) $(XUTILMACRO)-$(XUTILMACRO_VERSION)/
 	touch $@
 $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure $(FL_DEP_XUTILMACRO)
-	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
 	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1689,7 +1732,7 @@ $(XCBPROTO)-$(XCBPROTO_VERSION)/Makefile: $(XCBPROTO)-$(XCBPROTO_VERSION)/config
 	touch $@
 $(XCBPROTO)-$(XCBPROTO_VERSION)/$(XCBPROTO).la: $(XCBPROTO)-$(XCBPROTO_VERSION)/Makefile
 	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(XCBPROTO).a: $(XCBPROTO)-$(XCBPROTO_VERSION)/$(XCBPROTO).la
 	cd $(XCBPROTO)-$(XCBPROTO_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -1725,7 +1768,7 @@ $(LIBXRENDER)-$(LIBXRENDER_VERSION)/configure: $(DN_SRC)/$(LIBXRENDER_SRC)
 $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/configure $(FL_DEP_LIBXRENDER)
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
 $(LIBXRENDER)-$(LIBXRENDER_VERSION)/$(LIBXRENDER).la: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile
-	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXRENDER).a: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/$(LIBXRENDER).la
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1760,7 +1803,7 @@ $(LIBXFT)-$(LIBXFT_VERSION)/configure: $(DN_SRC)/$(LIBXFT_SRC)
 $(LIBXFT)-$(LIBXFT_VERSION)/Makefile: $(LIBXFT)-$(LIBXFT_VERSION)/configure $(FL_DEP_LIBXFT)
 	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
 $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la: $(LIBXFT)-$(LIBXFT_VERSION)/Makefile
-	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXFT).a: $(LIBXFT)-$(LIBXFT_VERSION)/$(LIBXFT).la
 	cd $(LIBXFT)-$(LIBXFT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1796,7 +1839,7 @@ $(LIBICE)-$(LIBICE_VERSION)/Makefile: $(LIBICE)-$(LIBICE_VERSION)/configure $(FL
 	touch $@
 $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la: $(LIBICE)-$(LIBICE_VERSION)/Makefile
 	cd $(LIBICE)-$(LIBICE_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).a: $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la
 	cd $(LIBICE)-$(LIBICE_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -1834,7 +1877,7 @@ $(LIBSM)-$(LIBSM_VERSION)/Makefile: $(LIBSM)-$(LIBSM_VERSION)/configure $(FL_DEP
 	touch $@
 $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la: $(LIBSM)-$(LIBSM_VERSION)/Makefile
 	cd $(LIBSM)-$(LIBSM_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).a: $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la
 	cd $(LIBSM)-$(LIBSM_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -1867,11 +1910,11 @@ $(XTRANS)-$(XTRANS_VERSION)/configure: $(DN_SRC)/$(XTRANS_SRC)
 	tar -xf $(DN_SRC)/$(XTRANS_SRC)
 	touch $@
 $(XTRANS)-$(XTRANS_VERSION)/Makefile: $(XTRANS)-$(XTRANS_VERSION)/configure $(FL_DEP_XTRANS)
-	cd $(XTRANS)-$(XTRANS_VERSION)/ && ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
+	cd $(XTRANS)-$(XTRANS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
 	touch $@
 $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/Makefile
 	cd $(XTRANS)-$(XTRANS_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
 	cd $(XTRANS)-$(XTRANS_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -1905,11 +1948,11 @@ $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/configure: $(DN_SRC)/$(LIBPTHREADS
 	tar -xf $(DN_SRC)/$(LIBPTHREADSTUBS_SRC)
 	touch $@
 $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/configure $(FL_DEP_LIBPTHREADSTUBS)
-	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ && ./configure --prefix=$(PREFIX_CONF)
+	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile
 	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc
 	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -1947,7 +1990,7 @@ $(LIBXAU)-$(LIBXAU_VERSION)/Makefile: $(LIBXAU)-$(LIBXAU_VERSION)/configure $(FL
 	touch $@
 $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/Makefile
 	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la
 	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -1986,7 +2029,7 @@ $(LIBXDMCP)-$(LIBXDMCP_VERSION)/Makefile: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/config
 	touch $@
 $(LIBXDMCP)-$(LIBXDMCP_VERSION)/$(LIBXDMCP).la: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/Makefile
 	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXDMCP).a: $(LIBXDMCP)-$(LIBXDMCP_VERSION)/$(LIBXDMCP).la
 	cd $(LIBXDMCP)-$(LIBXDMCP_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2028,7 +2071,7 @@ $(LIBXCB)-$(LIBXCB_VERSION)/Makefile: $(LIBXCB)-$(LIBXCB_VERSION)/configure $(FL
 	touch $@
 $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/Makefile
 	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc
 	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2071,7 +2114,7 @@ $(LIBX11)-$(LIBX11_VERSION)/Makefile: $(LIBX11)-$(LIBX11_VERSION)/configure $(FL
 	touch $@
 $(LIBX11)-$(LIBX11_VERSION)/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/Makefile
 	cd $(LIBX11)-$(LIBX11_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/x11.pc
 	cd $(LIBX11)-$(LIBX11_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2110,7 +2153,7 @@ $(LIBXPM)-$(LIBXPM_VERSION)/configure: $(DN_SRC)/$(LIBXPM_SRC)
 $(LIBXPM)-$(LIBXPM_VERSION)/Makefile: $(LIBXPM)-$(LIBXPM_VERSION)/configure $(FL_DEP_LIBXPM)
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
 $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
-	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make $(MAKE_ARG)
+	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -2149,7 +2192,7 @@ $(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure $(FL_DEP
 	touch $@
 $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).a: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2189,7 +2232,7 @@ $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile: $(LIBXEXT)-$(LIBXEXT_VERSION)/configure 
 	touch $@
 $(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).a: $(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2230,7 +2273,7 @@ $(LIBXSS)-$(LIBXSS_VERSION)/Makefile: $(LIBXSS)-$(LIBXSS_VERSION)/configure $(FL
 	touch $@
 $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la: $(LIBXSS)-$(LIBXSS_VERSION)/Makefile
 	cd $(LIBXSS)-$(LIBXSS_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXSSLIB).a: $(LIBXSS)-$(LIBXSS_VERSION)/src/$(LIBXSSLIB).la
 	cd $(LIBXSS)-$(LIBXSS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -2266,7 +2309,7 @@ $(LIBXMU)-$(LIBXMU_VERSION)/Makefile: $(LIBXMU)-$(LIBXMU_VERSION)/configure $(FL
 	touch $@
 $(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/Makefile
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).a: $(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2305,7 +2348,7 @@ $(LIBXI)-$(LIBXI_VERSION)/Makefile: $(LIBXI)-$(LIBXI_VERSION)/configure $(FL_DEP
 	touch $@
 $(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/Makefile
 	cd $(LIBXI)-$(LIBXI_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).a: $(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la
 	cd $(LIBXI)-$(LIBXI_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2344,7 +2387,7 @@ $(LIBXV)-$(LIBXV_VERSION)/Makefile: $(LIBXV)-$(LIBXV_VERSION)/configure $(FL_DEP
 	touch $@
 $(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/Makefile
 	cd $(LIBXV)-$(LIBXV_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).a: $(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la
 	cd $(LIBXV)-$(LIBXV_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -2380,7 +2423,7 @@ $(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure $(FL_DEP_GLU)
 	touch $@
 $(GLU)-$(GLU_VERSION)/$(GLU).la: $(GLU)-$(GLU_VERSION)/Makefile
 	cd $(GLU)-$(GLU_VERSION)/ \
-	    && make $(MAKE_ARG)
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GLU).a: $(GLU)-$(GLU_VERSION)/$(GLU).la
 	cd $(GLU)-$(GLU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -2430,7 +2473,7 @@ $(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/configure
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
 $(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
-	cd $(GD)-$(GD_VERSION)/ && make $(MAKE_ARG)
+	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd: $(GD)-$(GD_VERSION)/gd
 	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -2468,7 +2511,7 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNU
 $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make $(MAKE_ARG)
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
