@@ -822,7 +822,11 @@ $(X265)-$(X265_VERSION)/CMakeLists.txt: $(DN_SRC)/$(X265_SRC)
 	touch $@
 endif
 
-$(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+$(X265)-$(X265_VERSION)/mypatched: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+	cd $(X265)-$(X265_VERSION)/ && sed -e 's|bool |char |' -i source/x265.h
+	touch $@
+
+$(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/mypatched
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-10 && cd build-10 \
 		&& $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -833,7 +837,7 @@ $(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.tx
 $(X265)-$(X265_VERSION)/build-10/libx265.a: $(X265)-$(X265_VERSION)/build-10/Makefile
 	cd $(X265)-$(X265_VERSION)/build-10 && $(ENV_COMPILE) make $(MAKE_ARG)
 
-$(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+$(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/mypatched
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-12 && cd build-12 \
 		&& $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -848,7 +852,7 @@ $(X265)-$(X265_VERSION)/build-12/libx265.a: $(X265)-$(X265_VERSION)/build-12/Mak
 
 ifeq ($(ARCHBITS),64) # 64 bit CPU
 
-$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265) $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/mypatched $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
         && rm -f libx265_main10.a && ln -s ../build-10/libx265.a libx265_main10.a \
         && rm -f libx265_main12.a && ln -s ../build-12/libx265.a libx265_main12.a \
@@ -860,7 +864,7 @@ $(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
             -DLINKED_10BIT='TRUE' \
             -DLINKED_12BIT='TRUE'
 else # 32 bit CPU
-$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/mypatched
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
         && $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -2712,14 +2716,16 @@ $(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
 endif
 
 $(OPENSSL)-$(OPENSSL_VERSION)/Makefile: $(OPENSSL)-$(OPENSSL_VERSION)/Configure $(FL_DEP_OPENSSL)
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) ./Configure shared zlib \
-	        --prefix=$(PREFIX_CONF) --openssldir=$(PREFIX_CONF)/etc/ssl \
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) ./Configure \
+	        -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lz \
+	        shared zlib \
+	        --prefix=$(PREFIX_CONF) --openssldir=$(PREFIX_CONF)/etc/ssl --libdir=lib \
 	        $(optflags) $(openssltarget)
 	touch $@
 
 $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/Makefile
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make -j1 depend
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make INCLUDES+=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include -j1 depend
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make INCLUDES+=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include $(MAKE_ARG)
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc
 	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && make -j1 INSTALL_PREFIX=$(PREFIX_DEST) MANDIR=$(PREFIX_CONF)/share/man MANSUFFIX=ssl install
@@ -2777,7 +2783,7 @@ $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(DN_SRC)/$(LIBRTMP_SRC)
 	touch $@
 endif
 
-$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile
+$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile $(FL_DEP_LIBRTMP)
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && $(ENV_COMPILE) make $(MAKE_ARG) all librtmp.pc
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
@@ -3255,6 +3261,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBNUT)-install \
     $(LIBDCADEC)-install \
     $(LIBXV)-install \
+    $(OPENSSL)-install \
     #$(APINVENC)-install \
     #$(LIBILBC)-install \
     #$(LIBFLITE)-install \
@@ -3313,7 +3320,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 # --enable-chromaprint
 #  --enable-libiec61883  --enable-libkvazaar --enable-libmfx --enable-libopenh264 --enable-librubberband --enable-libquvi --enable-libstagefright-h264 --enable-libtesseract --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes --enable-libxcb-shape --enable-libzimg --disable-lzma --enable-decklink --enable-mmal --enable-nvenc
     #--enable-libssh \
-    #--enable-openal --enable-opencl --enable-opengl --enable-openssl --disable-schannel --disable-sdl --disable-securetransport --disable-xlib
+    #--enable-openal --enable-opencl --enable-opengl --disable-schannel --disable-sdl --disable-securetransport --disable-xlib
 #--enable-libilbc \
 --enable-libflite \
 # add:
@@ -3324,13 +3331,13 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
-			LDFLAGS="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
+		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
+			LDFLAGS=" `$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
 			$(ENV_COMPILE) ./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--extra-cflags="`$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
-			--extra-ldflags="`$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)`" \
+			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
+			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
             \
             --enable-version3 --enable-gpl --enable-nonfree \
             \
@@ -3353,7 +3360,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
             --enable-bzlib \
             --enable-fontconfig \
             --enable-frei0r \
-            --enable-gnutls \
+            --disable-gnutls --enable-openssl \
             --enable-iconv \
             --enable-ladspa \
             --enable-libaacplus \
