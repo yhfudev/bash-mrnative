@@ -1406,23 +1406,42 @@ FL_UNINSTALL+=$(LIBRAW1394)-uninstall
 ########################################
 # libdc1394
 LIBDC1394=libdc1394
-LIBDC1394_VERSION=2.2.3
-LIBDC1394_SRC=$(LIBDC1394)-$(LIBDC1394_VERSION).tar.gz
-LIBDC1394_URL=http://sourceforge.net/projects/libdc1394/files/libdc1394-2/$(LIBDC1394_VERSION)/$(LIBDC1394_SRC)
 
 FL_DEP_LIBDC1394= \
 	$(LIBRAW1394)-install \
 	#$(LIBUSB)-install \
 	$(NULL)
 
+LIBDC1394_VERSION=2.2.3
+LIBDC1394_SRC=$(LIBDC1394)-$(LIBDC1394_VERSION).tar.gz
+LIBDC1394_URL=http://sourceforge.net/projects/libdc1394/files/libdc1394-2/$(LIBDC1394_VERSION)/$(LIBDC1394_SRC)
+
+$(DN_SRC)/sdl.m4: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://hg.libsdl.org/SDL/raw-file/06be4b33029d/sdl.m4
+	touch $@
+$(DN_SRC)/sdl2.m4: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://hg.libsdl.org/SDL/raw-file/e82bfd942409/sdl2.m4
+	touch $@
+FL_SOURCES+=$(DN_SRC)/sdl.m4
+FL_SOURCES+=$(DN_SRC)/sdl2.m4
+
 $(DN_SRC)/$(LIBDC1394_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBDC1394_URL)
 	touch $@
-$(LIBDC1394)-$(LIBDC1394_VERSION)/configure: $(DN_SRC)/$(LIBDC1394_SRC)
+$(LIBDC1394)-$(LIBDC1394_VERSION)/configure.ac: $(DN_SRC)/$(LIBDC1394_SRC)
 	tar -xf $(DN_SRC)/$(LIBDC1394_SRC)
-	#cd $(LIBDC1394)-$(LIBDC1394_VERSION) && sed -i -e 's|AC_C_RESTRICT|AC_C_RESTRICT\nPKG_CHECK_MODULES(LIBUDEV, [libudev],[AC_DEFINE(HAVE_LIBUDEV,[],[Defined if libudev is present])], [AC_MSG_WARN([libudev not found])])|' configure.ac && $(ENV_COMPILE) autoreconf -if
 	touch $@
-$(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile: $(LIBDC1394)-$(LIBDC1394_VERSION)/configure $(FL_DEP_LIBDC1394)
+$(LIBDC1394)-$(LIBDC1394_VERSION)/mypatched: $(DN_SRC)/sdl.m4 $(LIBDC1394)-$(LIBDC1394_VERSION)/configure.ac
+	#cd $(LIBDC1394)-$(LIBDC1394_VERSION) && sed -e 's|AC_C_RESTRICT|AC_C_RESTRICT\nPKG_CHECK_MODULES(LIBUDEV, [libudev],[AC_DEFINE(HAVE_LIBUDEV,[],[Defined if libudev is present])], [AC_MSG_WARN([libudev not found])])|' -i configure.ac
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION) && sed -e 's|inline |inline static |' -i examples/dc1394_vloopback.c
+	cp $(DN_SRC)/sdl.m4 $(LIBDC1394)-$(LIBDC1394_VERSION)/m4/
+	touch $@
+
+$(LIBDC1394)-$(LIBDC1394_VERSION)/configure: $(LIBDC1394)-$(LIBDC1394_VERSION)/mypatched $(FL_DEP_LIBDC1394)
+	cd $(LIBDC1394)-$(LIBDC1394_VERSION) && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile: $(LIBDC1394)-$(LIBDC1394_VERSION)/configure
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static #--enable-static #--diable-shared
 $(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394-2.pc: $(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)

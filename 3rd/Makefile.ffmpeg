@@ -1440,6 +1440,11 @@ FL_DEPENDENCES_LIBAACPLUS= \
     $(FFTW)-install \
     $(NULL)
 
+$(DN_SRC)/26410-800.zip: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://www.3gpp.org/ftp/Specs/archive/26_series/26.410/26410-800.zip
+	touch $@
+FL_SOURCES+=$(DN_SRC)/26410-800.zip
+
 LIBAACPLUS_VERSION=2.0.2
 LIBAACPLUS_SRC=$(LIBAACPLUS)-$(LIBAACPLUS_VERSION).tar.gz
 LIBAACPLUS_URL=http://tipok.org.ua/downloads/media/aac+/libaacplus/$(LIBAACPLUS_SRC)
@@ -1448,20 +1453,24 @@ $(DN_SRC)/$(LIBAACPLUS_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBAACPLUS_URL)
 	touch $@
 
-$(DN_SRC)/26410-800.zip: $(DN_SRC)/created
-	$(WGET) -O $@ -c http://www.3gpp.org/ftp/Specs/archive/26_series/26.410/26410-800.zip
-	touch $@
-
-$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure: $(DN_SRC)/$(LIBAACPLUS_SRC) $(DN_SRC)/26410-800.zip
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure.ac: $(DN_SRC)/$(LIBAACPLUS_SRC) $(DN_SRC)/26410-800.zip
 	tar -xf $(DN_SRC)/$(LIBAACPLUS_SRC)
 	cp $(DN_SRC)/26410-800.zip $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/src/26410-800.zip
-	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
-	    && for i in $$(find . -name 'Makefile.am');do sed 's|INCLUDES|AM_CPPFLAGS|g' -i $$i; done \
-	    && sed -i 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' configure.ac \
-	    && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure $(FL_DEP_LIBAACPLUS)
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/mypatched: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure.ac
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
+	    && for i in $$(find . -name 'Makefile.am');do sed 's|INCLUDES|AM_CPPFLAGS|g' -i $$i; done
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && sed -e 's/AM_CONFIG_HEADER/AC_CONFIG_HEADERS/' -i configure.ac
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ && sed -e 's|inline |inline static |' -i frontend/au_channel.h
+	touch $@
+
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/mypatched $(FL_DEP_LIBAACPLUS)
+	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
+        && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/Makefile: $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/configure
 	cd $(LIBAACPLUS)-$(LIBAACPLUS_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static=off
 	touch $@
@@ -2124,12 +2133,13 @@ $(DN_SRC)/$(LIBSHINE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBSHINE_URL)
 	touch $@
 
-$(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(DN_SRC)/$(LIBSHINE_SRC)
+$(LIBSHINE)-$(LIBSHINE_VERSION)/configure.ac: $(DN_SRC)/$(LIBSHINE_SRC)
 	tar -xf $(DN_SRC)/$(LIBSHINE_SRC)
 	touch $@
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure.ac $(FL_DEP_LIBSHINE)
-	#cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && $(ENV_COMPILE) ./bootstrap # autoreconf -if
+	chmod 755 $@
 	touch $@
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure
