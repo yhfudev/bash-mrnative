@@ -241,7 +241,7 @@ $(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VE
 	touch $@
 
 $(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched
-	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) autoconf # autoreconf -if
 	touch $@
 
 $(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/configure
@@ -317,7 +317,7 @@ $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure: $(NS2DOCSIS)-$(NS2DOCSIS_VE
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ \
 	    && sed -e 's|char \* key = Tcl_GetHashKey|char \* key = (char \*) Tcl_GetHashKey|'  -i pushback/ident-tree.h \
 	    && sed -e 's|.*#define\s*TRACE_MEDIA_PKG.*$$|#define TRACE_MEDIA_PKG 1|'            -i mac/docsis/medium.cc  \
-	    && $(ENV_COMPILE) autoreconf -if
+	    && $(ENV_COMPILE) autoconf # autoreconf -if
 	touch $@
 
 $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure
