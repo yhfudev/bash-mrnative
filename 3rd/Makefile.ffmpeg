@@ -62,15 +62,20 @@ $(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake: $(DN_SRC)/$(GRAPHITE2_SRC)
 	touch $@
 $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/Graphite.cmake $(FL_DEP_GRAPHITE2)
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/ && mkdir -p build && cd build \
-		&& $(ENV_COMPILE) cmake $(CMAKE_ARCH_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ ..
-$(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile
+		&& $(ENV_COMPILE) cmake .. \
+            $(CMAKE_ARCH_FLAGS) \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/
+$(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/graphite2.pc: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgraphite2.la: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
-	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make install
 
-$(GRAPHITE2)-uninstall: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/src/libgraphite2.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/graphite2.pc: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/graphite2.pc
+	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make install
+	touch $@
+
+$(GRAPHITE2)-uninstall: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/graphite2.pc
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make uninstall
-$(GRAPHITE2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgraphite2.la
+$(GRAPHITE2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/graphite2.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GRAPHITE2_SRC)
@@ -164,7 +169,7 @@ $(LIBENCA)-$(LIBENCA_VERSION)/Makefile: $(LIBENCA)-$(LIBENCA_VERSION)/configure
 	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --enable-static --enable-shared --disable-harfbuzz
 $(LIBENCA)-$(LIBENCA_VERSION)/src/enca: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile
 	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libenca.a: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile $(LIBENCA)-$(LIBENCA_VERSION)/src/enca $(LIBENCA)-uninstall
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libenca.a: $(LIBENCA)-$(LIBENCA_VERSION)/Makefile $(LIBENCA)-$(LIBENCA_VERSION)/src/enca
 	cd $(LIBENCA)-$(LIBENCA_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(LIBENCA)-uninstall: $(LIBENCA)-$(LIBENCA_VERSION)/src/enca
@@ -218,11 +223,11 @@ $(LIBASS)-$(LIBASS_VERSION)/.git: $(DN_SRC)/$(LIBASS_SRC)
 	if [ -d "$(LIBASS)-$(LIBASS_VERSION)" ]; then cd $(LIBASS)-$(LIBASS_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBASS)-$(LIBASS_VERSION)/ $(LIBASS)-$(LIBASS_VERSION); fi
 	touch $@
 
-$(LIBASS)-$(LIBASS_VERSION)/configure.ac: $(LIBASS)-$(LIBASS_VERSION)/.git $(FL_DEP_LIBASS)
+$(LIBASS)-$(LIBASS_VERSION)/configure.ac: $(LIBASS)-$(LIBASS_VERSION)/.git
 	cd $(LIBASS)-$(LIBASS_VERSION)/ && git pull
 	touch $@
 
-$(LIBASS)-$(LIBASS_VERSION)/configure: $(LIBASS)-$(LIBASS_VERSION)/configure.ac
+$(LIBASS)-$(LIBASS_VERSION)/configure: $(LIBASS)-$(LIBASS_VERSION)/configure.ac $(FL_DEP_LIBASS)
 	cd $(LIBASS)-$(LIBASS_VERSION) && $(ENV_COMPILE) ./autogen.sh
 	touch $@
 $(LIBASS)-$(LIBASS_VERSION)/Makefile: $(LIBASS)-$(LIBASS_VERSION)/configure
@@ -343,7 +348,7 @@ $(LIBA52)-$(LIBA52_VERSION)/configure: $(DN_SRC)/$(LIBA52_SRC)
 $(LIBA52)-$(LIBA52_VERSION)/Makefile: $(LIBA52)-$(LIBA52_VERSION)/configure
 	cd $(LIBA52)-$(LIBA52_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la: $(LIBA52)-$(LIBA52_VERSION)/Makefile
-	cd $(LIBA52)-$(LIBA52_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(LIBA52)-$(LIBA52_VERSION)/ && $(ENV_COMPILE) make CFLAGS=-fPIC $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/liba52.a: $(LIBA52)-$(LIBA52_VERSION)/liba52/liba52.la
 	cd $(LIBA52)-$(LIBA52_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -521,10 +526,13 @@ $(DN_SRC)/$(XVIDCORE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(XVIDCORE_URL)
 	touch $@
 
-$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(DN_SRC)/$(XVIDCORE_SRC)
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure.in: $(DN_SRC)/$(XVIDCORE_SRC)
 	tar -xf $(DN_SRC)/$(XVIDCORE_SRC)
 	rm -f $(XVIDCORE)-install
 	mv $(XVIDCORE)* $(XVIDCORE)-$(XVIDCORE_VERSION)
+	touch $@
+
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure.in
 	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -583,11 +591,15 @@ AMRWB_VERSION=11.0.0.0
 AMRWB_SRC=$(AMRWB)-$(AMRWB_VERSION).tar.bz2
 AMRWB_URL=ftp://ftp.penguin.cz/pub/users/utx/amr/$(AMRWB_SRC)
 
+$(DN_SRC)/26204-b00.zip: $(DN_SRC)/created
+	$(WGET) -O $@ -c http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-b00.zip
+	touch $@
 $(DN_SRC)/$(AMRWB_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(AMRWB_URL)
 	touch $@
-$(AMRWB)-$(AMRWB_VERSION)/configure: $(DN_SRC)/$(AMRWB_SRC)
+$(AMRWB)-$(AMRWB_VERSION)/configure: $(DN_SRC)/$(AMRWB_SRC) $(DN_SRC)/26204-b00.zip
 	tar -xf $(DN_SRC)/$(AMRWB_SRC)
+	cp $(DN_SRC)/26204-b00.zip $(AMRWB)-$(AMRWB_VERSION)/
 	touch $@
 $(AMRWB)-$(AMRWB_VERSION)/Makefile: $(AMRWB)-$(AMRWB_VERSION)/configure
 	cd $(AMRWB)-$(AMRWB_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared
@@ -601,6 +613,7 @@ $(AMRWB)-uninstall: $(AMRWB)-$(AMRWB_VERSION)/libamrwb.la
 $(AMRWB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libamrwb.a
 	touch $@
 
+FL_SOURCES_OTHERS+=$(DN_SRC)/26204-b00.zip
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRWB_SRC)
 FL_UNINSTALL+=$(AMRWB)-uninstall
 
@@ -803,24 +816,27 @@ $(X265)-$(X265_VERSION)/.hg: $(DN_SRC)/$(X265_SRC)
 	if [ -d "$(X265)-$(X265_VERSION)" ]; then cd $(X265)-$(X265_VERSION) && hg pull; else hg clone $(DN_SRC)/$(X265)-$(X265_VERSION)/ $(X265)-$(X265_VERSION); fi
 	touch $@
 
-$(X265)-$(X265_VERSION)/CMakeLists.txt: $(X265)-$(X265_VERSION)/.hg
+$(X265)-$(X265_VERSION)/readme.rst: $(X265)-$(X265_VERSION)/.hg
 	touch $@
 else
 $(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(X265_URL)
 	touch $@
-$(X265)-$(X265_VERSION)/CMakeLists.txt: $(DN_SRC)/$(X265_SRC)
+$(X265)-$(X265_VERSION)/readme.rst: $(DN_SRC)/$(X265_SRC)
 	rm -rf $(X265)-*
 	tar -xf $(DN_SRC)/$(X265_SRC)
 	mv $(X265)* $(X265)-$(X265_VERSION)
 	touch $@
 endif
 
-$(X265)-$(X265_VERSION)/mypatched: $(X265)-$(X265_VERSION)/CMakeLists.txt $(FL_DEP_X265)
+$(X265)-$(X265_VERSION)/mypatched: $(X265)-$(X265_VERSION)/readme.rst
 	cd $(X265)-$(X265_VERSION)/ && sed -e 's|bool |char |' -i source/x265.h
 	touch $@
 
-$(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/mypatched
+$(X265)-$(X265_VERSION)/CMakeLists.txt: $(X265)-$(X265_VERSION)/mypatched $(FL_DEP_X265)
+	touch $@
+
+$(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-10 && cd build-10 \
 		&& $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -831,7 +847,7 @@ $(X265)-$(X265_VERSION)/build-10/Makefile: $(X265)-$(X265_VERSION)/mypatched
 $(X265)-$(X265_VERSION)/build-10/libx265.a: $(X265)-$(X265_VERSION)/build-10/Makefile
 	cd $(X265)-$(X265_VERSION)/build-10 && $(ENV_COMPILE) make $(MAKE_ARG)
 
-$(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/mypatched
+$(X265)-$(X265_VERSION)/build-12/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-12 && cd build-12 \
 		&& $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -846,7 +862,7 @@ $(X265)-$(X265_VERSION)/build-12/libx265.a: $(X265)-$(X265_VERSION)/build-12/Mak
 
 ifeq ($(ARCHBITS),64) # 64 bit CPU
 
-$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/mypatched $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt $(X265)-$(X265_VERSION)/build-10/libx265.a $(X265)-$(X265_VERSION)/build-12/libx265.a
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
         && rm -f libx265_main10.a && ln -s ../build-10/libx265.a libx265_main10.a \
         && rm -f libx265_main12.a && ln -s ../build-12/libx265.a libx265_main12.a \
@@ -858,7 +874,7 @@ $(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/mypatched $(X2
             -DLINKED_10BIT='TRUE' \
             -DLINKED_12BIT='TRUE'
 else # 32 bit CPU
-$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/mypatched
+$(X265)-$(X265_VERSION)/build-8/Makefile: $(X265)-$(X265_VERSION)/CMakeLists.txt
 	cd $(X265)-$(X265_VERSION)/ && mkdir -p build-8 && cd build-8 \
         && $(ENV_COMPILE) cmake ../source \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
@@ -871,6 +887,7 @@ $(X265)-$(X265_VERSION)/build-8/libx265.a: $(X265)-$(X265_VERSION)/build-8/Makef
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libx265.a: $(X265)-$(X265_VERSION)/build-8/libx265.a
 	cd $(X265)-$(X265_VERSION)/build-8 && make install
+	touch $@
 
 $(X265)-uninstall: $(X265)-$(X265_VERSION)/build-8/libx265.a
 	cd $(X265)-$(X265_VERSION)/build-8 && make uninstall
@@ -1094,48 +1111,6 @@ FL_SOURCES+=$(DN_SRC)/$(LOG4CPP_SRC)
 FL_UNINSTALL+=$(LOG4CPP)-uninstall
 
 ########################################
-# ffms2: A libav/ffmpeg based source library and Avisynth plugin for easy frame accurate access
-# https://github.com/FFMS/ffms2
-FFMS2=ffms2
-
-FL_DEP_FFMS2= \
-	$(AUTOMAKE)-install \
-	$(FFMPEG)-install \
-	$(NULL)
-
-FFMS2_VERSION=2.22
-FFMS2_SRC=$(FFMS2)-$(FFMS2_VERSION).tar.gz
-FFMS2_URL=https://github.com/FFMS/ffms2/archive/$(FFMS2_VERSION).tar.gz
-
-$(DN_SRC)/$(FFMS2_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(FFMS2_URL)
-	touch $@
-
-$(FFMS2)-$(FFMS2_VERSION)/configure: $(DN_SRC)/$(FFMS2_SRC)
-	tar -xf $(DN_SRC)/$(FFMS2_SRC)
-	#$(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(FFMS2)-$(FFMS2_VERSION)/Makefile: $(FFMS2)-$(FFMS2_VERSION)/configure $(FL_DEP_FFMS2)
-	cd $(FFMS2)-$(FFMS2_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-avresample --enable-shared --disable-static
-	touch $@
-$(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/Makefile
-	cd $(FFMS2)-$(FFMS2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
-	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(FFMS2)-uninstall: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
-	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(FFMS2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FFMS2).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(FFMS2_SRC)
-FL_UNINSTALL+=$(FFMS2)-uninstall
-
-########################################
 # AviSynth scripting engine
 AVXSYNTH=avxsynth
 
@@ -1143,6 +1118,7 @@ FL_DEP_AVXSYNTH= \
 	$(AUTOMAKE)-install \
 	$(YASM)-install \
 	$(LOG4CPP)-install \
+	#$(PANGOCAIRO)-install \
 	#$(FFMS2)-install \
 	$(NULL)
 
@@ -1161,7 +1137,7 @@ $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git: $(DN_SRC)/$(AVXSYNTH_SRC)
 	cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull
 	if [ -d "$(AVXSYNTH)-$(AVXSYNTH_VERSION)" ]; then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull; else git clone $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION)/ $(AVXSYNTH)-$(AVXSYNTH_VERSION); fi
 
-$(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git $(FL_DEP_AVXSYNTH)
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && git pull
 	touch $@
 
@@ -1179,14 +1155,14 @@ $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(DN_SRC)/$(AVXSYNTH_SRC)
 	touch $@
 endif
 
-$(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched: $(DN_PATCH)/pbs-avxsynth-newapi.patch $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md $(FL_DEP_AVXSYNTH)
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched: $(DN_PATCH)/pbs-avxsynth-newapi.patch $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-avxsynth-newapi.patch
 	#cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && if (( `automake --version | grep automake | awk '{split($$4,a,".");print a[1]*10000+a[2]*100+a[3]}'` < 11200 )) ; then \
         #sed -e 's|AM_PROG_AR||' -e 's|AC_CONFIG_MACRO_DIR.*$$||' -i configure.ac ; \
 	#fi
 	touch $@
 
-$(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/configure: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched $(FL_DEP_AVXSYNTH)
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -1298,7 +1274,7 @@ $(FREI0R)-$(FREI0R_VERSION)/.git: $(DN_SRC)/$(FREI0R_SRC)
 	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull
 	if [ -d "$(FREI0R)-$(FREI0R_VERSION)" ]; then cd $(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION)/ $(FREI0R)-$(FREI0R_VERSION); fi
 
-$(FREI0R)-$(FREI0R_VERSION)/README.md: $(FREI0R)-$(FREI0R_VERSION)/.git $(FL_DEP_FREI0R)
+$(FREI0R)-$(FREI0R_VERSION)/README.md: $(FREI0R)-$(FREI0R_VERSION)/.git
 	cd $(FREI0R)-$(FREI0R_VERSION)/ && git pull
 	touch $@
 
@@ -1406,14 +1382,17 @@ $(DN_SRC)/$(FFTW_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(FFTW_URL)
 	touch $@
 
-$(FFTW)-$(FFTW_VERSION)/configure: $(DN_SRC)/$(FFTW_SRC)
+$(FFTW)-$(FFTW_VERSION)/configure.ac: $(DN_SRC)/$(FFTW_SRC)
 	tar -xf $(DN_SRC)/$(FFTW_SRC)
-	#cd $(FFTW)-$(FFTW_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(FFTW)-$(FFTW_VERSION)/build-double/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
-	mkdir $(FFTW)-$(FFTW_VERSION)/build-double/ && cd $(FFTW)-$(FFTW_VERSION)/build-double/ \
-		&& $(ENV_COMPILE) .$(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-sse2 --enable-avx
+$(FFTW)-$(FFTW_VERSION)/configure: $(FFTW)-$(FFTW_VERSION)/configure.ac $(FL_DEP_FFTW)
+	#cd $(FFTW)-$(FFTW_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(FFTW)-$(FFTW_VERSION)/build-double/Makefile: $(FFTW)-$(FFTW_VERSION)/configure
+	mkdir -p $(FFTW)-$(FFTW_VERSION)/build-double/ && cd $(FFTW)-$(FFTW_VERSION)/build-double/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-sse2 --enable-avx
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-double/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/build-double/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -1422,9 +1401,9 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/fftw3.pc: $(FFTW)-$(FFTW_VERSION)/bu
 	cd $(FFTW)-$(FFTW_VERSION)/build-double/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
-	mkdir $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ \
-		&& $(ENV_COMPILE) .$(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-long-double
+$(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile: $(FFTW)-$(FFTW_VERSION)/configure
+	mkdir -p $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-long-double
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-longdouble/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/build-longdouble/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -1433,9 +1412,9 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/fftw3l.pc: $(FFTW)-$(FFTW_VERSION)/b
 	cd $(FFTW)-$(FFTW_VERSION)/build-longdouble/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(FFTW)-$(FFTW_VERSION)/build-single/Makefile: $(FFTW)-$(FFTW_VERSION)/configure $(FL_DEP_FFTW)
-	mkdir $(FFTW)-$(FFTW_VERSION)/build-single/ && cd $(FFTW)-$(FFTW_VERSION)/build-single/ \
-		&& $(ENV_COMPILE) .$(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-float --enable-sse --enable-avx
+$(FFTW)-$(FFTW_VERSION)/build-single/Makefile: $(FFTW)-$(FFTW_VERSION)/configure
+	mkdir -p $(FFTW)-$(FFTW_VERSION)/build-single/ && cd $(FFTW)-$(FFTW_VERSION)/build-single/ \
+		&& $(ENV_COMPILE) ../configure --prefix=$(PREFIX_CONF) --enable-shared --enable-threads --enable-openmp --enable-float --enable-sse --enable-avx
 	touch $@
 $(FFTW)-$(FFTW_VERSION)/build-single/fftw3f.pc: $(FFTW)-$(FFTW_VERSION)/build-single/Makefile
 	cd $(FFTW)-$(FFTW_VERSION)/build-single/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -1528,12 +1507,8 @@ $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git: $(DN_SRC)/$(LIBBLURAY_SRC)
 	cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull
 	if [ -d "$(LIBBLURAY)-$(LIBBLURAY_VERSION)" ]; then cd $(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION)/ $(LIBBLURAY)-$(LIBBLURAY_VERSION); fi
 
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git $(FL_DEP_LIBBLURAY)
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && git pull
-	touch $@
-
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md
-	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1545,17 +1520,21 @@ $(DN_SRC)/$(LIBBLURAY_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBBLURAY_URL)
 	touch $@
 
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(DN_SRC)/$(LIBBLURAY_SRC)
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(DN_SRC)/$(LIBBLURAY_SRC)
 	tar -xf $(DN_SRC)/$(LIBBLURAY_SRC)
 	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md $(FL_DEP_LIBBLURAY)
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
 #$(LIBBLURAY)-$(LIBBLURAY_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
 	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch
 	#touch $@
 
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure $(FL_DEP_LIBBLURAY)
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-bdjava
 	touch $@
@@ -1713,12 +1692,8 @@ $(LIBCACA)-$(LIBCACA_VERSION)/.git: $(DN_SRC)/$(LIBCACA_SRC)
 	cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull
 	if [ -d "$(LIBCACA)-$(LIBCACA_VERSION)" ]; then cd $(LIBCACA)-$(LIBCACA_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION)/ $(LIBCACA)-$(LIBCACA_VERSION); fi
 
-$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(LIBCACA)-$(LIBCACA_VERSION)/.git $(FL_DEP_LIBCACA)
+$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(LIBCACA)-$(LIBCACA_VERSION)/.git
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && git pull
-	touch $@
-
-$(LIBCACA)-$(LIBCACA_VERSION)/configure: $(LIBCACA)-$(LIBCACA_VERSION)/README.md
-	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1730,17 +1705,21 @@ $(DN_SRC)/$(LIBCACA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBCACA_URL)
 	touch $@
 
-$(LIBCACA)-$(LIBCACA_VERSION)/configure: $(DN_SRC)/$(LIBCACA_SRC)
+$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(DN_SRC)/$(LIBCACA_SRC)
 	tar -xf $(DN_SRC)/$(LIBCACA_SRC)
 	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
+$(LIBCACA)-$(LIBCACA_VERSION)/configure: $(LIBCACA)-$(LIBCACA_VERSION)/README.md $(FL_DEP_LIBCACA)
+	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
 #$(LIBCACA)-$(LIBCACA_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBCACA-newapi.patch $(LIBCACA)-$(LIBCACA_VERSION)/configure
 	#cd $(LIBCACA)-$(LIBCACA_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBCACA-newapi.patch
 	#touch $@
 
-$(LIBCACA)-$(LIBCACA_VERSION)/Makefile: $(LIBCACA)-$(LIBCACA_VERSION)/configure $(FL_DEP_LIBCACA)
+$(LIBCACA)-$(LIBCACA_VERSION)/Makefile: $(LIBCACA)-$(LIBCACA_VERSION)/configure
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
 	touch $@
@@ -1901,11 +1880,11 @@ $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIOP
 	tar -xf $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
 	touch $@
 
-$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure.ac $(FL_DEP_LIBCDIOPARANOIA)
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure.ac
 	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && sed -e 's|-lcdio |-lcdio -lrt |' -i libcdio_cdda.pc.in
 	touch $@
 
-$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched $(FL_DEP_LIBCDIOPARANOIA)
 	#cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -2066,10 +2045,10 @@ $(DN_SRC)/$(ORC_SRC): $(DN_SRC)/created
 $(ORC)-$(ORC_VERSION)/configure.ac: $(DN_SRC)/$(ORC_SRC)
 	tar -xf $(DN_SRC)/$(ORC_SRC)
 	touch $@
-$(ORC)-$(ORC_VERSION)/configure: $(ORC)-$(ORC_VERSION)/configure.ac
+$(ORC)-$(ORC_VERSION)/configure: $(ORC)-$(ORC_VERSION)/configure.ac $(FL_DEP_ORC)
 	cd $(ORC)-$(ORC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
-$(ORC)-$(ORC_VERSION)/Makefile: $(ORC)-$(ORC_VERSION)/configure $(FL_DEP_ORC)
+$(ORC)-$(ORC_VERSION)/Makefile: $(ORC)-$(ORC_VERSION)/configure
 	cd $(ORC)-$(ORC_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
 	touch $@
@@ -2147,10 +2126,13 @@ $(DN_SRC)/$(LIBSHINE_SRC): $(DN_SRC)/created
 
 $(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(DN_SRC)/$(LIBSHINE_SRC)
 	tar -xf $(DN_SRC)/$(LIBSHINE_SRC)
-	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure $(FL_DEP_LIBSHINE)
+$(LIBSHINE)-$(LIBSHINE_VERSION)/configure: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure.ac $(FL_DEP_LIBSHINE)
+	#cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBSHINE)-$(LIBSHINE_VERSION)/Makefile: $(LIBSHINE)-$(LIBSHINE_VERSION)/configure
 	cd $(LIBSHINE)-$(LIBSHINE_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
@@ -2478,7 +2460,7 @@ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git: $(DN_SRC)/$(LIBUTVIDEO_SRC)
 	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull
 	if [ -d "$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)" ]; then cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); fi
 
-$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git $(FL_DEP_LIBUTVIDEO)
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git
 	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && git pull
 	touch $@
 
@@ -2622,7 +2604,7 @@ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git: $(DN_SRC)/$(LIBVIDSTAB_SRC)
 	cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull
 	if [ -d "$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)" ]; then cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); fi
 
-$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git $(FL_DEP_LIBVIDSTAB)
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && git pull
 	touch $@
 
@@ -2717,14 +2699,14 @@ $(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
 	touch $@
 endif
 
-$(OPENSSL)-$(OPENSSL_VERSION)/mypatched: $(OPENSSL)-$(OPENSSL_VERSION)/Configure $(FL_DEP_OPENSSL)
+$(OPENSSL)-$(OPENSSL_VERSION)/mypatched: $(OPENSSL)-$(OPENSSL_VERSION)/Configure
 	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && find . -name "Makefile*" | while read a ; do \
             sed -e 's|^INCLUDES=|INCLUDES=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include |g'   -i $$a; \
             sed -e 's|^CFLAG=.*$$|CFLAG= -Os -I$(PREFIX_DEST)/$(PREFIX_CONF)/include|g' -i $$a; \
         done
 	touch $@
 
-$(OPENSSL)-$(OPENSSL_VERSION)/Makefile: $(OPENSSL)-$(OPENSSL_VERSION)/mypatched
+$(OPENSSL)-$(OPENSSL_VERSION)/Makefile: $(OPENSSL)-$(OPENSSL_VERSION)/mypatched $(FL_DEP_OPENSSL)
 	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) ./Configure \
 	        -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lz \
 	        shared zlib \
@@ -2824,12 +2806,15 @@ $(DN_SRC)/$(LIBZVBI_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBZVBI_URL)
 	touch $@
 
-$(LIBZVBI)-$(LIBZVBI_VERSION)/configure: $(DN_SRC)/$(LIBZVBI_SRC)
+$(LIBZVBI)-$(LIBZVBI_VERSION)/configure.in: $(DN_SRC)/$(LIBZVBI_SRC)
 	tar -xf $(DN_SRC)/$(LIBZVBI_SRC)
+	touch $@
+
+$(LIBZVBI)-$(LIBZVBI_VERSION)/configure: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure.in $(FL_DEP_LIBZVBI)
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure $(FL_DEP_LIBZVBI)
+$(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic
 	touch $@
@@ -2865,12 +2850,15 @@ $(DN_SRC)/$(LIBVDPAU_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBVDPAU_URL)
 	touch $@
 
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(DN_SRC)/$(LIBVDPAU_SRC)
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure.ac: $(DN_SRC)/$(LIBVDPAU_SRC)
 	tar -xf $(DN_SRC)/$(LIBVDPAU_SRC)
+	touch $@
+
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure.ac $(FL_DEP_LIBVDPAU)
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure $(FL_DEP_LIBVDPAU)
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic
 	touch $@
@@ -2904,12 +2892,15 @@ $(DN_SRC)/$(LIBSODIUM_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBSODIUM_URL)
 	touch $@
 
-$(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure: $(DN_SRC)/$(LIBSODIUM_SRC)
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure.ac: $(DN_SRC)/$(LIBSODIUM_SRC)
 	tar -xf $(DN_SRC)/$(LIBSODIUM_SRC)
+	touch $@
+
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure.ac $(FL_DEP_LIBSODIUM)
 	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure $(FL_DEP_LIBSODIUM)
+$(LIBSODIUM)-$(LIBSODIUM_VERSION)/Makefile: $(LIBSODIUM)-$(LIBSODIUM_VERSION)/configure
 	cd $(LIBSODIUM)-$(LIBSODIUM_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic
 	touch $@
@@ -2946,13 +2937,16 @@ $(DN_SRC)/$(LIBZMQ_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBZMQ_URL)
 	touch $@
 
-$(LIBZMQ)-$(LIBZMQ_VERSION)/configure: $(DN_SRC)/$(LIBZMQ_SRC)
+$(LIBZMQ)-$(LIBZMQ_VERSION)/configure.ac: $(DN_SRC)/$(LIBZMQ_SRC)
 	tar -xf $(DN_SRC)/$(LIBZMQ_SRC)
+	touch $@
+
+$(LIBZMQ)-$(LIBZMQ_VERSION)/configure: $(LIBZMQ)-$(LIBZMQ_VERSION)/configure.ac $(FL_DEP_LIBZMQ)
 	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ && $(ENV_COMPILE) autoreconf -if \
 	    && sed -i 's/libzmq_werror="yes"/libzmq_werror="no"/' configure # for libsodium
 	touch $@
 
-$(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile: $(LIBZMQ)-$(LIBZMQ_VERSION)/configure $(FL_DEP_LIBZMQ)
+$(LIBZMQ)-$(LIBZMQ_VERSION)/Makefile: $(LIBZMQ)-$(LIBZMQ_VERSION)/configure
 	cd $(LIBZMQ)-$(LIBZMQ_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --with-pgm --with-libsodium --without-documentation
 	touch $@
@@ -2990,12 +2984,15 @@ $(DN_SRC)/$(AUDIOFILE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(AUDIOFILE_URL)
 	touch $@
 
-$(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure: $(DN_SRC)/$(AUDIOFILE_SRC)
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure.ac: $(DN_SRC)/$(AUDIOFILE_SRC)
 	tar -xf $(DN_SRC)/$(AUDIOFILE_SRC)
+	touch $@
+
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure.ac $(FL_DEP_AUDIOFILE)
 	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure $(FL_DEP_AUDIOFILE)
+$(AUDIOFILE)-$(AUDIOFILE_VERSION)/Makefile: $(AUDIOFILE)-$(AUDIOFILE_VERSION)/configure
 	cd $(AUDIOFILE)-$(AUDIOFILE_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
@@ -3076,14 +3073,17 @@ $(DN_SRC)/$(LIBFLITE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBFLITE_URL)
 	touch $@
 
-$(LIBFLITE)-$(LIBFLITE_VERSION)/configure: $(DN_SRC)/$(LIBFLITE_SRC)
+$(LIBFLITE)-$(LIBFLITE_VERSION)/configure.in: $(DN_SRC)/$(LIBFLITE_SRC)
 	tar -xf $(DN_SRC)/$(LIBFLITE_SRC)
 	rm -f $(LIBFLITE)-install
 	mv $(LIBFLITE)* $(LIBFLITE)-$(LIBFLITE_VERSION)
+	touch $@
+
+$(LIBFLITE)-$(LIBFLITE_VERSION)/configure: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure.in $(FL_DEP_LIBFLITE)
 	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure $(FL_DEP_LIBFLITE)
+$(LIBFLITE)-$(LIBFLITE_VERSION)/Makefile: $(LIBFLITE)-$(LIBFLITE_VERSION)/configure
 	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
@@ -3159,10 +3159,10 @@ $(DN_SRC)/$(LIBDCADEC_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBDCADEC_URL)
 	touch $@
 
-$(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile: $(DN_SRC)/$(LIBDCADEC_SRC) $(FL_DEP_LIBDCADEC)
+$(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile: $(DN_SRC)/$(LIBDCADEC_SRC)
 	tar -xf $(DN_SRC)/$(LIBDCADEC_SRC)
 	touch $@
-$(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile
+$(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile $(FL_DEP_LIBDCADEC)
 	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc
@@ -3190,13 +3190,13 @@ $(DN_SRC)/$(APINVENC_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(APINVENC_URL)
 	touch $@
 
-$(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h: $(DN_SRC)/$(APINVENC_SRC) $(FL_DEP_APINVENC)
+$(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h: $(DN_SRC)/$(APINVENC_SRC)
 	unzip $(DN_SRC)/$(APINVENC_SRC)
 	rm -f $(APINVENC)-install
 	mv $(APINVENC)* $(APINVENC)-$(APINVENC_VERSION)
 	touch $@
 
-$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvCPUOPSys.h: $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h
+$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvCPUOPSys.h: $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUOPSys.h $(FL_DEP_APINVENC)
 	install -Dm644 $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/* $(PREFIX_DEST)/$(PREFIX_CONF)/usr/include/
 	touch $@
 
@@ -3445,6 +3445,48 @@ FL_SOURCES+=$(DN_SRC)/$(FFMPEG_SRC)
 FL_UNINSTALL+=$(FFMPEG)-uninstall
 
 ########################################
+# ffms2: A libav/ffmpeg based source library and Avisynth plugin for easy frame accurate access
+# https://github.com/FFMS/ffms2
+FFMS2=ffms2
+
+FL_DEP_FFMS2= \
+	$(AUTOMAKE)-install \
+	$(FFMPEG)-install \
+	$(NULL)
+
+FFMS2_VERSION=2.22
+FFMS2_SRC=$(FFMS2)-$(FFMS2_VERSION).tar.gz
+FFMS2_URL=https://github.com/FFMS/ffms2/archive/$(FFMS2_VERSION).tar.gz
+
+$(DN_SRC)/$(FFMS2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FFMS2_URL)
+	touch $@
+
+$(FFMS2)-$(FFMS2_VERSION)/configure: $(DN_SRC)/$(FFMS2_SRC)
+	tar -xf $(DN_SRC)/$(FFMS2_SRC)
+	#$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(FFMS2)-$(FFMS2_VERSION)/Makefile: $(FFMS2)-$(FFMS2_VERSION)/configure $(FL_DEP_FFMS2)
+	cd $(FFMS2)-$(FFMS2_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-avresample --enable-shared --disable-static
+	touch $@
+$(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/Makefile
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FFMS2).pc: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(FFMS2)-uninstall: $(FFMS2)-$(FFMS2_VERSION)/$(FFMS2).pc
+	cd $(FFMS2)-$(FFMS2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(FFMS2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FFMS2).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FFMS2_SRC)
+FL_UNINSTALL+=$(FFMS2)-uninstall
+
+########################################
 # ilmbase, An high dynamic-range image file format library
 ILMBASE=ilmbase
 ILMBASE_VERSION=2.2.0
@@ -3502,6 +3544,7 @@ $(OPENEXR)-$(OPENEXR_VERSION)/README: $(DN_SRC)/$(OPENEXR_SRC)
 	tar -xf $(DN_SRC)/$(OPENEXR_SRC)
 	touch $@
 $(OPENEXR)-$(OPENEXR_VERSION)/configure: $(OPENEXR)-$(OPENEXR_VERSION)/README $(FL_DEP_OPENEXR)
+
 $(OPENEXR)-$(OPENEXR_VERSION)/Makefile: $(OPENEXR)-$(OPENEXR_VERSION)/configure
 	cd $(OPENEXR)-$(OPENEXR_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
 $(OPENEXR)-$(OPENEXR_VERSION)/IlmImf/libIlmImf.la: $(OPENEXR)-$(OPENEXR_VERSION)/Makefile
@@ -3792,11 +3835,8 @@ $(VTK)-$(VTK_VERSION_GIT)/.git: $(DN_SRC)/$(VTK_SRC)
 	cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull
 	if [ -d "$(VTK)-$(VTK_VERSION_GIT)" ]; then cd $(VTK)-$(VTK_VERSION_GIT) && git pull; else git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT)/ $(VTK)-$(VTK_VERSION_GIT); fi
 
-$(VTK)-$(VTK_VERSION_GIT)/README.md: $(VTK)-$(VTK_VERSION_GIT)/.git $(FL_DEP_VTK)
+$(VTK)-$(VTK_VERSION_GIT)/README.md: $(VTK)-$(VTK_VERSION_GIT)/.git
 	cd $(VTK)-$(VTK_VERSION_GIT)/ && git pull
-	touch $@
-
-$(VTK)-$(VTK_VERSION_GIT)/CMakeLists.txt: $(VTK)-$(VTK_VERSION_GIT)/README.md
 	touch $@
 
 VTK_VERSION:=$(VTK_VERSION_GIT)
@@ -3815,7 +3855,7 @@ $(VTK)-$(VTK_VERSION)/.ExternalData: $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz 
 	tar -xf $<
 	touch $@
 
-$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(VTK)-$(VTK_VERSION)/.ExternalData
+$(VTK)-$(VTK_VERSION)/README.md: $(VTK)-$(VTK_VERSION)/.ExternalData
 	#tar -xf $(DN_SRC)/$(VTK_SRC)
 	#mv VTK* $(VTK)-$(VTK_VERSION)
 	touch $@
@@ -3848,7 +3888,7 @@ FL_SOURCES+=$(DN_SRC)/vtk-gdal2api.patch
 FL_SOURCES+=$(DN_SRC)/vtk-remove-vtkxdmf3.patch
 FL_SOURCES+=$(DN_SRC)/vtk-find-libxml2.patch
 
-$(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remove-vtkxdmf3.patch $(DN_SRC)/vtk-find-libxml2.patch $(VTK)-$(VTK_VERSION)/CMakeLists.txt
+$(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remove-vtkxdmf3.patch $(DN_SRC)/vtk-find-libxml2.patch $(VTK)-$(VTK_VERSION)/README.md
 	cd $(VTK)-$(VTK_VERSION)/ \
 	    && git status | grep modified | awk '{print $$2}' | xargs git checkout
 	cd $(VTK)-$(VTK_VERSION)/ \
@@ -3857,7 +3897,10 @@ $(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remo
 	    && patch -Np1 -i $(DN_SRC)/vtk-gdal2api.patch
 	touch $@
 
-$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt $(FL_DEP_VTK)
+$(VTK)-$(VTK_VERSION_GIT)/CMakeLists.txt: $(VTK)-$(VTK_VERSION_GIT)/mypatched $(FL_DEP_VTK)
+	touch $@
+
+$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt
 	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
@@ -4074,11 +4117,11 @@ $(OPENCV)-$(OPENCV_VERSION)/.git: $(DN_SRC)/$(OPENCV_SRC)
 	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull
 	if [ -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then cd $(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); fi
 
-$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git $(FL_DEP_OPENCV)
+$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && git pull
 	touch $@
 
-$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md
+$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md $(FL_DEP_OPENCV)
 
 else # use released files
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
