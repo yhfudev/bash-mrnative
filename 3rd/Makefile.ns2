@@ -45,12 +45,12 @@ $(TCL)-$(TCL_VERSION)/README: $(DN_SRC)/$(TCL_SRC)
 #$(TCL)-$(TCL_VERSION)/mypatched: $(DN_PATCH)/pbs-libTCL-libvpx.patch $(TCL)-$(TCL_VERSION)/README
 	#cd $(TCL)-$(TCL_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libTCL-libvpx.patch
 	#touch $@
-$(TCL)-$(TCL_VERSION)/unix/configure: $(TCL)-$(TCL_VERSION)/README #$(TCL)-$(TCL_VERSION)/mypatched
-	#cd $(TCL)-$(TCL_VERSION)/unix && ./bootstrap.sh
-	cd $(TCL)-$(TCL_VERSION)/unix && autoreconf -if
+$(TCL)-$(TCL_VERSION)/unix/configure: $(TCL)-$(TCL_VERSION)/README $(FL_DEP_TCL) #$(TCL)-$(TCL_VERSION)/mypatched
+	#cd $(TCL)-$(TCL_VERSION)/unix && $(ENV_COMPILE) ./bootstrap.sh
+	cd $(TCL)-$(TCL_VERSION)/unix && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(TCL)-$(TCL_VERSION)/unix/Makefile: $(TCL)-$(TCL_VERSION)/unix/configure $(FL_DEP_TCL)
+$(TCL)-$(TCL_VERSION)/unix/Makefile: $(TCL)-$(TCL_VERSION)/unix/configure
 	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --without-x --enable-gcc --disable-shared
 $(TCL)-$(TCL_VERSION)/unix/tclsh: $(TCL)-$(TCL_VERSION)/unix/Makefile
 	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -86,12 +86,12 @@ $(TK)-$(TK_VERSION)/README: $(DN_SRC)/$(TK_SRC)
 	mv $(TK)$(TK_VERSION) $(TK)-$(TK_VERSION)/
 	touch $@
 
-$(TK)-$(TK_VERSION)/unix/configure: $(TK)-$(TK_VERSION)/README
-	#cd $(TK)-$(TK_VERSION)/unix && ./bootstrap.sh
-	cd $(TK)-$(TK_VERSION)/unix && autoreconf -if
+$(TK)-$(TK_VERSION)/unix/configure: $(TK)-$(TK_VERSION)/README $(FL_DEP_TK)
+	#cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) ./bootstrap.sh
+	cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(TK)-$(TK_VERSION)/unix/Makefile: $(TK)-$(TK_VERSION)/unix/configure $(FL_DEP_TK)
+$(TK)-$(TK_VERSION)/unix/Makefile: $(TK)-$(TK_VERSION)/unix/configure
 	cd $(TK)-$(TK_VERSION)/unix && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-gcc --disable-shared --disable-rpath --enable-threads #--without-x
 $(TK)-$(TK_VERSION)/unix/wish: $(TK)-$(TK_VERSION)/unix/Makefile
 	cd $(TK)-$(TK_VERSION)/unix/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -129,21 +129,21 @@ $(OTCL)-$(OTCL_VERSION)/otcl.c: $(DN_SRC)/$(OTCL_SRC)
 	tar -xf $(DN_SRC)/$(OTCL_SRC)
 	touch $@
 
-$(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL)-$(OTCL_VERSION)/otcl.c
+$(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL)-$(OTCL_VERSION)/otcl.c $(FL_DEP_OTCL)
 	cd $(OTCL)-$(OTCL_VERSION)/ \
         && patch -uNp1 < $(DN_SRC)/otcl-1.14-tcl86-compat.patch \
         && sed -e 's|@prefix@/|$$(DESTDIR)/@prefix@/|' -e 's|@INST_OLIBSH@|$$(DESTDIR)/@INST_OLIBSH@|' -i Makefile.in
 	touch $@
 
 $(OTCL)-$(OTCL_VERSION)/configure: $(OTCL)-$(OTCL_VERSION)/mypatched
-	cd $(OTCL)-$(OTCL_VERSION)/ && autoreconf -if
+	cd $(OTCL)-$(OTCL_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(OTCL)-$(OTCL_VERSION)/Makefile: $(OTCL)-$(OTCL_VERSION)/configure $(FL_DEP_OTCL)
+$(OTCL)-$(OTCL_VERSION)/Makefile: $(OTCL)-$(OTCL_VERSION)/configure
 	#cd $(OTCL)-$(OTCL_VERSION)/ && LIBS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lXft -lz -lpthread" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-shlib --enable-release --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=no --without-tk --x-libraries= --x-includes=
 	cd $(OTCL)-$(OTCL_VERSION)/ && LIB+="$(LDFLAGS) `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shlib --enable-release --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(OTCL)-$(OTCL_VERSION)/otclsh: $(OTCL)-$(OTCL_VERSION)/Makefile
-	cd $(OTCL)-$(OTCL_VERSION)/ && make LIB+="$(LDFLAGS) `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(MAKE_ARG)
+	cd $(OTCL)-$(OTCL_VERSION)/ && $(ENV_COMPILE) make LIB+="$(LDFLAGS) `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -lm -ldl -pthread" $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/otclsh: $(OTCL)-$(OTCL_VERSION)/otclsh
 	cd $(OTCL)-$(OTCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	chmod 644 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/*.a
@@ -179,12 +179,12 @@ $(TCLCL)-$(TCLCL_VERSION)/configure: $(DN_SRC)/$(TCLCL_SRC)
 	tar -xf $(DN_SRC)/$(TCLCL_SRC)
 	touch $@
 
-$(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(TCLCL)-$(TCLCL_VERSION)/configure
+$(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
 	cd $(TCLCL)-$(TCLCL_VERSION)/ && patch -uNp1 < $(DN_SRC)/tclcl-1.20-tcl86-compat.patch \
         && sed -e 's|@prefix@/|$$(DESTDIR)/@prefix@/|' -i Makefile.in
 	touch $@
 
-$(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
+$(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure
 	#cd $(TCLCL)-$(TCLCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk=no --without-tk --x-libraries= --x-includes=
 	cd $(TCLCL)-$(TCLCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-zlib=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a: $(TCLCL)-$(TCLCL_VERSION)/Makefile
@@ -231,7 +231,7 @@ $(NS2)-$(NS2_VERSION)/configure.in: $(DN_SRC)/$(NS2_SRC)
 	tar -xf $(DN_SRC)/$(NS2_SRC)
 	touch $@
 
-$(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VERSION)/configure.in
+$(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VERSION)/configure.in $(FL_DEP_NS2)
 	cd $(NS2)-$(NS2_VERSION)/ \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-linkstate-erase.fix \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-tcl86.patch \
@@ -241,14 +241,14 @@ $(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VE
 	touch $@
 
 $(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched
-	cd $(NS2)-$(NS2_VERSION)/ && autoconf #autoreconf -if
+	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/configure $(FL_DEP_NS2)
+$(NS2)-$(NS2_VERSION)/Makefile: $(NS2)-$(NS2_VERSION)/configure
 	#cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --without-tk --x-libraries= --x-includes=
 	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(NS2)-$(NS2_VERSION)/ns: $(NS2)-$(NS2_VERSION)/Makefile
-	cd $(NS2)-$(NS2_VERSION)/ && make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
+	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns: $(NS2)-$(NS2_VERSION)/ns
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share
@@ -268,6 +268,7 @@ FL_UNINSTALL+=$(NS2)-uninstall
 NS2DOCSIS=ns-docsis
 
 FL_DEP_NS2DOCSIS= \
+    $(AUTOMAKE)-install \
     $(TCLCL)-install   \
     $(GNUAWK)-install  \
     $(GNUPLOT)-install \
@@ -312,18 +313,18 @@ endif
 	    #&& patch -uNp1 -i $(DN_SRC)/ns-2.35-getopts.patch
 	#touch $@
 
-$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure.in
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure.in $(FL_DEP_NS2DOCSIS)
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ \
 	    && sed -e 's|char \* key = Tcl_GetHashKey|char \* key = (char \*) Tcl_GetHashKey|'  -i pushback/ident-tree.h \
-	    && sed -e 's|.*#define\s*TRACE_MEDIA_PKG.*$$|#define TRACE_MEDIA_PKG 1|'             -i mac/docsis/medium.cc \
-	    && autoconf #autoreconf -if
+	    && sed -e 's|.*#define\s*TRACE_MEDIA_PKG.*$$|#define TRACE_MEDIA_PKG 1|'            -i mac/docsis/medium.cc  \
+	    && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure $(FL_DEP_NS2DOCSIS)
+$(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/configure
 	#cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --without-tk --x-libraries= --x-includes=
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile
-	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
+	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && $(ENV_COMPILE) make LIB+="$(LDFLAGS) -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share

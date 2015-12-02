@@ -74,7 +74,6 @@ $(GRAPHITE2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgraphite2.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GRAPHITE2_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(GRAPHITE2)-install
 FL_UNINSTALL+=$(GRAPHITE2)-uninstall
 
 ########################################
@@ -112,7 +111,6 @@ $(HARFBUZZ)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libharfbuzz.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(HARFBUZZ_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(HARFBUZZ)-install
 FL_UNINSTALL+=$(HARFBUZZ)-uninstall
 
 ########################################
@@ -147,7 +145,6 @@ $(FRIBIDI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfribidi.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FRIBIDI_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(FRIBIDI)-install
 FL_UNINSTALL+=$(FRIBIDI)-uninstall
 
 ########################################
@@ -177,7 +174,6 @@ $(LIBENCA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libenca.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBENCA_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(LIBENCA)-install
 FL_UNINSTALL+=$(LIBENCA)-uninstall
 
 ########################################
@@ -416,6 +412,7 @@ $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la: $(FAAC)-$(FAAC_VERSION)/Makefile
 	cd $(FAAC)-$(FAAC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfaac.a: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
 	cd $(FAAC)-$(FAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	cd $(FAAC)-$(FAAC_VERSION)/libfaac/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(FAAC)-uninstall: $(FAAC)-$(FAAC_VERSION)/libfaac/libfaac.la
 	cd $(FAAC)-$(FAAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -423,7 +420,6 @@ $(FAAC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfaac.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FAAC_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(FAAC)-install
 FL_UNINSTALL_OTHERS+=$(FAAC)-uninstall
 
 ########################################
@@ -578,7 +574,6 @@ $(AMRNB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libamrnb.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRNB_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(AMRNB)-install
 FL_UNINSTALL+=$(AMRNB)-uninstall
 
 ########################################
@@ -607,7 +602,6 @@ $(AMRWB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libamrwb.a
 	touch $@
 
 FL_SOURCES_OTHERS+=$(DN_SRC)/$(AMRWB_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(AMRWB)-install
 FL_UNINSTALL+=$(AMRWB)-uninstall
 
 ########################################
@@ -1903,12 +1897,19 @@ $(DN_SRC)/$(LIBCDIOPARANOIA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBCDIOPARANOIA_URL)
 	touch $@
 
-$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
 	tar -xf $(DN_SRC)/$(LIBCDIOPARANOIA_SRC)
+	touch $@
+
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure.ac $(FL_DEP_LIBCDIOPARANOIA)
+	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && sed -e 's|-lcdio |-lcdio -lrt |' -i libcdio_cdda.pc.in
+	touch $@
+
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/mypatched
 	#cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure $(FL_DEP_LIBCDIOPARANOIA)
+$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/Makefile: $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/configure
 	cd $(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
@@ -2792,7 +2793,7 @@ $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(DN_SRC)/$(LIBRTMP_SRC)
 endif
 
 $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile $(FL_DEP_LIBRTMP)
-	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && $(ENV_COMPILE) make $(MAKE_ARG) all librtmp.pc
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && $(ENV_COMPILE) make $(MAKE_ARG) XCFLAGS=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ XLDFLAGS=-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib all librtmp.pc
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBRTMP).pc: $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/$(LIBRTMP).pc
 	cd $(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/ && make -j1 prefix=$(PREFIX_CONF) sbindir=$(PREFIX_CONF)/bin mandir=$(PREFIX_CONF)/share/man DESTDIR=$(PREFIX_DEST) install
@@ -2832,16 +2833,16 @@ $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile: $(LIBZVBI)-$(LIBZVBI_VERSION)/configure 
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic
 	touch $@
-$(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile
+$(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI)-0.2.pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/Makefile
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBZVBI).pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBZVBI)-0.2.pc: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI)-0.2.pc
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(LIBZVBI)-uninstall: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI).pc
+$(LIBZVBI)-uninstall: $(LIBZVBI)-$(LIBZVBI_VERSION)/$(LIBZVBI)-0.2.pc
 	cd $(LIBZVBI)-$(LIBZVBI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBZVBI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBZVBI).pc
+$(LIBZVBI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBZVBI)-0.2.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBZVBI_SRC)
@@ -3125,7 +3126,7 @@ $(LIBNUT_SRC): $(DN_SRC)/$(LIBNUT_SRC)
 $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile: $(LIBNUT_SRC) $(FL_DEP_LIBNUT)
 	touch $@
 $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/Makefile
-	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && CFLAGS+=" -fPIC" $(ENV_COMPILE) make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX_CONF) libnut/libnut.so
+	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) -C src/trunk CFLAGS=" -fPIC" PREFIX=$(PREFIX_CONF) libnut/libnut.so
 	cd $(LIBNUT)-$(LIBNUT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) -C src/trunk PREFIX=$(PREFIX_CONF) nututils
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBNUT).a: $(LIBNUT)-$(LIBNUT_VERSION)/src/trunk/libnut/$(LIBNUT).a
@@ -3235,7 +3236,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(FONTCONF)-install \
     $(LVPX)-install     \
     $(LIBDC1394)-install \
-    $(FAAC)-uninstall   \
     $(FRIBIDI)-install  \
     $(FREI0R)-install   \
     $(LADSPA)-install   \
@@ -3249,7 +3249,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBCELT)-install \
     $(LIBGME)-install  \
     $(LIBMODPLUG)-install  \
-    $(LIBOPENJPEG)-install \
+    $(LIBOPENJPEG15)-install \
     $(LIBSCHROEDINGER)-install \
     $(LIBSHINE)-install \
     $(LIBSOXR)-install  \
@@ -3270,6 +3270,7 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBDCADEC)-install \
     $(LIBXV)-install \
     $(OPENSSL)-install \
+    $(FAAC)-install \
     #$(APINVENC)-install \
     #$(LIBILBC)-install \
     #$(LIBFLITE)-install \
@@ -3296,9 +3297,8 @@ $(FFMPEG)-$(FFMPEG_VERSION)/.git: $(DN_SRC)/$(FFMPEG_SRC)
 	if [ -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull; else git clone $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); fi
 	touch $@
 
-$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/.git
+$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/.git
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git pull
-#	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
 	touch $@
 
 else
@@ -3315,14 +3315,14 @@ $(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
 	tar -xf $(DN_SRC)/$(FFMPEG_SRC)
 	#mv ffmpeg* $(FFMPEG)-$(FFMPEG_VERSION)
 	touch $@
-
-$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md
-	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
-	touch $@
-
 endif
 
-$(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(FL_DEPENDENCES_FFMPEG)
+$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md $(FL_DEPENDENCES_FFMPEG)
+	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|-lopenjpeg|-lopenjp2|g' -i configure
+	touch $@
+
+$(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
 #  --enable-filters --enable-libopencv --enable-libpulse
 # hardware: --disable-devices --disable-d3d11va --disable-vaapi --disable-vda --enable-videotoolbox \
 # --enable-chromaprint
@@ -3339,13 +3339,13 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched $(
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
-			LDFLAGS=" `$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
+		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjp2` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			LDFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` " \
 			$(ENV_COMPILE) ./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
-			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --libs --cflags libass fontconfig fribidi freetype2 $(FREI0R) $(XAVS)` " \
+			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjp2` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1 ` " \
             \
             --enable-version3 --enable-gpl --enable-nonfree \
             \
@@ -3442,7 +3442,6 @@ $(FFMPEG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a $(PREFIX_DEST)
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(FFMPEG_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(FFMPEG)-install
 FL_UNINSTALL+=$(FFMPEG)-uninstall
 
 ########################################
@@ -3471,7 +3470,6 @@ $(ILMBASE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ilmbase.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(ILMBASE_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(ILMBASE)-install
 FL_UNINSTALL+=$(ILMBASE)-uninstall
 
 ########################################
@@ -4007,7 +4005,6 @@ $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(CUDASDK)-install
 FL_UNINSTALL+=$(CUDASDK)-uninstall
 
 ########################################
@@ -4102,6 +4099,7 @@ $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_S
 $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE)
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
+		    -D CMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=TRUE CMAKE_INSTALL_RPATH=$(PREFIX)/opt/$(CUDASDK)/lib64 \
 			-D CMAKE_BUILD_TYPE=RELEASE \
 			-D CMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
 			-D CMAKE_SKIP_RPATH=ON \
@@ -4129,15 +4127,15 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLis
 			-D WITH_TBB=ON \
 			-D WITH_1394=ON \
 			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/include -D FFMPEG_LIB_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/lib \
-			-D CMAKE_EXE_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_SHARED_LINKER_FLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L1 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L2 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L3 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
 			.. \
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
 
 $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
-	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make install
 	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib
@@ -4199,7 +4197,7 @@ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS
 ####################
 
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -4279,7 +4277,6 @@ $(GPAC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/MP4Box
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GPAC_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(GPAC)-install
 FL_UNINSTALL+=$(GPAC)-uninstall
 
 ########################################

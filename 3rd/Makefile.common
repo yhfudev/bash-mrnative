@@ -40,6 +40,14 @@ ENV_COMPILE= PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH) \
 		LDFLAGS+="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/" \
 		$(NULL)
 
+ENV_COMPILE1=export PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH); \
+		export PKG_CONFIG_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig:$(PKG_CONFIG_PATH); \
+		export LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(LD_LIBRARY_PATH); \
+		export CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/"; \
+		export CPPFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/"; \
+		export LDFLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/"; \
+		$(NULL)
+
 OSTYP:=$(shell uname -m)
 ifeq ($(OSTYP),x86_64)
 CMAKE_ARCH_FLAGS = -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSSE3=OFF
@@ -50,9 +58,6 @@ endif
 ######################################################################
 #CURL=curl -s -L -O
 WGET=wget -P $(DN_SRC)
-
-FL_DEPENDENCES_FFMPEG=
-FL_DEPENDENCES_FFMPEG_OTHERS=
 
 FL_SOURCES=
 FL_SOURCES_OTHERS=
@@ -89,7 +94,6 @@ $(ZLIB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libz.a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(ZLIB_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(ZLIB)-install
 FL_UNINSTALL+=$(ZLIB)-uninstall
 
 
@@ -157,8 +161,6 @@ CMAKE_VERSION_CONN=v3.2
 
 CMAKE_SRC=$(CMAKE)-$(CMAKE_VERSION).tar.gz
 CMAKE_URL=http://www.cmake.org/files/$(CMAKE_VERSION_CONN)/$(CMAKE_SRC)
-
-FL_SOURCES+=$(DN_SRC)/$(CMAKE_SRC)
 
 FL_DEP_CMAKE= \
 	$(ZLIB)-install \
@@ -535,16 +537,17 @@ FL_UNINSTALL+=$(LIBPGM)-uninstall
 
 ########################################
 LIBPNG=libpng
+
+FL_DEP_LIBPNG= \
+	$(ZLIB)-install \
+	$(NULL)
+
 #LIBPNG_VERSION=1.5.14
 #LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
 #LIBPNG_URL=http://downloads.sf.net/project/libpng/libpng15/older-releases/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
 LIBPNG_VERSION=1.6.19
 LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
 LIBPNG_URL=http://downloads.sourceforge.net/project/libpng/libpng16/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
-
-FL_DEP_LIBPNG= \
-	$(ZLIB)-install \
-	$(NULL)
 
 $(DN_SRC)/$(LIBPNG_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBPNG_URL)
@@ -601,13 +604,14 @@ FL_UNINSTALL+=$(LIBTIFF)-uninstall
 ########################################
 # JPEG image codec with accelerated baseline compression and decompression
 LIBJPEG=libjpeg-turbo
-LIBJPEG_VERSION=1.4.2
-LIBJPEG_SRC=$(LIBJPEG)-$(LIBJPEG_VERSION).tar.gz
-LIBJPEG_URL=http://sourceforge.net/projects/$(LIBJPEG)/files/$(LIBJPEG_VERSION)/$(LIBJPEG_SRC)
 
 FL_DEP_LIBJPEG= \
 	$(NASM)-install \
 	$(NULL)
+
+LIBJPEG_VERSION=1.4.2
+LIBJPEG_SRC=$(LIBJPEG)-$(LIBJPEG_VERSION).tar.gz
+LIBJPEG_URL=http://sourceforge.net/projects/$(LIBJPEG)/files/$(LIBJPEG_VERSION)/$(LIBJPEG_SRC)
 
 $(DN_SRC)/$(LIBJPEG_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBJPEG_URL)
@@ -646,6 +650,27 @@ FL_DEP_LIBOPENJPEG= \
 	$(LIBPNG)-install \
 	$(NULL)
 
+USE_GIT_LIBOPENJPEG=1
+
+ifeq ($(USE_GIT_LIBOPENJPEG),1) # use git instead
+
+LIBOPENJPEG_VERSION=git
+LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
+LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg.git
+
+$(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/created
+	git clone $(LIBOPENJPEG_URL) $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)
+	touch $@
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
+	cd $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ && git pull
+#	rm -rf $(DN_TOP)/$(LIBOPENJPEG)*
+#	cp -r $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) $(DN_TOP)/
+	if [ -d "$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)" ]; then cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION); fi
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
+else
+
 LIBOPENJPEG_VERSION=2.1
 LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION).tar.gz
 LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg/archive/version.$(LIBOPENJPEG_VERSION).tar.gz
@@ -660,6 +685,7 @@ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG_SR
 	mv $(LIBOPENJPEG)* $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)
 	#cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/
 	touch $@
+endif
 
 $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt $(FL_DEP_LIBOPENJPEG)
 	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ && mkdir -p build && cd build \
@@ -667,20 +693,67 @@ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile: $(LIBOPENJPEG)-$(LIBOPENJP
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
-$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/libopenjp2.pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/Makefile
 	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBOPENJPEG).pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libopenjp2.pc: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/libopenjp2.pc
 	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make install
 	touch $@
 
-$(LIBOPENJPEG)-uninstall: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/$(LIBOPENJPEG).pc
+$(LIBOPENJPEG)-uninstall: $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build/libopenjp2.pc
 	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/build && make uninstall
-$(LIBOPENJPEG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBOPENJPEG).pc
+$(LIBOPENJPEG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libopenjp2.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG_SRC)
 FL_UNINSTALL+=$(LIBOPENJPEG)-uninstall
+
+# openjpeg 1.5.2 for ffmpeg
+LIBOPENJPEG15=openjpeg1
+LIBOPENJPEG15P=openjpeg
+
+FL_DEP_LIBOPENJPEG15= \
+	$(CMAKE)-install \
+	$(LIBTIFF)-install \
+	$(LIBPNG)-install \
+	$(NULL)
+
+LIBOPENJPEG15_VERSION=1.5.2
+LIBOPENJPEG15_SRC=$(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION).tar.gz
+LIBOPENJPEG15_URL=https://github.com/uclouvain/openjpeg/archive/version.$(LIBOPENJPEG15_VERSION).tar.gz
+
+$(DN_SRC)/$(LIBOPENJPEG15_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBOPENJPEG15_URL)
+	touch $@
+
+$(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG15_SRC)
+	tar -xf $(DN_SRC)/$(LIBOPENJPEG15_SRC)
+	rm -f $(LIBOPENJPEG15)-install
+	mv $(LIBOPENJPEG15P)*$(LIBOPENJPEG15_VERSION) $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)
+	#cd $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/
+	touch $@
+
+$(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build/Makefile: $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/CMakeLists.txt $(FL_DEP_LIBOPENJPEG15)
+	cd $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+            ..
+$(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build/libopenjpeg1.pc: $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build/Makefile
+	cd $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libopenjpeg1.pc: $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build/libopenjpeg1.pc
+	cd $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build && make install
+	touch $@
+
+$(LIBOPENJPEG15)-uninstall: $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build/libopenjpeg1.pc
+	cd $(LIBOPENJPEG15P)-$(LIBOPENJPEG15_VERSION)/build && make uninstall
+$(LIBOPENJPEG15)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libopenjpeg1.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG15_SRC)
+FL_UNINSTALL+=$(LIBOPENJPEG15)-uninstall
+
 
 ########################################
 # A library for reading and writing gif images
@@ -812,6 +885,10 @@ FL_UNINSTALL+=$(FREETYPE)-uninstall
 ########################################
 LIBXML2=libxml2
 
+FL_DEP_LIBXML2= \
+	$(ZLIB)-install \
+	$(NULL)
+
 LIBXML2_VERSION=2.9.3
 LIBXML2_SRC=$(LIBXML2)-$(LIBXML2_VERSION).tar.gz
 LIBXML2_URL=http://xmlsoft.org/sources/$(LIBXML2_SRC)
@@ -822,10 +899,10 @@ $(DN_SRC)/$(LIBXML2_SRC): $(DN_SRC)/created
 $(LIBXML2)-$(LIBXML2_VERSION)/configure: $(DN_SRC)/$(LIBXML2_SRC)
 	tar -xf $(DN_SRC)/$(LIBXML2_SRC)
 	touch $@
-$(LIBXML2)-$(LIBXML2_VERSION)/Makefile: $(LIBXML2)-$(LIBXML2_VERSION)/configure
-	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
+$(LIBXML2)-$(LIBXML2_VERSION)/Makefile: $(LIBXML2)-$(LIBXML2_VERSION)/configure $(FL_DEP_LIBXML2)
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --oldincludedir=$(PREFIX_CONF)/include --datadir=$(PREFIX_CONF) --with-zlib=$(PREFIX_CONF)/lib --with-python=no --enable-static --enable-shared
 $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la: $(LIBXML2)-$(LIBXML2_VERSION)/Makefile
-	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && $(ENV_COMPILE) make LIBS=-lz $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxml2.a: $(LIBXML2)-$(LIBXML2_VERSION)/libxml2.la
 	cd $(LIBXML2)-$(LIBXML2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -854,7 +931,7 @@ $(DN_SRC)/$(LIBXSLT_SRC): $(DN_SRC)/created
 $(LIBXSLT)-$(LIBXSLT_VERSION)/configure: $(DN_SRC)/$(LIBXSLT_SRC)
 	tar -xf $(DN_SRC)/$(LIBXSLT_SRC)
 	touch $@
-$(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile: $(LIBXSLT)-$(LIBXSLT_VERSION)/configure
+$(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile: $(LIBXSLT)-$(LIBXSLT_VERSION)/configure $(FL_DEP_LIBXSLT)
 	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --exec-prefix=$(PREFIX_CONF) --with-libxml-prefix=$(PREFIX_CONF) --with-python=no --enable-static --enable-shared
 $(LIBXSLT)-$(LIBXSLT_VERSION)/$(LIBXSLT).pc: $(LIBXSLT)-$(LIBXSLT_VERSION)/Makefile
 	cd $(LIBXSLT)-$(LIBXSLT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -1082,11 +1159,11 @@ $(UTILLINUX)-$(UTILLINUX_VERSION)/configure.ac: $(DN_SRC)/$(UTILLINUX_SRC)
 	tar -xf $(DN_SRC)/$(UTILLINUX_SRC)
 	touch $@
 
-$(UTILLINUX)-$(UTILLINUX_VERSION)/configure: $(UTILLINUX)-$(UTILLINUX_VERSION)/configure.ac
+$(UTILLINUX)-$(UTILLINUX_VERSION)/configure: $(UTILLINUX)-$(UTILLINUX_VERSION)/configure.ac $(FL_DEP_UTILLINUX)
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile: $(UTILLINUX)-$(UTILLINUX_VERSION)/configure $(FL_DEP_UTILLINUX)
+$(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile: $(UTILLINUX)-$(UTILLINUX_VERSION)/configure
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
               --libdir=$(PREFIX_CONF)/lib \
@@ -1138,11 +1215,11 @@ $(LIBKMOD)-$(LIBKMOD_VERSION)/configure.ac: $(DN_SRC)/$(LIBKMOD_SRC)
 	tar -xf $(DN_SRC)/$(LIBKMOD_SRC)
 	touch $@
 
-$(LIBKMOD)-$(LIBKMOD_VERSION)/configure: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure.ac
+$(LIBKMOD)-$(LIBKMOD_VERSION)/configure: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure.ac $(FL_DEP_LIBKMOD)
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure $(FL_DEP_LIBKMOD)
+$(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
         --sysconfdir=$(PREFIX_CONF)/etc \
@@ -1219,11 +1296,11 @@ $(USBUTILS)-$(USBUTILS_VERSION)/configure.ac: $(DN_SRC)/$(USBUTILS_SRC)
 	tar -xf $(DN_SRC)/$(USBUTILS_SRC)
 	touch $@
 
-$(USBUTILS)-$(USBUTILS_VERSION)/configure: $(USBUTILS)-$(USBUTILS_VERSION)/configure.ac
+$(USBUTILS)-$(USBUTILS_VERSION)/configure: $(USBUTILS)-$(USBUTILS_VERSION)/configure.ac $(FL_DEP_USBUTILS)
 	cd $(USBUTILS)-$(USBUTILS_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(USBUTILS)-$(USBUTILS_VERSION)/Makefile: $(USBUTILS)-$(USBUTILS_VERSION)/configure $(FL_DEP_USBUTILS)
+$(USBUTILS)-$(USBUTILS_VERSION)/Makefile: $(USBUTILS)-$(USBUTILS_VERSION)/configure
 	cd $(USBUTILS)-$(USBUTILS_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
         --datadir=$(PREFIX_CONF)/share/hwdata --disable-zlib \
@@ -1265,7 +1342,7 @@ $(DN_SRC)/$(LIBUDEV_SRC): $(DN_SRC)/created
 $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
 	tar -xf $(DN_SRC)/$(LIBUDEV_SRC)
 	touch $@
-$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
+$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am $(FL_DEP_LIBUDEV)
 #	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	#cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
@@ -1275,7 +1352,7 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/configure $(FL_DEP_LIBUDEV)
+$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/configure
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --enable-gudev \
             --with-libdir=$(PREFIX_CONF)/lib \
@@ -1358,7 +1435,6 @@ $(LIBDC1394)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libdc1394-2.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBDC1394_SRC)
-#FL_DEPENDENCES_FFMPEG+=$(LIBDC1394)-install
 FL_UNINSTALL+=$(LIBDC1394)-uninstall
 
 
@@ -1405,7 +1481,6 @@ $(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX_SRC)
 FL_SOURCES+=$(DN_SRC)/$(LVPX_SRC)
 endif
 
-
 $(LVPX)-$(LVPX_VERSION)/Makefile: $(LVPX)-$(LVPX_VERSION)/configure $(FL_DEP_LVPX)
 #disable vp9:	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --as=yasm --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
 	cd $(LVPX)-* && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --as=yasm --enable-static --enable-shared --disable-examples --disable-docs --disable-unit-tests --enable-vp8 --enable-vp9
@@ -1422,7 +1497,6 @@ $(LVPX)-uninstall: $(LVPX)-$(LVPX_VERSION)/libvpx.a
 $(LVPX)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libvpx.a
 	touch $@
 
-#FL_DEP_GNUPLOT+=$(LVPX)-install
 FL_UNINSTALL+=$(LVPX)-uninstall
 
 ########################################
@@ -1779,7 +1853,6 @@ $(LIBXRENDER)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXRENDER).a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXRENDER_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXRENDER)-install
 FL_UNINSTALL+=$(LIBXRENDER)-uninstall
 
 
@@ -1814,7 +1887,6 @@ $(LIBXFT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXFT).a
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXFT_SRC)
-#FL_DEP_GNUPLOT+=$(LIBXFT)-install
 FL_UNINSTALL+=$(LIBXFT)-uninstall
 
 ########################################
@@ -2505,11 +2577,11 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(DN_SRC)/$(GNUPLOT_SRC)
 	tar -xf $(DN_SRC)/$(GNUPLOT_SRC)
 	touch $@
 
-$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure
+$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-gnuplot-lua.patch
 	touch $@
 
-$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
+$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
