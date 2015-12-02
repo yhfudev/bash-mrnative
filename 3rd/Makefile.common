@@ -2615,6 +2615,7 @@ FL_DEP_GD= \
 	$(GETTEXT)-install \
 	$(LUA)-install \
 	$(LIBXPM)-install \
+	$(LIBPNG)-install \
 	$(LIBTIFF)-install \
 	$(LVPX)-install \
 	$(NULL)
@@ -2676,7 +2677,11 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched
 	touch $@
 
 $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/configure
-	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	        --with-gd=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+	        --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+	        --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+	        --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot

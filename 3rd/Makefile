@@ -33,7 +33,7 @@ ns2:
 ns2docsis:
 	$(call compile,$(DN_PWD),$(DN_SRC),ns2,ns2docsis)
 
-dist-gzip: dist-gzip-gnuplot dist-gzip-ns2docsis dist-gzip-ns2 dist-gzip-ffmpeg
+dist-gzip: dist-gzip-gnuplot dist-gzip-ns2 dist-gzip-ffmpeg
 
 dist-gzip-ffmpeg: ffmpeg
 	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m))
