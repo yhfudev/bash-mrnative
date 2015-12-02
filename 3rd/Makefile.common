@@ -184,6 +184,7 @@ $(CMAKE)-$(CMAKE_VERSION)/bin/cmake: $(CMAKE)-$(CMAKE_VERSION)/Makefile
 	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/cmake: $(CMAKE)-$(CMAKE_VERSION)/bin/cmake
 	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
 
 $(CMAKE)-uninstall: $(CMAKE)-$(CMAKE_VERSION)/cmake
 	cd $(CMAKE)-$(CMAKE_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -1116,7 +1117,7 @@ $(GETTEXT)-$(GETTEXT_VERSION)/configure.ac: $(DN_SRC)/$(GETTEXT_SRC)
 	touch $@
 
 $(GETTEXT)-$(GETTEXT_VERSION)/configure: $(GETTEXT)-$(GETTEXT_VERSION)/configure.ac $(FL_DEP_GETTEXT)
-	#cd $(GETTEXT)-$(GETTEXT_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(GETTEXT)-$(GETTEXT_VERSION)/Makefile: $(GETTEXT)-$(GETTEXT_VERSION)/configure
@@ -1124,14 +1125,14 @@ $(GETTEXT)-$(GETTEXT_VERSION)/Makefile: $(GETTEXT)-$(GETTEXT_VERSION)/configure
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 
-$(GETTEXT)-$(GETTEXT_VERSION)/$(GETTEXT)-1.0.pc: $(GETTEXT)-$(GETTEXT_VERSION)/Makefile
+$(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen: $(GETTEXT)-$(GETTEXT_VERSION)/Makefile
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GETTEXT)-1.0.pc: $(GETTEXT)-$(GETTEXT_VERSION)/$(GETTEXT)-1.0.pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/msgen: $(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GETTEXT)-uninstall: $(GETTEXT)-$(GETTEXT_VERSION)/$(GETTEXT)-1.0.pc
+$(GETTEXT)-uninstall: $(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GETTEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GETTEXT)-1.0.pc
+$(GETTEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/msgen
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GETTEXT_SRC)
@@ -1514,10 +1515,10 @@ $(LUA)-$(LUA_VERSION)/Makefile: $(DN_SRC)/$(LUA_SRC)
 $(LUA)-$(LUA_VERSION)/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
 	cd $(LUA)-$(LUA_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/lua
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/src/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ INSTALL_MAN=$(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1 install
 
-$(LUA)-uninstall: $(LUA)-$(LUA_VERSION)/lua
+$(LUA)-uninstall: $(LUA)-$(LUA_VERSION)/src/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ uninstall
 $(LUA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua
 	touch $@
@@ -1559,6 +1560,66 @@ FL_SOURCES+=$(DN_SRC)/$(GNUAWK_SRC)
 FL_UNINSTALL+=$(GNUAWK)-uninstall
 
 ########################################
+# X.Org Autotools macros
+XUTILMACRO=util-macros
+
+XUTILMACRO_VERSION=1.19.0
+XUTILMACRO_SRC=$(XUTILMACRO)-$(XUTILMACRO_VERSION).tar.gz
+XUTILMACRO_URL="http://www.x.org/releases/individual/util/$(XUTILMACRO_SRC)"
+
+$(DN_SRC)/$(XUTILMACRO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XUTILMACRO_URL)
+	touch $@
+$(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure: $(DN_SRC)/$(XUTILMACRO_SRC)
+	tar -xf $(DN_SRC)/$(XUTILMACRO_SRC)
+	#mv $(XUTILMACRO)$(XUTILMACRO_VERSION) $(XUTILMACRO)-$(XUTILMACRO_VERSION)/
+	touch $@
+$(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure $(FL_DEP_XUTILMACRO)
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(XUTILMACRO)-uninstall: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XUTILMACRO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XUTILMACRO_SRC)
+FL_UNINSTALL+=$(XUTILMACRO)-uninstall
+
+########################################
+XPROTO=xproto
+
+FL_DEP_XPROTO= \
+	$(XUTILMACRO)-install \
+	$(NULL)
+
+XPROTO_VERSION=7.0.28
+XPROTO_SRC=$(XPROTO)-$(XPROTO_VERSION).tar.gz
+XPROTO_URL="http://www.x.org/releases/individual/proto/$(XPROTO_SRC)"
+
+$(DN_SRC)/$(XPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XPROTO_URL)
+	touch $@
+$(XPROTO)-$(XPROTO_VERSION)/configure: $(DN_SRC)/$(XPROTO_SRC)
+	tar -xf $(DN_SRC)/$(XPROTO_SRC)
+	#mv $(XPROTO)$(XPROTO_VERSION) $(XPROTO)-$(XPROTO_VERSION)/
+	touch $@
+$(XPROTO)-$(XPROTO_VERSION)/Makefile: $(XPROTO)-$(XPROTO_VERSION)/configure $(FL_DEP_XPROTO)
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc: $(XPROTO)-$(XPROTO_VERSION)/Makefile
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(XPROTO)-uninstall: $(XPROTO)-$(XPROTO_VERSION)/Makefile
+	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(XPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XPROTO_SRC)
+FL_UNINSTALL+=$(XPROTO)-uninstall
+
+########################################
 # X11 various extension wire protocol
 XEXTPROTO=xextproto
 XEXTPROTO_VERSION=7.3.0
@@ -1584,6 +1645,41 @@ $(XEXTPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xextproto.pc
 
 FL_SOURCES+=$(DN_SRC)/$(XEXTPROTO_SRC)
 FL_UNINSTALL+=$(XEXTPROTO)-uninstall
+
+########################################
+# X11 Fixes extension wire protocol
+FIXESPROTO=fixesproto
+
+FL_DEP_FIXESPROTO= \
+	$(XUTILMACRO)-install \
+	$(XEXTPROTO)-install \
+	$(XPROTO)-install \
+	$(NULL)
+
+FIXESPROTO_VERSION=5.0
+FIXESPROTO_SRC=$(FIXESPROTO)-$(FIXESPROTO_VERSION).tar.gz
+FIXESPROTO_URL="http://www.x.org/releases/individual/proto/$(FIXESPROTO_SRC)"
+
+$(DN_SRC)/$(FIXESPROTO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FIXESPROTO_URL)
+	touch $@
+$(FIXESPROTO)-$(FIXESPROTO_VERSION)/configure: $(DN_SRC)/$(FIXESPROTO_SRC)
+	tar -xf $(DN_SRC)/$(FIXESPROTO_SRC)
+	#mv $(FIXESPROTO)$(FIXESPROTO_VERSION) $(FIXESPROTO)-$(FIXESPROTO_VERSION)/
+	touch $@
+$(FIXESPROTO)-$(FIXESPROTO_VERSION)/Makefile: $(FIXESPROTO)-$(FIXESPROTO_VERSION)/configure $(FL_DEP_FIXESPROTO)
+	cd $(FIXESPROTO)-$(FIXESPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FIXESPROTO).pc: $(FIXESPROTO)-$(FIXESPROTO_VERSION)/Makefile
+	cd $(FIXESPROTO)-$(FIXESPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(FIXESPROTO)-uninstall: $(FIXESPROTO)-$(FIXESPROTO_VERSION)/Makefile
+	cd $(FIXESPROTO)-$(FIXESPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(FIXESPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FIXESPROTO).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FIXESPROTO_SRC)
+FL_UNINSTALL+=$(FIXESPROTO)-uninstall
 
 ########################################
 # X11 various extension wire protocol
@@ -1726,66 +1822,6 @@ FL_UNINSTALL+=$(KBPROTO)-uninstall
 
 
 ########################################
-# X.Org Autotools macros
-XUTILMACRO=util-macros
-
-XUTILMACRO_VERSION=1.19.0
-XUTILMACRO_SRC=$(XUTILMACRO)-$(XUTILMACRO_VERSION).tar.gz
-XUTILMACRO_URL="http://www.x.org/releases/individual/util/$(XUTILMACRO_SRC)"
-
-$(DN_SRC)/$(XUTILMACRO_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(XUTILMACRO_URL)
-	touch $@
-$(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure: $(DN_SRC)/$(XUTILMACRO_SRC)
-	tar -xf $(DN_SRC)/$(XUTILMACRO_SRC)
-	#mv $(XUTILMACRO)$(XUTILMACRO_VERSION) $(XUTILMACRO)-$(XUTILMACRO_VERSION)/
-	touch $@
-$(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure $(FL_DEP_XUTILMACRO)
-	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
-	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(XUTILMACRO)-uninstall: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
-	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(XUTILMACRO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(XUTILMACRO_SRC)
-FL_UNINSTALL+=$(XUTILMACRO)-uninstall
-
-########################################
-XPROTO=xproto
-
-FL_DEP_XPROTO= \
-	$(XUTILMACRO)-install \
-	$(NULL)
-
-XPROTO_VERSION=7.0.28
-XPROTO_SRC=$(XPROTO)-$(XPROTO_VERSION).tar.gz
-XPROTO_URL="http://www.x.org/releases/individual/proto/$(XPROTO_SRC)"
-
-$(DN_SRC)/$(XPROTO_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(XPROTO_URL)
-	touch $@
-$(XPROTO)-$(XPROTO_VERSION)/configure: $(DN_SRC)/$(XPROTO_SRC)
-	tar -xf $(DN_SRC)/$(XPROTO_SRC)
-	#mv $(XPROTO)$(XPROTO_VERSION) $(XPROTO)-$(XPROTO_VERSION)/
-	touch $@
-$(XPROTO)-$(XPROTO_VERSION)/Makefile: $(XPROTO)-$(XPROTO_VERSION)/configure $(FL_DEP_XPROTO)
-	cd $(XPROTO)-$(XPROTO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc: $(XPROTO)-$(XPROTO_VERSION)/Makefile
-	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(XPROTO)-uninstall: $(XPROTO)-$(XPROTO_VERSION)/Makefile
-	cd $(XPROTO)-$(XPROTO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(XPROTO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(XPROTO).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(XPROTO_SRC)
-FL_UNINSTALL+=$(XPROTO)-uninstall
-
-########################################
 # XML-XCB protocol descriptions
 XCBPROTO=xcb-proto
 
@@ -1913,18 +1949,18 @@ $(LIBICE)-$(LIBICE_VERSION)/configure: $(DN_SRC)/$(LIBICE_SRC)
 $(LIBICE)-$(LIBICE_VERSION)/Makefile: $(LIBICE)-$(LIBICE_VERSION)/configure $(FL_DEP_LIBICE)
 	cd $(LIBICE)-$(LIBICE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la: $(LIBICE)-$(LIBICE_VERSION)/Makefile
+$(LIBICE)-$(LIBICE_VERSION)/src/$(LIBICE).la: $(LIBICE)-$(LIBICE_VERSION)/Makefile
 	cd $(LIBICE)-$(LIBICE_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).a: $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).la: $(LIBICE)-$(LIBICE_VERSION)/src/$(LIBICE).la
 	cd $(LIBICE)-$(LIBICE_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBICE)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBICE)"
 
-$(LIBICE)-uninstall: $(LIBICE)-$(LIBICE_VERSION)/$(LIBICE).la
+$(LIBICE)-uninstall: $(LIBICE)-$(LIBICE_VERSION)/src/$(LIBICE).la
 	cd $(LIBICE)-$(LIBICE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBICE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).a
+$(LIBICE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBICE).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBICE_SRC)
@@ -1951,18 +1987,18 @@ $(LIBSM)-$(LIBSM_VERSION)/configure: $(DN_SRC)/$(LIBSM_SRC)
 $(LIBSM)-$(LIBSM_VERSION)/Makefile: $(LIBSM)-$(LIBSM_VERSION)/configure $(FL_DEP_LIBSM)
 	cd $(LIBSM)-$(LIBSM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la: $(LIBSM)-$(LIBSM_VERSION)/Makefile
+$(LIBSM)-$(LIBSM_VERSION)/src/$(LIBSM).la: $(LIBSM)-$(LIBSM_VERSION)/Makefile
 	cd $(LIBSM)-$(LIBSM_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).a: $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).la: $(LIBSM)-$(LIBSM_VERSION)/src/$(LIBSM).la
 	cd $(LIBSM)-$(LIBSM_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBSM)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBSM)"
 
-$(LIBSM)-uninstall: $(LIBSM)-$(LIBSM_VERSION)/$(LIBSM).la
+$(LIBSM)-uninstall: $(LIBSM)-$(LIBSM_VERSION)/src/$(LIBSM).la
 	cd $(LIBSM)-$(LIBSM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBSM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).a
+$(LIBSM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBSM).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBSM_SRC)
@@ -1991,7 +2027,8 @@ $(XTRANS)-$(XTRANS_VERSION)/Makefile: $(XTRANS)-$(XTRANS_VERSION)/configure $(FL
 $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/Makefile
 	cd $(XTRANS)-$(XTRANS_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/Xtrans/Xtrans.h: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
 	cd $(XTRANS)-$(XTRANS_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(XTRANS)" \
@@ -1999,7 +2036,7 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc: $(XTRANS)-$(XTRANS_VERSIO
 
 $(XTRANS)-uninstall: $(XTRANS)-$(XTRANS_VERSION)/xtrans.pc
 	cd $(XTRANS)-$(XTRANS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(XTRANS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xtrans.pc
+$(XTRANS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/Xtrans/Xtrans.h
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(XTRANS_SRC)
@@ -2029,10 +2066,11 @@ $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile: $(LIBPTHREADSTUBS)-$(LIB
 $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/Makefile
 	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/pthread-stubs.pc: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc
 	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
 
 $(LIBPTHREADSTUBS)-uninstall: $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/pthread-stubs.pc
 	cd $(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -2068,12 +2106,13 @@ $(LIBXAU)-$(LIBXAU_VERSION)/Makefile: $(LIBXAU)-$(LIBXAU_VERSION)/configure $(FL
 $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/Makefile
 	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXAU).la: $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la
 	cd $(LIBXAU)-$(LIBXAU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXAU)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXAU)"
-	touch $@
 
 $(LIBXAU)-uninstall: $(LIBXAU)-$(LIBXAU_VERSION)/$(LIBXAU).la
 	cd $(LIBXAU)-$(LIBXAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -2150,6 +2189,7 @@ $(LIBXCB)-$(LIBXCB_VERSION)/Makefile: $(LIBXCB)-$(LIBXCB_VERSION)/configure $(FL
 $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/Makefile
 	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xcb.pc: $(LIBXCB)-$(LIBXCB_VERSION)/xcb.pc
 	cd $(LIBXCB)-$(LIBXCB_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2193,6 +2233,7 @@ $(LIBX11)-$(LIBX11_VERSION)/Makefile: $(LIBX11)-$(LIBX11_VERSION)/configure $(FL
 $(LIBX11)-$(LIBX11_VERSION)/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/Makefile
 	cd $(LIBX11)-$(LIBX11_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/x11.pc: $(LIBX11)-$(LIBX11_VERSION)/x11.pc
 	cd $(LIBX11)-$(LIBX11_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
@@ -2229,14 +2270,14 @@ $(LIBXPM)-$(LIBXPM_VERSION)/configure: $(DN_SRC)/$(LIBXPM_SRC)
 	touch $@
 $(LIBXPM)-$(LIBXPM_VERSION)/Makefile: $(LIBXPM)-$(LIBXPM_VERSION)/configure $(FL_DEP_LIBXPM)
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
-$(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
+$(LIBXPM)-$(LIBXPM_VERSION)/src/libXpm.la: $(LIBXPM)-$(LIBXPM_VERSION)/Makefile
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a: $(LIBXPM)-$(LIBXPM_VERSION)/libxpm.a
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXpm.la: $(LIBXPM)-$(LIBXPM_VERSION)/src/libXpm.la
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBXPM)-uninstall: $(LIBXPM)-$(LIBXPM_VERSION)/LIBXPM
+$(LIBXPM)-uninstall: $(LIBXPM)-$(LIBXPM_VERSION)/src/libXpm.la
 	cd $(LIBXPM)-$(LIBXPM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXPM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libxpm.a
+$(LIBXPM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXpm.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXPM_SRC)
@@ -2267,18 +2308,18 @@ $(LIBXT)-$(LIBXT_VERSION)/configure: $(DN_SRC)/$(LIBXT_SRC)
 $(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure $(FL_DEP_LIBXT)
 	cd $(LIBXT)-$(LIBXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
+$(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).a: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXT)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXT)"
 
-$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/$(LIBXT).la
+$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la
 	cd $(LIBXT)-$(LIBXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).a
+$(LIBXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXT_SRC)
@@ -2307,22 +2348,63 @@ $(LIBXEXT)-$(LIBXEXT_VERSION)/configure: $(DN_SRC)/$(LIBXEXT_SRC)
 $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile: $(LIBXEXT)-$(LIBXEXT_VERSION)/configure $(FL_DEP_LIBXEXT)
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
+$(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).a: $(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXEXT)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXEXT)"
 
-$(LIBXEXT)-uninstall: $(LIBXEXT)-$(LIBXEXT_VERSION)/$(LIBXEXT).la
+$(LIBXEXT)-uninstall: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).a
+$(LIBXEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXEXT_SRC)
 FL_UNINSTALL+=$(LIBXEXT)-uninstall
+
+########################################
+# X11 miscellaneous 'fixes' extension library
+# http://xorg.freedesktop.org/
+LIBXFIXES=libXfixes
+
+FL_DEP_LIBXFIXES= \
+	$(XUTILMACRO)-install \
+	$(FIXESPROTO)-install \
+	$(LIBX11)-install \
+	$(NULL)
+
+LIBXFIXES_VERSION=5.0.1
+LIBXFIXES_SRC=$(LIBXFIXES)-$(LIBXFIXES_VERSION).tar.gz
+LIBXFIXES_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXFIXES_SRC)
+
+$(DN_SRC)/$(LIBXFIXES_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBXFIXES_URL)
+	touch $@
+$(LIBXFIXES)-$(LIBXFIXES_VERSION)/configure: $(DN_SRC)/$(LIBXFIXES_SRC)
+	tar -xf $(DN_SRC)/$(LIBXFIXES_SRC)
+	touch $@
+$(LIBXFIXES)-$(LIBXFIXES_VERSION)/Makefile: $(LIBXFIXES)-$(LIBXFIXES_VERSION)/configure $(FL_DEP_LIBXFIXES)
+	cd $(LIBXFIXES)-$(LIBXFIXES_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
+	touch $@
+$(LIBXFIXES)-$(LIBXFIXES_VERSION)/src/$(LIBXFIXES).la: $(LIBXFIXES)-$(LIBXFIXES_VERSION)/Makefile
+	cd $(LIBXFIXES)-$(LIBXFIXES_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXFIXES).la: $(LIBXFIXES)-$(LIBXFIXES_VERSION)/src/$(LIBXFIXES).la
+	cd $(LIBXFIXES)-$(LIBXFIXES_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXFIXES)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXFIXES)"
+
+$(LIBXFIXES)-uninstall: $(LIBXFIXES)-$(LIBXFIXES_VERSION)/src/$(LIBXFIXES).la
+	cd $(LIBXFIXES)-$(LIBXFIXES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBXFIXES)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXFIXES).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBXFIXES_SRC)
+FL_UNINSTALL+=$(LIBXFIXES)-uninstall
 
 ########################################
 LIBXSS=libXScrnSaver
@@ -2384,18 +2466,18 @@ $(LIBXMU)-$(LIBXMU_VERSION)/configure: $(DN_SRC)/$(LIBXMU_SRC)
 $(LIBXMU)-$(LIBXMU_VERSION)/Makefile: $(LIBXMU)-$(LIBXMU_VERSION)/configure $(FL_DEP_LIBXMU)
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/Makefile
+$(LIBXMU)-$(LIBXMU_VERSION)/src/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/Makefile
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).a: $(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).la: $(LIBXMU)-$(LIBXMU_VERSION)/src/$(LIBXMU).la
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXMU)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXMU)"
 
-$(LIBXMU)-uninstall: $(LIBXMU)-$(LIBXMU_VERSION)/$(LIBXMU).la
+$(LIBXMU)-uninstall: $(LIBXMU)-$(LIBXMU_VERSION)/src/$(LIBXMU).la
 	cd $(LIBXMU)-$(LIBXMU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXMU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).a
+$(LIBXMU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXMU).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXMU_SRC)
@@ -2410,8 +2492,9 @@ LIBXI_SRC=$(LIBXI)-$(LIBXI_VERSION).tar.gz
 LIBXI_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXI_SRC)
 
 FL_DEP_LIBXI= \
-	$(LIBXEXT)-install \
 	$(INPUTPROTO)-install \
+	$(LIBXEXT)-install \
+	$(LIBXFIXES)-install \
 	$(NULL)
 
 $(DN_SRC)/$(LIBXI_SRC): $(DN_SRC)/created
@@ -2423,18 +2506,18 @@ $(LIBXI)-$(LIBXI_VERSION)/configure: $(DN_SRC)/$(LIBXI_SRC)
 $(LIBXI)-$(LIBXI_VERSION)/Makefile: $(LIBXI)-$(LIBXI_VERSION)/configure $(FL_DEP_LIBXI)
 	cd $(LIBXI)-$(LIBXI_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/Makefile
+$(LIBXI)-$(LIBXI_VERSION)/src/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/Makefile
 	cd $(LIBXI)-$(LIBXI_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).a: $(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).la: $(LIBXI)-$(LIBXI_VERSION)/src/$(LIBXI).la
 	cd $(LIBXI)-$(LIBXI_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXI)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXI)"
 
-$(LIBXI)-uninstall: $(LIBXI)-$(LIBXI_VERSION)/$(LIBXI).la
+$(LIBXI)-uninstall: $(LIBXI)-$(LIBXI_VERSION)/src/$(LIBXI).la
 	cd $(LIBXI)-$(LIBXI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).a
+$(LIBXI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXI).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXI_SRC)
@@ -2450,6 +2533,7 @@ LIBXV_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXV_SRC)
 
 FL_DEP_LIBXV= \
 	$(LIBXEXT)-install \
+	$(LIBXFIXES)-install \
 	$(VIDEOPROTO)-install \
 	$(NULL)
 
@@ -2462,16 +2546,16 @@ $(LIBXV)-$(LIBXV_VERSION)/configure: $(DN_SRC)/$(LIBXV_SRC)
 $(LIBXV)-$(LIBXV_VERSION)/Makefile: $(LIBXV)-$(LIBXV_VERSION)/configure $(FL_DEP_LIBXV)
 	cd $(LIBXV)-$(LIBXV_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/Makefile
+$(LIBXV)-$(LIBXV_VERSION)/src/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/Makefile
 	cd $(LIBXV)-$(LIBXV_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).a: $(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).la: $(LIBXV)-$(LIBXV_VERSION)/src/$(LIBXV).la
 	cd $(LIBXV)-$(LIBXV_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBXV)-uninstall: $(LIBXV)-$(LIBXV_VERSION)/$(LIBXV).la
+$(LIBXV)-uninstall: $(LIBXV)-$(LIBXV_VERSION)/src/$(LIBXV).la
 	cd $(LIBXV)-$(LIBXV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).a
+$(LIBXV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXV).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXV_SRC)
@@ -2498,16 +2582,16 @@ $(GLU)-$(GLU_VERSION)/configure: $(DN_SRC)/$(GLU_SRC)
 $(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure $(FL_DEP_GLU)
 	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
 	touch $@
-$(GLU)-$(GLU_VERSION)/$(GLU).la: $(GLU)-$(GLU_VERSION)/Makefile
+$(GLU)-$(GLU_VERSION)/libGLU.la: $(GLU)-$(GLU_VERSION)/Makefile
 	cd $(GLU)-$(GLU_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GLU).a: $(GLU)-$(GLU_VERSION)/$(GLU).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLU.la: $(GLU)-$(GLU_VERSION)/libGLU.la
 	cd $(GLU)-$(GLU_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GLU)-uninstall: $(GLU)-$(GLU_VERSION)/$(GLU).la
+$(GLU)-uninstall: $(GLU)-$(GLU_VERSION)/libGLU.la
 	cd $(GLU)-$(GLU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GLU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(GLU).a
+$(GLU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLU.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GLU_SRC)
@@ -2549,14 +2633,14 @@ $(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched
 	touch $@
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/configure
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
-$(GD)-$(GD_VERSION)/gd: $(GD)-$(GD_VERSION)/Makefile
+$(GD)-$(GD_VERSION)/src/annotate: $(GD)-$(GD_VERSION)/Makefile
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd: $(GD)-$(GD_VERSION)/gd
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/annotate: $(GD)-$(GD_VERSION)/src/annotate
 	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GD)-uninstall: $(GD)-$(GD_VERSION)/gd
+$(GD)-uninstall: $(GD)-$(GD_VERSION)/src/annotate
 	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gd
+$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/annotate
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GD_SRC)
@@ -2587,12 +2671,12 @@ $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNU
 
 $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
-$(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
+$(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GNUPLOT)-uninstall: $(GNUPLOT)-$(GNUPLOT_VERSION)/gnuplot
+$(GNUPLOT)-uninstall: $(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(GNUPLOT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gnuplot
 	touch $@
