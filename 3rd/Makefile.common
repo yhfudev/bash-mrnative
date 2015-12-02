@@ -269,7 +269,6 @@ $(DN_SRC)/$(LIBTOOL_SRC): $(DN_SRC)/created
 
 $(LIBTOOL)-$(LIBTOOL_VERSION)/configure: $(DN_SRC)/$(LIBTOOL_SRC)
 	tar -xf $(DN_SRC)/$(LIBTOOL_SRC)
-	#$(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(LIBTOOL)-$(LIBTOOL_VERSION)/Makefile: $(LIBTOOL)-$(LIBTOOL_VERSION)/configure $(FL_DEP_LIBTOOL)
@@ -1343,13 +1342,13 @@ $(DN_SRC)/$(LIBUDEV_SRC): $(DN_SRC)/created
 $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
 	tar -xf $(DN_SRC)/$(LIBUDEV_SRC)
 	touch $@
-$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am $(FL_DEP_LIBUDEV)
+$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
 #	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	#cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
 	touch $@
 
-$(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched
+$(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -1512,7 +1511,7 @@ $(DN_SRC)/$(LUA_SRC): $(DN_SRC)/created
 $(LUA)-$(LUA_VERSION)/Makefile: $(DN_SRC)/$(LUA_SRC)
 	tar -xf $(DN_SRC)/$(LUA_SRC)
 	touch $@
-$(LUA)-$(LUA_VERSION)/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
+$(LUA)-$(LUA_VERSION)/src/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
 	cd $(LUA)-$(LUA_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/src/lua
@@ -1883,7 +1882,7 @@ $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile: $(LIBXRENDER)-$(LIBXRENDER_VERSION
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
 $(LIBXRENDER)-$(LIBXRENDER_VERSION)/src/$(LIBXRENDER).la: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/Makefile
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXRENDER).a: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/src/$(LIBXRENDER).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXRENDER).la: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/src/$(LIBXRENDER).la
 	cd $(LIBXRENDER)-$(LIBXRENDER_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(LIBXRENDER)-uninstall: $(LIBXRENDER)-$(LIBXRENDER_VERSION)/src/$(LIBXRENDER).la
@@ -2609,12 +2608,15 @@ LIBGD_VERSION=2.1.1
 LIBGD_SRC=$(LIBGD)-$(LIBGD_VERSION).tar.gz
 LIBGD_URL="https://github.com/libgd/libgd/releases/download/gd-$(LIBGD_VERSION)/$(GD_SRC)"
 
+# GETTEXT: for AM_ICONV in config
+# AUTOMAKE: for autoreconf (bootstrap.sh)
 FL_DEP_GD= \
+	$(AUTOMAKE)-install \
+	$(GETTEXT)-install \
 	$(LUA)-install \
 	$(LIBXPM)-install \
 	$(LIBTIFF)-install \
 	$(LVPX)-install \
-	$(AUTOMAKE)-install \
 	$(NULL)
 
 $(DN_SRC)/$(GD_SRC): $(DN_SRC)/created
@@ -2625,10 +2627,10 @@ $(GD)-$(GD_VERSION)/configure.ac: $(DN_SRC)/$(GD_SRC)
 	rm -rf $(GD)-install $(GD)-$(GD_VERSION)/
 	mv libgd-gd* $(GD)-$(GD_VERSION)/
 	touch $@
-$(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VERSION)/configure.ac $(FL_DEP_GD)
+$(GD)-$(GD_VERSION)/mypatched: $(DN_PATCH)/pbs-libgd-libvpx.patch $(GD)-$(GD_VERSION)/configure.ac
 	cd $(GD)-$(GD_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-libgd-libvpx.patch
 	touch $@
-$(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched
+$(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched $(FL_DEP_GD)
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./bootstrap.sh
 	touch $@
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/configure
@@ -2661,15 +2663,19 @@ FL_DEP_GNUPLOT= \
 $(DN_SRC)/$(GNUPLOT_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(GNUPLOT_URL)
 	touch $@
-$(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(DN_SRC)/$(GNUPLOT_SRC)
+$(GNUPLOT)-$(GNUPLOT_VERSION)/configure.in: $(DN_SRC)/$(GNUPLOT_SRC)
 	tar -xf $(DN_SRC)/$(GNUPLOT_SRC)
 	touch $@
 
-$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure $(FL_DEP_GNUPLOT)
+$(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched: $(DN_PATCH)/pbs-gnuplot-lua.patch $(GNUPLOT)-$(GNUPLOT_VERSION)/configure.in
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-gnuplot-lua.patch
 	touch $@
 
-$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched
+$(GNUPLOT)-$(GNUPLOT_VERSION)/configure: $(GNUPLOT)-$(GNUPLOT_VERSION)/mypatched $(FL_DEP_GNUPLOT)
+	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile: $(GNUPLOT)-$(GNUPLOT_VERSION)/configure
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/ --disable-rpath --disable-qt
 $(GNUPLOT)-$(GNUPLOT_VERSION)/src/gnuplot: $(GNUPLOT)-$(GNUPLOT_VERSION)/Makefile
 	cd $(GNUPLOT)-$(GNUPLOT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)

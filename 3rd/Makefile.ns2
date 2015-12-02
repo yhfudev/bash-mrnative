@@ -56,6 +56,7 @@ $(TCL)-$(TCL_VERSION)/unix/tclsh: $(TCL)-$(TCL_VERSION)/unix/Makefile
 	cd $(TCL)-$(TCL_VERSION)/unix/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/tclsh: $(TCL)-$(TCL_VERSION)/unix/tclsh
 	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) install install-private-headers
+	install -m 755 $(TCL)-$(TCL_VERSION)/unix/tclsh $(PREFIX_DEST)/$(PREFIX_CONF)/bin/
 
 $(TCL)-uninstall: $(TCL)-$(TCL_VERSION)/unix/tclsh
 	cd $(TCL)-$(TCL_VERSION)/unix/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -130,13 +131,13 @@ $(OTCL)-$(OTCL_VERSION)/otcl.c: $(DN_SRC)/$(OTCL_SRC)
 	tar -xf $(DN_SRC)/$(OTCL_SRC)
 	touch $@
 
-$(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL)-$(OTCL_VERSION)/otcl.c $(FL_DEP_OTCL)
+$(OTCL)-$(OTCL_VERSION)/mypatched: $(DN_SRC)/otcl-1.14-tcl86-compat.patch $(OTCL)-$(OTCL_VERSION)/otcl.c
 	cd $(OTCL)-$(OTCL_VERSION)/ \
         && patch -uNp1 < $(DN_SRC)/otcl-1.14-tcl86-compat.patch \
         && sed -e 's|@prefix@/|$$(DESTDIR)/@prefix@/|' -e 's|@INST_OLIBSH@|$$(DESTDIR)/@INST_OLIBSH@|' -i Makefile.in
 	touch $@
 
-$(OTCL)-$(OTCL_VERSION)/configure: $(OTCL)-$(OTCL_VERSION)/mypatched
+$(OTCL)-$(OTCL_VERSION)/configure: $(OTCL)-$(OTCL_VERSION)/mypatched $(FL_DEP_OTCL)
 	cd $(OTCL)-$(OTCL_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -180,12 +181,12 @@ $(TCLCL)-$(TCLCL_VERSION)/configure: $(DN_SRC)/$(TCLCL_SRC)
 	tar -xf $(DN_SRC)/$(TCLCL_SRC)
 	touch $@
 
-$(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
+$(TCLCL)-$(TCLCL_VERSION)/mypatched: $(DN_SRC)/tclcl-1.20-tcl86-compat.patch $(TCLCL)-$(TCLCL_VERSION)/configure
 	cd $(TCLCL)-$(TCLCL_VERSION)/ && patch -uNp1 < $(DN_SRC)/tclcl-1.20-tcl86-compat.patch \
         && sed -e 's|@prefix@/|$$(DESTDIR)/@prefix@/|' -i Makefile.in
 	touch $@
 
-$(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure
+$(TCLCL)-$(TCLCL_VERSION)/Makefile: $(TCLCL)-$(TCLCL_VERSION)/mypatched $(TCLCL)-$(TCLCL_VERSION)/configure $(FL_DEP_TCLCL)
 	#cd $(TCLCL)-$(TCLCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)/lib/tclcl --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-zlib=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk=no --without-tk --x-libraries= --x-includes=
 	cd $(TCLCL)-$(TCLCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)/lib/tclcl --with-zlib=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(TCLCL)-$(TCLCL_VERSION)/libtclcl.a: $(TCLCL)-$(TCLCL_VERSION)/Makefile
@@ -234,7 +235,7 @@ $(NS2)-$(NS2_VERSION)/configure.in: $(DN_SRC)/$(NS2_SRC)
 	tar -xf $(DN_SRC)/$(NS2_SRC)
 	touch $@
 
-$(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VERSION)/configure.in $(FL_DEP_NS2)
+$(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VERSION)/configure.in
 	cd $(NS2)-$(NS2_VERSION)/ \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-linkstate-erase.fix \
 	    && patch -uNp1 -i $(DN_SRC)/ns-2.35-tcl86.patch \
@@ -243,7 +244,7 @@ $(NS2)-$(NS2_VERSION)/mypatched: $(DN_SRC)/ns-2.35-getopts.patch $(NS2)-$(NS2_VE
 	    $(NULL)
 	touch $@
 
-$(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched
+$(NS2)-$(NS2_VERSION)/configure: $(NS2)-$(NS2_VERSION)/mypatched $(FL_DEP_NS2)
 	cd $(NS2)-$(NS2_VERSION)/ && $(ENV_COMPILE) autoconf # autoreconf -if
 	touch $@
 
