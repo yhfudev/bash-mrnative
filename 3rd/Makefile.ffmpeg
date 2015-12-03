@@ -4579,15 +4579,16 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatche
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
 
-$(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
+$(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.a: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.so: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make install
 	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib
+	touch $@
 
-$(OPENCV)-uninstall: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.a
+$(OPENCV)-uninstall: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && make uninstall
-$(OPENCV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.a
+$(OPENCV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.so
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
