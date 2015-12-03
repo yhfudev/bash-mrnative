@@ -601,16 +601,16 @@ $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile: $(LIBPGM)-$(LIBPGM_VERSION)/op
 	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
-$(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile
+$(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).la: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/Makefile
 	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBPGM).pc: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBPGM).la: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).la
 	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(LIBPGM)-uninstall: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).pc
+$(LIBPGM)-uninstall: $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm/$(LIBPGM).la
 	cd $(LIBPGM)-$(LIBPGM_VERSION)/openpgm/pgm && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBPGM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBPGM).pc
+$(LIBPGM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBPGM).la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBPGM_SRC)
@@ -1150,6 +1150,9 @@ $(LIBICONV)-$(LIBICONV_VERSION)/configure.ac: $(DN_SRC)/$(LIBICONV_SRC)
 	tar -xf $(DN_SRC)/$(LIBICONV_SRC)
 	touch $@
 $(LIBICONV)-$(LIBICONV_VERSION)/mypatched: $(DN_PATCH)/pbs-libiconv-stdio.patch $(LIBICONV)-$(LIBICONV_VERSION)/configure.ac $(FL_DEP_LIBICONV)
+	if [ -d $(LIBICONV)-$(LIBICONV_VERSION)/.svn ]; then cd $(LIBICONV)-$(LIBICONV_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBICONV)-$(LIBICONV_VERSION)/.hg ];  then cd $(LIBICONV)-$(LIBICONV_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBICONV)-$(LIBICONV_VERSION)/.git ]; then cd $(LIBICONV)-$(LIBICONV_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(LIBICONV)-$(LIBICONV_VERSION)/ && patch -p1 -i $(DN_PATCH)/pbs-libiconv-stdio.patch
 	touch $@
 
@@ -1425,6 +1428,9 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
 	tar -xf $(DN_SRC)/$(LIBUDEV_SRC)
 	touch $@
 $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
+	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.svn ]; then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.hg ];  then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.git ]; then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 #	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	#cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
@@ -1514,6 +1520,9 @@ $(LIBDC1394)-$(LIBDC1394_VERSION)/configure.ac: $(DN_SRC)/$(LIBDC1394_SRC)
 	tar -xf $(DN_SRC)/$(LIBDC1394_SRC)
 	touch $@
 $(LIBDC1394)-$(LIBDC1394_VERSION)/mypatched: $(DN_SRC)/sdl.m4 $(LIBDC1394)-$(LIBDC1394_VERSION)/configure.ac
+	if [ -d $(LIBDC1394)-$(LIBDC1394_VERSION)/.svn ]; then cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBDC1394)-$(LIBDC1394_VERSION)/.hg ];  then cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBDC1394)-$(LIBDC1394_VERSION)/.git ]; then cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	#cd $(LIBDC1394)-$(LIBDC1394_VERSION) && sed -e 's|AC_C_RESTRICT|AC_C_RESTRICT\nPKG_CHECK_MODULES(LIBUDEV, [libudev],[AC_DEFINE(HAVE_LIBUDEV,[],[Defined if libudev is present])], [AC_MSG_WARN([libudev not found])])|' -i configure.ac
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION) && sed -e 's|inline |inline static |' -i examples/dc1394_vloopback.c
 	cp $(DN_SRC)/sdl.m4 $(LIBDC1394)-$(LIBDC1394_VERSION)/m4/

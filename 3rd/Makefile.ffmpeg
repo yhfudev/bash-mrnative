@@ -858,6 +858,9 @@ $(X265)-$(X265_VERSION)/readme.rst: $(DN_SRC)/$(X265_SRC)
 endif
 
 $(X265)-$(X265_VERSION)/mypatched: $(X265)-$(X265_VERSION)/readme.rst
+	if [ -d $(X265)-$(X265_VERSION)/.svn ]; then cd $(X265)-$(X265_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(X265)-$(X265_VERSION)/.hg ];  then cd $(X265)-$(X265_VERSION)/ && hg update -C . ; fi
+	if [ -d $(X265)-$(X265_VERSION)/.git ]; then cd $(X265)-$(X265_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(X265)-$(X265_VERSION)/ && sed -e 's|bool |char |' -i source/x265.h
 	touch $@
 
@@ -976,6 +979,9 @@ $(XAVS)-$(XAVS_VERSION)/configure: $(DN_SRC)/$(XAVS_SRC)
 endif
 
 $(XAVS)-$(XAVS_VERSION)/mypatched: $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patch $(DN_SRC)/xavs-dynamic-xavs.patch $(XAVS)-$(XAVS_VERSION)/configure
+	if [ -d $(XAVS)-$(XAVS_VERSION)/.svn ]; then cd $(XAVS)-$(XAVS_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(XAVS)-$(XAVS_VERSION)/.hg ];  then cd $(XAVS)-$(XAVS_VERSION)/ && hg update -C . ; fi
+	if [ -d $(XAVS)-$(XAVS_VERSION)/.git ]; then cd $(XAVS)-$(XAVS_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(XAVS)-$(XAVS_VERSION)/ \
         && patch -p1 < $(DN_SRC)/xavs-0.1.55-dont-strip-symbols.patch \
         && patch -p1 < $(DN_SRC)/xavs-dynamic-xavs.patch \
@@ -1287,6 +1293,9 @@ $(CAIRO)-$(CAIRO_VERSION)/README.md: $(DN_SRC)/$(CAIRO_SRC)
 endif
 
 $(CAIRO)-$(CAIRO_VERSION)/mypatched: $(DN_PATCH)/pbs-CAIRO-newapi.patch $(CAIRO)-$(CAIRO_VERSION)/README.md
+	if [ -d $(CAIRO)-$(CAIRO_VERSION)/.svn ]; then cd $(CAIRO)-$(CAIRO_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(CAIRO)-$(CAIRO_VERSION)/.hg ];  then cd $(CAIRO)-$(CAIRO_VERSION)/ && hg update -C . ; fi
+	if [ -d $(CAIRO)-$(CAIRO_VERSION)/.git ]; then cd $(CAIRO)-$(CAIRO_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(CAIRO)-$(CAIRO_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-CAIRO-newapi.patch
 	touch $@
 
@@ -1450,6 +1459,9 @@ $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(DN_SRC)/$(AVXSYNTH_SRC)
 endif
 
 $(AVXSYNTH)-$(AVXSYNTH_VERSION)/mypatched: $(DN_PATCH)/pbs-avxsynth-newapi.patch $(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md
+	if [ -d $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.svn ]; then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.hg ];  then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && hg update -C . ; fi
+	if [ -d $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git ]; then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-avxsynth-newapi.patch
 	#cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && if (( `automake --version | grep automake | awk '{split($$4,a,".");print a[1]*10000+a[2]*100+a[3]}'` < 11200 )) ; then \
         #sed -e 's|AM_PROG_AR||' -e 's|AC_CONFIG_MACRO_DIR.*$$||' -i configure.ac ; \
@@ -2140,6 +2152,9 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(DN_SRC)/$(LIBCDIO_SRC)
 endif
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(LIBCDIO)-$(LIBCDIO_VERSION)/configure
+	if [ -d $(LIBCDIO)-$(LIBCDIO_VERSION)/.svn ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBCDIO)-$(LIBCDIO_VERSION)/.hg ];  then cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBCDIO)-$(LIBCDIO_VERSION)/.git ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && patch -p1 < $(DN_SRC)/libcdio-0.83-linking.patch
 	touch $@
 
@@ -2577,16 +2592,16 @@ $(LIBALSA)-$(LIBALSA_VERSION)/Makefile: $(LIBALSA)-$(LIBALSA_VERSION)/configure 
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-python
 	touch $@
-$(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/Makefile
+$(LIBALSA)-$(LIBALSA_VERSION)/utils/alsa.pc: $(LIBALSA)-$(LIBALSA_VERSION)/Makefile
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBALSA).pc: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/alsa.pc: $(LIBALSA)-$(LIBALSA_VERSION)/utils/alsa.pc
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
-$(LIBALSA)-uninstall: $(LIBALSA)-$(LIBALSA_VERSION)/$(LIBALSA).pc
+$(LIBALSA)-uninstall: $(LIBALSA)-$(LIBALSA_VERSION)/utils/alsa.pc
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBALSA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBALSA).pc
+$(LIBALSA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/alsa.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBALSA_SRC)
@@ -3011,6 +3026,9 @@ $(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
 endif
 
 $(OPENSSL)-$(OPENSSL_VERSION)/mypatched: $(OPENSSL)-$(OPENSSL_VERSION)/Configure
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.svn ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.hg ];  then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && hg update -C . ; fi
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.git ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && find . -name "Makefile*" | while read a ; do \
             sed -e 's|^INCLUDES=|INCLUDES=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include |g'   -i $$a; \
             sed -e 's|^CFLAG=.*$$|CFLAG= -Os -I$(PREFIX_DEST)/$(PREFIX_CONF)/include|g' -i $$a; \
@@ -3630,6 +3648,9 @@ $(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
 endif
 
 $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md $(FL_DEPENDENCES_FFMPEG)
+	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.svn ]; then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.hg ];  then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && hg update -C . ; fi
+	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.git ]; then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
 	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|-lopenjpeg|-lopenjp2|g' -i configure
 	touch $@
@@ -3735,7 +3756,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libavcodec.a
+$(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ffmpeg: $(FFMPEG)-$(FFMPEG_VERSION)/ffmpeg
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
@@ -3813,14 +3834,14 @@ $(ILMBASE)-$(ILMBASE_VERSION)/configure: $(DN_SRC)/$(ILMBASE_SRC)
 	touch $@
 $(ILMBASE)-$(ILMBASE_VERSION)/Makefile: $(ILMBASE)-$(ILMBASE_VERSION)/configure $(FL_DEP_ILMBASE)
 	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
-$(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la: $(ILMBASE)-$(ILMBASE_VERSION)/Makefile
+$(ILMBASE)-$(ILMBASE_VERSION)/Imath/libImath.la: $(ILMBASE)-$(ILMBASE_VERSION)/Makefile
 	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ilmbase.a: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libImath.la: $(ILMBASE)-$(ILMBASE_VERSION)/Imath/libImath.la
 	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(ILMBASE)-uninstall: $(ILMBASE)-$(ILMBASE_VERSION)/lib/ilmbase.la
+$(ILMBASE)-uninstall: $(ILMBASE)-$(ILMBASE_VERSION)/Imath/libImath.la
 	cd $(ILMBASE)-$(ILMBASE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(ILMBASE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ilmbase.a
+$(ILMBASE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libImath.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(ILMBASE_SRC)
@@ -3926,7 +3947,7 @@ $(DN_SRC)/$(JSONCPP_SRC): $(DN_SRC)/created
 $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists.txt: $(DN_SRC)/$(JSONCPP_SRC)
 	tar -xf $(DN_SRC)/$(JSONCPP_SRC)
 	touch $@
-$(JSONCPP)-$(JSONCPP_VERSION)/Makefile: $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists.txt $(FL_DEP_JSONCPP)
+$(JSONCPP)-$(JSONCPP_VERSION)/build/Makefile: $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists.txt $(FL_DEP_JSONCPP)
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
@@ -3934,14 +3955,16 @@ $(JSONCPP)-$(JSONCPP_VERSION)/Makefile: $(JSONCPP)-$(JSONCPP_VERSION)/CMakeLists
             -DBUILD_SHARED_LIBS=ON \
             -DBUILD_STATIC_LIBS=OFF \
             ..
-$(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la: $(JSONCPP)-$(JSONCPP_VERSION)/Makefile
+$(JSONCPP)-$(JSONCPP_VERSION)/build/pkg-config/jsoncpp.pc: $(JSONCPP)-$(JSONCPP_VERSION)/build/Makefile
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libjsoncpp.so: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/jsoncpp.pc: $(JSONCPP)-$(JSONCPP_VERSION)/build/pkg-config/jsoncpp.pc
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/build && make install
+	touch $@
 
 $(JSONCPP)-uninstall: $(JSONCPP)-$(JSONCPP_VERSION)/build/libjsoncpp.la
 	cd $(JSONCPP)-$(JSONCPP_VERSION)/ && make uninstall
-$(JSONCPP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libjsoncpp.so
+$(JSONCPP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/jsoncpp.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(JSONCPP_SRC)
@@ -3968,19 +3991,21 @@ $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt: $(DN_SRC)/$(GL2PS_SRC)
 	rm -f $(GL2PS)-install
 	mv $(GL2PS)* $(GL2PS)-$(GL2PS_VERSION)
 	touch $@
-$(GL2PS)-$(GL2PS_VERSION)/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(FL_DEP_GL2PS)
+$(GL2PS)-$(GL2PS_VERSION)/build/Makefile: $(GL2PS)-$(GL2PS_VERSION)/CMakeLists.txt $(FL_DEP_GL2PS)
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             -DCMAKE_EXE_LINKER_FLAGS=-lm \
             ..
-$(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la: $(GL2PS)-$(GL2PS_VERSION)/Makefile
+$(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/Makefile
 	cd $(GL2PS)-$(GL2PS_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgl2ps.a: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.a
 	cd $(GL2PS)-$(GL2PS_VERSION)/build && make -j1 install
+	touch $@
 
-$(GL2PS)-uninstall: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.la
+$(GL2PS)-uninstall: $(GL2PS)-$(GL2PS_VERSION)/build/libgl2ps.a
 	cd $(GL2PS)-$(GL2PS_VERSION)/ && make uninstall
 $(GL2PS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgl2ps.a
 	touch $@
@@ -4057,9 +4082,14 @@ FL_DEP_GDAL= \
 $(DN_SRC)/$(GDAL_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(GDAL_URL)
 	touch $@
-$(GDAL)-$(GDAL_VERSION)/configure: $(DN_SRC)/$(GDAL_SRC)
+$(GDAL)-$(GDAL_VERSION)/configure.in: $(DN_SRC)/$(GDAL_SRC)
 	tar -xf $(DN_SRC)/$(GDAL_SRC)
 	touch $@
+
+$(GDAL)-$(GDAL_VERSION)/configure: $(GDAL)-$(GDAL_VERSION)/configure.in $(FL_DEP_GDAL)
+	cd $(LIBFLITE)-$(LIBFLITE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
 
 #       --with-netcdf \
         --with-sqlite3 \
@@ -4071,7 +4101,7 @@ $(GDAL)-$(GDAL_VERSION)/configure: $(DN_SRC)/$(GDAL_SRC)
         --with-geos \
         --with-poppler \
         --with-spatialite
-$(GDAL)-$(GDAL_VERSION)/Makefile: $(GDAL)-$(GDAL_VERSION)/configure $(FL_DEP_GDAL)
+$(GDAL)-$(GDAL_VERSION)/GDALmake.opt: $(GDAL)-$(GDAL_VERSION)/configure
 	cd $(GDAL)-$(GDAL_VERSION)/ \
         && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared \
         --with-hdf5 \
@@ -4079,14 +4109,14 @@ $(GDAL)-$(GDAL_VERSION)/Makefile: $(GDAL)-$(GDAL_VERSION)/configure $(FL_DEP_GDA
         --with-png \
         $(NULL)
 
-$(GDAL)-$(GDAL_VERSION)/libgdal.la: $(GDAL)-$(GDAL_VERSION)/Makefile
+$(GDAL)-$(GDAL_VERSION)/libgdal.la: $(GDAL)-$(GDAL_VERSION)/GDALmake.opt
 	cd $(GDAL)-$(GDAL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgdal.a: $(GDAL)-$(GDAL_VERSION)/libgdal.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgdal.la: $(GDAL)-$(GDAL_VERSION)/libgdal.la
 	cd $(GDAL)-$(GDAL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(GDAL)-uninstall: $(GDAL)-$(GDAL_VERSION)/libgdal.la
 	cd $(GDAL)-$(GDAL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GDAL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgdal.a
+$(GDAL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgdal.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GDAL_SRC)
@@ -4201,8 +4231,9 @@ FL_SOURCES+=$(DN_SRC)/vtk-remove-vtkxdmf3.patch
 FL_SOURCES+=$(DN_SRC)/vtk-find-libxml2.patch
 
 $(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remove-vtkxdmf3.patch $(DN_SRC)/vtk-find-libxml2.patch $(VTK)-$(VTK_VERSION)/README.md
-	cd $(VTK)-$(VTK_VERSION)/ \
-	    && git status | grep modified | awk '{print $$2}' | xargs git checkout
+	if [ -d $(VTK)-$(VTK_VERSION)/.svn ]; then cd $(VTK)-$(VTK_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(VTK)-$(VTK_VERSION)/.hg ];  then cd $(VTK)-$(VTK_VERSION)/ && hg update -C . ; fi
+	if [ -d $(VTK)-$(VTK_VERSION)/.git ]; then cd $(VTK)-$(VTK_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(VTK)-$(VTK_VERSION)/ \
 	    && patch -Np1 -i $(DN_SRC)/vtk-remove-vtkxdmf3.patch \
 	    && patch -Np1 -i $(DN_SRC)/vtk-find-libxml2.patch \
@@ -4504,6 +4535,9 @@ $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_S
 	cp $(DN_SRC)/$(IPPICV_SRC) $@
 
 $(OPENCV)-$(OPENCV_VERSION)/mypatched: $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-patch $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE)
+	if [ -d $(OPENCV)-$(OPENCV_VERSION)/.svn ]; then cd $(OPENCV)-$(OPENCV_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(OPENCV)-$(OPENCV_VERSION)/.hg ];  then cd $(OPENCV)-$(OPENCV_VERSION)/ && hg update -C . ; fi
+	if [ -d $(OPENCV)-$(OPENCV_VERSION)/.git ]; then cd $(OPENCV)-$(OPENCV_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && patch -p1 < $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-patch
 	touch $@
 
@@ -4567,12 +4601,29 @@ FL_DEP_MEDIAMETRICS= \
 	$(OPENCV)-install \
 	$(NULL)
 
-####################
+USE_GIT_MEDIAMETRICS=1
+
+ifeq ($(USE_GIT_MEDIAMETRICS),1) # use git instead
+MEDIAMETRICS_VERSION=git
+MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git
+MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics.git
+
+$(DN_SRC)/$(MEDIAMETRICS_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(MEDIAMETRICS_SRC)" ]; then cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(MEDIAMETRICS_URL) $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
+	touch $@
+
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git: $(DN_SRC)/$(MEDIAMETRICS_SRC)
+	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull
+	if [ -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
+
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && git pull
+	touch $@
+
+else # use released files
 MEDIAMETRICS_VERSION=0.2.0
 MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION).tar.gz
 MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics/archive/$(MEDIAMETRICS_SRC)
-
-FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS_SRC)
 
 $(DN_SRC)/$(MEDIAMETRICS_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(MEDIAMETRICS_URL)
@@ -4580,32 +4631,12 @@ $(DN_SRC)/$(MEDIAMETRICS_SRC): $(DN_SRC)/created
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS_SRC)
 	tar -xf $(DN_SRC)/$(MEDIAMETRICS_SRC)
 	touch $@
-#$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
-#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
-#$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure $(FL_DEP_MEDIAMETRICS)
-#	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+endif
 
-####################
-MEDIAMETRICS_VERSION=git
-MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
-MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics.git
-
-FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
-
-$(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/created
-	git clone $(MEDIAMETRICS_URL) $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)
-	touch $@
-$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac
-	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && git pull
-#	rm -rf $(DN_TOP)/$(MEDIAMETRICS)*
-#	cp -r $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) $(DN_TOP)/
-	if [ -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
-	touch $@
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac $(FL_DEP_MEDIAMETRICS)
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) $(MEDIAMETRICS_GPU_SUPPORT_CONF)
-####################
 
 $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/mediametrics: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/Makefile
 	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG)
@@ -4622,38 +4653,75 @@ FL_UNINSTALL+=$(MEDIAMETRICS)-uninstall
 
 ########################################
 GPAC=gpac
-#GPAC_VERSION=0.5.0
-#GPAC_SRC=$(GPAC)-v$(GPAC_VERSION).tar.gz
-#GPAC_URL=http://sourceforge.net/projects/gpac/files/GPAC/GPAC%200.5.0/$(GPAC_SRC)
-
-GPAC_VERSION=svn
-GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/gpac/configure
-GPAC_URL=svn://svn.code.sf.net/p/gpac/code/trunk
 
 FL_DEP_GPAC= \
+	$(CMAKE)-install \
+	$(ZLIB)-install \
+	$(LIBPNG)-install \
 	$(FREETYPE)-install \
-	$(XVIDCORE)-install \
 	$(THEORA)-install \
 	$(VORBIS)-install \
 	$(LIBOGG)-install \
-	$(LIBPNG)-install \
-	$(ZLIB)-install \
-	$(CMAKE)-install \
+	$(XVIDCORE)-install \
 	$(FFMPEG)-install \
 	$(NULL)
 
-$(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure: $(DN_SRC)/created
-	svn checkout $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)
+USE_GIT_GPAC=1
+USE_SVN_GPAC=0
+
+ifeq ($(USE_GIT_GPAC),1) # use svn instead
+
+GPAC_VERSION=git
+GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/.git
+GPAC_URL=https://github.com/gpac/gpac.git
+
+$(DN_SRC)/$(GPAC_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(GPAC_SRC)" ]; then cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull; else git clone $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION); fi
 	touch $@
-$(GPAC)-$(GPAC_VERSION)/gpac/configure: $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac/configure
+
+$(GPAC)-$(GPAC_VERSION)/README.md: $(DN_SRC)/$(GPAC_SRC)
+	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull
+	if [ -d "$(GPAC)-$(GPAC_VERSION)" ]; then cd $(GPAC)-$(GPAC_VERSION) && git pull; else git clone $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/ $(GPAC)-$(GPAC_VERSION); fi
+	touch $@
+
+else ifeq ($(USE_SVN_GPAC),1) # use svn instead
+GPAC_VERSION=svn
+GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/.svn
+GPAC_URL=svn://svn.code.sf.net/p/gpac/code/trunk
+
+#svn checkout http://svn.xvid.org/trunk --username anonymous
+$(DN_SRC)/$(GPAC_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)
+	touch $@
+$(GPAC)-$(GPAC_VERSION)/README.md: $(DN_SRC)/$(GPAC_SRC)
 #	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/ && svn update
 	rm -rf $(DN_TOP)/$(GPAC)*
-	cp -r $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) $(DN_TOP)/
+	cp -r $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/gpac $(DN_TOP)/$(GPAC)-$(GPAC_VERSION)
 #	@find $(DN_TOP)/$(GPAC)-$(GPAC_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	#cd $(GPAC)-$(GPAC_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
 	touch $@
-$(GPAC)-$(GPAC_VERSION)/mypatched: $(DN_PATCH)/pbs-gpac-svn-1.patch $(GPAC)-$(GPAC_VERSION)/gpac/configure
-	cd $(GPAC)-$(GPAC_VERSION)/ && svn revert -R .
-	cd $(GPAC)-$(GPAC_VERSION)/ && patch -p0 < $(DN_PATCH)/pbs-gpac-svn-1.patch
+
+else # use released files
+
+GPAC_VERSION=0.5.2
+GPAC_SRC=$(GPAC)-$(GPAC_VERSION).tar.gz
+GPAC_URL=https://github.com/gpac/gpac/archive/v$(GPAC_VERSION).tar.gz
+
+$(DN_SRC)/$(GPAC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GPAC_URL)
+	touch $@
+$(GPAC)-$(GPAC_VERSION)/README.md: $(DN_SRC)/$(GPAC_SRC)
+	tar -xf $(DN_SRC)/$(GPAC_SRC)
+	rm -rf $(GPAC)-*
+	mv $(GPAC)* $(GPAC)-$(GPAC_VERSION)
+	touch $@
+endif
+
+$(GPAC)-$(GPAC_VERSION)/mypatched: $(DN_PATCH)/pbs-gpac-svn-1.patch $(GPAC)-$(GPAC_VERSION)/README.md $(FL_DEP_GPAC)
+	if [ -d $(GPAC)-$(GPAC_VERSION)/.svn ]; then cd $(GPAC)-$(GPAC_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(GPAC)-$(GPAC_VERSION)/.hg ];  then cd $(GPAC)-$(GPAC_VERSION)/ && hg update -C . ; fi
+	if [ -d $(GPAC)-$(GPAC_VERSION)/.git ]; then cd $(GPAC)-$(GPAC_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
+	#cd $(GPAC)-$(GPAC_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-gpac-svn-1.patch
 	touch $@
 #SpiderMonkey --use-js=no,local
 # --disable-ttxt
@@ -4664,8 +4732,12 @@ $(GPAC)-$(GPAC_VERSION)/mypatched: $(DN_PATCH)/pbs-gpac-svn-1.patch $(GPAC)-$(GP
 # --use-openjpeg=no,system,local
 # --use-a52=no,system,local
 # -lfaac -lx264
-$(GPAC)-$(GPAC_VERSION)/gpac/Makefile: $(GPAC)-$(GPAC_VERSION)/mypatched $(FL_DEP_GPAC)
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ \
+
+$(GPAC)-$(GPAC_VERSION)/configure: $(GPAC)-$(GPAC_VERSION)/mypatched
+	touch $@
+
+$(GPAC)-$(GPAC_VERSION)/config.mak: $(GPAC)-$(GPAC_VERSION)/configure
+	cd $(GPAC)-$(GPAC_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
 		--extra-cflags="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include" \
 		--extra-ldflags="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lxvidcore -ltheora -lvorbis -logg -lfreetype -lpng -lz" \
@@ -4677,13 +4749,13 @@ $(GPAC)-$(GPAC_VERSION)/gpac/Makefile: $(GPAC)-$(GPAC_VERSION)/mypatched $(FL_DE
 		--static-modules --enable-static-bin --static-mp4box \
 		--enable-player \
 		$(NULL)
-$(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/Makefile
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/MP4Box: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+$(GPAC)-$(GPAC_VERSION)/bin/gcc/MP4Box: $(GPAC)-$(GPAC_VERSION)/config.mak
+	cd $(GPAC)-$(GPAC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/MP4Box: $(GPAC)-$(GPAC_VERSION)/bin/gcc/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GPAC)-uninstall: $(GPAC)-$(GPAC_VERSION)/gpac/bin/gcc/MP4Box
-	cd $(GPAC)-$(GPAC_VERSION)/gpac/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GPAC)-uninstall: $(GPAC)-$(GPAC_VERSION)/bin/gcc/MP4Box
+	cd $(GPAC)-$(GPAC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(GPAC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/MP4Box
 	touch $@
 
