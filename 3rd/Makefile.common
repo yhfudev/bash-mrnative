@@ -1525,12 +1525,13 @@ $(LIBDC1394)-$(LIBDC1394_VERSION)/configure: $(LIBDC1394)-$(LIBDC1394_VERSION)/m
 
 $(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile: $(LIBDC1394)-$(LIBDC1394_VERSION)/configure
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static #--enable-static #--diable-shared
-$(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394-2.pc: $(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile
+$(LIBDC1394)-$(LIBDC1394_VERSION)/libdc1394-2.pc: $(LIBDC1394)-$(LIBDC1394_VERSION)/Makefile
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libdc1394-2.pc: $(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394-2.pc
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libdc1394-2.pc: $(LIBDC1394)-$(LIBDC1394_VERSION)/libdc1394-2.pc
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBDC1394)-uninstall: $(LIBDC1394)-$(LIBDC1394_VERSION)/dc1394/libdc1394-2.pc
+$(LIBDC1394)-uninstall: $(LIBDC1394)-$(LIBDC1394_VERSION)/libdc1394-2.pc
 	cd $(LIBDC1394)-$(LIBDC1394_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(LIBDC1394)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libdc1394-2.pc
 	touch $@
@@ -1686,7 +1687,7 @@ $(READLINE)-$(READLINE_VERSION)/Makefile: $(READLINE)-$(READLINE_VERSION)/config
 
 $(READLINE)-$(READLINE_VERSION)/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
 	cd $(READLINE)-$(READLINE_VERSION)/ && make $(MAKE_ARG)
-	readelf -a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libreadline.so.6 | grep NEEDED | grep curses; \
+	readelf -a $(READLINE)-$(READLINE_VERSION)/shlib/libreadline.so.$(READLINE_VERSION) | grep NEEDED | grep curses; \
 	    if [ ! "$$?" = "0" ]; then echo "Error in compile readline lib!!"; exit 1; fi
 	touch $@
 # other commands to view shared lib:

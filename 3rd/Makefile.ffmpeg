@@ -31,6 +31,7 @@ OPENCV_GPU_SUPPORT_DEPEND=
 MEDIAMETRICS_GPU_SUPPORT_CONF=
 
 ifeq ($(USE_GPU),1)
+# CUDA_GENERATION: Auto, Kepler, Fermi
 OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
                           -D CUDA_GENERATION=Auto \
@@ -68,6 +69,7 @@ $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile: $(GRAPHITE2)-$(GRAPHITE2_VERSI
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/
 $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/graphite2.pc: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/Makefile
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/graphite2.pc: $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build/graphite2.pc
 	cd $(GRAPHITE2)-$(GRAPHITE2_VERSION)/build && make install
@@ -236,6 +238,7 @@ $(LIBASS)-$(LIBASS_VERSION)/Makefile: $(LIBASS)-$(LIBASS_VERSION)/configure
 
 $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la: $(LIBASS)-$(LIBASS_VERSION)/Makefile
 	cd $(LIBASS)-$(LIBASS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libass.a: $(LIBASS)-$(LIBASS_VERSION)/libass/libass.la
 	cd $(LIBASS)-$(LIBASS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -516,6 +519,26 @@ FL_DEP_XVIDCORE= \
 	#$(NASM)-install \
 	$(NULL)
 
+USE_SVN_XVIDCORE=1
+
+ifeq ($(USE_SVN_XVIDCORE),1) # use svn instead
+XVIDCORE_VERSION=svn
+XVIDCORE_SRC=$(XVIDCORE)-$(XVIDCORE_VERSION)/.svn
+XVIDCORE_URL=http://svn.xvid.org/trunk
+
+#svn checkout http://svn.xvid.org/trunk --username anonymous
+$(DN_SRC)/$(XVIDCORE_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(XVIDCORE_URL) $(DN_SRC)/$(XVIDCORE)-$(XVIDCORE_VERSION)
+	touch $@
+$(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure.in: $(DN_SRC)/$(XVIDCORE_SRC)
+#	cd $(DN_SRC)/$(XVIDCORE)-$(XVIDCORE_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(XVIDCORE)*
+	cp -r $(DN_SRC)/$(XVIDCORE)-$(XVIDCORE_VERSION)/xvidcore $(DN_TOP)/$(XVIDCORE)-$(XVIDCORE_VERSION)
+#	@find $(DN_TOP)/$(XVIDCORE)-$(XVIDCORE_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	#cd $(XVIDCORE)-$(XVIDCORE_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+else # use released files
 XVIDCORE_VERSION=1.3.4
 XVIDCORE_SRC=$(XVIDCORE)-$(XVIDCORE_VERSION).tar.gz
 XVIDCORE_URL=http://downloads.xvid.org/downloads/$(XVIDCORE_SRC)
@@ -531,9 +554,14 @@ $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure.in: $(DN_SRC)/$(XVIDCORE
 	rm -f $(XVIDCORE)-install
 	mv $(XVIDCORE)* $(XVIDCORE)-$(XVIDCORE_VERSION)
 	touch $@
+endif
 
 $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure.in
-	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ && $(ENV_COMPILE) autoreconf -if
+	cd $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/ \
+            && $(ENV_COMPILE) libtoolize --force --copy --install \
+            && $(ENV_COMPILE) aclocal \
+            && $(ENV_COMPILE) autoconf \
+            #&& $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/Makefile: $(XVIDCORE)-$(XVIDCORE_VERSION)/build/generic/configure $(FL_DEP_XVIDCORE)
@@ -884,6 +912,7 @@ endif
 
 $(X265)-$(X265_VERSION)/build-8/libx265.a: $(X265)-$(X265_VERSION)/build-8/Makefile
 	cd $(X265)-$(X265_VERSION)/build-8 && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libx265.a: $(X265)-$(X265_VERSION)/build-8/libx265.a
 	cd $(X265)-$(X265_VERSION)/build-8 && make install
@@ -1111,6 +1140,271 @@ FL_SOURCES+=$(DN_SRC)/$(LOG4CPP_SRC)
 FL_UNINSTALL+=$(LOG4CPP)-uninstall
 
 ########################################
+# Implementation of double-array structure for representing trie, as proposed by Junichi Aoe
+# http://linux.thai.net/projects/datrie
+LIBDATRIE=libdatrie
+
+FL_DEP_LIBDATRIE= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
+LIBDATRIE_VERSION=0.2.9
+LIBDATRIE_SRC=$(LIBDATRIE)-$(LIBDATRIE_VERSION).tar.xz
+LIBDATRIE_URL=http://linux.thai.net/pub/thailinux/software/libthai/$(LIBDATRIE_SRC)
+
+$(DN_SRC)/$(LIBDATRIE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBDATRIE_URL)
+	touch $@
+
+$(LIBDATRIE)-$(LIBDATRIE_VERSION)/configure.ac: $(DN_SRC)/$(LIBDATRIE_SRC)
+	tar -xf $(DN_SRC)/$(LIBDATRIE_SRC)
+	touch $@
+
+#$(LIBDATRIE)-$(LIBDATRIE_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBDATRIE-newapi.patch $(LIBDATRIE)-$(LIBDATRIE_VERSION)/configure.ac
+	#cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBDATRIE-newapi.patch
+	#touch $@
+
+$(LIBDATRIE)-$(LIBDATRIE_VERSION)/configure: $(LIBDATRIE)-$(LIBDATRIE_VERSION)/configure.ac $(FL_DEP_LIBDATRIE)
+	cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBDATRIE)-$(LIBDATRIE_VERSION)/Makefile: $(LIBDATRIE)-$(LIBDATRIE_VERSION)/configure
+	cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+	touch $@
+$(LIBDATRIE)-$(LIBDATRIE_VERSION)/datrie/$(LIBDATRIE).la: $(LIBDATRIE)-$(LIBDATRIE_VERSION)/Makefile
+	cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBDATRIE).la: $(LIBDATRIE)-$(LIBDATRIE_VERSION)/datrie/$(LIBDATRIE).la
+	cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBDATRIE)-uninstall: $(LIBDATRIE)-$(LIBDATRIE_VERSION)/datrie/$(LIBDATRIE).la
+	cd $(LIBDATRIE)-$(LIBDATRIE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBDATRIE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBDATRIE).la
+	touch $@
+
+# ignore libdatrie
+#FL_SOURCES+=$(DN_SRC)/$(LIBDATRIE_SRC)
+FL_UNINSTALL+=$(LIBDATRIE)-uninstall
+
+########################################
+# Thai language support routines
+# http://linux.thai.net/projects/libthai
+LIBTHAI=libthai
+
+FL_DEP_LIBTHAI= \
+	$(AUTOMAKE)-install \
+	$(LIBDATRIE)-install \
+	$(NULL)
+
+LIBTHAI_VERSION=0.1.22
+LIBTHAI_SRC=$(LIBTHAI)-$(LIBTHAI_VERSION).tar.xz
+LIBTHAI_URL=http://linux.thai.net/pub/thailinux/software/libthai/$(LIBTHAI_SRC)
+
+$(DN_SRC)/$(LIBTHAI_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBTHAI_URL)
+	touch $@
+
+$(LIBTHAI)-$(LIBTHAI_VERSION)/configure.ac: $(DN_SRC)/$(LIBTHAI_SRC)
+	tar -xf $(DN_SRC)/$(LIBTHAI_SRC)
+	touch $@
+
+#$(LIBTHAI)-$(LIBTHAI_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBTHAI-newapi.patch $(LIBTHAI)-$(LIBTHAI_VERSION)/configure.ac
+	#cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBTHAI-newapi.patch
+	#touch $@
+
+$(LIBTHAI)-$(LIBTHAI_VERSION)/configure: $(LIBTHAI)-$(LIBTHAI_VERSION)/configure.ac $(FL_DEP_LIBTHAI)
+	cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBTHAI)-$(LIBTHAI_VERSION)/Makefile: $(LIBTHAI)-$(LIBTHAI_VERSION)/configure
+	cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+	touch $@
+$(LIBTHAI)-$(LIBTHAI_VERSION)/src/$(LIBTHAI).la: $(LIBTHAI)-$(LIBTHAI_VERSION)/Makefile
+	cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBTHAI).la: $(LIBTHAI)-$(LIBTHAI_VERSION)/src/$(LIBTHAI).la
+	cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBTHAI)-uninstall: $(LIBTHAI)-$(LIBTHAI_VERSION)/src/$(LIBTHAI).la
+	cd $(LIBTHAI)-$(LIBTHAI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBTHAI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBTHAI).la
+	touch $@
+
+# ignore libthai
+#FL_SOURCES+=$(DN_SRC)/$(LIBTHAI_SRC)
+FL_UNINSTALL+=$(LIBTHAI)-uninstall
+
+########################################
+CAIRO=cairo
+
+FL_DEP_CAIRO= \
+	$(AUTOMAKE)-install \
+	$(libpng)-install \
+	$(libxrender)-install \
+	$(libxext)-install \
+	$(FONTCONFIG)-install \
+	$(FREETYPE)-install \
+	$(pixman)-install \
+	$(libgl)-install \
+	$(lzo)-install \
+	$(gtk2)-install \
+	$(librsvg)-install \
+	$(libspectre)-install \
+	$(valgrind)-install \
+	$(NULL)
+
+USE_GIT_CAIRO=1
+
+ifeq ($(USE_GIT_CAIRO),1) # use git instead
+CAIRO_VERSION=git
+CAIRO_SRC=$(CAIRO)-$(CAIRO_VERSION)/.git
+CAIRO_URL=git://anongit.freedesktop.org/git/cairo
+
+$(DN_SRC)/$(CAIRO_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(CAIRO_SRC)" ]; then cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull; else git clone $(CAIRO_URL) $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION); fi
+	touch $@
+
+$(CAIRO)-$(CAIRO_VERSION)/.git: $(DN_SRC)/$(CAIRO_SRC)
+	cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull
+	if [ -d "$(CAIRO)-$(CAIRO_VERSION)" ]; then cd $(CAIRO)-$(CAIRO_VERSION) && git pull; else git clone $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION)/ $(CAIRO)-$(CAIRO_VERSION); fi
+
+$(CAIRO)-$(CAIRO_VERSION)/README.md: $(CAIRO)-$(CAIRO_VERSION)/.git
+	cd $(CAIRO)-$(CAIRO_VERSION)/ && git pull
+	touch $@
+
+else # use released files
+CAIRO_VERSION=1.14.4
+CAIRO_SRC=$(CAIRO)-$(CAIRO_VERSION).tar.xz
+CAIRO_URL=http://cairographics.org/releases/$(CAIRO_SRC)
+
+$(DN_SRC)/$(CAIRO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CAIRO_URL)
+	touch $@
+
+$(CAIRO)-$(CAIRO_VERSION)/README.md: $(DN_SRC)/$(CAIRO_SRC)
+	tar -xf $(DN_SRC)/$(CAIRO_SRC)
+	touch $@
+endif
+
+$(CAIRO)-$(CAIRO_VERSION)/mypatched: $(DN_PATCH)/pbs-CAIRO-newapi.patch $(CAIRO)-$(CAIRO_VERSION)/README.md
+	cd $(CAIRO)-$(CAIRO_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-CAIRO-newapi.patch
+	touch $@
+
+#$(CAIRO)-$(CAIRO_VERSION)/configure: $(CAIRO)-$(CAIRO_VERSION)/mypatched $(FL_DEP_CAIRO)
+	#cd $(CAIRO)-$(CAIRO_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	#touch $@
+
+$(CAIRO)-$(CAIRO_VERSION)/Makefile: $(CAIRO)-$(CAIRO_VERSION)/configure
+	cd $(CAIRO)-$(CAIRO_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+            --sysconfdir=$(PREFIX_CONF)/etc \
+            --localstatedir=$(PREFIX_CONF)/var \
+            --disable-static \
+            --disable-lto \
+            --enable-tee \
+            --enable-gl \
+            --enable-egl \
+            --enable-svg \
+            --enable-ps \
+            --enable-pdf \
+            --enable-gobject \
+            --enable-gtk-doc
+	touch $@
+$(CAIRO)-$(CAIRO_VERSION)/$(CAIRO).pc: $(CAIRO)-$(CAIRO_VERSION)/Makefile
+	cd $(CAIRO)-$(CAIRO_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(CAIRO).pc: $(CAIRO)-$(CAIRO_VERSION)/$(CAIRO).pc
+	cd $(CAIRO)-$(CAIRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(CAIRO)-uninstall: $(CAIRO)-$(CAIRO_VERSION)/$(CAIRO).pc
+	cd $(CAIRO)-$(CAIRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(CAIRO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(CAIRO).pc
+	touch $@
+
+#ignore cairo
+#FL_SOURCES+=$(DN_SRC)/$(CAIRO_SRC)
+FL_UNINSTALL+=$(CAIRO)-uninstall
+
+########################################
+# AviSynth scripting engine
+PANGOCAIRO=pango
+
+FL_DEP_PANGOCAIRO= \
+	$(AUTOMAKE)-install \
+	$(LIBTHAI)-install \
+	$(CAIRO)-install \
+	$(LIBXFT)-install \
+	$(HARFBUZZ)-install \
+	$(FONTCONFIG)-install \
+	$(FREETYPE)-install \
+	$(NULL)
+
+USE_GIT_PANGOCAIRO=1
+
+ifeq ($(USE_GIT_PANGOCAIRO),1) # use git instead
+PANGOCAIRO_VERSION=git
+PANGOCAIRO_SRC=$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git
+PANGOCAIRO_URL=git://git.gnome.org/pango
+
+$(DN_SRC)/$(PANGOCAIRO_SRC): $(DN_SRC)/created
+	if [ -d "$(DN_SRC)/$(PANGOCAIRO_SRC)" ]; then cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull; else git clone $(PANGOCAIRO_URL) $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION); fi
+	touch $@
+
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git: $(DN_SRC)/$(PANGOCAIRO_SRC)
+	cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull
+	if [ -d "$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)" ]; then cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull; else git clone $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ $(PANGOCAIRO)-$(PANGOCAIRO_VERSION); fi
+
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && git pull
+	touch $@
+
+else # use released files
+PANGOCAIRO_VERSION=1.38.1
+PANGOCAIRO_SRC=$(PANGOCAIRO)-$(PANGOCAIRO_VERSION).tar.gz
+PANGOCAIRO_URL=http://download.gnome.org/sources/$(PANGOCAIRO)/$(PANGOCAIRO_SRC)
+
+$(DN_SRC)/$(PANGOCAIRO_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(PANGOCAIRO_URL)
+	touch $@
+
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md: $(DN_SRC)/$(PANGOCAIRO_SRC)
+	tar -xf $(DN_SRC)/$(PANGOCAIRO_SRC)
+	touch $@
+endif
+
+#$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/mypatched: $(DN_PATCH)/pbs-PANGOCAIRO-newapi.patch $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md
+	#cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-PANGOCAIRO-newapi.patch
+	#cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && if (( `automake --version | grep automake | awk '{split($$4,a,".");print a[1]*10000+a[2]*100+a[3]}'` < 11200 )) ; then \
+        #sed -e 's|AM_PROG_AR||' -e 's|AC_CONFIG_MACRO_DIR.*$$||' -i configure.ac ; \
+	#fi
+	#touch $@
+
+#$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/configure: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/mypatched $(FL_DEP_PANGOCAIRO)
+	#cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	#touch $@
+
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/Makefile: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/configure
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc --localstatedir=$(PREFIX_CONF)/var --with-included-modules=basic-fc
+	touch $@
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/$(PANGOCAIRO).pc: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/Makefile
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(PANGOCAIRO).pc: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/$(PANGOCAIRO).pc
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(PANGOCAIRO)-uninstall: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/$(PANGOCAIRO).pc
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(PANGOCAIRO)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(PANGOCAIRO).pc
+	touch $@
+
+#ignore pango
+#FL_SOURCES+=$(DN_SRC)/$(PANGOCAIRO_SRC)
+FL_UNINSTALL+=$(PANGOCAIRO)-uninstall
+
+########################################
 # AviSynth scripting engine
 AVXSYNTH=avxsynth
 
@@ -1118,7 +1412,7 @@ FL_DEP_AVXSYNTH= \
 	$(AUTOMAKE)-install \
 	$(YASM)-install \
 	$(LOG4CPP)-install \
-	#$(PANGOCAIRO)-install \
+	$(PANGOCAIRO)-install \
 	#$(FFMS2)-install \
 	$(NULL)
 
@@ -1182,7 +1476,8 @@ $(AVXSYNTH)-uninstall: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/$(AVXSYNTH).pc
 $(AVXSYNTH)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(AVXSYNTH).pc
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(AVXSYNTH_SRC)
+# ignore avxsynth
+#FL_SOURCES+=$(DN_SRC)/$(AVXSYNTH_SRC)
 FL_UNINSTALL+=$(AVXSYNTH)-uninstall
 
 
@@ -1976,16 +2271,18 @@ $(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBGME_SRC)
 	tar -xf $(DN_SRC)/$(LIBGME_SRC)
 	mv game-music-emu* $(LIBGME)-$(LIBGME_VERSION)
 	touch $@
-$(LIBGME)-$(LIBGME_VERSION)/Makefile: $(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt $(FL_DEP_LIBGME)
+$(LIBGME)-$(LIBGME_VERSION)/build/Makefile: $(LIBGME)-$(LIBGME_VERSION)/CMakeLists.txt $(FL_DEP_LIBGME)
 	cd $(LIBGME)-$(LIBGME_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
-$(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/Makefile
+$(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/build/Makefile
 	cd $(LIBGME)-$(LIBGME_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBGME).pc: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
 	cd $(LIBGME)-$(LIBGME_VERSION)/build && make install
+	touch $@
 
 $(LIBGME)-uninstall: $(LIBGME)-$(LIBGME_VERSION)/build/gme/$(LIBGME).pc
 	cd $(LIBGME)-$(LIBGME_VERSION)/ && make uninstall
@@ -2181,7 +2478,7 @@ $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBSOXR_SRC)
 	rm -f $(LIBSOXR)-install
 	mv $(LIBSOXR)* $(LIBSOXR)-$(LIBSOXR_VERSION)
 	touch $@
-$(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists.txt $(FL_DEP_LIBSOXR)
+$(LIBSOXR)-$(LIBSOXR_VERSION)/build/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists.txt $(FL_DEP_LIBSOXR)
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
@@ -2196,10 +2493,12 @@ $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile: $(LIBSOXR)-$(LIBSOXR_VERSION)/CMakeLists
             -DWITH_PFFFT=ON \
             -DWITH_SIMD=ON \
             ..
-$(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/Makefile
+$(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/Makefile
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBSOXR).pc: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/build && make install
+	touch $@
 
 $(LIBSOXR)-uninstall: $(LIBSOXR)-$(LIBSOXR_VERSION)/build/src/$(LIBSOXR).pc
 	cd $(LIBSOXR)-$(LIBSOXR_VERSION)/ && make uninstall
@@ -2635,20 +2934,22 @@ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBVIDSTAB_SRC)
 	touch $@
 endif
 
-$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt $(FL_DEP_LIBVIDSTAB)
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/Makefile: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt $(FL_DEP_LIBVIDSTAB)
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
             ..
-$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/Makefile
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/vidstab.pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/Makefile
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVIDSTAB).pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/vidstab.pc: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/vidstab.pc
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build && make install
+	touch $@
 
-$(LIBVIDSTAB)-uninstall: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/gme/$(LIBVIDSTAB).pc
+$(LIBVIDSTAB)-uninstall: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/build/vidstab.pc
 	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && make uninstall
-$(LIBVIDSTAB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVIDSTAB).pc
+$(LIBVIDSTAB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/vidstab.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBVIDSTAB_SRC)
@@ -2870,7 +3171,7 @@ $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/confi
 
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic --disable-documentation
 	touch $@
 $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile
 	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -3053,6 +3354,7 @@ $(LIBILBC)-$(LIBILBC_VERSION)/Makefile: $(LIBILBC)-$(LIBILBC_VERSION)/configure 
 	touch $@
 $(LIBILBC)-$(LIBILBC_VERSION)/ilbc.pc: $(LIBILBC)-$(LIBILBC_VERSION)/Makefile
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ilbc.pc: $(LIBILBC)-$(LIBILBC_VERSION)/ilbc.pc
 	cd $(LIBILBC)-$(LIBILBC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -3109,7 +3411,7 @@ $(LIBFLITE)-uninstall: $(LIBFLITE)-$(LIBFLITE_VERSION)/$(LIBFLITE).pc
 $(LIBFLITE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBFLITE).pc
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(LIBFLITE_SRC)
+#FL_SOURCES+=$(DN_SRC)/$(LIBFLITE_SRC)
 FL_UNINSTALL+=$(LIBFLITE)-uninstall
 
 ########################################
@@ -3215,7 +3517,7 @@ $(APINVENC)-uninstall: $(APINVENC)-$(APINVENC_VERSION)/Samples/common/inc/nvCPUO
 $(APINVENC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/nvCPUOPSys.h
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(APINVENC_SRC)
+#FL_SOURCES+=$(DN_SRC)/$(APINVENC_SRC)
 FL_UNINSTALL+=$(APINVENC)-uninstall
 
 ########################################
@@ -4064,27 +4366,53 @@ FL_UNINSTALL+=$(CUDASDK)-uninstall
 ########################################
 # IPPICV for opencv, there's some reason that opencv can't download the files correctly
 # in 3rdparty/ippicv/downloader.cmake
+
+# 20151201
+#IPPICV_DATE=20141027
+IPPICV_DATE=20151201
+#https://github.com/Itseez/opencv_3rdparty/raw/ippicv/master_20151201/ippicv/ippicv_linux_20151201.tgz
+
+ifeq ($(IPPICV_DATE),20151201)
+
+IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
+ifdef SystemRoot
+   # windows
+   IPPICV_SRC_BASE=windows-04e81ce5d0e329c3fbc606ae32cad44d/ippicv_windows_20151201.zip
+else
+   ifeq ($(shell uname), Linux)
+      # linux
+      IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
+   else
+      # MAC?
+      IPPICV_SRC_BASE=macosx-4ff1fde9a7cfdfe7250bfcd8334e0f2f/ippicv_macosx_20151201.tgz
+   endif
+endif
+
+else
+IPPICV_URL_PREFIX=http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/
+IPPICV_URL_PREFIX=https://github.com/Itseez/opencv_3rdparty/raw/ippicv/master_$(IPPICV_DATE)/ippicv/
+
 IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
-#IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
 ifdef SystemRoot
    # windows
    IPPICV_SRC_BASE=windows-b59f865d1ba16e8c84124e19d78eec57/ippicv_windows_20141027.zip
-#   IPPICV_SRC_BASE=windows-04e81ce5d0e329c3fbc606ae32cad44d/ippicv_windows_20151201.zip
 else
    ifeq ($(shell uname), Linux)
       # linux
       IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
-#      IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
    else
       # MAC?
       IPPICV_SRC_BASE=macosx-9662fe0694a67e59491a0dcc82fa26e0/ippicv_macosx_20141027.tgz
-#      IPPICV_SRC_BASE=macosx-4ff1fde9a7cfdfe7250bfcd8334e0f2f/ippicv_macosx_20151201.tgz
    endif
 endif
+
+endif
+
+
 IPPICV_SRC=$(notdir $(IPPICV_SRC_BASE))
 
 $(DN_SRC)/$(IPPICV_SRC): $(DN_SRC)/created
-	wget -O $@ -c http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/$(IPPICV_SRC)
+	wget -O $@ -c https://github.com/Itseez/opencv_3rdparty/raw/ippicv/master_$(IPPICV_DATE)/ippicv/$(IPPICV_SRC)
 	touch $@
 FL_SOURCES+=$(DN_SRC)/$(IPPICV_SRC)
 
@@ -4097,7 +4425,7 @@ OPENCV=opencv
 
 OPENCV_VERSION=2.4.8
 OPENCV_VERSION=2.4.11
-OPENCV_VERSION=3.0.0
+#OPENCV_VERSION=3.0.0
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
 OPENCV_URL=https://github.com/Itseez/opencv/archive/$(OPENCV_VERSION).tar.gz
 #http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.8/opencv-2.4.8.zip
@@ -4119,7 +4447,26 @@ FL_DEP_OPENCV= \
 # -D WITH_QT=ON -D WITH_CUDA=ON -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 -D WITH_CUBLAS=ON -D WITH_NVCUVID=ON -D CUDA_FAST_MATH=ON
 # if nvidia card is old and has only 1:1 Compute Cappability
 
-USE_GIT_OPENCV=0
+# cuda patch for opencv 2.4.11
+opencv-ebd7d08408205aebb478af1e6239f9c2e4dc2fdd.patch: $(DN_SRC)/created
+
+#$(OPENCV)-$(OPENCV_VERSION)-patch
+$(DN_SRC)/$(OPENCV)-2.4.11-patch: $(DN_SRC)/created
+	# compile cuda:
+	$(WGET) -O tmp1 -c https://github.com/antran89/opencv/commit/ebd7d08408205aebb478af1e6239f9c2e4dc2fdd.patch
+	# compile with ffmpeg
+	$(WGET) -O tmp2 -c https://github.com/SpecLad/opencv/commit/799622affd8baa2d503dd632e1629d60d7ac46b2.patch
+	$(WGET) -O tmp3 -c https://github.com/SpecLad/opencv/commit/3d6413cfc617627bff518931c2534bf51f90a2d9.patch
+	$(WGET) -O tmp4 -c https://github.com/SpecLad/opencv/commit/50842b90363efbe2ec16c899a0295cdab9f5ea85.patch
+	rm -f $@; cat tmp1 > $@; cat tmp2 >> $@; cat tmp3 >> $@; cat tmp4 >> $@
+	touch $@
+
+$(DN_SRC)/$(OPENCV)-3.0.0-patch: $(DN_SRC)/created
+	touch $@
+$(DN_SRC)/$(OPENCV)-git-patch: $(DN_SRC)/created
+	touch $@
+
+USE_GIT_OPENCV=1
 
 ifeq ($(USE_GIT_OPENCV),1) # use git instead
 OPENCV_VERSION=git
@@ -4142,7 +4489,7 @@ $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.m
 
 else # use released files
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(OPENCV_URL) -O $(DN_SRC)/$(OPENCV_SRC)
+	$(WGET) -O $@ -c $(OPENCV_URL)
 	touch $@
 $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
 	rm -rf opencv*
@@ -4152,11 +4499,15 @@ $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
 
 endif
 
-$(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_SRC)/$(IPPICV_SRC) $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt
+$(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE): $(DN_SRC)/$(IPPICV_SRC)
 	mkdir -p $(dir $@)
 	cp $(DN_SRC)/$(IPPICV_SRC) $@
 
-$(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE)
+$(OPENCV)-$(OPENCV_VERSION)/mypatched: $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-patch $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt $(OPENCV)-$(OPENCV_VERSION)/3rdparty/ippicv/downloads/$(IPPICV_SRC_BASE)
+	cd $(OPENCV)-$(OPENCV_VERSION)/ && patch -p1 < $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-patch
+	touch $@
+
+$(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatched
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
 		    -D CMAKE_INSTALL_RPATH_USE_LINK_PATH:BOOL=TRUE CMAKE_INSTALL_RPATH=$(PREFIX)/opt/$(CUDASDK)/lib64 \
