@@ -1654,11 +1654,6 @@ FL_DEP_READLINE= \
 	$(GNUAWK)-install \
 	$(NULL)
 
-$(DN_SRC)/0001-Add-a-metadata-file-for-pkg-config-readline.pc.patch: $(DN_SRC)/created
-	$(WGET) -O $@ -c https://lists.gnu.org/archive/html/bug-readline/2014-05/txtGk5c4_8tcD.txt
-	touch $@
-FL_SOURCES+=$(DN_SRC)/0001-Add-a-metadata-file-for-pkg-config-readline.pc.patch
-
 READLINE_VERSION=6.3
 READLINE_SRC=$(READLINE)-$(READLINE_VERSION).tar.gz
 READLINE_URL="http://ftp.gnu.org/gnu/$(READLINE)/$(READLINE_SRC)"
@@ -1688,7 +1683,17 @@ $(READLINE)-$(READLINE_VERSION)/configure: $(READLINE)-$(READLINE_VERSION)/mypat
 
 $(READLINE)-$(READLINE_VERSION)/Makefile: $(READLINE)-$(READLINE_VERSION)/configure
 	cd $(READLINE)-$(READLINE_VERSION)/ && $(ENV_COMPILE) TERMCAP_LIB="-lncursesw" ./configure --prefix=$(PREFIX_CONF) --with-curses
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
+
+$(READLINE)-$(READLINE_VERSION)/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
+	cd $(READLINE)-$(READLINE_VERSION)/ && make $(MAKE_ARG)
+	readelf -a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libreadline.so.6 | grep NEEDED | grep curses; \
+	    if [ ! "$$?" = "0" ]; then echo "Error in compile readline lib!!"; exit 1; fi
+	touch $@
+# other commands to view shared lib:
+# readelf -a /usr/lib/libncurses.so | grep UP
+# ldd -r /usr/lib/libreadline.so.5 | grep und
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/$(READLINE).pc
 	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	touch $@
 
