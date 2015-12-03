@@ -4,9 +4,9 @@
 # 1. basic compiler
 #  1) RedHat/CentOS:
 #     yum -y groupinstall "Development Tools"
-#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel bison flex gdb make cvs subversion git mercurial patch gawk
 #  2) Debian/Ubuntu
-#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+#     sudo apt-get install -y build-essential g++ bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
 
 ######################################################################
 # define the directory stores all of the source code packages
@@ -414,13 +414,57 @@ FL_SOURCES+=$(DN_SRC)/$(AUTOCONF_SRC)
 FL_UNINSTALL+=$(AUTOCONF)-uninstall
 
 ########################################
+# The internationalization tool collection
+# https://edge.launchpad.net/intltool
+INTLTOOL=intltool
+
+FL_DEP_INTLTOOL= \
+	#$(aaaa)-install \
+	$(NULL)
+
+INTLTOOL_VERSION=0.51.0
+INTLTOOL_SRC=$(INTLTOOL)-$(INTLTOOL_VERSION).tar.gz
+INTLTOOL_URL=http://launchpad.net/intltool/trunk/$(INTLTOOL_VERSION)/+download/$(INTLTOOL_SRC)
+
+$(DN_SRC)/$(INTLTOOL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(INTLTOOL_URL)
+	touch $@
+
+$(INTLTOOL)-$(INTLTOOL_VERSION)/configure: $(DN_SRC)/$(INTLTOOL_SRC)
+	tar -xf $(DN_SRC)/$(INTLTOOL_SRC)
+	#$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(INTLTOOL)-$(INTLTOOL_VERSION)/Makefile: $(INTLTOOL)-$(INTLTOOL_VERSION)/configure $(FL_DEP_INTLTOOL)
+	cd $(INTLTOOL)-$(INTLTOOL_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(INTLTOOL)-$(INTLTOOL_VERSION)/bin/intltool-extract: $(INTLTOOL)-$(INTLTOOL_VERSION)/Makefile
+	cd $(INTLTOOL)-$(INTLTOOL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/intltool-extract: $(INTLTOOL)-$(INTLTOOL_VERSION)/bin/intltool-extract
+	cd $(INTLTOOL)-$(INTLTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(INTLTOOL)-uninstall: $(INTLTOOL)-$(INTLTOOL_VERSION)/bin/intltool-extract
+	cd $(INTLTOOL)-$(INTLTOOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(INTLTOOL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/intltool-extract
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(INTLTOOL_SRC)
+FL_UNINSTALL+=$(INTLTOOL)-uninstall
+
+########################################
 # A GNU tool for automatically creating Makefiles
 # http://www.gnu.org/software/automake
 AUTOMAKE=automake
 
+# autoconf automake libtool autogen intltool
 FL_DEP_AUTOMAKE= \
-	$(AUTOCONF)-install \
+	$(AUTOCONF)-install  \
 	$(PKGCONFIG)-install \
+	#$(AUTOGEN)-install   \
+	$(INTLTOOL)-install  \
 	$(NULL)
 
 AUTOMAKE_VERSION=1.15
@@ -457,8 +501,45 @@ FL_UNINSTALL+=$(AUTOMAKE)-uninstall
 
 
 ########################################
+GNUAWK=gawk
+GNUAWK_VERSION=4.1.3
+GNUAWK_SRC=$(GNUAWK)-$(GNUAWK_VERSION).tar.gz
+GNUAWK_URL=http://ftp.gnu.org/gnu/gawk/$(GNUAWK_SRC)
+
+$(DN_SRC)/$(GNUAWK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GNUAWK_URL)
+	touch $@
+$(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
+	tar -xf $(DN_SRC)/$(GNUAWK_SRC)
+	touch $@
+
+#$(GNUAWK)-$(GNUAWK_VERSION)/mypatched: $(DN_PATCH)/pbs-GNUAWK-lua.patch $(GNUAWK)-$(GNUAWK_VERSION)/configure
+#	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-GNUAWK-lua.patch
+#	touch $@
+
+$(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
+$(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(GNUAWK)-uninstall: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GNUAWK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GNUAWK_SRC)
+FL_UNINSTALL+=$(GNUAWK)-uninstall
+
+########################################
 # System V Release 4.0 curses emulation library
 NCURSES=ncurses
+
+FL_DEP_AUTOMAKE= \
+	$(AUTOMAKE)-install \
+	$(GAWK)-install \
+	$(NULL)
 
 NCURSES_VERSION=6.0
 NCURSES_SRC=$(NCURSES)-$(NCURSES_VERSION).tar.gz
@@ -1126,6 +1207,7 @@ $(GETTEXT)-$(GETTEXT_VERSION)/Makefile: $(GETTEXT)-$(GETTEXT_VERSION)/configure
 
 $(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen: $(GETTEXT)-$(GETTEXT_VERSION)/Makefile
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/msgen: $(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -1345,7 +1427,7 @@ $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
 $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
 #	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
 	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
-	#cd $(NCURSES)-$(NCURSES_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
+	#cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
 	touch $@
 
 $(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
@@ -1518,8 +1600,115 @@ $(LVPX)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libvpx.a
 
 FL_UNINSTALL+=$(LVPX)-uninstall
 
+
+########################################
+# Enables programs to use display computer terminals in a device-independent manner
+TERMCAP=termcap
+
+FL_DEP_TERMCAP= \
+	$(NCURSES)-install \
+	$(NULL)
+
+TERMCAP_VERSION=1.3.1
+#TERMCAP_SRC=$(TERMCAP)-$(TERMCAP_VERSION).tar.gz
+#TERMCAP_URL="http://ftp.gnu.org/gnu/$(TERMCAP)/$(TERMCAP_SRC)"
+
+#$(DN_SRC)/$(TERMCAP_SRC): $(DN_SRC)/created
+#	$(WGET) -O $@ -c $(TERMCAP_URL)
+#	touch $@
+#$(TERMCAP)-$(TERMCAP_VERSION)/configure: $(DN_SRC)/$(TERMCAP_SRC)
+#	tar -xf $(DN_SRC)/$(TERMCAP_SRC)
+#	#mv $(TERMCAP)$(TERMCAP_VERSION) $(TERMCAP)-$(TERMCAP_VERSION)/
+#	touch $@
+#$(TERMCAP)-$(TERMCAP_VERSION)/Makefile: $(TERMCAP)-$(TERMCAP_VERSION)/configure $(FL_DEP_TERMCAP)
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+#$(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+#	touch $@
+#$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+#$(TERMCAP)-uninstall: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+#$(TERMCAP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a
+#	touch $@
+
+#FL_SOURCES+=$(DN_SRC)/$(TERMCAP_SRC)
+#FL_UNINSTALL+=$(TERMCAP)-uninstall
+
+$(TERMCAP)-uninstall:
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.a
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
+$(TERMCAP)-install: $(FL_DEP_TERMCAP)
+	mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/
+	ln -s libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.a
+	ln -s libncursesw.so  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.so
+	ln -s ../libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/libtermcap.a
+	ln -s libncursesw.so $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
+	touch $@
+
+########################################
+READLINE=readline
+
+FL_DEP_READLINE= \
+	$(TERMCAP)-install \
+	$(GNUAWK)-install \
+	$(NULL)
+
+$(DN_SRC)/0001-Add-a-metadata-file-for-pkg-config-readline.pc.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c https://lists.gnu.org/archive/html/bug-readline/2014-05/txtGk5c4_8tcD.txt
+	touch $@
+FL_SOURCES+=$(DN_SRC)/0001-Add-a-metadata-file-for-pkg-config-readline.pc.patch
+
+READLINE_VERSION=6.3
+READLINE_SRC=$(READLINE)-$(READLINE_VERSION).tar.gz
+READLINE_URL="http://ftp.gnu.org/gnu/$(READLINE)/$(READLINE_SRC)"
+
+$(DN_SRC)/$(READLINE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(READLINE_URL)
+	touch $@
+$(READLINE)-$(READLINE_VERSION)/configure.ac: $(DN_SRC)/$(READLINE_SRC)
+	tar -xf $(DN_SRC)/$(READLINE_SRC)
+	#mv $(READLINE)$(READLINE_VERSION) $(READLINE)-$(READLINE_VERSION)/
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/mypatched: $(DN_PATCH)/pbs-readline-pkgconfig.patch $(READLINE)-$(READLINE_VERSION)/configure.ac
+	# create readline.pc
+	cd $(READLINE)-$(READLINE_VERSION)/ \
+        && patch -Np1 < $(DN_PATCH)/pbs-readline-pkgconfig.patch \
+        && sed -i 's/-L$${libdir} -lreadline.*$$/-L$${libdir} -lreadline -lncursesw/' $(READLINE).pc.in
+	# ncurses
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|SHLIB_LIBS=.*$$|SHLIB_LIBS=-lncursesw|'    -i support/shobj-conf
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw|' -i shlib/Makefile.in
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw @TERMCAP_LIB@|' -i Makefile.in
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/configure: $(READLINE)-$(READLINE_VERSION)/mypatched $(FL_DEP_READLINE)
+	#cd $(READLINE)-$(READLINE_VERSION) && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/Makefile: $(READLINE)-$(READLINE_VERSION)/configure
+	cd $(READLINE)-$(READLINE_VERSION)/ && $(ENV_COMPILE) TERMCAP_LIB="-lncursesw" ./configure --prefix=$(PREFIX_CONF) --with-curses
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
+	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(READLINE)-uninstall: $(READLINE)-$(READLINE_VERSION)/Makefile
+	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(READLINE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(READLINE_SRC)
+FL_UNINSTALL+=$(READLINE)-uninstall
+
 ########################################
 LUA=lua
+
+FL_DEP_LUA= \
+	$(NCURSES)-install \
+	$(READLINE)-install \
+	#$(TERMCAP)-install \
+	$(NULL)
+
 LUA_VERSION=5.3.1
 LUA_SRC=$(LUA)-$(LUA_VERSION).tar.gz
 LUA_URL="http://www.lua.org/ftp/$(LUA_SRC)"
@@ -1527,12 +1716,20 @@ LUA_URL="http://www.lua.org/ftp/$(LUA_SRC)"
 $(DN_SRC)/$(LUA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LUA_URL)
 	touch $@
-$(LUA)-$(LUA_VERSION)/Makefile: $(DN_SRC)/$(LUA_SRC)
+$(LUA)-$(LUA_VERSION)/USAGE: $(DN_SRC)/$(LUA_SRC)
 	tar -xf $(DN_SRC)/$(LUA_SRC)
 	touch $@
-$(LUA)-$(LUA_VERSION)/src/lua: $(LUA)-$(LUA_VERSION)/Makefile $(FL_DEP_LUA)
+
+$(LUA)-$(LUA_VERSION)/mypatched: $(LUA)-$(LUA_VERSION)/USAGE
+	#cd $(LUA)-$(LUA_VERSION)/ && sed -e 's|SHLIB_LIBS=.*$$|SHLIB_LIBS=-lncurses|' -i support/shobj-conf
+	touch $@
+
+$(LUA)-$(LUA_VERSION)/Makefile: $(LUA)-$(LUA_VERSION)/mypatched $(FL_DEP_LUA)
+	touch $@
+
+$(LUA)-$(LUA_VERSION)/src/lua: $(LUA)-$(LUA_VERSION)/Makefile
 	cd $(LUA)-$(LUA_VERSION)/ \
-	    && $(ENV_COMPILE) make $(MAKE_ARG) MYCFLAGS="$$CFLAGS -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLDFLAGS="$$LDFLAGS" linux
+	    && $(ENV_COMPILE) make -C src MYLDFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ -fPIC -DLUA_USE_LINUX -DLUA_COMPAT_5_2 -DLUA_COMPAT_5_1" MYLIBS="-Wl,-E `$(ENV_COMPILE) pkg-config --libs readline ncursesw` -ldl" all
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua: $(LUA)-$(LUA_VERSION)/src/lua
 	cd $(LUA)-$(LUA_VERSION)/ && make TO_LIB="liblua.a" INSTALL_DATA='cp -d' INSTALL_TOP=$(PREFIX_DEST)/$(PREFIX_CONF)/ INSTALL_MAN=$(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1 install
 
@@ -1544,38 +1741,6 @@ $(LUA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua
 FL_SOURCES+=$(DN_SRC)/$(LUA_SRC)
 FL_UNINSTALL+=$(LUA)-uninstall
 
-
-########################################
-GNUAWK=gawk
-GNUAWK_VERSION=4.1.3
-GNUAWK_SRC=$(GNUAWK)-$(GNUAWK_VERSION).tar.gz
-GNUAWK_URL=http://ftp.gnu.org/gnu/gawk/$(GNUAWK_SRC)
-
-$(DN_SRC)/$(GNUAWK_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GNUAWK_URL)
-	touch $@
-$(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
-	tar -xf $(DN_SRC)/$(GNUAWK_SRC)
-	touch $@
-
-#$(GNUAWK)-$(GNUAWK_VERSION)/mypatched: $(DN_PATCH)/pbs-GNUAWK-lua.patch $(GNUAWK)-$(GNUAWK_VERSION)/configure
-#	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-GNUAWK-lua.patch
-#	touch $@
-
-$(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
-$(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(GNUAWK)-uninstall: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GNUAWK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GNUAWK_SRC)
-FL_UNINSTALL+=$(GNUAWK)-uninstall
 
 ########################################
 # X.Org Autotools macros
@@ -1595,7 +1760,7 @@ $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure: $(DN_SRC)/$(XUTILMACRO_SRC)
 $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/configure $(FL_DEP_XUTILMACRO)
 	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/lib/
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/xorg-macros.pc: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
-	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && $(ENV_COMPILE) make -j1 DESTDIR=$(PREFIX_DEST) install
 
 $(XUTILMACRO)-uninstall: $(XUTILMACRO)-$(XUTILMACRO_VERSION)/Makefile
 	cd $(XUTILMACRO)-$(XUTILMACRO_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
