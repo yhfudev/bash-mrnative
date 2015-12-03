@@ -4,9 +4,9 @@
 # 1. basic compiler
 #  1) RedHat/CentOS:
 #     yum -y groupinstall "Development Tools"
-#     yum -y install gcc-c++ rpm-build rpmdevtools autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk # remove binutils-devel to avoid installing zlib-devel
+#     yum -y install gcc-c++ rpm-build rpmdevtools bison flex gdb make cvs subversion git mercurial patch gawk # remove binutils-devel to avoid installing zlib-devel
 #  2) Debian/Ubuntu
-#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+#     sudo apt-get install -y build-essential g++ bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
 
 ######################################################################
 # define the directory stores all of the source code packages
@@ -3329,7 +3329,7 @@ endif
 
 $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md $(FL_DEPENDENCES_FFMPEG)
 	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
-	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|-lopenjpeg|-lopenjp2|g' -i configure
+	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|-lopenjpeg|-lopenjp2|g' -i configure
 	touch $@
 
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
@@ -3349,12 +3349,12 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjp2` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
 			LDFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` " \
 			$(ENV_COMPILE) ./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjp2` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
 			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1 ` " \
             \
             --enable-version3 --enable-gpl --enable-nonfree \
@@ -3953,6 +3953,7 @@ $(VTK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libvtksys.so
 FL_SOURCES+=$(DN_SRC)/$(VTK_SRC)
 FL_UNINSTALL+=$(VTK)-uninstall
 
+
 ########################################
 # xine-lib
 # intel-tbb
@@ -4061,24 +4062,31 @@ FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
 FL_UNINSTALL+=$(CUDASDK)-uninstall
 
 ########################################
-# IPPICV
+# IPPICV for opencv, there's some reason that opencv can't download the files correctly
+# in 3rdparty/ippicv/downloader.cmake
 IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
+#IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
 ifdef SystemRoot
    # windows
    IPPICV_SRC_BASE=windows-b59f865d1ba16e8c84124e19d78eec57/ippicv_windows_20141027.zip
+#   IPPICV_SRC_BASE=windows-04e81ce5d0e329c3fbc606ae32cad44d/ippicv_windows_20151201.zip
 else
    ifeq ($(shell uname), Linux)
       # linux
       IPPICV_SRC_BASE=linux-8b449a536a2157bcad08a2b9f266828b/ippicv_linux_20141027.tgz
+#      IPPICV_SRC_BASE=linux-808b791a6eac9ed78d32a7666804320e/ippicv_linux_20151201.tgz
    else
       # MAC?
       IPPICV_SRC_BASE=macosx-9662fe0694a67e59491a0dcc82fa26e0/ippicv_macosx_20141027.tgz
+#      IPPICV_SRC_BASE=macosx-4ff1fde9a7cfdfe7250bfcd8334e0f2f/ippicv_macosx_20151201.tgz
    endif
 endif
 IPPICV_SRC=$(notdir $(IPPICV_SRC_BASE))
 
-$(DN_SRC)/$(IPPICV_SRC):
+$(DN_SRC)/$(IPPICV_SRC): $(DN_SRC)/created
 	wget -O $@ -c http://sourceforge.net/projects/opencvlibrary/files/3rdparty/ippicv/$(IPPICV_SRC)
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(IPPICV_SRC)
 
 ########################################
 # refer: https://aur.archlinux.org/packages/op/opencv-cuda-all/PKGBUILD
@@ -4086,10 +4094,9 @@ $(DN_SRC)/$(IPPICV_SRC):
 # https://projects.archlinux.org/svntogit/packages.git/tree/trunk/PKGBUILD?h=packages/opencv
 
 OPENCV=opencv
+
 OPENCV_VERSION=2.4.8
 OPENCV_VERSION=2.4.11
-OPENCV_VERSION=2.4.10
-OPENCV_VERSION=2.4.9
 OPENCV_VERSION=3.0.0
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
 OPENCV_URL=https://github.com/Itseez/opencv/archive/$(OPENCV_VERSION).tar.gz
@@ -4112,7 +4119,7 @@ FL_DEP_OPENCV= \
 # -D WITH_QT=ON -D WITH_CUDA=ON -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 -D WITH_CUBLAS=ON -D WITH_NVCUVID=ON -D CUDA_FAST_MATH=ON
 # if nvidia card is old and has only 1:1 Compute Cappability
 
-USE_GIT_OPENCV=1
+USE_GIT_OPENCV=0
 
 ifeq ($(USE_GIT_OPENCV),1) # use git instead
 OPENCV_VERSION=git

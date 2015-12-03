@@ -4,9 +4,9 @@
 # 1. basic compiler
 #  1) RedHat/CentOS:
 #     yum -y groupinstall "Development Tools"
-#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel bison flex gdb make cvs subversion git mercurial patch gawk
 #  2) Debian/Ubuntu
-#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+#     sudo apt-get install -y build-essential g++ bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
 
 ######################################################################
 # define the directory stores all of the source code packages
