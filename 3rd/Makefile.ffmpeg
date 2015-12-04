@@ -1581,12 +1581,8 @@ $(FREI0R)-$(FREI0R_VERSION)/.git: $(DN_SRC)/$(FREI0R_SRC)
 	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull
 	if [ -d "$(FREI0R)-$(FREI0R_VERSION)" ]; then cd $(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION)/ $(FREI0R)-$(FREI0R_VERSION); fi
 
-$(FREI0R)-$(FREI0R_VERSION)/README.md: $(FREI0R)-$(FREI0R_VERSION)/.git
+$(FREI0R)-$(FREI0R_VERSION)/configure.ac: $(FREI0R)-$(FREI0R_VERSION)/.git
 	cd $(FREI0R)-$(FREI0R_VERSION)/ && git pull
-	touch $@
-
-$(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/README.md
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
 else # use released files
@@ -1598,19 +1594,22 @@ $(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(FREI0R_URL)
 	touch $@
 
-$(FREI0R)-$(FREI0R_VERSION)/configure: $(DN_SRC)/$(FREI0R_SRC)
+$(FREI0R)-$(FREI0R_VERSION)/configure.ac: $(DN_SRC)/$(FREI0R_SRC)
 	tar -xf $(DN_SRC)/$(FREI0R_SRC)
-	#cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
 
-#$(FREI0R)-$(FREI0R_VERSION)/mypatched: $(DN_PATCH)/pbs-FREI0R-newapi.patch $(FREI0R)-$(FREI0R_VERSION)/configure
+#$(FREI0R)-$(FREI0R_VERSION)/mypatched: $(DN_PATCH)/pbs-FREI0R-newapi.patch $(FREI0R)-$(FREI0R_VERSION)/configure.ac
 	#cd $(FREI0R)-$(FREI0R_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-FREI0R-newapi.patch
 	#touch $@
 
-$(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure $(FL_DEP_FREI0R)
+$(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/configure.ac $(FL_DEP_FREI0R)
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure
 	cd $(FREI0R)-$(FREI0R_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+		&& $(ENV_COMPILE) OPENCV_CFLAGS= OPENCV_LIBS= ./configure --prefix=$(PREFIX_CONF)
 	touch $@
 $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/Makefile
 	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -3619,16 +3618,20 @@ FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION)/.git
 FFMPEG_URL=git://source.ffmpeg.org/ffmpeg.git
 
 $(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(FFMPEG_SRC)" ]; then cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull; else git clone $(FFMPEG_URL) $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION); fi
+	if [ -d "$(DN_SRC)/$(FFMPEG_SRC)" ]; then \
+        cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull; \
+    else \
+        git clone $(FFMPEG_URL) $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION); \
+    fi
 	touch $@
 
-$(FFMPEG)-$(FFMPEG_VERSION)/.git: $(DN_SRC)/$(FFMPEG_SRC)
+$(FFMPEG)-$(FFMPEG_VERSION)/configure: $(DN_SRC)/$(FFMPEG_SRC)
 	cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull
-	if [ -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull; else git clone $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); fi
-	touch $@
-
-$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/.git
-	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git pull
+	if [ -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then \
+        cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull; \
+    else \
+        git clone $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); \
+    fi
 	touch $@
 
 else
@@ -3640,14 +3643,14 @@ FFMPEG_URL=http://ffmpeg.org/releases/$(FFMPEG_SRC)
 $(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ $(FFMPEG_URL)
 	touch $@
-$(FFMPEG)-$(FFMPEG_VERSION)/README.md: $(DN_SRC)/$(FFMPEG_SRC)
+$(FFMPEG)-$(FFMPEG_VERSION)/configure: $(DN_SRC)/$(FFMPEG_SRC)
 	rm -rf ffmpeg*
 	tar -xf $(DN_SRC)/$(FFMPEG_SRC)
 	#mv ffmpeg* $(FFMPEG)-$(FFMPEG_VERSION)
 	touch $@
 endif
 
-$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/README.md $(FL_DEPENDENCES_FFMPEG)
+$(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-$(FFMPEG_VERSION)/configure $(FL_DEPENDENCES_FFMPEG)
 	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.svn ]; then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && svn revert -R . ; fi
 	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.hg ];  then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && hg update -C . ; fi
 	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.git ]; then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
@@ -4653,6 +4656,55 @@ FL_SOURCES+=$(DN_SRC)/$(MEDIAMETRICS_SRC)
 FL_UNINSTALL+=$(MEDIAMETRICS)-uninstall
 
 ########################################
+# A high-quality MPEG audio decoder
+LIBMAD=libmad
+
+FL_DEP_LIBMAD= \
+	$(AUTOMAKE)-install \
+	$(NULL)
+
+LIBMAD_VERSION=0.15.1b
+LIBMAD_SRC=$(LIBMAD)-$(LIBMAD_VERSION).tar.gz
+LIBMAD_URL=http://downloads.sourceforge.net/sourceforge/mad/$(LIBMAD_SRC)
+
+$(DN_SRC)/$(LIBMAD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBMAD_URL)
+	touch $@
+
+$(LIBMAD)-$(LIBMAD_VERSION)/configure.ac: $(DN_SRC)/$(LIBMAD_SRC)
+	tar -xf $(DN_SRC)/$(LIBMAD_SRC)
+	touch $@
+
+$(LIBMAD)-$(LIBMAD_VERSION)/configure: $(LIBMAD)-$(LIBMAD_VERSION)/configure.ac $(FL_DEP_LIBMAD)
+	cd $(LIBMAD)-$(LIBMAD_VERSION)/ && touch AUTHORS ChangeLog NEWS README config.h.in \
+            && $(ENV_COMPILE) libtoolize --force --copy --install \
+            && $(ENV_COMPILE) aclocal \
+            && $(ENV_COMPILE) automake --copy --add-missing --gnu \
+            && $(ENV_COMPILE) autoconf \
+            #&& $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBMAD)-$(LIBMAD_VERSION)/Makefile: $(LIBMAD)-$(LIBMAD_VERSION)/configure
+	cd $(LIBMAD)-$(LIBMAD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBMAD)-$(LIBMAD_VERSION)/$(LIBMAD).la: $(LIBMAD)-$(LIBMAD_VERSION)/Makefile
+	cd $(LIBMAD)-$(LIBMAD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBMAD).la: $(LIBMAD)-$(LIBMAD_VERSION)/$(LIBMAD).la
+	cd $(LIBMAD)-$(LIBMAD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(LIBMAD)-uninstall: $(LIBMAD)-$(LIBMAD_VERSION)/$(LIBMAD).la
+	cd $(LIBMAD)-$(LIBMAD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBMAD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBMAD).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBMAD_SRC)
+FL_UNINSTALL+=$(LIBMAD)-uninstall
+
+########################################
+# GPAC is an Open Source multimedia framework for research and academic purposes
+# https://gpac.wp.mines-telecom.fr/
 GPAC=gpac
 
 FL_DEP_GPAC= \
@@ -4663,6 +4715,7 @@ FL_DEP_GPAC= \
 	$(THEORA)-install \
 	$(VORBIS)-install \
 	$(LIBOGG)-install \
+	$(LIBMAD)-install \
 	$(XVIDCORE)-install \
 	$(FFMPEG)-install \
 	$(NULL)

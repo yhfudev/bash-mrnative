@@ -46,3 +46,38 @@ dist-gzip-ns2: ns2
 
 dist-gzip-ns2docsis: ns2docsis
 	$(call disttar,$(DN_PWD),ns2,ns-docsis-$(shell uname -m))
+
+# the size is too huge, >= 60MB
+rm_file_list_huge= \
+    usr/bin/gdaladdo \
+    usr/bin/gdalbuildvrt \
+    usr/bin/gdal_contour \
+    usr/bin/gdaldem \
+    usr/bin/gdalenhance \
+    usr/bin/gdal_grid \
+    usr/bin/gdalinfo \
+    usr/bin/gdallocationinfo \
+    usr/bin/gdalmanage \
+    usr/bin/gdal_rasterize \
+    usr/bin/gdalserver \
+    usr/bin/gdalsrsinfo \
+    usr/bin/gdaltindex \
+    usr/bin/gdaltransform \
+    usr/bin/gdal_translate \
+    usr/bin/gdalwarp \
+    usr/bin/ogr2ogr \
+    usr/bin/ogrinfo \
+    usr/bin/ogrlineref \
+    usr/bin/ogrtindex \
+    usr/bin/testepsg \
+    $(NULL)
+
+# some doc files
+rm_file_list_exclude= \
+    usr/doc/ \
+    usr/gtk-doc/ \
+    usr/man/ \
+    usr/share/doc/ \
+    usr/share/man/ \
+    usr/var/cache/ \
+    $(NULL)
