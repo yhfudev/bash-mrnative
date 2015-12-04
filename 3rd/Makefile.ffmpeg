@@ -839,13 +839,11 @@ $(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
 	if [ -d "$(DN_SRC)/$(X265_SRC)" ]; then cd $(DN_SRC)/$(X265)-$(X265_VERSION) && hg pull; else hg clone $(X265_URL) $(DN_SRC)/$(X265)-$(X265_VERSION); fi
 	touch $@
 
-$(X265)-$(X265_VERSION)/.hg: $(DN_SRC)/$(X265_SRC)
+$(X265)-$(X265_VERSION)/readme.rst: $(DN_SRC)/$(X265_SRC)
 	cd $(DN_SRC)/$(X265)-$(X265_VERSION) && hg pull
 	if [ -d "$(X265)-$(X265_VERSION)" ]; then cd $(X265)-$(X265_VERSION) && hg pull; else hg clone $(DN_SRC)/$(X265)-$(X265_VERSION)/ $(X265)-$(X265_VERSION); fi
 	touch $@
 
-$(X265)-$(X265_VERSION)/readme.rst: $(X265)-$(X265_VERSION)/.hg
-	touch $@
 else
 $(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(X265_URL)
@@ -1267,15 +1265,18 @@ CAIRO_SRC=$(CAIRO)-$(CAIRO_VERSION)/.git
 CAIRO_URL=git://anongit.freedesktop.org/git/cairo
 
 $(DN_SRC)/$(CAIRO_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(CAIRO_SRC)" ]; then cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull; else git clone $(CAIRO_URL) $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(CAIRO_SRC)" ]; then \
+        git clone $(CAIRO_URL) $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION); \
+    fi
+	cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(CAIRO)-$(CAIRO_VERSION)/.git: $(DN_SRC)/$(CAIRO_SRC)
-	cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull
-	if [ -d "$(CAIRO)-$(CAIRO_VERSION)" ]; then cd $(CAIRO)-$(CAIRO_VERSION) && git pull; else git clone $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION)/ $(CAIRO)-$(CAIRO_VERSION); fi
-
-$(CAIRO)-$(CAIRO_VERSION)/README.md: $(CAIRO)-$(CAIRO_VERSION)/.git
-	cd $(CAIRO)-$(CAIRO_VERSION)/ && git pull
+$(CAIRO)-$(CAIRO_VERSION)/README.md: $(DN_SRC)/$(CAIRO_SRC)
+	cd $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(CAIRO)-$(CAIRO_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(CAIRO)-$(CAIRO_VERSION)/ $(CAIRO)-$(CAIRO_VERSION); \
+    fi
+	cd $(CAIRO)-$(CAIRO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -1357,15 +1358,18 @@ PANGOCAIRO_SRC=$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git
 PANGOCAIRO_URL=git://git.gnome.org/pango
 
 $(DN_SRC)/$(PANGOCAIRO_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(PANGOCAIRO_SRC)" ]; then cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull; else git clone $(PANGOCAIRO_URL) $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(PANGOCAIRO_SRC)" ]; then \
+        git clone $(PANGOCAIRO_URL) $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION); \
+    fi
+	cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git: $(DN_SRC)/$(PANGOCAIRO_SRC)
-	cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull
-	if [ -d "$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)" ]; then cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull; else git clone $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ $(PANGOCAIRO)-$(PANGOCAIRO_VERSION); fi
-
-$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md: $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/.git
-	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ && git pull
+$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md: $(DN_SRC)/$(PANGOCAIRO_SRC)
+	cd $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/ $(PANGOCAIRO)-$(PANGOCAIRO_VERSION); \
+    fi
+	cd $(PANGOCAIRO)-$(PANGOCAIRO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -1433,15 +1437,18 @@ AVXSYNTH_SRC=$(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git
 AVXSYNTH_URL=https://github.com/avxsynth/avxsynth.git
 
 $(DN_SRC)/$(AVXSYNTH_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(AVXSYNTH_SRC)" ]; then cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull; else git clone $(AVXSYNTH_URL) $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(AVXSYNTH_SRC)" ]; then \
+        git clone $(AVXSYNTH_URL) $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION); \
+    fi
+	cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git: $(DN_SRC)/$(AVXSYNTH_SRC)
-	cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull
-	if [ -d "$(AVXSYNTH)-$(AVXSYNTH_VERSION)" ]; then cd $(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull; else git clone $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION)/ $(AVXSYNTH)-$(AVXSYNTH_VERSION); fi
-
-$(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(AVXSYNTH)-$(AVXSYNTH_VERSION)/.git
-	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION)/ && git pull
+$(AVXSYNTH)-$(AVXSYNTH_VERSION)/README.md: $(DN_SRC)/$(AVXSYNTH_SRC)
+	cd $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(AVXSYNTH)-$(AVXSYNTH_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(AVXSYNTH)-$(AVXSYNTH_VERSION)/ $(AVXSYNTH)-$(AVXSYNTH_VERSION); \
+    fi
+	cd $(AVXSYNTH)-$(AVXSYNTH_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -1557,75 +1564,6 @@ $(GAVL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GAVL).pc
 
 FL_SOURCES+=$(DN_SRC)/$(GAVL_SRC)
 FL_UNINSTALL+=$(GAVL)-uninstall
-
-########################################
-FREI0R=frei0r
-
-FL_DEP_FREI0R= \
-	$(AUTOMAKE)-install \
-	$(GAVL)-install \
-	$(NULL)
-
-USE_GIT_FREI0R=1
-
-ifeq ($(USE_GIT_FREI0R),1) # use git instead
-FREI0R_VERSION=git
-FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION)/.git
-FREI0R_URL=git://code.dyne.org/frei0r.git
-
-$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(FREI0R_SRC)" ]; then cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(FREI0R_URL) $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION); fi
-	touch $@
-
-$(FREI0R)-$(FREI0R_VERSION)/.git: $(DN_SRC)/$(FREI0R_SRC)
-	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull
-	if [ -d "$(FREI0R)-$(FREI0R_VERSION)" ]; then cd $(FREI0R)-$(FREI0R_VERSION) && git pull; else git clone $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION)/ $(FREI0R)-$(FREI0R_VERSION); fi
-
-$(FREI0R)-$(FREI0R_VERSION)/configure.ac: $(FREI0R)-$(FREI0R_VERSION)/.git
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && git pull
-	touch $@
-
-else # use released files
-FREI0R_VERSION=1.3
-FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION).tar.gz
-FREI0R_URL=http://www.piksel.no/frei0r/releases/frei0r-plugins-$(FREI0R_VERSION).tar.gz
-
-$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(FREI0R_URL)
-	touch $@
-
-$(FREI0R)-$(FREI0R_VERSION)/configure.ac: $(DN_SRC)/$(FREI0R_SRC)
-	tar -xf $(DN_SRC)/$(FREI0R_SRC)
-	touch $@
-endif
-
-#$(FREI0R)-$(FREI0R_VERSION)/mypatched: $(DN_PATCH)/pbs-FREI0R-newapi.patch $(FREI0R)-$(FREI0R_VERSION)/configure.ac
-	#cd $(FREI0R)-$(FREI0R_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-FREI0R-newapi.patch
-	#touch $@
-
-$(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/configure.ac $(FL_DEP_FREI0R)
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure
-	cd $(FREI0R)-$(FREI0R_VERSION)/ \
-		&& $(ENV_COMPILE) OPENCV_CFLAGS= OPENCV_LIBS= ./configure --prefix=$(PREFIX_CONF)
-	touch $@
-$(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/Makefile
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(FREI0R)-uninstall: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
-	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(FREI0R)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FREI0R).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(FREI0R_SRC)
-FL_UNINSTALL+=$(FREI0R)-uninstall
-
 
 ########################################
 # ladspa
@@ -1815,15 +1753,18 @@ LIBBLURAY_SRC=$(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git
 LIBBLURAY_URL=git://git.videolan.org/$(LIBBLURAY).git
 
 $(DN_SRC)/$(LIBBLURAY_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBBLURAY_SRC)" ]; then cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull; else git clone $(LIBBLURAY_URL) $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBBLURAY_SRC)" ]; then \
+        git clone $(LIBBLURAY_URL) $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull && git submodule update --init --recursive
 	touch $@
 
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git: $(DN_SRC)/$(LIBBLURAY_SRC)
-	cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull
-	if [ -d "$(LIBBLURAY)-$(LIBBLURAY_VERSION)" ]; then cd $(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION)/ $(LIBBLURAY)-$(LIBBLURAY_VERSION); fi
-
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/.git
-	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && git pull
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(DN_SRC)/$(LIBBLURAY_SRC)
+	cd $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull && git submodule update --init --recursive
+	if [ ! -d "$(LIBBLURAY)-$(LIBBLURAY_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBBLURAY)-$(LIBBLURAY_VERSION)/ $(LIBBLURAY)-$(LIBBLURAY_VERSION); \
+    fi
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION) && git pull && git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -2000,15 +1941,18 @@ LIBCACA_SRC=$(LIBCACA)-$(LIBCACA_VERSION)/.git
 LIBCACA_URL=git://git.zoy.org/$(LIBCACA).git
 
 $(DN_SRC)/$(LIBCACA_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBCACA_SRC)" ]; then cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull; else git clone $(LIBCACA_URL) $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBCACA_SRC)" ]; then \
+        git clone $(LIBCACA_URL) $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(LIBCACA)-$(LIBCACA_VERSION)/.git: $(DN_SRC)/$(LIBCACA_SRC)
-	cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull
-	if [ -d "$(LIBCACA)-$(LIBCACA_VERSION)" ]; then cd $(LIBCACA)-$(LIBCACA_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION)/ $(LIBCACA)-$(LIBCACA_VERSION); fi
-
-$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(LIBCACA)-$(LIBCACA_VERSION)/.git
-	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && git pull
+$(LIBCACA)-$(LIBCACA_VERSION)/README.md: $(DN_SRC)/$(LIBCACA_SRC)
+	cd $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(LIBCACA)-$(LIBCACA_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBCACA)-$(LIBCACA_VERSION)/ $(LIBCACA)-$(LIBCACA_VERSION); \
+    fi
+	cd $(LIBCACA)-$(LIBCACA_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -2113,21 +2057,18 @@ LIBCDIO_SRC=$(LIBCDIO)-$(LIBCDIO_VERSION)/.git
 LIBCDIO_URL=http://git.savannah.gnu.org/r/libcdio.git
 
 $(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBCDIO_SRC)" ]; then cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull; else git clone $(LIBCDIO_URL) $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBCDIO_SRC)" ]; then \
+        git clone $(LIBCDIO_URL) $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(LIBCDIO)-$(LIBCDIO_VERSION)/.git: $(DN_SRC)/$(LIBCDIO_SRC)
-	cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull
-	if [ -d "$(LIBCDIO)-$(LIBCDIO_VERSION)" ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION)/ $(LIBCDIO)-$(LIBCDIO_VERSION); fi
-	touch $@
-
-$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/.git
-	#tar -xf $(DN_SRC)/$(LIBCDIO_SRC)
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
-	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
-	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
-	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIO_SRC)
+	cd $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(LIBCDIO)-$(LIBCDIO_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBCDIO)-$(LIBCDIO_VERSION)/ $(LIBCDIO)-$(LIBCDIO_VERSION); \
+    fi
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else
@@ -2140,15 +2081,18 @@ $(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBCDIO_URL)
 	touch $@
 
-$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(DN_SRC)/$(LIBCDIO_SRC)
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIO_SRC)
 	tar -xf $(DN_SRC)/$(LIBCDIO_SRC)
+	touch $@
+endif
+
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
 	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
 	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
 	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
 	touch $@
-endif
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(LIBCDIO)-$(LIBCDIO_VERSION)/configure
 	if [ -d $(LIBCDIO)-$(LIBCDIO_VERSION)/.svn ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && svn revert -R . ; fi
@@ -2776,15 +2720,18 @@ LIBUTVIDEO_SRC=$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git
 LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo.git
 
 $(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBUTVIDEO_SRC)" ]; then cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull; else git clone $(LIBUTVIDEO_URL) $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBUTVIDEO_SRC)" ]; then \
+        git clone $(LIBUTVIDEO_URL) $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git: $(DN_SRC)/$(LIBUTVIDEO_SRC)
-	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull
-	if [ -d "$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)" ]; then cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); fi
-
-$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git
-	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && git pull
+$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); \
+    fi
+	cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -2920,15 +2867,18 @@ LIBVIDSTAB_SRC=$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git
 LIBVIDSTAB_URL=https://github.com/georgmartius/vid.stab.git
 
 $(DN_SRC)/$(LIBVIDSTAB_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBVIDSTAB_SRC)" ]; then cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull; else git clone $(LIBVIDSTAB_URL) $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBVIDSTAB_SRC)" ]; then \
+        git clone $(LIBVIDSTAB_URL) $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git: $(DN_SRC)/$(LIBVIDSTAB_SRC)
-	cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull
-	if [ -d "$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)" ]; then cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION); fi
-
-$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/.git
-	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ && git pull
+$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBVIDSTAB_SRC)
+	cd $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/ $(LIBVIDSTAB)-$(LIBUTVIDEO_VERSION); \
+    fi
+	cd $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -2997,16 +2947,17 @@ OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION)/.git
 OPENSSL_URL=https://github.com/openssl/openssl.git
 
 $(DN_SRC)/$(OPENSSL_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(OPENSSL_SRC)" ]; then cd $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION) && git pull; else git clone $(OPENSSL_URL) $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(OPENSSL_SRC)" ]; then \
+        git clone $(OPENSSL_URL) $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION); \
+    fi
+	cd $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(OPENSSL)-$(OPENSSL_VERSION)/.git: $(DN_SRC)/$(OPENSSL_SRC)
-	cd $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION) && git pull
-	if [ -d "$(OPENSSL)-$(OPENSSL_VERSION)" ]; then cd $(OPENSSL)-$(OPENSSL_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION)/ $(OPENSSL)-$(OPENSSL_VERSION); fi
-	touch $@
-
-$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(OPENSSL)-$(OPENSSL_VERSION)/.git
-	#tar -xf $(DN_SRC)/$(OPENSSL_SRC)
+$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
+	if [ ! -d "$(OPENSSL)-$(OPENSSL_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION)/ $(OPENSSL)-$(OPENSSL_VERSION); \
+    fi
+	cd $(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else
@@ -3075,16 +3026,18 @@ LIBRTMP_SRC=$(LIBRTMP)-$(LIBRTMP_VERSION)/.git
 LIBRTMP_URL=git://git.ffmpeg.org/rtmpdump
 
 $(DN_SRC)/$(LIBRTMP_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(LIBRTMP_SRC)" ]; then cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull; else git clone $(LIBRTMP_URL) $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(LIBRTMP_SRC)" ]; then \
+        git clone $(LIBRTMP_URL) $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(LIBRTMP)-$(LIBRTMP_VERSION)/.git: $(DN_SRC)/$(LIBRTMP_SRC)
-	cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull
-	if [ -d "$(LIBRTMP)-$(LIBRTMP_VERSION)" ]; then cd $(LIBRTMP)-$(LIBRTMP_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION)/ $(LIBRTMP)-$(LIBRTMP_VERSION); fi
-	touch $@
-
-$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(LIBRTMP)-$(LIBRTMP_VERSION)/.git
-	#tar -xf $(DN_SRC)/$(LIBRTMP_SRC)
+$(LIBRTMP)-$(LIBRTMP_VERSION)/$(LIBRTMP)/Makefile: $(DN_SRC)/$(LIBRTMP_SRC)
+	cd $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(LIBRTMP)-$(LIBRTMP_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBRTMP)-$(LIBRTMP_VERSION)/ $(LIBRTMP)-$(LIBRTMP_VERSION); \
+    fi
+	cd $(LIBRTMP)-$(LIBRTMP_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else
@@ -3566,7 +3519,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(LVPX)-install     \
     $(LIBDC1394)-install \
     $(FRIBIDI)-install  \
-    $(FREI0R)-install   \
     $(LADSPA)-install   \
     $(LIBAACPLUS)-install \
     $(LIBBLURAY)-install  \
@@ -3618,20 +3570,18 @@ FFMPEG_SRC=$(FFMPEG)-$(FFMPEG_VERSION)/.git
 FFMPEG_URL=git://source.ffmpeg.org/ffmpeg.git
 
 $(DN_SRC)/$(FFMPEG_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(FFMPEG_SRC)" ]; then \
-        cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull; \
-    else \
+	if [ ! -d "$(DN_SRC)/$(FFMPEG_SRC)" ]; then \
         git clone $(FFMPEG_URL) $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION); \
     fi
+	cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 $(FFMPEG)-$(FFMPEG_VERSION)/configure: $(DN_SRC)/$(FFMPEG_SRC)
-	cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull
-	if [ -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then \
-        cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull; \
-    else \
-        git clone $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); \
+	cd $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(FFMPEG)-$(FFMPEG_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(FFMPEG)-$(FFMPEG_VERSION)/ $(FFMPEG)-$(FFMPEG_VERSION); \
     fi
+	cd $(FFMPEG)-$(FFMPEG_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else
@@ -3663,6 +3613,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
 # hardware: --disable-devices --disable-d3d11va --disable-vaapi --disable-vda --enable-videotoolbox \
 # --enable-chromaprint
 #  --enable-libiec61883  --enable-libkvazaar --enable-libmfx --enable-libopenh264 --enable-librubberband --enable-libquvi --enable-libstagefright-h264 --enable-libtesseract --enable-libxcb --enable-libxcb-shm --enable-libxcb-xfixes --enable-libxcb-shape --enable-libzimg --disable-lzma --enable-decklink --enable-mmal --enable-nvenc
+#--enable-frei0r frei0r should depends on opencv and ffmpeg since we compile opencv(depends on ffmpeg)
     #--enable-libssh \
     #--enable-openal --enable-opencl --enable-opengl --disable-schannel --disable-sdl --disable-securetransport --disable-xlib
 #--enable-libilbc \
@@ -3675,13 +3626,13 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
-			LDFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` " \
+		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			LDFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` " \
 			$(ENV_COMPILE) ./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
-			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(FREI0R) $(XAVS) libopenjpeg1 ` " \
+			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1 ` " \
             \
             --enable-version3 --enable-gpl --enable-nonfree \
             \
@@ -3703,7 +3654,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-avisynth \
             --enable-bzlib \
             --enable-fontconfig \
-            --enable-frei0r \
             --disable-gnutls --enable-openssl \
             --enable-iconv \
             --enable-ladspa \
@@ -4129,30 +4079,31 @@ FL_UNINSTALL+=$(GDAL)-uninstall
 # The Visualization Toolkit (VTK) is an open-source C++ library for 3D computer graphics, image processing, and visualization
 # http://www.vtk.org/
 VTK=VTK
-VTK_VERSION=6.3.0
 
 FL_DEP_VTK= \
 	$(CMAKE)-install \
-	$(FFMPEG)-install \
-	$(GL2PS)-install \
-	$(EXPAT)-install \
+	$(ZLIB)-install \
+	$(LIBXML2)-install \
 	$(FREETYPE)-install \
+	$(EXPAT)-install \
 	$(LIBJPEG)-install \
 	$(LIBPNG)-install \
 	$(LIBTIFF)-install \
-	$(ZLIB)-install \
 	$(THEORA)-install \
 	$(JSONCPP)-install \
+	$(GL2PS)-install \
 	$(GLEW)-install \
 	$(GDAL)-install \
-	$(LIBXML2)-install \
 	$(HDF5)-install \
+	$(FFMPEG)-install \
 	#$(TWISTED)-install \
 	$(ZOPE)-install \
 	$(SIX)-install \
 	$(AUTOBAHN)-install \
 	$(MPI4PY)-install \
 	$(NULL)
+
+VTK_VERSION=6.3.0
 
 FL_SOURCES+=$(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz
 FL_SOURCES+=$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
@@ -4173,16 +4124,20 @@ VTK_SRC=$(VTK)-$(VTK_VERSION_GIT)/.git
 VTK_URL=https://gitlab.kitware.com/vtk/vtk.git
 
 $(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(VTK_SRC)" ]; then cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull; else git clone $(VTK_URL) $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT); fi
+	if [ -d "$(DN_SRC)/$(VTK_SRC)" ]; then \
+        cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull; \
+    else \
+        git clone $(VTK_URL) $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT); \
+    fi
 	touch $@
 
-$(VTK)-$(VTK_VERSION_GIT)/.git: $(DN_SRC)/$(VTK_SRC)
+$(VTK)-$(VTK_VERSION_GIT)/README.md: $(DN_SRC)/$(VTK_SRC)
 	cd $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT) && git pull
-	if [ -d "$(VTK)-$(VTK_VERSION_GIT)" ]; then cd $(VTK)-$(VTK_VERSION_GIT) && git pull; else git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT)/ $(VTK)-$(VTK_VERSION_GIT); fi
-
-$(VTK)-$(VTK_VERSION_GIT)/README.md: $(VTK)-$(VTK_VERSION_GIT)/.git
-	cd $(VTK)-$(VTK_VERSION_GIT)/ && git pull
-	touch $@
+	if [ -d "$(VTK)-$(VTK_VERSION_GIT)" ]; then \
+        cd $(VTK)-$(VTK_VERSION_GIT) && git pull; \
+    else \
+        git clone $(DN_SRC)/$(VTK)-$(VTK_VERSION_GIT)/ $(VTK)-$(VTK_VERSION_GIT); \
+    fi
 
 VTK_VERSION:=$(VTK_VERSION_GIT)
 
@@ -4243,10 +4198,10 @@ $(VTK)-$(VTK_VERSION)/mypatched: $(DN_SRC)/vtk-gdal2api.patch $(DN_SRC)/vtk-remo
 	    && patch -Np1 -i $(DN_SRC)/vtk-gdal2api.patch
 	touch $@
 
-$(VTK)-$(VTK_VERSION_GIT)/CMakeLists.txt: $(VTK)-$(VTK_VERSION_GIT)/mypatched $(FL_DEP_VTK)
+$(VTK)-$(VTK_VERSION)/CMakeLists.txt: $(VTK)-$(VTK_VERSION)/mypatched $(FL_DEP_VTK)
 	touch $@
 
-$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/mypatched $(VTK)-$(VTK_VERSION)/CMakeLists.txt
+$(VTK)-$(VTK_VERSION)/build/Makefile: $(VTK)-$(VTK_VERSION)/CMakeLists.txt
 	cd $(VTK)-$(VTK_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake .. \
             -DCMAKE_BUILD_TYPE=Release \
@@ -4508,15 +4463,18 @@ OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION)/.git
 OPENCV_URL=https://github.com/Itseez/opencv.git
 
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then \
+        git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); \
+    fi
+	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(OPENCV)-$(OPENCV_VERSION)/.git: $(DN_SRC)/$(OPENCV_SRC)
-	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull
-	if [ -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then cd $(OPENCV)-$(OPENCV_VERSION) && git pull; else git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); fi
-
-$(OPENCV)-$(OPENCV_VERSION)/README.md: $(OPENCV)-$(OPENCV_VERSION)/.git
-	cd $(OPENCV)-$(OPENCV_VERSION)/ && git pull
+$(OPENCV)-$(OPENCV_VERSION)/README.md: $(DN_SRC)/$(OPENCV_SRC)
+	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); \
+    fi
+	cd $(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 $(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md $(FL_DEP_OPENCV)
@@ -4598,6 +4556,78 @@ FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
 FL_UNINSTALL+=$(OPENCV)-uninstall
 
 ########################################
+FREI0R=frei0r
+
+FL_DEP_FREI0R= \
+	$(AUTOMAKE)-install \
+	$(GAVL)-install \
+	$(OPENCV)-install \
+	$(NULL)
+
+USE_GIT_FREI0R=1
+
+ifeq ($(USE_GIT_FREI0R),1) # use git instead
+FREI0R_VERSION=git
+FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION)/.git
+FREI0R_URL=git://code.dyne.org/frei0r.git
+
+$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(FREI0R_SRC)" ]; then \
+        git clone $(FREI0R_URL) $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION); \
+    fi
+	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/README.md: $(DN_SRC)/$(FREI0R_SRC)
+	cd $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(FREI0R)-$(FREI0R_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(FREI0R)-$(FREI0R_VERSION)/ $(FREI0R)-$(FREI0R_VERSION); \
+    fi
+	cd $(FREI0R)-$(FREI0R_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else # use released files
+FREI0R_VERSION=1.3
+FREI0R_SRC=$(FREI0R)-$(FREI0R_VERSION).tar.gz
+FREI0R_URL=http://www.piksel.no/frei0r/releases/frei0r-plugins-$(FREI0R_VERSION).tar.gz
+
+$(DN_SRC)/$(FREI0R_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FREI0R_URL)
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/configure.ac: $(DN_SRC)/$(FREI0R_SRC)
+	tar -xf $(DN_SRC)/$(FREI0R_SRC)
+	touch $@
+endif
+
+#$(FREI0R)-$(FREI0R_VERSION)/mypatched: $(DN_PATCH)/pbs-FREI0R-newapi.patch $(FREI0R)-$(FREI0R_VERSION)/configure.ac
+	#cd $(FREI0R)-$(FREI0R_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-FREI0R-newapi.patch
+	#touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/configure: $(FREI0R)-$(FREI0R_VERSION)/configure.ac $(FL_DEP_FREI0R)
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(FREI0R)-$(FREI0R_VERSION)/Makefile: $(FREI0R)-$(FREI0R_VERSION)/configure
+	cd $(FREI0R)-$(FREI0R_VERSION)/ \
+		&& $(ENV_COMPILE) OPENCV_CFLAGS= OPENCV_LIBS= ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/Makefile
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FREI0R).pc: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(FREI0R)-uninstall: $(FREI0R)-$(FREI0R_VERSION)/$(FREI0R).pc
+	cd $(FREI0R)-$(FREI0R_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(FREI0R)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(FREI0R).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FREI0R_SRC)
+FL_UNINSTALL+=$(FREI0R)-uninstall
+
+########################################
 MEDIAMETRICS=mediametrics
 
 FL_DEP_MEDIAMETRICS= \
@@ -4613,15 +4643,18 @@ MEDIAMETRICS_SRC=$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git
 MEDIAMETRICS_URL=https://github.com/yhfudev/mediametrics.git
 
 $(DN_SRC)/$(MEDIAMETRICS_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(MEDIAMETRICS_SRC)" ]; then cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(MEDIAMETRICS_URL) $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(MEDIAMETRICS_SRC)" ]; then \
+        git clone $(MEDIAMETRICS_URL) $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); \
+    fi
+	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git: $(DN_SRC)/$(MEDIAMETRICS_SRC)
-	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull
-	if [ -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull; else git clone $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); fi
-
-$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/.git
-	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ && git pull
+$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/configure.ac: $(DN_SRC)/$(MEDIAMETRICS_SRC)
+	cd $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION)/ $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION); \
+    fi
+	cd $(MEDIAMETRICS)-$(MEDIAMETRICS_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else # use released files
@@ -4730,12 +4763,18 @@ GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/.git
 GPAC_URL=https://github.com/gpac/gpac.git
 
 $(DN_SRC)/$(GPAC_SRC): $(DN_SRC)/created
-	if [ -d "$(DN_SRC)/$(GPAC_SRC)" ]; then cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull; else git clone $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION); fi
+	if [ ! -d "$(DN_SRC)/$(GPAC_SRC)" ]; then \
+        git clone $(GPAC_URL) $(DN_SRC)/$(GPAC)-$(GPAC_VERSION); \
+    fi
+	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 $(GPAC)-$(GPAC_VERSION)/README.md: $(DN_SRC)/$(GPAC_SRC)
-	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull
-	if [ -d "$(GPAC)-$(GPAC_VERSION)" ]; then cd $(GPAC)-$(GPAC_VERSION) && git pull; else git clone $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/ $(GPAC)-$(GPAC_VERSION); fi
+	cd $(DN_SRC)/$(GPAC)-$(GPAC_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(GPAC)-$(GPAC_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(GPAC)-$(GPAC_VERSION)/ $(GPAC)-$(GPAC_VERSION); \
+    fi
+	cd $(GPAC)-$(GPAC_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 else ifeq ($(USE_SVN_GPAC),1) # use svn instead

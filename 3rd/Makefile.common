@@ -739,14 +739,19 @@ LIBOPENJPEG_VERSION=git
 LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
 LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg.git
 
-$(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/created
-	git clone $(LIBOPENJPEG_URL) $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)
+$(DN_SRC)/$(LIBOPENJPEG_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LIBOPENJPEG_SRC)" ]; then \
+        git clone $(LIBOPENJPEG_URL) $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
-$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
+
+$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG_SRC)
 	cd $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ && git pull
-#	rm -rf $(DN_TOP)/$(LIBOPENJPEG)*
-#	cp -r $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) $(DN_TOP)/
-	if [ -d "$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)" ]; then cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) && git pull; else git clone $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION); fi
+	if [ ! -d "$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION); \
+    fi
+	cd $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
