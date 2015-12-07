@@ -61,8 +61,12 @@ libapp_prepare_app_binary() {
         #echo -e "error-prepapp\ttry-get-file\t${DN_TOP}/../../ns"
     else
         local DN2=$(extrace_binary "${HDFF_PATHTO_TAR_APP}")
-        EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
+        EXEC_NS2="$(my_getpath "${DN2}/bin/ns")"
         mr_trace "try detect ns2 2: ${EXEC_NS2}"
+        if [ ! -x "${EXEC_NS2}" ]; then
+            EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
+            mr_trace "try detect ns2 3: ${EXEC_NS2}"
+        fi
         #echo -e "error-prepapp\ttry-get-file\t${DN2}/ns-2.33/ns"
         if [ ! -x "${EXEC_NS2}" ]; then
             EXEC_NS2="$(dirname ${DN2})/ns2docsis-ds31profile/ns-2.33/ns"
@@ -82,6 +86,12 @@ libapp_prepare_app_binary() {
     fi
 
     lst_app_dirs=(
+        "/home/$USER/ns-docsis-i686/bin/ns"
+              "$HOME/ns-docsis-i686/bin/ns"
+        "/home/$USER/ns-docsis-x86_64/bin/ns"
+              "$HOME/ns-docsis-x86_64/bin/ns"
+        "/home/$USER/software/bin/ns2-bin/bin/ns"
+              "$HOME/software/bin/ns2-bin/bin/ns"
         "/home/$USER/ns2docsis-ds31profile/ns-2.33/ns"
               "$HOME/ns2docsis-ds31profile/ns-2.33/ns"
         "/home/$USER/ns2docsis-ds31profile-svn/ns-2.33/ns"
@@ -329,6 +339,17 @@ prepare_one_tcl_scripts () {
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
     esac
+
+    # set parameters for DASH module
+    sed -e 's|^set[ \t[:space:]]\+vodapp_segment_size[ \t[:space:]]\+.*$|set vodapp_segment_size 4|g' \
+        -e 's|^set[ \t[:space:]]\+vodapp_playback_buffer_capacity[ \t[:space:]]\+.*$|set vodapp_playback_buffer_capacity 240|g' \
+        -e 's|^set[ \t[:space:]]\+DASHMODE[ \t[:space:]]\+.*$|set DASHMODE 4|g' \
+        -i "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl"
+    grep 'set DASHMODE 4' "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl"
+    if [ ! "$?" = "0" ]; then
+        mr_trace "Error, change config file failed!!"
+        exit 1
+    fi
 
     # setup the throughput log interval
     LOGINTERVAL=$(echo | awk -v V=$TIME_STOP '{print V / 100}' )
