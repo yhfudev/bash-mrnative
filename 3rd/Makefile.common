@@ -4429,14 +4429,10 @@ FL_UNINSTALL+=$(MESA)-uninstall
 # http://cgit.freedesktop.org/mesa/glu/
 GLU=glu
 
-ifeq ($(HAS_GL),1)
 FL_DEP_GLU= \
+	$(DEPENDS_GL) \
+	#$(MESA)-install \
 	$(NULL)
-else
-FL_DEP_GLU= \
-	$(MESA)-install \
-	$(NULL)
-endif
 
 GLU_VERSION=9.0.0
 GLU_SRC=$(GLU)-$(GLU_VERSION).tar.gz

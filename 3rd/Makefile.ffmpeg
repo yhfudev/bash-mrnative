@@ -16,7 +16,7 @@ DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=furnaceyhfudev
 USE_GPU=0
-HAS_GL=0
+DEPENDS_GL=
 
 ######################################################################
 all: get-sources ffmpeg gpac mediametrics

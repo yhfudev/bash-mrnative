@@ -20,12 +20,12 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             && sed -i "s|^USE_GPU=.*$$|USE_GPU=$(USE_GPU)|g" Makefile \
             && cat "$(1)/Makefile.$(3)" | grep ^include | awk '{print $$2; }' | while read a ; do cp "$(1)/$$a" .; done \
             && if [ "$(USE_GPU)" = "1" ]; then \
-                sed -i 's|^HAS_GL=.*$$|HAS_GL=1|g' Makefile ; \
+                sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(CUDASDK)-install|g' Makefile ; \
               else \
                 echo -e "\#include <GL/gl.h>\nint main() {return 0;}" > /tmp/a.c ; \
                 cc $(OPENGL_INCLUDES_DETECT) a.c; \
                 if [ $? = 0 ]; then \
-                  sed -i 's|^HAS_GL=.*$$|HAS_GL=1|g' Makefile ; \
+                  sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(MESA)-install|g' Makefile ; \
                 fi ; \
               fi \
             && $(MAKE) get-sources && $(MAKE) $(4) \
