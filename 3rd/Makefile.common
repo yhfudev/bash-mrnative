@@ -38,10 +38,11 @@ MAKE_ARG=-j $(shell cat /proc/cpuinfo | grep processor | wc -l | awk '{print $$0
 CFLAGS=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/
 CPPFLAGS=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/
 LDFLAGS=-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/
+LD_LIBRARY_PATH=$(CUDA_LDLIB_PATH):$(PREFIX_DEST)/$(PREFIX_CONF)/lib
 
 ENV_COMPILE= PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH) \
 		PKG_CONFIG_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig:$(PKG_CONFIG_PATH) \
-		LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(LD_LIBRARY_PATH) \
+		LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) \
 		CFLAGS="$(CFLAGS)" \
 		CPPFLAGS="$(CPPFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
@@ -3832,6 +3833,7 @@ FL_UNINSTALL+=$(CUDASDK)-uninstall
 
 ifeq ($(USE_GPU),1)
 # CUDA_GENERATION: Auto, Kepler, Fermi
+CUDA_LDLIB_PATH=$(PREFIX)/opt/$(CUDASDK)/lib64:$(PREFIX)/opt/$(CUDASDK)/lib:$(PREFIX)/opt/$(CUDASDK)/extras/CUPTI/lib/
 CUDA_LIBS=-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L$(PREFIX)/opt/$(CUDASDK)/lib64 -L$(PREFIX)/opt/$(CUDASDK)/lib -L$(PREFIX)/opt/$(CUDASDK)/extras/CUPTI/lib/ -lGL -lnvidia-tls -lnvidia-glcore -lX11 -lXext -lc -ldl
 CUDA_CFLAGS=-I$(PREFIX)/opt/$(CUDASDK)/include/ -I$(PREFIX)/opt/$(CUDASDK)/extras/CUPTI/include/
 endif
