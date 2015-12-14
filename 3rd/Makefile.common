@@ -8,6 +8,9 @@
 #  2) Debian/Ubuntu
 #     sudo apt-get install -y build-essential g++ bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
 
+# TODO:
+#  use system lib when possible, also supports lib version detection
+
 ######################################################################
 # define the directory stores all of the source code packages
 # should be defined befor including this file!!
@@ -63,7 +66,7 @@ ARCHBITS=$(shell getconf LONG_BIT)
 
 ######################################################################
 #CURL=curl -s -L -O
-WGET=wget -P $(DN_SRC)
+WGET=wget --no-check-certificate -P $(DN_SRC)
 
 FL_SOURCES=
 FL_SOURCES_OTHERS=
@@ -1103,49 +1106,6 @@ FL_SOURCES+=$(DN_SRC)/$(GPERF_SRC)
 FL_UNINSTALL+=$(GPERF)-uninstall
 
 ########################################
-# gobject-introspection
-# https://live.gnome.org/GObjectIntrospection
-GOBJINTROSPEC=gobject-introspection
-
-GOBJINTROSPEC_VERSION=1.46.0
-GOBJINTROSPEC_SRC=$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION).tar.xz
-GOBJINTROSPEC_URL=http://ftp.gnome.org/pub/gnome/sources/$(GOBJINTROSPEC)/1.46/$(GOBJINTROSPEC_SRC)
-
-FL_DEP_GOBJINTROSPEC= \
-	$(AUTOMAKE)-install \
-    $(NULL)
-
-$(DN_SRC)/$(GOBJINTROSPEC_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GOBJINTROSPEC_URL)
-	touch $@
-
-$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac: $(DN_SRC)/$(GOBJINTROSPEC_SRC)
-	tar -xf $(DN_SRC)/$(GOBJINTROSPEC_SRC)
-	touch $@
-
-$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac $(FL_DEP_GOBJINTROSPEC)
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-doctool
-	touch $@
-
-$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(GOBJINTROSPEC)-uninstall: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
-	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GOBJINTROSPEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GOBJINTROSPEC_SRC)
-FL_UNINSTALL+=$(GOBJINTROSPEC)-uninstall
-
-########################################
 
 LIBICONV=libiconv
 
@@ -1277,14 +1237,16 @@ $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile: $(UTILLINUX)-$(UTILLINUX_VERSION)/co
 		$(NULL)
 	touch $@
 
-$(UTILLINUX)-$(UTILLINUX_VERSION)/blkid.pc: $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile
+$(UTILLINUX)-$(UTILLINUX_VERSION)/fsck: $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/blkid.pc: $(UTILLINUX)-$(UTILLINUX_VERSION)/blkid.pc
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/fsck: $(UTILLINUX)-$(UTILLINUX_VERSION)/fsck
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install install-usrlib_execLTLIBRARIES
+	touch $@
 
-$(UTILLINUX)-uninstall: $(UTILLINUX)-$(UTILLINUX_VERSION)/blkid.pc
+$(UTILLINUX)-uninstall: $(UTILLINUX)-$(UTILLINUX_VERSION)/fsck
 	cd $(UTILLINUX)-$(UTILLINUX_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(UTILLINUX)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/blkid.pc
+$(UTILLINUX)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/fsck
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(UTILLINUX_SRC)
@@ -1325,29 +1287,346 @@ $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure
 		$(NULL)
 	touch $@
 
-$(LIBKMOD)-$(LIBKMOD_VERSION)/$(LIBKMOD).pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile
+$(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la: $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBKMOD).pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/$(LIBKMOD).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libkmod.la: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBKMOD)-uninstall: $(LIBKMOD)-$(LIBKMOD_VERSION)/$(LIBKMOD).pc
+$(LIBKMOD)-uninstall: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBKMOD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBKMOD).pc
+$(LIBKMOD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libkmod.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBKMOD_SRC)
 FL_UNINSTALL+=$(LIBKMOD)-uninstall
 
 ########################################
+# hardware identification databases
+HWIDS=hwids
+
+HWIDS_VERSION=20150717
+HWIDS_SRC=$(HWIDS)-$(HWIDS_VERSION).tar.gz
+HWIDS_URL=https://github.com/gentoo/hwids/archive/$(HWIDS_SRC)
+
+$(DN_SRC)/$(HWIDS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HWIDS_URL)
+	touch $@
+
+$(HWIDS)-$(HWIDS_VERSION)/pci.ids: $(DN_SRC)/$(HWIDS_SRC)
+	tar -xf $(DN_SRC)/$(HWIDS_SRC)
+	rm -f $(HWIDS)-install
+	mv $(HWIDS)-* $(HWIDS)-$(HWIDS_VERSION)
+	touch $@
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/share/hwdata/pci.ids: $(HWIDS)-$(HWIDS_VERSION)/pci.ids
+	cd $(HWIDS)-$(HWIDS_VERSION)/ \
+		&& for ids in pci.ids usb.ids; do \
+			install -Dm644 "$$ids" "$(PREFIX_DEST)/$(PREFIX_CONF)/share/hwdata/$${ids}" ; \
+		done
+	touch $@
+
+$(HWIDS)-uninstall: $(HWIDS)-$(HWIDS_VERSION)/pci.ids
+	cd $(HWIDS)-$(HWIDS_VERSION)/ \
+		&& for ids in pci.ids usb.ids; do \
+			rm -f "$(PREFIX_DEST)/$(PREFIX_CONF)/share/hwdata/$${ids}" \
+		done
+$(HWIDS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/share/hwdata/pci.ids
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(HWIDS_SRC)
+FL_UNINSTALL+=$(HWIDS)-uninstall
+
+########################################
+# PAM (Pluggable Authentication Modules) library
+PAM=pam
+
+########################################
+# A unit testing framework for C
+CHECK=check
+
+CHECK_VERSION=0.10.0
+CHECK_SRC=$(CHECK)-$(CHECK_VERSION).tar.gz
+CHECK_URL=http://downloads.sourceforge.net/sourceforge/$(CHECK)/$(CHECK_SRC)
+
+$(DN_SRC)/$(CHECK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CHECK_URL)
+	touch $@
+
+$(CHECK)-$(CHECK_VERSION)/configure: $(DN_SRC)/$(CHECK_SRC)
+	tar -xf $(DN_SRC)/$(CHECK_SRC)
+	touch $@
+
+$(CHECK)-$(CHECK_VERSION)/Makefile: $(CHECK)-$(CHECK_VERSION)/configure
+	cd $(CHECK)-$(CHECK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+$(CHECK)-$(CHECK_VERSION)/check.pc: $(CHECK)-$(CHECK_VERSION)/Makefile
+	cd $(CHECK)-$(CHECK_VERSION)/ && $(ENV_COMPILE) make KEYCODES_PROGS=yes RESIZECONS_PROGS=yes $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/check.pc: $(CHECK)-$(CHECK_VERSION)/check.pc
+	cd $(CHECK)-$(CHECK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) KEYCODES_PROGS=yes RESIZECONS_PROGS=yes install
+
+$(CHECK)-uninstall: $(CHECK)-$(CHECK_VERSION)/check.pc
+	cd $(CHECK)-$(CHECK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(CHECK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/check.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CHECK_SRC)
+FL_UNINSTALL+=$(CHECK)-uninstall
+
+########################################
+# Keytable files and keyboard utilities
+KBD=kbd
+
+FL_DEP_KBD= \
+    $(CHECK)-install \
+    #$(PAM)-install \
+    $(NULL)
+
+KBD_VERSION=2.0.3
+KBD_SRC=$(KBD)-$(KBD_VERSION).tar.gz
+KBD_URL=ftp://ftp.altlinux.org/pub/people/legion/kbd/$(KBD_SRC)
+
+$(DN_SRC)/$(KBD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(KBD_URL)
+	touch $@
+$(DN_SRC)/kbd-fix-euro2.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/fix-euro2.patch?h=packages/kbd
+	touch $@
+FL_SOURCES+=$(DN_SRC)/kbd-fix-euro2.patch
+
+$(KBD)-$(KBD_VERSION)/configure: $(DN_SRC)/$(KBD_SRC)
+	tar -xf $(DN_SRC)/$(KBD_SRC)
+	touch $@
+$(KBD)-$(KBD_VERSION)/mypatched: $(DN_SRC)/kbd-fix-euro2.patch $(KBD)-$(KBD_VERSION)/configure $(FL_DEP_KBD)
+	cd $(KBD)-$(KBD_VERSION)/ && patch -Np1 -i $(DN_SRC)/kbd-fix-euro2.patch
+	touch $@
+
+$(KBD)-$(KBD_VERSION)/Makefile: $(KBD)-$(KBD_VERSION)/mypatched
+	cd $(KBD)-$(KBD_VERSION)/ && make distclean; $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/share/kbd --mandir=$(PREFIX_CONF)/share/man
+$(KBD)-$(KBD_VERSION)/src/libfont.a: $(KBD)-$(KBD_VERSION)/Makefile
+	cd $(KBD)-$(KBD_VERSION)/ && $(ENV_COMPILE) make KEYCODES_PROGS=yes RESIZECONS_PROGS=yes $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfont.a: $(KBD)-$(KBD_VERSION)/src/libfont.a
+	cd $(KBD)-$(KBD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) KEYCODES_PROGS=yes RESIZECONS_PROGS=yes install
+	touch $@
+
+$(KBD)-uninstall: $(KBD)-$(KBD_VERSION)/src/libfont.a
+	cd $(KBD)-$(KBD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(KBD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfont.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(KBD_SRC)
+FL_UNINSTALL+=$(KBD)-uninstall
+
+
+########################################
+# Portable foreign function interface library
+LIBFFI=libffi
+
+LIBFFI_VERSION=3.2.1
+LIBFFI_SRC=$(LIBFFI)-$(LIBFFI_VERSION).tar.gz
+LIBFFI_URL=ftp://sourceware.org/pub/libffi/$(LIBFFI_SRC)
+
+$(DN_SRC)/$(LIBFFI_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBFFI_URL)
+	touch $@
+
+$(DN_SRC)/libffi-fix-path-pc.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/0001-Fix-paths-in-libffi.pc.in.patch?h=packages/libffi
+	touch $@
+FL_SOURCES+=$(DN_SRC)/libffi-fix-path-pc.patch
+
+$(LIBFFI)-$(LIBFFI_VERSION)/configure.ac: $(DN_SRC)/$(LIBFFI_SRC)
+	tar -xf $(DN_SRC)/$(LIBFFI_SRC)
+	touch $@
+$(LIBFFI)-$(LIBFFI_VERSION)/mypatched: $(DN_SRC)/libffi-fix-path-pc.patch $(LIBFFI)-$(LIBFFI_VERSION)/configure.ac $(FL_DEP_LIBFFI)
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && patch -p1 -i $(DN_SRC)/libffi-fix-path-pc.patch
+	touch $@
+$(LIBFFI)-$(LIBFFI_VERSION)/configure: $(LIBFFI)-$(LIBFFI_VERSION)/mypatched
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+$(LIBFFI)-$(LIBFFI_VERSION)/Makefile: $(LIBFFI)-$(LIBFFI_VERSION)/configure
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-pax_emutramp
+	touch $@
+$(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la: $(LIBFFI)-$(LIBFFI_VERSION)/Makefile
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBFFI).la: $(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBFFI)-uninstall: $(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la
+	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBFFI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBFFI).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBFFI_SRC)
+FL_UNINSTALL+=$(LIBFFI)-uninstall
+
+########################################
+# Utilities to handle ELF object files and DWARF debugging information
+ELFUTILS=elfutils
+
+FL_DEP_ELFUTILS= \
+	$(ZLIB)-install \
+	$(BZIP2)-install \
+	$(NULL)
+
+ELFUTILS_VERSION=0.164
+ELFUTILS_SRC=$(ELFUTILS)-$(ELFUTILS_VERSION).tar.bz2
+ELFUTILS_URL=https://fedorahosted.org/releases/e/l/elfutils/$(ELFUTILS_VERSION)/$(ELFUTILS_SRC)
+
+$(DN_SRC)/$(ELFUTILS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(ELFUTILS_URL)
+	touch $@
+$(ELFUTILS)-$(ELFUTILS_VERSION)/configure: $(DN_SRC)/$(ELFUTILS_SRC)
+	tar -xf $(DN_SRC)/$(ELFUTILS_SRC)
+	touch $@
+$(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile: $(ELFUTILS)-$(ELFUTILS_VERSION)/configure $(FL_DEP_ELFUTILS)
+	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && CFLAGS+=" -g" && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --program-prefix="eu-" --enable-deterministic-archives
+	touch $@
+$(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a: $(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile
+	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libelf.a: $(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a
+	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(ELFUTILS)" \
+	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(ELFUTILS)"
+
+$(ELFUTILS)-uninstall: $(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a
+	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(ELFUTILS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libelf.a
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(ELFUTILS_SRC)
+FL_UNINSTALL+=$(ELFUTILS)-uninstall
+
+########################################
+GLIB2=glib
+
+FL_DEP_GLIB2= \
+	$(AUTOMAKE)-install \
+	$(LIBXSLT)-install \
+	$(LIBFFI)-install \
+	$(ELFUTILS)-install \
+    $(NULL)
+
+GLIB2_VERSION=2.47.3
+GLIB2_SRC=$(GLIB2)-$(GLIB2_VERSION).tar.xz
+GLIB2_URL=http://ftp.gnome.org/pub/GNOME/sources/glib/2.47/$(GLIB2_SRC)
+
+$(DN_SRC)/$(GLIB2_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GLIB2_URL)
+	touch $@
+
+$(DN_SRC)/glib2-memleak.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/memleak.patch?h=packages/glib2
+	touch $@
+FL_SOURCES+=$(DN_SRC)/glib2-memleak.patch
+
+$(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch: $(DN_SRC)/created
+	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/revert-warn-glib-compile-schemas.patch?h=packages/glib2
+	touch $@
+FL_SOURCES+=$(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch
+
+$(GLIB2)-$(GLIB2_VERSION)/configure.ac: $(DN_SRC)/$(GLIB2_SRC)
+	tar -xf $(DN_SRC)/$(GLIB2_SRC)
+	touch $@
+
+$(GLIB2)-$(GLIB2_VERSION)/mypatched: $(DN_SRC)/glib2-memleak.patch $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch $(GLIB2)-$(GLIB2_VERSION)/configure.ac $(FL_DEP_GLIB2)
+	cd $(GLIB2)-$(GLIB2_VERSION)/ \
+		&& patch -Rp1 -i $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch \
+        && patch -Np1 -i $(DN_SRC)/glib2-memleak.patch
+	touch $@
+
+$(GLIB2)-$(GLIB2_VERSION)/configure: $(GLIB2)-$(GLIB2_VERSION)/configure.ac $(FL_DEP_GLIB2)
+	cd $(GLIB2)-$(GLIB2_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(GLIB2)-$(GLIB2_VERSION)/Makefile: $(GLIB2)-$(GLIB2_VERSION)/configure
+	cd $(GLIB2)-$(GLIB2_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+			--libdir=$(PREFIX_CONF)/lib
+			--sysconfdir=$(PREFIX_CONF)/etc \
+			--with-pcre=system \
+			--disable-fam \
+		$(NULL)
+	touch $@
+
+$(GLIB2)-$(GLIB2_VERSION)/glib-2.0.pc: $(GLIB2)-$(GLIB2_VERSION)/Makefile
+	cd $(GLIB2)-$(GLIB2_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/glib-2.0.pc: $(GLIB2)-$(GLIB2_VERSION)/glib-2.0.pc
+	cd $(GLIB2)-$(GLIB2_VERSION)/ && make -j1 completiondir=$(PREFIX_DEST)/$(PREFIX_CONF)/share/bash-completion/completions DESTDIR=$(PREFIX_DEST) install
+	for _i in "$(PREFIX_DEST)/$(PREFIX_CONF)/share/bash-completion/completions/"*; do \
+		chmod -x "$$_i"; \
+	done
+
+$(GLIB2)-uninstall: $(GLIB2)-$(GLIB2_VERSION)/glib-2.0.pc
+	cd $(GLIB2)-$(GLIB2_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GLIB2)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/glib-2.0.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GLIB2_SRC)
+FL_UNINSTALL+=$(GLIB2)-uninstall
+
+########################################
+# Introspection system for GObject-based libraries
+# https://live.gnome.org/GObjectIntrospection
+GOBJINTROSPEC=gobject-introspection
+
+GOBJINTROSPEC_VERSION=1.46.0
+GOBJINTROSPEC_SRC=$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION).tar.xz
+GOBJINTROSPEC_URL=http://ftp.gnome.org/pub/gnome/sources/$(GOBJINTROSPEC)/1.46/$(GOBJINTROSPEC_SRC)
+
+FL_DEP_GOBJINTROSPEC= \
+	$(AUTOMAKE)-install \
+	$(GLIB2)-install \
+    $(NULL)
+
+$(DN_SRC)/$(GOBJINTROSPEC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GOBJINTROSPEC_URL)
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac: $(DN_SRC)/$(GOBJINTROSPEC_SRC)
+	tar -xf $(DN_SRC)/$(GOBJINTROSPEC_SRC)
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure.ac $(FL_DEP_GOBJINTROSPEC)
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/configure
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ \
+		&& $(ENV_COMPILE) PYTHON=python2 ./configure --prefix=$(PREFIX_CONF) --disable-static --disable-doctool
+	touch $@
+
+$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/Makefile
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && $(ENV_COMPILE) PYTHON=python2 make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && PYTHON=python2 make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(GOBJINTROSPEC)-uninstall: $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/$(GOBJINTROSPEC)-1.0.pc
+	cd $(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION)/ && PYTHON=python2 make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GOBJINTROSPEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GOBJINTROSPEC)-1.0.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GOBJINTROSPEC_SRC)
+FL_UNINSTALL+=$(GOBJINTROSPEC)-uninstall
+
+########################################
 # libusb
 LIBUSB=libusb
-LIBUSB_VERSION=1.0.20
-LIBUSB_SRC=$(LIBUSB)-$(LIBUSB_VERSION).tar.bz2
-LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-$(LIBUSB_VERSION)/$(LIBUSB_SRC)
 
 FL_DEP_LIBUSB= \
     $(AUTOMAKE)-install \
     $(NULL)
+
+LIBUSB_VERSION=1.0.20
+LIBUSB_SRC=$(LIBUSB)-$(LIBUSB_VERSION).tar.bz2
+LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-$(LIBUSB_VERSION)/$(LIBUSB_SRC)
 
 $(DN_SRC)/$(LIBUSB_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBUSB_URL)
@@ -1371,13 +1650,144 @@ FL_SOURCES+=$(DN_SRC)/$(LIBUSB_SRC)
 FL_UNINSTALL+=$(LIBUSB)-uninstall
 
 ########################################
+# libudev
+# https://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-182.tar.gz
+LIBUDEV0=udev
+LIBUDEV0_VERSION=182
+LIBUDEV0_SRC=$(LIBUDEV0)-$(LIBUDEV0_VERSION).tar.gz
+LIBUDEV0_URL=https://www.kernel.org/pub/linux/utils/kernel/hotplug/$(LIBUDEV0_SRC)
+
+FL_DEP_LIBUDEV0= \
+    $(AUTOMAKE)-install \
+    $(UTILLINUX)-install \
+    $(GPERF)-install \
+    $(LIBKMOD)-install \
+    #$(USBUTILS)-install \
+    $(NULL)
+
+$(DN_SRC)/$(LIBUDEV0_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUDEV0_URL)
+	touch $@
+
+$(LIBUDEV0)-$(LIBUDEV0_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV0_SRC)
+	tar -xf $(DN_SRC)/$(LIBUDEV0_SRC)
+	touch $@
+$(LIBUDEV0)-$(LIBUDEV0_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV0)-$(LIBUDEV0_VERSION)/Makefile.am
+	if [ -d $(LIBUDEV0)-$(LIBUDEV0_VERSION)/.svn ]; then cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBUDEV0)-$(LIBUDEV0_VERSION)/.hg ];  then cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBUDEV0)-$(LIBUDEV0_VERSION)/.git ]; then cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
+#	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	#cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
+	touch $@
+
+$(LIBUDEV0)-$(LIBUDEV0_VERSION)/configure: $(LIBUDEV0)-$(LIBUDEV0_VERSION)/mypatched $(FL_DEP_LIBUDEV0)
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBUDEV0)-$(LIBUDEV0_VERSION)/Makefile: $(LIBUDEV0)-$(LIBUDEV0_VERSION)/configure
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --enable-gudev \
+            --with-libdir=$(PREFIX_CONF)/lib \
+            --with-systemdsystemunitdir=$(PREFIX_CONF)/lib/systemd/system/ \
+            --libexecdir=$(PREFIX_CONF)/lib/ \
+		$(NULL)
+	touch $@
+
+$(LIBUDEV0)-$(LIBUDEV0_VERSION)/src/udev.pc: $(LIBUDEV0)-$(LIBUDEV0_VERSION)/Makefile
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/udev.pc: $(LIBUDEV0)-$(LIBUDEV0_VERSION)/src/udev.pc
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBUDEV0)-uninstall: $(LIBUDEV0)-$(LIBUDEV0_VERSION)/src/udev.pc
+	cd $(LIBUDEV0)-$(LIBUDEV0_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBUDEV0)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/udev.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUDEV0_SRC)
+FL_UNINSTALL+=$(LIBUDEV0)-uninstall
+
+##########
+# The userspace dev tools (udev) forked by Gentoo
+LIBUDEV1=eudev
+LIBUDEV1_VERSION=3.1.2
+LIBUDEV1_SRC=$(LIBUDEV1)-$(LIBUDEV1_VERSION).tar.gz
+LIBUDEV1_URL=https://github.com/gentoo/eudev/archive/v$(LIBUDEV1_VERSION).tar.gz
+
+FL_DEP_LIBUDEV1= \
+    $(AUTOMAKE)-install \
+    $(UTILLINUX)-install \
+    $(GPERF)-install \
+    $(LIBKMOD)-install \
+    $(KBD)-install \
+    $(GOBJINTROSPEC)-install \
+    $(HWIDS)-install \
+    $(NULL)
+
+$(DN_SRC)/$(LIBUDEV1_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUDEV1_URL)
+	touch $@
+
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV1_SRC)
+	tar -xf $(DN_SRC)/$(LIBUDEV1_SRC)
+	touch $@
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile.am
+	if [ -d $(LIBUDEV1)-$(LIBUDEV1_VERSION)/.svn ]; then cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(LIBUDEV1)-$(LIBUDEV1_VERSION)/.hg ];  then cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && hg update -C . ; fi
+	if [ -d $(LIBUDEV1)-$(LIBUDEV1_VERSION)/.git ]; then cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
+#	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+#	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
+	#cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
+	touch $@
+
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/configure: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/mypatched $(FL_DEP_LIBUDEV1)
+	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/configure
+	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ \
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+			--with-rootprefix=$(PREFIX_CONF)/ \
+			--sysconfdir=$(PREFIX_CONF)/etc \
+			--libdir=$(PREFIX_CONF)/lib \
+			--sbindir=$(PREFIX_CONF)/bin \
+			--with-html-dir=$(PREFIX_CONF)/share/doc/${pkgname}-${pkgver}/html \
+			--enable-gudev \
+			--enable-introspection \
+			--enable-kmod \
+			--enable-manpages \
+			--enable-split-usr \
+			#--enable-static --enable-shared \
+		$(NULL)
+	touch $@
+
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile
+	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libudev.la: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la
+	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	for i in "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/udev/rules.d/"*.rules; do \
+		sed -i -e 's#GROUP="dialout"#GROUP="uucp"#g; s#GROUP="tape"#GROUP="storage"#g; s#GROUP="cdrom"#GROUP="optical"#g' "$${i}" ; \
+	done
+
+$(LIBUDEV1)-uninstall: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la
+	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBUDEV1)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libudev.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUDEV1_SRC)
+FL_UNINSTALL+=$(LIBUDEV1)-uninstall
+
+##########
+LIBUDEV=$(LIBUDEV1)
+
+########################################
 USBUTILS=usbutils
 
 FL_DEP_USBUTILS= \
     $(AUTOMAKE)-install \
     $(ZLIB)-install \
     $(LIBUSB)-install \
-    #$(LIBUDEV)-install \
+    $(LIBUDEV)-install \
     $(NULL)
 
 USBUTILS_VERSION=008
@@ -1417,63 +1827,6 @@ FL_SOURCES+=$(DN_SRC)/$(USBUTILS_SRC)
 FL_UNINSTALL+=$(USBUTILS)-uninstall
 
 ########################################
-# libudev
-# https://www.kernel.org/pub/linux/utils/kernel/hotplug/udev-182.tar.gz
-LIBUDEV=udev
-LIBUDEV_VERSION=182
-LIBUDEV_SRC=$(LIBUDEV)-$(LIBUDEV_VERSION).tar.gz
-LIBUDEV_URL=https://www.kernel.org/pub/linux/utils/kernel/hotplug/$(LIBUDEV_SRC)
-
-FL_DEP_LIBUDEV= \
-    $(AUTOMAKE)-install \
-    $(UTILLINUX)-install \
-    $(GPERF)-install \
-    $(LIBKMOD)-install \
-    $(NULL)
-
-$(DN_SRC)/$(LIBUDEV_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBUDEV_URL)
-	touch $@
-
-$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am: $(DN_SRC)/$(LIBUDEV_SRC)
-	tar -xf $(DN_SRC)/$(LIBUDEV_SRC)
-	touch $@
-$(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched: $(DN_PATCH)/pbs-udev-182-librt.patch $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile.am
-	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.svn ]; then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && svn revert -R . ; fi
-	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.hg ];  then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && hg update -C . ; fi
-	if [ -d $(LIBUDEV)-$(LIBUDEV_VERSION)/.git ]; then cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
-#	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -s -t -R -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-udev-182-librt.patch
-	#cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && sed -e 's|DESTDIR="$$(DESTDIR)"|DESTDIR="$$(DESTDIR)/@prefix@"|' -i Makefile.in
-	touch $@
-
-$(LIBUDEV)-$(LIBUDEV_VERSION)/configure: $(LIBUDEV)-$(LIBUDEV_VERSION)/mypatched $(FL_DEP_LIBUDEV)
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile: $(LIBUDEV)-$(LIBUDEV_VERSION)/configure
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --enable-gudev \
-            --with-libdir=$(PREFIX_CONF)/lib \
-            --with-systemdsystemunitdir=$(PREFIX_CONF)/lib/systemd/system/ \
-            --libexecdir=$(PREFIX_CONF)/lib/ \
-		$(NULL)
-	touch $@
-
-$(LIBUDEV)-$(LIBUDEV_VERSION)/src/udev.pc: $(LIBUDEV)-$(LIBUDEV_VERSION)/Makefile
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/udev.pc: $(LIBUDEV)-$(LIBUDEV_VERSION)/src/udev.pc
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(LIBUDEV)-uninstall: $(LIBUDEV)-$(LIBUDEV_VERSION)/src/udev.pc
-	cd $(LIBUDEV)-$(LIBUDEV_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBUDEV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/udev.pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBUDEV_SRC)
-FL_UNINSTALL+=$(LIBUDEV)-uninstall
-
-########################################
 # libraw1394
 LIBRAW1394=libraw1394
 LIBRAW1394_VERSION=2.1.1
@@ -1500,7 +1853,6 @@ $(LIBRAW1394)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBRAW1394)
 
 FL_SOURCES+=$(DN_SRC)/$(LIBRAW1394_SRC)
 FL_UNINSTALL+=$(LIBRAW1394)-uninstall
-
 
 ########################################
 # libdc1394
@@ -3450,45 +3802,6 @@ CUDA_CFLAGS=-I$(PREFIX)/opt/$(CUDASDK)/include/ -I$(PREFIX)/opt/$(CUDASDK)/extra
 endif
 
 ########################################
-# Utilities to handle ELF object files and DWARF debugging information
-ELFUTILS=elfutils
-
-FL_DEP_ELFUTILS= \
-	$(ZLIB)-install \
-	$(BZIP2)-install \
-	$(NULL)
-
-ELFUTILS_VERSION=0.164
-ELFUTILS_SRC=$(ELFUTILS)-$(ELFUTILS_VERSION).tar.bz2
-ELFUTILS_URL=https://fedorahosted.org/releases/e/l/elfutils/$(ELFUTILS_VERSION)/$(ELFUTILS_SRC)
-
-$(DN_SRC)/$(ELFUTILS_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(ELFUTILS_URL)
-	touch $@
-$(ELFUTILS)-$(ELFUTILS_VERSION)/configure: $(DN_SRC)/$(ELFUTILS_SRC)
-	tar -xf $(DN_SRC)/$(ELFUTILS_SRC)
-	touch $@
-$(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile: $(ELFUTILS)-$(ELFUTILS_VERSION)/configure $(FL_DEP_ELFUTILS)
-	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && CFLAGS+=" -g" && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --program-prefix="eu-" --enable-deterministic-archives
-	touch $@
-$(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a: $(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile
-	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ \
-	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libelf.a: $(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a
-	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ \
-	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
-	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(ELFUTILS)" \
-	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(ELFUTILS)"
-
-$(ELFUTILS)-uninstall: $(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a
-	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(ELFUTILS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libelf.a
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(ELFUTILS_SRC)
-FL_UNINSTALL+=$(ELFUTILS)-uninstall
-
-########################################
 LIBOMXILB=libomxil-bellagio
 
 FL_DEP_LIBOMXILB= \
@@ -3610,51 +3923,6 @@ FL_SOURCES+=$(DN_SRC)/$(OCAML_SRC)
 FL_UNINSTALL+=$(OCAML)-uninstall
 
 ########################################
-# Portable foreign function interface library
-LIBFFI=libffi
-
-LIBFFI_VERSION=3.2.1
-LIBFFI_SRC=$(LIBFFI)-$(LIBFFI_VERSION).tar.gz
-LIBFFI_URL=ftp://sourceware.org/pub/libffi/$(LIBFFI_SRC)
-
-$(DN_SRC)/$(LIBFFI_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBFFI_URL)
-	touch $@
-
-$(DN_SRC)/libffi-fix-path-pc.patch: $(DN_SRC)/created
-	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/0001-Fix-paths-in-libffi.pc.in.patch?h=packages/libffi
-	touch $@
-FL_SOURCES+=$(DN_SRC)/libffi-fix-path-pc.patch
-
-$(LIBFFI)-$(LIBFFI_VERSION)/configure.ac: $(DN_SRC)/$(LIBFFI_SRC)
-	tar -xf $(DN_SRC)/$(LIBFFI_SRC)
-	touch $@
-$(LIBFFI)-$(LIBFFI_VERSION)/mypatched: $(DN_SRC)/libffi-fix-path-pc.patch $(LIBFFI)-$(LIBFFI_VERSION)/configure.ac $(FL_DEP_LIBFFI)
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && patch -p1 -i $(DN_SRC)/libffi-fix-path-pc.patch
-	touch $@
-$(LIBFFI)-$(LIBFFI_VERSION)/configure: $(LIBFFI)-$(LIBFFI_VERSION)/mypatched
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-	touch $@
-$(LIBFFI)-$(LIBFFI_VERSION)/Makefile: $(LIBFFI)-$(LIBFFI_VERSION)/configure
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-pax_emutramp
-	touch $@
-$(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la: $(LIBFFI)-$(LIBFFI_VERSION)/Makefile
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ \
-	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBFFI).la: $(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ \
-	    && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(LIBFFI)-uninstall: $(LIBFFI)-$(LIBFFI_VERSION)/$(LIBFFI).la
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBFFI)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBFFI).la
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBFFI_SRC)
-FL_UNINSTALL+=$(LIBFFI)-uninstall
-
-########################################
 # Command line editor library providing generic line editing, history, and tokenization functions
 LIBEDIT=libedit
 
@@ -3669,7 +3937,7 @@ LIBEDIT_URL=http://www.thrysoee.dk/editline/$(LIBEDIT_SRC)
 $(DN_SRC)/$(LIBEDIT_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBEDIT_URL)
 	touch $@
-$(LIBEDIT)-$(LIBEDIT_VERSION)/configure: $(DN_SRC)/$(LIBEDIT_SRC)
+$(LIBEDIT)-$(LIBEDIT_VERSION)/configure: $(DN_SRC)/$(LIBEDIT_SRC) $(FL_DEP_LIBEDIT)
 	tar -xf $(DN_SRC)/$(LIBEDIT_SRC)
 	touch $@
 #$(LIBEDIT)-$(LIBEDIT_VERSION)/mypatched: $(LIBEDIT)-$(LIBEDIT_VERSION)/configure.ac $(FL_DEP_LIBEDIT)
@@ -3817,13 +4085,16 @@ $(LLVM)-$(LLVM_VERSION)/build/Makefile: $(LLVM)-$(LLVM_VERSION)/mypatched
 			-DFFI_INCLUDE_DIR=`pkg-config --variable=includedir libffi` \
 			-DLLVM_BINUTILS_INCDIR=/usr/include \
             ..
-$(LLVM)-$(LLVM_VERSION)/build/$(LLVM).la: $(LLVM)-$(LLVM_VERSION)/build/Makefile
+$(LLVM)-$(LLVM_VERSION)/build/lib/LLVMgold.so: $(LLVM)-$(LLVM_VERSION)/build/Makefile
 	cd $(LLVM)-$(LLVM_VERSION)/build/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	#cd $(LLVM)-$(LLVM_VERSION)/build/ && $(ENV_COMPILE) make $(MAKE_ARG) ocaml_doc
 
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LLVM).la: $(LLVM)-$(LLVM_VERSION)/build/$(LLVM).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/LLVMgold.so: $(LLVM)-$(LLVM_VERSION)/build/lib/LLVMgold.so
 	cd $(LLVM)-$(LLVM_VERSION)/build/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	install -d "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/bfd-plugins" && ln -s ../LLVMgold.so "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/bfd-plugins/LLVMgold.so"
+	install -d "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/bfd-plugins" \
+		&&  if [ ! -e "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/bfd-plugins/LLVMgold.so" ]; then \
+				ln -s ../LLVMgold.so "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/bfd-plugins/LLVMgold.so"; \
+			fi
 	# lldb:
 	cd $(LLVM)-$(LLVM_VERSION)/ \
 		&& make -C build/tools/lldb DESTDIR=$(PREFIX_DEST) install \
@@ -3831,11 +4102,18 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LLVM).la: $(LLVM)-$(LLVM_VERSION)/build/$(LL
 		&& python2 -O -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/lldb"
 	# clang:
 	cd $(LLVM)-$(LLVM_VERSION)/ \
-		&& make -C build/tools/clang DESTDIR="$(PREFIX_DEST)/$(PREFIX_CONF)" install \
-		&& make -C build/projects/compiler-rt DESTDIR="$(PREFIX_DEST)/$(PREFIX_CONF)" install
+		&& make -C build/tools/clang install
+	cd $(LLVM)-$(LLVM_VERSION)/ \
+		&& make -C build/projects/compiler-rt install
+	touch $@
+
+$(LLVM)-$(LLVM_VERSION)/build/bin/clang: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/LLVMgold.so
+	touch $@
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/clang: $(LLVM)-$(LLVM_VERSION)/build/bin/clang
 	# clang: Install Python bindings
 	install -d "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages"
-	cp -a tools/clang/bindings/python/clang "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/"
+	cp -ar $(LLVM)-$(LLVM_VERSION)/tools/clang/bindings/python/clang/ "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/"
 	python2 -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/clang"
 	python2 -O -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/clang"
 	# Use Python 2
@@ -3845,14 +4123,16 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LLVM).la: $(LLVM)-$(LLVM_VERSION)/build/$(LL
     # clang-analyzer:
 	cd $(LLVM)-$(LLVM_VERSION)/tools/clang \
 		&& install -d $(PREFIX_DEST)/$(PREFIX_CONF)/{bin,lib/clang-analyzer} \
-		&& for _tool in scan-{build,view}; do \
-				cp -a tools/$$_tool $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/" \
-				ln -s ../lib/clang-analyzer/$$_tool/$$_tool "$(PREFIX_DEST)/$(PREFIX_CONF)/bin/$$_tool" \
+		&& for _tool in scan-{build,view} ; do \
+				cp -a tools/$$_tool $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/ ; \
+				rm -f "$(PREFIX_DEST)/$(PREFIX_CONF)/bin/$$_tool" ; \
+				ln -s ../lib/clang-analyzer/$$_tool/$$_tool $(PREFIX_DEST)/$(PREFIX_CONF)/bin/$$_tool ; \
 			done
-	ln -s ../bin/clang "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/clang"
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/clang \
+	   && ln -s ../../../bin/clang "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/clang"
 	sed -i \
-               -e 's|env python$|&2|' \
-               -e 's|/usr/bin/python$|&2|' \
+               -e 's|env python$$|&2|' \
+               -e 's|/usr/bin/python$$|&2|' \
                "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-view/scan-view" \
                "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/set-xcode-analyzer"
 	python2 -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer"
@@ -3860,16 +4140,18 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LLVM).la: $(LLVM)-$(LLVM_VERSION)/build/$(LL
 	# clang-tools-extra
 	cd $(LLVM)-$(LLVM_VERSION)/ \
 		make -C build/tools/clang/tools/extra DESTDIR="$(PREFIX_DEST)/$(PREFIX_CONF)" install
+	touch $@
 
-$(LLVM)-uninstall: $(LLVM)-$(LLVM_VERSION)/build/$(LLVM).la
+$(LLVM)-uninstall: $(LLVM)-$(LLVM_VERSION)/build/bin/clang
 	cd $(LLVM)-$(LLVM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LLVM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LLVM).la
+$(LLVM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/clang
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LLVM_SRC)
 FL_UNINSTALL+=$(LLVM)-uninstall
 
 ########################################
+# Library requirements of the OpenCL C programming language
 LIBCLC=libclc
 
 FL_DEP_LIBCLC= \
@@ -3919,18 +4201,107 @@ $(LIBCLC)-$(LIBCLC_VERSION)/mypatched: $(LIBCLC)-$(LIBCLC_VERSION)/configure.py 
 	touch $@
 $(LIBCLC)-$(LIBCLC_VERSION)/Makefile: $(LIBCLC)-$(LIBCLC_VERSION)/mypatched
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && $(ENV_COMPILE) python2 ./configure.py --prefix=$(PREFIX_CONF)
-$(LIBCLC)-$(LIBCLC_VERSION)/src/$(LIBCLC).la: $(LIBCLC)-$(LIBCLC_VERSION)/Makefile
+$(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc: $(LIBCLC)-$(LIBCLC_VERSION)/Makefile
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCLC).la: $(LIBCLC)-$(LIBCLC_VERSION)/src/$(LIBCLC).la
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBCLC).pc: $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
 
-$(LIBCLC)-uninstall: $(LIBCLC)-$(LIBCLC_VERSION)/src/$(LIBCLC).la
+$(LIBCLC)-uninstall: $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBCLC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCLC).la
+$(LIBCLC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBCLC).pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBCLC_SRC)
 FL_UNINSTALL+=$(LIBCLC)-uninstall
+
+########################################
+# Nvidia VDPAU library
+LIBVDPAU=libvdpau
+
+FL_DEP_LIBVDPAU= \
+	$(LIBXEXT)-install \
+	$(NULL)
+
+LIBVDPAU_VERSION=1.1.1
+LIBVDPAU_SRC=$(LIBVDPAU)-$(LIBVDPAU_VERSION).tar.bz2
+LIBVDPAU_URL=http://people.freedesktop.org/~aplattner/vdpau/$(LIBVDPAU_SRC)
+
+$(DN_SRC)/$(LIBVDPAU_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVDPAU_URL)
+	touch $@
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(DN_SRC)/$(LIBVDPAU_SRC) $(FL_DEP_LIBVDPAU)
+	tar -xf $(DN_SRC)/$(LIBVDPAU_SRC)
+	touch $@
+#$(LIBVDPAU)-$(LIBVDPAU_VERSION)/mypatched: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure.ac $(FL_DEP_LIBVDPAU)
+#	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+#	touch $@
+#$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/mypatched
+#	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+#	touch $@
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc
+	touch $@
+$(LIBVDPAU)-$(LIBVDPAU_VERSION)/src/$(LIBVDPAU).la: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVDPAU).la: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/src/$(LIBVDPAU).la
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBVDPAU)-uninstall: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/src/$(LIBVDPAU).la
+	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBVDPAU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVDPAU).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVDPAU_SRC)
+FL_UNINSTALL+=$(LIBVDPAU)-uninstall
+
+
+########################################
+# Video Acceleration (VA) API for Linux
+LIBVA=libva
+
+FL_DEP_LIBVA= \
+	$(LIBDRM)-install \
+	$(LIBXFIXES)-install \
+	#$(LIBGL)-install \
+	$(NULL)
+
+LIBVA_VERSION=1.6.1
+LIBVA_SRC=$(LIBVA)-$(LIBVA_VERSION).tar.bz2
+LIBVA_URL=http://freedesktop.org/software/vaapi/releases/$(LIBVA)/$(LIBVA_SRC)
+
+$(DN_SRC)/$(LIBVA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBVA_URL)
+	touch $@
+$(LIBVA)-$(LIBVA_VERSION)/configure: $(DN_SRC)/$(LIBVA_SRC) $(FL_DEP_LIBVA)
+	tar -xf $(DN_SRC)/$(LIBVA_SRC)
+	touch $@
+#$(LIBVA)-$(LIBVA_VERSION)/mypatched: $(LIBVA)-$(LIBVA_VERSION)/configure.ac
+#	cd $(LIBVA)-$(LIBVA_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+#	touch $@
+#$(LIBVA)-$(LIBVA_VERSION)/configure: $(LIBVA)-$(LIBVA_VERSION)/configure.ac
+#	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+#	touch $@
+$(LIBVA)-$(LIBVA_VERSION)/Makefile: $(LIBVA)-$(LIBVA_VERSION)/configure
+	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBVA)-$(LIBVA_VERSION)/src/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/Makefile
+	cd $(LIBVA)-$(LIBVA_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/src/$(LIBVA).la
+	cd $(LIBVA)-$(LIBVA_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBVA)-uninstall: $(LIBVA)-$(LIBVA_VERSION)/src/$(LIBVA).la
+	cd $(LIBVA)-$(LIBVA_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBVA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVA).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBVA_SRC)
+FL_UNINSTALL+=$(LIBVA)-uninstall
 
 ########################################
 #freeglut-devel
@@ -3951,9 +4322,10 @@ FL_DEP_MESA= \
 	$(LIBOMXILB)-install \
 	$(LIBCLC)-install \
 	$(LLVM)-install \
-	#$(libvdpau)-install \
-	$(libva)-install \
-	$(wayland)-install \
+	$(LIBUDEV)-install \
+	$(LIBVDPAU)-install \
+	$(LIBVA)-install \
+	#$(wayland)-install \
 	$(systemd)-install \
 	$(NULL)
 
