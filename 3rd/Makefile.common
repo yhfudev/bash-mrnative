@@ -2119,6 +2119,41 @@ $(LUA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/lua
 FL_SOURCES+=$(DN_SRC)/$(LUA_SRC)
 FL_UNINSTALL+=$(LUA)-uninstall
 
+########################################
+# A computer display server protocol
+WAYLAND=wayland
+
+FL_DEP_WAYLAND= \
+	$(LIBFFI)-install \
+	$(EXPAT)-install \
+	$(NULL)
+
+WAYLAND_VERSION=1.9.0
+WAYLAND_SRC=$(WAYLAND)-$(WAYLAND_VERSION).tar.xz
+WAYLAND_URL="http://wayland.freedesktop.org/releases/$(WAYLAND_SRC)"
+
+$(DN_SRC)/$(WAYLAND_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(WAYLAND_URL)
+	touch $@
+$(WAYLAND)-$(WAYLAND_VERSION)/configure: $(DN_SRC)/$(WAYLAND_SRC)
+	tar -xf $(DN_SRC)/$(WAYLAND_SRC)
+	#mv $(WAYLAND)$(WAYLAND_VERSION) $(WAYLAND)-$(WAYLAND_VERSION)/
+	touch $@
+$(WAYLAND)-$(WAYLAND_VERSION)/Makefile: $(WAYLAND)-$(WAYLAND_VERSION)/configure $(FL_DEP_WAYLAND)
+	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+$(WAYLAND)-$(WAYLAND_VERSION)/libwayland-client.la: $(WAYLAND)-$(WAYLAND_VERSION)/Makefile
+	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libwayland-client.la: $(WAYLAND)-$(WAYLAND_VERSION)/libwayland-client.la
+	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	#touch $@
+
+$(WAYLAND)-uninstall: $(WAYLAND)-$(WAYLAND_VERSION)/libwayland-client.la
+	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(WAYLAND)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libwayland-client.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(WAYLAND_SRC)
+FL_UNINSTALL+=$(WAYLAND)-uninstall
 
 ########################################
 # X.Org Autotools macros
@@ -4206,6 +4241,7 @@ $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc: $(LIBCLC)-$(LIBCLC_VERSION)/Makefile
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBCLC).pc: $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	cp $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc $@
 	touch $@
 
 $(LIBCLC)-uninstall: $(LIBCLC)-$(LIBCLC_VERSION)/$(LIBCLC).pc
@@ -4325,8 +4361,8 @@ FL_DEP_MESA= \
 	$(LIBUDEV)-install \
 	$(LIBVDPAU)-install \
 	$(LIBVA)-install \
-	#$(wayland)-install \
-	$(systemd)-install \
+	$(WAYLAND)-install \
+	#$(systemd)-install \
 	$(NULL)
 
 MESA_VERSION=11.0.7
