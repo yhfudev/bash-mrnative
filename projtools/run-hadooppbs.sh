@@ -207,10 +207,10 @@ sed -i -e "s|^HDFF_NUM_CLONE=.*$|HDFF_NUM_CLONE=$CORES|" "${FN_CONFIG_WORKING}"
 sed -i -e "s|^HDFF_TOTAL_NODES=.*$|HDFF_TOTAL_NODES=$NODES|" "${FN_CONFIG_WORKING}"
 
 # output dir
-#HDFF_DN_OUTPUT="hdfs:///user/${USER}/output-${HDFF_PROJ_ID}/results/"
-#HDFF_DN_OUTPUT="file://$HOME/output-${HDFF_PROJ_ID}/results/"
-#HDFF_DN_OUTPUT="file:///scratch1/$USER/output-${HDFF_PROJ_ID}/results/"
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results"
+#HDFF_DN_OUTPUT="hdfs:///user/${USER}/output-${HDFF_PROJ_ID}/"
+#HDFF_DN_OUTPUT="file://$HOME/output-${HDFF_PROJ_ID}/"
+#HDFF_DN_OUTPUT="file:///scratch1/$USER/output-${HDFF_PROJ_ID}/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
 
 # scratch(temp) dir

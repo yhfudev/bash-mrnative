@@ -15,6 +15,7 @@ DN_TOP=$(PWD)
 DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=yhfudev
+USE_GPU=0
 
 ######################################################################
 all: get-sources gawk gnuplot

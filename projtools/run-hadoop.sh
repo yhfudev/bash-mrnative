@@ -79,7 +79,7 @@ HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
 
 # redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}/results/"
+HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
 sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
 
 # scratch(temp) dir

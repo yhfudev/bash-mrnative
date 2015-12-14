@@ -50,6 +50,34 @@ else
   FLG_HAS_GNUPLOT=1
 fi
 
+detect_gawk_from () {
+    local PARAM_PATH=$1
+    shift
+    local EXEC_CMD="${PARAM_PATH}"
+    if [ -d "${PARAM_PATH}" ]; then
+        EXEC_CMD="${PARAM_PATH}/gawk"
+    fi
+    if [ -x "${EXEC_CMD}" ]; then
+        export EXEC_AWK=${EXEC_CMD}
+        return 0
+    fi
+    return 1
+}
+
+detect_gnuplot_from () {
+    local PARAM_PATH=$1
+    shift
+    local EXEC_CMD="${PARAM_PATH}"
+    if [ -d "${PARAM_PATH}" ]; then
+        EXEC_CMD="${PARAM_PATH}/gnuplot"
+    fi
+    if [ -x "${EXEC_CMD}" ]; then
+        export EXEC_PLOT=${EXEC_CMD}
+        return 0
+    fi
+    return 1
+}
+
 test_gawk_switch () {
     mr_trace "patch gawk to support 'switch'"
     echo | awk '{a = 1; switch(a) { case 0: break; } }'

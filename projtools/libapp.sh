@@ -105,9 +105,11 @@ libapp_prepare_app_binary() {
         CNT=0
         while [[ ${CNT} < ${#lst_app_dirs[*]} ]] ; do
             mr_trace "try detect ns2 lst_app_dirs(${CNT}):" ${lst_app_dirs[${CNT}]}
-            if [ -x "${EXEC_NS2}" ]; then
+            if [ -x "${lst_app_dirs[${CNT}]}" ]; then
                 EXEC_NS2=${lst_app_dirs[${CNT}]}
                 mr_trace "found: $EXEC_NS2"
+                detect_gawk_from "$(dirname ${EXEC_NS2})"
+                detect_gnuplot_from "$(dirname ${EXEC_NS2})"
                 break
             fi
             CNT=$(( $CNT + 1 ))
@@ -118,10 +120,20 @@ libapp_prepare_app_binary() {
         mr_trace "try detect ns2 13: ${EXEC_NS2}"
     fi
     mr_trace "EXEC_NS2=${EXEC_NS2}"
-    if [ ! -x "${EXEC_NS2}" ]; then
+    if [ -x "${EXEC_NS2}" ]; then
+        detect_gawk_from    "$(dirname ${EXEC_NS2})"
+        detect_gnuplot_from "$(dirname ${EXEC_NS2})"
+        if [ "$?" = "0" ]; then
+            GNUPLOT_PS_DIR="$(dirname ${EXEC_PLOT})/../share/gnuplot/5.0/PostScript/"
+            GNUPLOT_PS_DIR="$(my_getpath "${GNUPLOT_PS_DIR}")"
+            GNUPLOT_LIB="$(dirname ${EXEC_PLOT})/../share/gnuplot/5.0/"
+            GNUPLOT_LIB="$(my_getpath "${GNUPLOT_LIB}")"
+        fi
+    else
         mr_trace "Error: not found ns2"
         echo -e "error-prepapp\tNOT-get-file\tns"
     fi
+    echo -e "env\tns2=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}"
 }
 
 # MUST implemented

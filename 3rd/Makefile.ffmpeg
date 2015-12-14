@@ -15,6 +15,8 @@ DN_TOP=$(PWD)
 DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=furnaceyhfudev
+USE_GPU=0
+HAS_GL=0
 
 ######################################################################
 all: get-sources ffmpeg gpac mediametrics
@@ -24,14 +26,11 @@ include Makefile.common
 
 ######################################################################
 # GPU related:
-USE_GPU=0
-
 OPENCV_GPU_SUPPORT_CMAKE=
 OPENCV_GPU_SUPPORT_DEPEND=
 MEDIAMETRICS_GPU_SUPPORT_CONF=
 
 ifeq ($(USE_GPU),1)
-# CUDA_GENERATION: Auto, Kepler, Fermi
 OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
                           -D CUDA_GENERATION=Auto \
@@ -40,8 +39,9 @@ OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D WITH_NVCUVID=ON \
                           -D CUDA_FAST_MATH=ON \
                           $(NULL)
-OPENCV_GPU_SUPPORT_DEPEND= $(CUDASDK)-install
+OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(CUDASDK)-install
 MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
+
 endif
 
 
@@ -3847,42 +3847,6 @@ FL_SOURCES+=$(DN_SRC)/$(OPENEXR_SRC)
 FL_UNINSTALL+=$(OPENEXR)-uninstall
 
 ########################################
-# glew, The OpenGL Extension Wrangler Library
-# http://glew.sourceforge.net
-GLEW=glew
-
-GLEW_VERSION=1.13.0
-GLEW_SRC=$(GLEW)-$(GLEW_VERSION).tgz
-GLEW_URL=http://sourceforge.net/projects/glew/files/glew/$(GLEW_VERSION)/$(GLEW_SRC)
-
-FL_DEP_GLEW= \
-	$(LIBXMU)-install \
-	$(LIBXI)-install \
-	$(GLU)-install \
-	$(NULL)
-
-$(DN_SRC)/$(GLEW_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GLEW_URL)
-	touch $@
-$(GLEW)-$(GLEW_VERSION)/Makefile: $(DN_SRC)/$(GLEW_SRC) $(FL_DEP_GLEW)
-	tar -xf $(DN_SRC)/$(GLEW_SRC)
-	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i 's|lib64|lib|' config/Makefile.linux
-	cd $(GLEW)-$(GLEW_VERSION)/ && sed -i '/^.PHONY: .*\.pc$$/d' Makefile
-	touch $@
-$(GLEW)-$(GLEW_VERSION)/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/Makefile
-	cd $(GLEW)-$(GLEW_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GLEW).pc: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
-	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX_DEST)/$(PREFIX_CONF)/ install
-
-$(GLEW)-uninstall: $(GLEW)-$(GLEW_VERSION)/$(GLEW).pc
-	cd $(GLEW)-$(GLEW_VERSION)/ && make -j1 GLEW_DEST=$(PREFIX_DEST)/$(PREFIX_CONF)/ uninstall
-$(GLEW)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(GLEW).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GLEW_SRC)
-FL_UNINSTALL+=$(GLEW)-uninstall
-
-########################################
 # JSONCPP, A C++ library for interacting with JSON
 # https://github.com/open-source-parsers/jsoncpp
 JSONCPP=jsoncpp
@@ -4252,105 +4216,7 @@ FL_UNINSTALL+=$(VTK)-uninstall
 
 # libcl
 # eigen2
-# mesa
 # python2-numpy
-
-########################################
-# CUDA: NVIDIA's GPU proprietary programming toolkit
-# ref: https://wiki.archlinux.org/index.php/GPGPU
-# OpenCV 2.3.1 supports only CUDA 4.0.
-# OpenCV 2.4 supports CUDA 4.1 and 4.2.
-
-# https://aur.archlinux.org/packages/cu/cuda3.1-sdk/PKGBUILD
-CUDASDK31=cuda3
-CUDASDK31_VERSION=3.1
-CUDASDK31_VERSION_CONN=3_1
-CUDASDK31_SRC=gpucomputingsdk_$(CUDASDK31_VERSION)_linux.run
-CUDASDK31_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK31_VERSION_CONN)/sdk/$(CUDASDK31_SRC)
-$(DN_SRC)/$(CUDASDK31_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(CUDASDK31_URL)
-	touch $@
-$(CUDASDK31)-$(CUDASDK31_VERSION)/pkg: $(DN_SRC)/$(CUDASDK31_SRC)
-	@echo "Extracting CUDA SDK ..."
-	mkdir -p $(CUDASDK31)-$(CUDASDK31_VERSION) \
-		&& cd $(CUDASDK31)-$(CUDASDK31_VERSION) \
-		&& sh $(DN_SRC)/$(CUDASDK31_SRC) --noexec --keep \
-        && cd pkg/sdk/C/common \
-        && sed -i "s|/usr/local/cuda|$(PREFIX)/opt/$(CUDASDK31)|g" common.mk \
-        && make
-	touch $@
-$(CUDASDK31)-uninstall: $(CUDASDK31)-$(CUDASDK31_VERSION)/pkg
-	rm -rf  "$(PREFIX)/opt/$(CUDASDK31)/"
-$(CUDASDK31)-install: $(CUDASDK31)-$(CUDASDK31_VERSION)/pkg $(FL_DEP_CUDASDK31)
-	cd $(CUDASDK31)-$(CUDASDK31_VERSION)/ \
-		&& mkdir -p $(PREFIX)/opt/$(CUDASDK31)/ \
-		&& for i in pkg/sdk/* ; do \
-              cp "$i" "$(PREFIX)/opt/$(CUDASDK31)/" \
-           done
-
-# https://projects.archlinux.org/svntogit/community.git/tree/trunk/PKGBUILD?h=packages/cuda
-# http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/cuda_7.0.28_linux.run
-CUDASDK=cuda7
-CUDASDK_VERSION=7.0.28
-CUDASDK_VERSION_CONN=7_0
-CUDASDK_SRC=cuda_$(CUDASDK_VERSION)_linux.run
-CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_CONN)/Prod/local_installers/$(CUDASDK_SRC)
-# extracted SRC: cuda_7.0.28_linux.run --extract=extracted/
-#   NVIDIA-Linux-x86_64-346.46.run -- NVIDIA Accelerated Graphics Driver for Linux-x86_64
-#   cuda-linux64-rel-7.0.28-19326674.run -noprompt -prefix=$(pwd)/target
-#   cuda-samples-linux-7.0.28-19326674.run
-
-$(DN_SRC)/$(CUDASDK_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(CUDASDK_URL)
-	touch $@
-$(CUDASDK)-$(CUDASDK_VERSION)/pkg: $(DN_SRC)/$(CUDASDK_SRC)
-	@echo "Extracting CUDA SDK ..."
-	mkdir -p $(CUDASDK)-$(CUDASDK_VERSION)/extracted/ \
-		&& sh $(DN_SRC)/$(CUDASDK_SRC) --extract=$(shell pwd)/$(CUDASDK)-$(CUDASDK_VERSION)/extracted/  \
-		&& cd $(CUDASDK)-$(CUDASDK_VERSION)/ \
-		&& sh extracted/cuda-linux64-rel-*.run --noexec --keep \
-		&& sh extracted/cuda-samples-linux-*.run --noexec --keep \
-		&& sh extracted/NVIDIA-Linux-*.run --keep -x -a \
-		&& rm -rf nvdrv && ls | grep NVIDIA-Linux | while read A; do echo move $$A ...; mv $$A nvdrv ; done \
-        && sed  -e "s|/usr/share|$(PREFIX_DEST)/$(PREFIX_CONF)/share|g" \
-                -e 's|can_add_for_all_users;|1;|g' \
-                -e 's|=\\"$$prefix\\\"|=/opt/$(CUDASDK)|g' -e 's|Terminal=No|Terminal=false|g' -e 's|ParallelComputing|ParallelComputing;|g' \
-                -i pkg/install-linux.pl \
-		&& sed 's|\$$cudaprefix\\|\\/opt\\/$(CUDASDK)\\|g' -i pkg/install-sdk-linux.pl \
-        && find pkg -name '*.py' | xargs sed -i -e 's|env python|env python2|g' -e 's|bin/python|bin/python2|g'
-	touch $@
-
-$(CUDASDK)-uninstall: $(CUDASDK)-$(CUDASDK_VERSION)/pkg
-	rm -rf  "$(PREFIX)/opt/$(CUDASDK)/"
-$(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
-	cd $(CUDASDK)-$(CUDASDK_VERSION)/pkg \
-		&& perl install-linux.pl -prefix="$(PREFIX)/opt/$(CUDASDK)" -noprompt \
-		&& perl install-sdk-linux.pl -cudaprefix="$(PREFIX)/opt/$(CUDASDK)" -prefix="$(PREFIX)/opt/$(CUDASDK)/samples" -noprompt \
-		&& sed -i "/unsupported GNU/d" $(PREFIX)/opt/$(CUDASDK)/include/host_config.h \
-		&& cd .. \
-		&& cd nvdrv && cp lib* $(PREFIX)/opt/$(CUDASDK)/lib64/ \
-		&& ls | grep libcuda.so. | while read A; do ( \
-		        cd $(PREFIX)/opt/$(CUDASDK)/lib64/; \
-		        ln -s $$A libcuda.so; \
-		        ln -s $$A libcuda.so.1; \
-		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
-		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so;  \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libcuda.so.1 \
-		    ) ; done \
-		&& ls | grep libnvcuvid.so. | while read A; do ( \
-		        cd $(PREFIX)/opt/$(CUDASDK)/lib64/; \
-		        ln -s $$A libnvcuvid.so; \
-		        ln -s $$A libnvcuvid.so.1; \
-		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib; \
-		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)`; \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so;  \
-		        ln -s $${REL}/opt/$(CUDASDK)/lib64/$$A libnvcuvid.so.1 \
-		    ) ; done
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
-FL_UNINSTALL+=$(CUDASDK)-uninstall
 
 ########################################
 # IPPICV for opencv, there's some reason that opencv can't download the files correctly
@@ -4533,15 +4399,18 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatche
 			-D WITH_TBB=ON \
 			-D WITH_1394=ON \
 			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/include -D FFMPEG_LIB_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/lib \
-			-D CMAKE_EXE_LINKER_FLAGS="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L1 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L2 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
-			-D CMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L3 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -L$(PREFIX)/opt/$(CUDASDK)/lib64 -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype" \
+			\
+			-D CMAKE_CXX_FLAGS=" -I1 `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
+			-D CMAKE_C_FLAGS=" -I2 `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
+			-D CMAKE_EXE_LINKER_FLAGS="-L1 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L2 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L3 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
 			.. \
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
 
 $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so: $(OPENCV)-$(OPENCV_VERSION)/build/Makefile
-	cd $(OPENCV)-$(OPENCV_VERSION)/build && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
+	cd $(OPENCV)-$(OPENCV_VERSION)/build && LD_LIBRARY_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib:$(PREFIX)/opt/$(CUDASDK)/lib64:$(PREFIX)/opt/$(CUDASDK)/lib:$(LD_LIBRARY_PATH) $(ENV_COMPILE) make $(MAKE_ARG) VERBOSE=1
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.so: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so
 	cd $(OPENCV)-$(OPENCV_VERSION)/build && $(ENV_COMPILE) make install
 	#cp $(OPENCV)-$(OPENCV_VERSION)/3rdparty/lib/*.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib
