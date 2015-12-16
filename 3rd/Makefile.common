@@ -1440,7 +1440,7 @@ $(LIBFFI)-$(LIBFFI_VERSION)/configure.ac: $(DN_SRC)/$(LIBFFI_SRC)
 	touch $@
 $(LIBFFI)-$(LIBFFI_VERSION)/mypatched: $(DN_SRC)/libffi-fix-path-pc.patch $(LIBFFI)-$(LIBFFI_VERSION)/configure.ac $(FL_DEP_LIBFFI)
 	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
-	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && patch -p1 -i $(DN_SRC)/libffi-fix-path-pc.patch
+	#cd $(LIBFFI)-$(LIBFFI_VERSION)/ && patch -p1 -i $(DN_SRC)/libffi-fix-path-pc.patch
 	touch $@
 $(LIBFFI)-$(LIBFFI_VERSION)/configure: $(LIBFFI)-$(LIBFFI_VERSION)/mypatched
 	cd $(LIBFFI)-$(LIBFFI_VERSION)/ && $(ENV_COMPILE) autoreconf -if
@@ -4433,6 +4433,7 @@ GLU=glu
 
 FL_DEP_GLU= \
 	$(DEPENDS_GL) \
+	#$(GLIB2)-install \
 	#$(MESA)-install \
 	$(NULL)
 
@@ -4443,10 +4444,13 @@ GLU_URL=ftp://ftp.freedesktop.org/pub/mesa/glu/$(GLU_SRC)
 $(DN_SRC)/$(GLU_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(GLU_URL)
 	touch $@
-$(GLU)-$(GLU_VERSION)/configure: $(DN_SRC)/$(GLU_SRC)
+$(GLU)-$(GLU_VERSION)/configure.ac: $(DN_SRC)/$(GLU_SRC)
 	tar -xf $(DN_SRC)/$(GLU_SRC)
 	touch $@
-$(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure $(FL_DEP_GLU)
+$(GLU)-$(GLU_VERSION)/configure: $(GLU)-$(GLU_VERSION)/configure.ac $(FL_DEP_GLU)
+	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+$(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure
 	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) CFLAGS="$(CFLAGS) $(CUDA_CFLAGS)" LDFLAGS="$(LDFLAGS) $(CUDA_LIBS)" ./configure --prefix=$(PREFIX_CONF) --disable-static
 	touch $@
 $(GLU)-$(GLU_VERSION)/libGLU.la: $(GLU)-$(GLU_VERSION)/Makefile
@@ -4539,14 +4543,14 @@ $(GD)-$(GD_VERSION)/configure: $(GD)-$(GD_VERSION)/mypatched $(FL_DEP_GD)
 	touch $@
 $(GD)-$(GD_VERSION)/Makefile: $(GD)-$(GD_VERSION)/configure $(GD)-$(GD_VERSION)/configure
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-vpx=$(PREFIX_DEST)/$(PREFIX_CONF)/  --enable-static --disable-shared --disable-rpath --without-tiff #--with-tiff=$(PREFIX_DEST)/$(PREFIX_CONF)/
-$(GD)-$(GD_VERSION)/src/annotate: $(GD)-$(GD_VERSION)/Makefile
+$(GD)-$(GD_VERSION)/src/gdtopng: $(GD)-$(GD_VERSION)/Makefile
 	cd $(GD)-$(GD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/annotate: $(GD)-$(GD_VERSION)/src/annotate
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gdtopng: $(GD)-$(GD_VERSION)/src/gdtopng
 	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(GD)-uninstall: $(GD)-$(GD_VERSION)/src/annotate
+$(GD)-uninstall: $(GD)-$(GD_VERSION)/src/gdtopng
 	cd $(GD)-$(GD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/annotate
+$(GD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gdtopng
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(GD_SRC)

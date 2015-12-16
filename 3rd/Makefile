@@ -31,8 +31,8 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             && $(MAKE) get-sources && $(MAKE) $(4) \
             $(NULL)
 
-# $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_TARGET_PREFIX")
-disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && tar -cvzf $(3).tar.gz $(3)/* && rm -f $(3)
+# $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_LIST_INPUT")
+disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && ./striptarbar.sh $(4) $(3) $(3).tar.gz #&& rm -f $(3)
 
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
@@ -49,48 +49,43 @@ ns2docsis:
 dist-gzip: dist-gzip-gnuplot dist-gzip-ns2 dist-gzip-ffmpeg
 
 dist-gzip-ffmpeg: ffmpeg
-	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m))
+	echo "$<-git-$(shell uname -m)/usr/bin/ffmpeg"        >  fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/MP4Box"        >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/mediametrics"  >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-gnuplot: gnuplot
-	$(call disttar,$(DN_PWD),$<,$<-5.0-$(shell uname -m))
+	echo "$<-5.0-$(shell uname -m)/usr/bin/gnuplot"      >  fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/libexec/gnuplot/" >> fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/share/gnuplot/"   >> fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/bin/gawk"         >> fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/lib/awk/"         >> fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/lib/gawk/"        >> fnl-$<.txt
+	echo "$<-5.0-$(shell uname -m)/usr/share/awk/"       >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),$<,$<-5.0-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-ns2: ns2
-	$(call disttar,$(DN_PWD),$<,ns-2.35-$(shell uname -m))
+	echo "ns-2.35-$(shell uname -m)/usr/bin/gnuplot"      >  fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/libexec/gnuplot/" >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/share/gnuplot/"   >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/bin/gawk"         >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/lib/awk/"         >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/lib/gawk/"        >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/share/awk/"       >> fnl-$<.txt
+	echo "ns-2.35-$(shell uname -m)/usr/bin/ns"           >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),$<,ns-2.35-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-ns2docsis: ns2docsis
-	$(call disttar,$(DN_PWD),ns2,ns-docsis-$(shell uname -m))
-
-# the size is too huge, >= 60MB
-rm_file_list_huge= \
-    usr/bin/gdaladdo \
-    usr/bin/gdalbuildvrt \
-    usr/bin/gdal_contour \
-    usr/bin/gdaldem \
-    usr/bin/gdalenhance \
-    usr/bin/gdal_grid \
-    usr/bin/gdalinfo \
-    usr/bin/gdallocationinfo \
-    usr/bin/gdalmanage \
-    usr/bin/gdal_rasterize \
-    usr/bin/gdalserver \
-    usr/bin/gdalsrsinfo \
-    usr/bin/gdaltindex \
-    usr/bin/gdaltransform \
-    usr/bin/gdal_translate \
-    usr/bin/gdalwarp \
-    usr/bin/ogr2ogr \
-    usr/bin/ogrinfo \
-    usr/bin/ogrlineref \
-    usr/bin/ogrtindex \
-    usr/bin/testepsg \
-    $(NULL)
-
-# some doc files
-rm_file_list_exclude= \
-    usr/doc/ \
-    usr/gtk-doc/ \
-    usr/man/ \
-    usr/share/doc/ \
-    usr/share/man/ \
-    usr/var/cache/ \
-    $(NULL)
+	echo "ns-docsis-$(shell uname -m)/usr/bin/gnuplot"      >  fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/libexec/gnuplot/" >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/share/gnuplot/"   >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/bin/gawk"         >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/lib/awk/"         >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/lib/gawk/"        >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/share/awk/"       >> fnl-$<.txt
+	echo "ns-docsis-$(shell uname -m)/usr/bin/ns"           >> fnl-$<.txt
+	#echo "ns-docsis-$(shell uname -m)/usr/lib/tcl8/"        >> fnl-$<.txt
+	#echo "ns-docsis-$(shell uname -m)/usr/lib/tcl8.6/"      >> fnl-$<.txt
+	#echo "ns-docsis-$(shell uname -m)/usr/lib/tclcl/"       >> fnl-$<.txt
+	#echo "ns-docsis-$(shell uname -m)/usr/lib/tk8.6/"       >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),ns2,ns-docsis-$(shell uname -m),fnl-$<.txt)
