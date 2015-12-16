@@ -143,16 +143,18 @@ $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile: $(NS2DOCSIS)-$(NS2DOCSIS_VER
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-otcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tclcl=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/tclcl --with-tcl=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tcl-ver=$(TCL_VERSION) --with-tk=$(PREFIX_DEST)/$(PREFIX_CONF)/ --with-tk-ver=$(TK_VERSION) --x-libraries=$(PREFIX_DEST)/$(PREFIX_CONF)/lib --x-includes=$(PREFIX_DEST)/$(PREFIX_CONF)/include/X11/
 $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/Makefile
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && $(ENV_COMPILE) make LIB+="$(LDFLAGS) -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/tclcl/lib -ltclcl -lotcl `$(ENV_COMPILE) pkg-config --libs tk tcl xft xscrnsaver fontconfig` -lXt -lXrender -lX11 -lz -ldl -pthread" $(MAKE_ARG) ns
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns-git: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/man/man1
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	#mv $(PREFIX_DEST)/$(PREFIX_CONF)/man $(PREFIX_DEST)/$(PREFIX_CONF)/share
+	cp $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns $@
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns && ln -sf ns-git $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns
 
 $(NS2DOCSIS)-uninstall: $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ns
 	cd $(NS2DOCSIS)-$(NS2DOCSIS_VERSION)/ns-2.33/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(NS2DOCSIS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns
+$(NS2DOCSIS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/ns-git
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(NS2DOCSIS_SRC)

@@ -41,9 +41,11 @@ gnuplot:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
 ns2:
+	rm -f ns2-compile/ns-install
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,ns2)
 
 ns2docsis:
+	rm -f ns2-compile/ns-docsis-install
 	$(call compile,$(DN_PWD),$(DN_SRC),ns2,ns2docsis)
 
 dist-gzip: dist-gzip-gnuplot dist-gzip-ns2 dist-gzip-ffmpeg
