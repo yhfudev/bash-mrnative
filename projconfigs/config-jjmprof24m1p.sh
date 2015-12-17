@@ -19,9 +19,6 @@ TIME_STOP=160.2
 # the start time for measure the throughput
 TIME_START=5
 
-# the number of profiles (1 profile means PF == DRR)
-NUMBER_PROFILES=1
-
 # the maximum bitrate of the channel
 # default 3.0
 #BW_CHANNEL=42880000
@@ -56,12 +53,16 @@ BW_CHANNEL=23600000
 #NS2_PROFILE="profiles_8k_sync_24m"
 NS2_PROFILE="profiles_4k_async_24m"
 
-# init the profiles to low profiles
-FLG_INIT_PROFILE_LOW=0
-# init the profiles to high profiles
-FLG_INIT_PROFILE_HIGH=1
-# init the profiles to interval profiles
-FLG_INIT_PROFILE_INTERVAL=0
+# the number of profiles (1 profile means PF == DRR)
+# init the flows profile, the percentage of the flows
+# for 1 profile, or high profile, set it to "1"
+# for multiple profiles, make sure the sum is 1.
+# to set all of the profiles to low  for 2 profiles case, set "1 0"
+# to set all of the profiles to high for 2 profiles case, set "0 1"
+INIT_FLOW_PROFILE_UDP="1"
+INIT_FLOW_PROFILE_FTP="1"
+INIT_FLOW_PROFILE_HAS="1"
+
 
 # if change half of the flows to highest profile at the middle
 #FLG_CHANGE_PROFILE_HIGH=1

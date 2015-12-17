@@ -40,9 +40,6 @@ BW_CHANNEL=282800000
 # use the lowest bitrate QPSK(4K FFT async) as the base bitrate (24.5MHz channel)
 #BW_CHANNEL=23600000
 
-# the number of profiles (1 profile means PF == DRR)
-NUMBER_PROFILES=2
-
 # the profile set
 #NS2_PROFILE="profiles_4k_async_192m"
 #NS2_PROFILE="profiles_4k_sync_192m"
@@ -57,12 +54,16 @@ NS2_PROFILE="profiles_4k_async_192m"
 #NS2_PROFILE="profiles_8k_sync_24m"
 
 
-# init the profiles to low profiles
-FLG_INIT_PROFILE_LOW=1
-# init the profiles to high profiles
-FLG_INIT_PROFILE_HIGH=0
-# init the profiles to interval profiles
-FLG_INIT_PROFILE_INTERVAL=0
+# the number of profiles (1 profile means PF == DRR)
+# init the flows profile, the percentage of the flows
+# for 1 profile, or high profile, set it to "1"
+# for multiple profiles, make sure the sum is 1.
+# to set all of the profiles to low  for 2 profiles case, set "1 0"
+# to set all of the profiles to high for 2 profiles case, set "0 1"
+INIT_FLOW_PROFILE_UDP="1 0"
+INIT_FLOW_PROFILE_FTP="1 0"
+INIT_FLOW_PROFILE_HAS="1 0"
+
 
 # if change half of the flows to highest profile at the middle
 #FLG_CHANGE_PROFILE_HIGH=1
