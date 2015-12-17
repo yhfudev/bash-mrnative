@@ -2,6 +2,9 @@
 # maxv -- the number of the items in the list, >= 1
 # maxi -- the number of different values
 proc idx_get_interval {maxv maxi idx} {
+    if {$maxi < 2} {
+      return [expr $maxv - 1 ]
+    }
     set v [expr $maxv / $maxi ];
     if { [expr $v * $maxi] < $maxv } { set v [expr $v + 1] };
     if { $v < 1 } { set v 1 };
@@ -139,6 +142,49 @@ proc set_interval_profiles {cm_node_start cm_node_count} {
     }
 }
 
+proc set_config_profile {cm_node_start cm_node_count cm_profile_count str_lst_ratio} {
+    puts "set flows by config ..."
+    global lan
+    global curr_profile
+    global CM
+
+    lappend cm_lst_ratio
+    set tmp_list1 [split $str_lst_ratio " "]
+    foreach item $tmp_list1 {
+        scan $item "%f" val1
+        lappend cm_lst_ratio $val1
+        #puts "ratio '$item'=$val1"
+    }
+
+    set cnt 0
+    set idx_profile 0
+    set ratio 0.0
+    set ratio [lindex $cm_lst_ratio $idx_profile]
+
+    #puts "init ratio=$ratio"
+    while {$cnt < $cm_node_count } {
+        #puts "compare cnt=$cnt and [expr {$cm_node_count * $ratio}]"
+        while {$cnt >= int([expr {$cm_node_count * $ratio}]) && $idx_profile < [llength $cm_lst_ratio] } {
+            set idx_profile [expr $idx_profile + 1 ]
+            if {$idx_profile < [llength $cm_lst_ratio] } {
+                #puts "ratio=$ratio + [lindex $cm_lst_ratio $idx_profile]"
+                set ratio [expr $ratio + [lindex $cm_lst_ratio $idx_profile] ]
+                #puts "new ratio=$ratio"
+            }
+        }
+
+        # set profile for $cnt
+        set c [expr $cnt + $cm_node_start ]
+        #puts "call assign-dlprofile [idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ]"
+        $lan assign-dlprofile $CM($c) [idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ]
+
+        set cnt [expr $cnt + 1 ]
+    }
+}
+# tests:
+#set str_ratio_list "0.25 0.25 0.5"
+#set_config_profile 0 20 [expr [llength $curr_profile] - 2] $lst_ratio
+
 proc time_peak_profiles {cm_node_start cm_node_count} {
     global ns
     global stoptime
@@ -154,7 +200,6 @@ proc time_low_profiles {cm_node_start cm_node_count} {
 }
 
 
-
 msg "set var1 profiles_4k_async_192m ..."
 set curr_profile $profiles_4k_async_192m
 
@@ -163,14 +208,27 @@ setup_dl_scheduler $n0
 
 proc init_profiles {cm_node_start cm_node_count} { set_interval_profiles $cm_node_start $cm_node_count }
 
+set list_ratio_init_udp "0.35 0.65"
+set list_ratio_init_ftp "0.35 0.65"
+set list_ratio_init_has "0.35 0.65"
+
 set CHANGE_PROFILE_HIGH 0
 set CHANGE_PROFILE_LOW  0
+
+# the ratio of changed UDP flows
+set CHANGE_RATIO_UDP 0.5
+# the ratio of changed FTP flows
+set CHANGE_RATIO_FTP 0.5
+# the ratio of changed HAS flows
+set CHANGE_RATIO_HAS 0.5
 
 set cm_index 1
 
 if { $NUM_FTPs > 0 } {
-    init_profiles $cm_index $NUM_FTPs
-    set numchg [expr $NUM_FTPs / 2]
+    #init_profiles $cm_index $NUM_FTPs
+    set_config_profile $cm_index $NUM_FTPs [expr [llength $curr_profile] - 2] $list_ratio_init_ftp
+
+    set numchg int([expr $NUM_FTPs * $CHANGE_RATIO_FTP ])
     if {$NUM_FTPs > 0} {
         if {$numchg <= 0} {
             set numchg 1
@@ -187,8 +245,10 @@ if { $NUM_FTPs > 0 } {
 
 # Build a bad UDP flow
 if { $NUM_UDPs > 0 } {
-    init_profiles $cm_index $NUM_UDPs
-    set numchg [expr $NUM_UDPs / 2]
+    #init_profiles $cm_index $NUM_UDPs
+    set_config_profile $cm_index $NUM_UDPs [expr [llength $curr_profile] - 2] $list_ratio_init_udp
+
+    set numchg int([expr $NUM_UDPs * $CHANGE_RATIO_UDP ])
     if {$NUM_UDPs > 0} {
         if {$numchg <= 0} {
             set numchg 1
@@ -205,8 +265,10 @@ if { $NUM_UDPs > 0 } {
 
 # Build a DASH flow set
 if { $NUM_DASHs > 0 } {
-    init_profiles $cm_index $NUM_DASHs
-    set numchg [expr $NUM_DASHs / 2]
+    #init_profiles $cm_index $NUM_DASHs
+    set_config_profile $cm_index $NUM_DASHs [expr [llength $curr_profile] - 2] $list_ratio_init_has
+
+    set numchg int([expr $NUM_DASHs * $CHANGE_RATIO_HAS ])
     if {$NUM_DASHs > 0} {
         if {$numchg <= 0} {
             set numchg 1

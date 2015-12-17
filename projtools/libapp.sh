@@ -343,8 +343,8 @@ prepare_one_tcl_scripts () {
             -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
-    "tcp+has6")
-        # 20151119: use fix 5 HAS flow vs multiple FTP flows
+    "tcp+has6"|"tcp+has6a"|"tcp+has6b")
+        # use fix 6 HAS flow vs multiple FTP flows
         sed -i \
             -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs   ${PARAM_NUM}|" \
             -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs   0|" \
@@ -426,24 +426,11 @@ prepare_one_tcl_scripts () {
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
 
     # init the profile
-    if [ "${FLG_INIT_PROFILE_LOW}" = "1" ]; then
-        mr_trace "use init profile low ..."
-        sed -i \
-            -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_lower_profile $cm_node_start $cm_node_count }|' \
-            "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
-    fi
-    if [ "${FLG_INIT_PROFILE_HIGH}" = "1" ]; then
-        mr_trace "use init profile high ..."
-        sed -i \
-            -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_high_profile $cm_node_start $cm_node_count }|' \
-            "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
-    fi
-    if [ "${FLG_INIT_PROFILE_INTERVAL}" = "1" ]; then
-        mr_trace "use init profile interval ..."
-        sed -i \
-            -e 's|proc init_profiles\s.*$|proc init_profiles {cm_node_start cm_node_count} { set_interval_profiles $cm_node_start $cm_node_count }|' \
-            "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
-    fi
+    sed -i \
+        -e "s|^set[ \t[:space:]]\+list_ratio_init_udp[ \t[:space:]]\+.*$|set list_ratio_init_udp \"${INIT_FLOW_PROFILE_UDP}\"|g" \
+        -e "s|^set[ \t[:space:]]\+list_ratio_init_ftp[ \t[:space:]]\+.*$|set list_ratio_init_ftp \"${INIT_FLOW_PROFILE_FTP}\"|g" \
+        -e "s|^set[ \t[:space:]]\+list_ratio_init_has[ \t[:space:]]\+.*$|set list_ratio_init_has \"${INIT_FLOW_PROFILE_HAS}\"|g" \
+        "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/profile.tcl"
 
     # change the profile in the middle of test
     if [ "${FLG_CHANGE_PROFILE_HIGH}" = "1" ]; then
