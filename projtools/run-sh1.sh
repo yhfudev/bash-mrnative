@@ -96,6 +96,10 @@ sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHT
 
 #mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
+FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
+make_dir "$(dirname ${FN_CONF_SYS})"
+copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
+
 mr_trace "HDFF_DN_BASE=${HDFF_DN_BASE}"
 mr_trace "HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}"
 mr_trace "HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
@@ -112,9 +116,9 @@ mapred_main_sh1 () {
     lst_mr_work=(${LIST_MAPREDUCE_WORK})
 
     HDFS_DN_WORKING_PREFIX=${HDFF_DN_OUTPUT}/working/
-    HDFS_DN_OUTPUT_PREFIX=${HDFF_DN_OUTPUT}/mapred-data/
+    HDFS_DN_OUTPUT_PREFIX=${HDFF_DN_OUTPUT}/
 
-    chmod_file -R 777 ${HDFS_DN_OUTPUT_PREFIX}/0/
+    [[ "${HDFS_DN_OUTPUT_PREFIX}"  =~ ^hdfs:// ]] && chmod_file -R 777 ${HDFS_DN_OUTPUT_PREFIX}/0/
 
     # start time
     TM_START=$(date +%s)
@@ -125,6 +129,7 @@ mapred_main_sh1 () {
     $MYEXEC rm -f ${HDFS_DN_OUTPUT_PREFIX}/0/*.txt
     find_file ${DN_TOP}/mytest/ -name "config-*" | while read a; do \
         echo -e "config\t\"$(my_getpath ${a})\"" | save_file ${HDFS_DN_OUTPUT_PREFIX}/0/redout.txt; \
+        copy_file ${a} ${HDFS_DN_OUTPUT_PREFIX}/ ; \
     done
 
     ####################

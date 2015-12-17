@@ -199,7 +199,7 @@ FN_CONF_SYS="${FN_CONFIG_WORKING}"
 HDFF_USER=${USER}
 sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
 
-HDFF_DN_BASE="file:///scratch1/$USER/output-${HDFF_PROJ_ID}/"
+HDFF_DN_BASE="file:///scratch2/$USER/output-${HDFF_PROJ_ID}/"
 sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
 
 # set cores in mrsystem.conf file

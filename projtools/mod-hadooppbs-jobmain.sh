@@ -126,7 +126,8 @@ mr_trace "06 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 echo
 mapred_main
 
-sleep $(( 72 * 60 * 60 ))
+#sleep $(( 72 * 60 * 60 ))
+sleep $(( 15 * 60 ))
 
 #### Stop the Hadoop cluster
 stop_hadoop

@@ -61,7 +61,7 @@ libapp_prepare_app_binary() {
         #echo -e "error-prepapp\ttry-get-file\t${DN_TOP}/../../ns"
     else
         local DN2=$(extrace_binary "${HDFF_PATHTO_TAR_APP}")
-        EXEC_NS2="$(my_getpath "${DN2}/bin/ns")"
+        EXEC_NS2="$(my_getpath "${DN2}/usr/bin/ns")"
         mr_trace "try detect ns2 2: ${EXEC_NS2}"
         if [ ! -x "${EXEC_NS2}" ]; then
             EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
@@ -86,10 +86,10 @@ libapp_prepare_app_binary() {
     fi
 
     lst_app_dirs=(
-        "/home/$USER/ns-docsis-i686/bin/ns"
-              "$HOME/ns-docsis-i686/bin/ns"
-        "/home/$USER/ns-docsis-x86_64/bin/ns"
-              "$HOME/ns-docsis-x86_64/bin/ns"
+        "/home/$USER/ns-docsis-i686/usr/bin/ns"
+              "$HOME/ns-docsis-i686/usr/bin/ns"
+        "/home/$USER/ns-docsis-x86_64/usr/bin/ns"
+              "$HOME/ns-docsis-x86_64/usr/bin/ns"
         "/home/$USER/software/bin/ns2-bin/bin/ns"
               "$HOME/software/bin/ns2-bin/bin/ns"
         "/home/$USER/ns2docsis-ds31profile/ns-2.33/ns"
@@ -125,15 +125,17 @@ libapp_prepare_app_binary() {
         detect_gnuplot_from "$(dirname ${EXEC_NS2})"
         if [ "$?" = "0" ]; then
             GNUPLOT_PS_DIR="$(dirname ${EXEC_PLOT})/../share/gnuplot/5.0/PostScript/"
-            GNUPLOT_PS_DIR="$(my_getpath "${GNUPLOT_PS_DIR}")"
+            export GNUPLOT_PS_DIR="$(my_getpath "${GNUPLOT_PS_DIR}")"
             GNUPLOT_LIB="$(dirname ${EXEC_PLOT})/../share/gnuplot/5.0/"
-            GNUPLOT_LIB="$(my_getpath "${GNUPLOT_LIB}")"
+            export GNUPLOT_LIB="$(my_getpath "${GNUPLOT_LIB}")"
+            LD_LIBRARY_PATH="$(dirname ${EXEC_PLOT})/../lib"
+            export LD_LIBRARY_PATH="$(my_getpath "${LD_LIBRARY_PATH}")"
         fi
     else
         mr_trace "Error: not found ns2"
         echo -e "error-prepapp\tNOT-get-file\tns"
     fi
-    echo -e "env\tns2=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}"
+    echo -e "env\tns2=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}\tLD=${LD_LIBRARY_PATH}"
 }
 
 # MUST implemented
@@ -341,12 +343,12 @@ prepare_one_tcl_scripts () {
             -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
-    "tcp+has5")
+    "tcp+has6")
         # 20151119: use fix 5 HAS flow vs multiple FTP flows
         sed -i \
             -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs   ${PARAM_NUM}|" \
             -e  "s|set NUM_UDPs\s.*$|set NUM_UDPs   0|" \
-            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs  5|" \
+            -e "s|set NUM_DASHs\s.*$|set NUM_DASHs  6|" \
             -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
@@ -357,7 +359,7 @@ prepare_one_tcl_scripts () {
         -e 's|^set[ \t[:space:]]\+vodapp_playback_buffer_capacity[ \t[:space:]]\+.*$|set vodapp_playback_buffer_capacity 240|g' \
         -e 's|^set[ \t[:space:]]\+DASHMODE[ \t[:space:]]\+.*$|set DASHMODE 4|g' \
         -i "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl"
-    grep 'set DASHMODE 4' "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl"
+    grep 'set DASHMODE 4' "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl" > /dev/null
     if [ ! "$?" = "0" ]; then
         mr_trace "Error, change config file failed!!"
         exit 1

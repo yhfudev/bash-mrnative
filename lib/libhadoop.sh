@@ -89,7 +89,8 @@ run_stage_hadoop () {
     copy_file "${DN_TMP}/" "${PARAM_HDFS_WORKING}/" > /dev/null
     rm_f_dir "${DN_TMP}/"
 
-    chmod_file -R 777 "${PARAM_HDFS_WORKING}/"
+    # this fix the user be changed problem
+    [[ "${PARAM_HDFS_WORKING}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${PARAM_HDFS_WORKING}/"
 
     local HD_MAP="-mapper /bin/cat"
     local HD_RED="-reducer /bin/cat"
@@ -140,7 +141,7 @@ run_stage_hadoop () {
 
     rm_f_dir "${PARAM_HDFS_OUTPUT}"
     #make_dir "${PARAM_HDFS_OUTPUT}"
-    #chmod_file -R 777 "${PARAM_HDFS_OUTPUT}"
+    #[[ "${PARAM_HDFS_OUTPUT}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${PARAM_HDFS_OUTPUT}"
     mr_trace "hadoop stream: -input ${PARAM_HDFS_WORKING} -output ${PARAM_HDFS_OUTPUT} ${HD_MAP} ${HD_RED}"
     ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
         -D mapred.job.name=${HDFF_PROJ_ID}-${PARAM_STAGE} \
@@ -155,7 +156,7 @@ run_stage_hadoop () {
         return
     fi
 
-    chmod_file -R 777 "${PARAM_HDFS_OUTPUT}"
+    [[ "${PARAM_HDFS_OUTPUT}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${PARAM_HDFS_OUTPUT}"
 
     mr_trace move_file "${PARAM_HDFS_OUTPUT}/part-00000" "${PARAM_HDFS_OUTPUT}/redout.txt"
     move_file "${PARAM_HDFS_OUTPUT}/part-00000" "${PARAM_HDFS_OUTPUT}/redout.txt" > /dev/null

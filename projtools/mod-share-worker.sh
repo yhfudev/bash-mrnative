@@ -111,8 +111,8 @@ mapred_main () {
     # LIST_MAPREDUCE_WORK should be defined in libapp.sh
     lst_mr_work=(${LIST_MAPREDUCE_WORK})
 
-    DN_BASE_HDFS="hdfs:///tmp/${USER}/working-${HDFF_PROJ_ID}"
-    DN_OUTPUT_HDFS="hdfs:///tmp/${USER}/working-${HDFF_PROJ_ID}/results"
+    DN_BASE_HDFS="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
+    DN_OUTPUT_HDFS="${DN_BASE_HDFS}"
     if [[ "${HDFF_DN_BASE}" =~ ^hdfs:// ]]; then
         DN_BASE_HDFS="${HDFF_DN_BASE}"
     fi
@@ -142,15 +142,15 @@ mapred_main () {
 
     find_file "${DN_OUTPUT_HDFS}/" -name "config-*" | while read a; do rm_f_dir "${a}" ; done
 
-    chmod_file -R 777 "${HDFS_DN_WORKING_PREFIX}/"
-    chmod_file -R 777 "${DN_OUTPUT_HDFS}/"
-    chmod_file -R 777 "${DN_BASE_HDFS}/"
+    [[  "${HDFS_DN_WORKING_PREFIX}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${HDFS_DN_WORKING_PREFIX}/"
+    [[          "${DN_OUTPUT_HDFS}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${DN_OUTPUT_HDFS}/"
+    [[            "${DN_BASE_HDFS}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${DN_BASE_HDFS}/"
 
     ####################
     mr_trace "generating input file ..."
     find_file ${DN_TOP}/mytest/ -name "config-*" | while read a; do \
-        copy_file "${a}" "${DN_OUTPUT_HDFS}/"; \
         echo -e "config\t\"${DN_OUTPUT_HDFS}/$(basename ${a})\"" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt; \
+        copy_file "${a}" "${DN_OUTPUT_HDFS}/"; \
     done
 
     ####################

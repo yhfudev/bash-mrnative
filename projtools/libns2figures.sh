@@ -270,13 +270,7 @@ plot_pktdelay_trans () {
 
 #####################################################################
 convert_eps2png () {
-    for FN_FULL in $(find . -maxdepth 1 -type f -name "*.eps" | awk -F/ '{print $2}' | sort) ; do
-        FN_BASE=$(echo "${FN_FULL}" | gawk -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
-        if [ ! -f "${FN_BASE}.png" ]; then
-            mr_trace "eps 2 png: ${FN_FULL}  -->  ${FN_BASE}.png"
-            convert -density 300 "${FN_FULL}" "${FN_BASE}.png"
-        fi
-    done
+    ls *.eps | gawk -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}' | while read a; do convert -density 300 $a.eps $a.jpg; done
 }
 
 #####################################################################
