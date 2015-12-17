@@ -450,10 +450,10 @@ cd projtools
     \begin{itemize}
       \item run your program in a productive environment;
       \item run a huge amount of small tasks;
-      \item you need to set two variables in your \texttt{mrsystem.conf}:
+      \item you need to set two variables in your \texttt{mrsystem.conf}: (b/c we can't set the vcore mem parameters)
         \begin{itemize}
+          \item \texttt{HDFF\_NUM\_CLONE} to 1.
           \item \texttt{HDFF\_TOTAL\_NODES} to the number of vcores (eg. 400); and
-          \item \texttt{HDFF\_NUM\_CLONE} to 1 (b/c we can't set the vcore mem parameters);
         \end{itemize}
 
       \item get the results in a HDFS \texttt{hdfs://tmp/\${USER}/output-*}
