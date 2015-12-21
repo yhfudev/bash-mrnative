@@ -8,7 +8,7 @@ proc idx_get_interval {maxv maxi idx} {
     set v [expr $maxv / $maxi ];
     if { [expr $v * $maxi] < $maxv } { set v [expr $v + 1] };
     if { $v < 1 } { set v 1 };
-    #puts "maxv=$maxv; maxi=$maxi, idx=$idx; v=$v"
+    #msg "maxv=$maxv; maxi=$maxi, idx=$idx; v=$v"
     if { $idx > 0 } {
       if { [expr $idx % $maxi] == [expr $maxi - 1]} {
         set v2 [expr $maxv - 1]
@@ -101,7 +101,7 @@ proc setup_dl_scheduler {n0} {
     #config-profile <idx> <ratio>
     #$lan configure-profile $n0 0 0.1
     for {set i 0} {$i < [llength $curr_profile]} {incr i} {
-        puts "idx=$i, v=[lindex $curr_profile $i]"
+        msg "idx=$i, v=[lindex $curr_profile $i]"
         $lan configure-profile $n0 $i [lindex $curr_profile $i]
     }
 }
@@ -113,8 +113,8 @@ proc set_high_profile {cm_node_start cm_node_count} {
     global CM
     for {set i 0} {$i < $cm_node_count} {incr i} {
         set c [expr $i + $cm_node_start ]
-        msg "set flow $c to profile [expr [llength $curr_profile] - 2 ] ..."
-        $lan assign-dlprofile $CM($c) [expr [llength $curr_profile] - 2 ]
+        msg "set flow $c to profile [expr [llength $curr_profile] - 2 - 1 ] ..."
+        $lan assign-dlprofile $CM($c) [expr [llength $curr_profile] - 2 - 1 ]
     }
 }
 
@@ -131,29 +131,31 @@ proc set_lower_profile {cm_node_start cm_node_count} {
 }
 
 proc set_interval_profiles {cm_node_start cm_node_count} {
-    msg "set the profiles to interval values ..."
+    msg "set the profiles to interval values start=$cm_node_start, cnt=$cm_node_count ..."
     global lan
     global curr_profile
     global CM
     for {set i 0} {$i < $cm_node_count} {incr i} {
         set c [expr $i + $cm_node_start ]
+        msg "1 idx_get_interval [expr [llength $curr_profile] - 2] $cm_node_count $i ..."
         msg "set flow $c to profile [idx_get_interval [expr [llength $curr_profile] - 2] $cm_node_count $i] ..."
         $lan assign-dlprofile $CM($c) [idx_get_interval [expr [llength $curr_profile] - 2] $cm_node_count $i]
     }
 }
 
 proc set_config_profile {cm_node_start cm_node_count cm_profile_count str_lst_ratio} {
-    puts "set flows by config ..."
+    msg "set flows by config ..."
     global lan
     global curr_profile
     global CM
 
-    lappend cm_lst_ratio
+    #lappend cm_lst_ratio
+    set cm_lst_ratio {}
     set tmp_list1 [split $str_lst_ratio " "]
     foreach item $tmp_list1 {
         scan $item "%f" val1
         lappend cm_lst_ratio $val1
-        #puts "ratio '$item'=$val1"
+        #msg "ratio '$item'=$val1"
     }
 
     set cnt 0
@@ -161,21 +163,22 @@ proc set_config_profile {cm_node_start cm_node_count cm_profile_count str_lst_ra
     set ratio 0.0
     set ratio [lindex $cm_lst_ratio $idx_profile]
 
-    #puts "init ratio=$ratio"
+    msg "init ratio=$ratio"
     while {$cnt < $cm_node_count } {
-        #puts "compare cnt=$cnt and [expr {$cm_node_count * $ratio}]"
+        msg "compare cnt=$cnt and [expr {$cm_node_count * $ratio}]"
         while {$cnt >= int([expr {$cm_node_count * $ratio}]) && $idx_profile < [llength $cm_lst_ratio] } {
             set idx_profile [expr $idx_profile + 1 ]
             if {$idx_profile < [llength $cm_lst_ratio] } {
-                #puts "ratio=$ratio + [lindex $cm_lst_ratio $idx_profile]"
+                #msg "ratio=$ratio + [lindex $cm_lst_ratio $idx_profile]"
                 set ratio [expr $ratio + [lindex $cm_lst_ratio $idx_profile] ]
-                #puts "new ratio=$ratio"
+                #msg "new ratio=$ratio"
             }
         }
 
         # set profile for $cnt
         set c [expr $cnt + $cm_node_start ]
-        #puts "call assign-dlprofile [idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ]"
+        msg "2 idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ..."
+        msg "call assign-dlprofile CM $c [idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ]"
         $lan assign-dlprofile $CM($c) [idx_get_interval $cm_profile_count [llength $cm_lst_ratio] $idx_profile ]
 
         set cnt [expr $cnt + 1 ]
