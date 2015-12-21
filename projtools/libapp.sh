@@ -241,7 +241,13 @@ libapp_generate_script_4hadoop () {
 }
 
 #config binary for map/reduce task
-# config line: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
+#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
+#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
+#   stream.num.map.output.key.fields >= num.key.fields.for.partition
+#   'callback end function' is called at the end of function
+#
+# config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
 LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
 
 
@@ -357,13 +363,19 @@ prepare_one_tcl_scripts () {
     # set parameters for DASH module
     sed -e 's|^set[ \t[:space:]]\+vodapp_segment_size[ \t[:space:]]\+.*$|set vodapp_segment_size 4|g' \
         -e 's|^set[ \t[:space:]]\+vodapp_playback_buffer_capacity[ \t[:space:]]\+.*$|set vodapp_playback_buffer_capacity 240|g' \
-        -e 's|^set[ \t[:space:]]\+DASHMODE[ \t[:space:]]\+.*$|set DASHMODE 4|g' \
+        -e 's|^set[ \t[:space:]]\+DASHMODE[ \t[:space:]]\+.*$|set DASHMODE 3|g' \
         -i "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl"
-    grep 'set DASHMODE 4' "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl" > /dev/null
+    grep 'set DASHMODE 3' "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/dash.tcl" > /dev/null
     if [ ! "$?" = "0" ]; then
         mr_trace "Error, change config file failed!!"
         exit 1
     fi
+
+    sed -i \
+        -e "s|set RANDOM_FTP_PATH_RTT|#set RANDOM_FTP_PATH_RTT|" \
+        -e "s|#set SAME_FTP_PATH_RTT|set SAME_FTP_PATH_RTT|" \
+        -e "s|set VAR_FTP_PATH_RTT|#set VAR_FTP_PATH_RTT|" \
+        "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
 
     # setup the throughput log interval
     LOGINTERVAL=$(echo | awk -v V=$TIME_STOP '{print V / 100}' )
@@ -388,7 +400,7 @@ prepare_one_tcl_scripts () {
         -e "s|42880000|${BW_CHANNEL}|g" \
         -e "s|1000000000|${BW_CHANNEL}|g" \
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/channels.dat"
-    if (( ${BW_CHANNEL} > 42880000 )) ; then
+    if (( ${BW_CHANNEL} > 7146667 )) ; then
         mr_trace "setup high speed channel ..."
         # fix the high speed problem
         sed -i \
