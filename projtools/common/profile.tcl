@@ -31,8 +31,9 @@ set fh_msg [open message.log a]
 
 proc msg {msg1} {
     global fh_msg
-    set timestamp [clock format [clock seconds]]
-    puts $fh_msg "$timestamp - $msg1"
+    #set timestamp [clock format [clock seconds]]
+    #puts $fh_msg "$timestamp - $msg1"
+    puts $fh_msg "$msg1"
     flush $fh_msg
 }
 
