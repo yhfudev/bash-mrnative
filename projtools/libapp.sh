@@ -371,11 +371,13 @@ prepare_one_tcl_scripts () {
         exit 1
     fi
 
+if [ 0 = 1 ]; then
     sed -i \
         -e "s|set RANDOM_FTP_PATH_RTT|#set RANDOM_FTP_PATH_RTT|" \
         -e "s|#set SAME_FTP_PATH_RTT|set SAME_FTP_PATH_RTT|" \
         -e "s|set VAR_FTP_PATH_RTT|#set VAR_FTP_PATH_RTT|" \
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
+fi
 
     # setup the throughput log interval
     LOGINTERVAL=$(echo | awk -v V=$TIME_STOP '{print V / 100}' )
