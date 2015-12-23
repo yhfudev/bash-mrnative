@@ -137,6 +137,7 @@ plot_eachflow_throughput () {
     # the dir stores figures, should be a local dir
     local PARAM_DN_DEST=$1
     shift
+    # some part of figure file name
     local PARAM_FN_TEST=$1
     shift
     # the figure title
