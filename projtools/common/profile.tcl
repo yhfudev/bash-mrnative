@@ -230,7 +230,11 @@ set cm_index 1
 
 if { $NUM_FTPs > 0 } {
     #init_profiles $cm_index $NUM_FTPs
-    set_config_profile $cm_index $NUM_FTPs [expr [llength $curr_profile] - 2] $list_ratio_init_ftp
+    # the nubmer of the list should be [llength $curr_profile] - 2],
+    # but this cause a strange timer set error in ns2docsis,
+    # to work around the problem, we use [llength $curr_profile] - 1] here
+    #set_config_profile $cm_index $NUM_FTPs [expr [llength $curr_profile] - 2] $list_ratio_init_ftp
+    set_config_profile $cm_index $NUM_FTPs [expr [llength $curr_profile] - 1] $list_ratio_init_ftp
 
     set numchg int([expr $NUM_FTPs * $CHANGE_RATIO_FTP ])
     if {$NUM_FTPs > 0} {
@@ -250,7 +254,8 @@ if { $NUM_FTPs > 0 } {
 # Build a bad UDP flow
 if { $NUM_UDPs > 0 } {
     #init_profiles $cm_index $NUM_UDPs
-    set_config_profile $cm_index $NUM_UDPs [expr [llength $curr_profile] - 2] $list_ratio_init_udp
+    #set_config_profile $cm_index $NUM_UDPs [expr [llength $curr_profile] - 2] $list_ratio_init_udp
+    set_config_profile $cm_index $NUM_UDPs [expr [llength $curr_profile] - 1] $list_ratio_init_udp
 
     set numchg int([expr $NUM_UDPs * $CHANGE_RATIO_UDP ])
     if {$NUM_UDPs > 0} {
@@ -270,7 +275,8 @@ if { $NUM_UDPs > 0 } {
 # Build a DASH flow set
 if { $NUM_DASHs > 0 } {
     #init_profiles $cm_index $NUM_DASHs
-    set_config_profile $cm_index $NUM_DASHs [expr [llength $curr_profile] - 2] $list_ratio_init_has
+    #set_config_profile $cm_index $NUM_DASHs [expr [llength $curr_profile] - 2] $list_ratio_init_has
+    set_config_profile $cm_index $NUM_DASHs [expr [llength $curr_profile] - 1] $list_ratio_init_has
 
     set numchg int([expr $NUM_DASHs * $CHANGE_RATIO_HAS ])
     if {$NUM_DASHs > 0} {
