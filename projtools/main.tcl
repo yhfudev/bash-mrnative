@@ -117,8 +117,9 @@ set MAXCHANNELBW 2158700000
 # Build a bad UDP flow
 if { $NUM_UDPs > 0 } {
     #create_DS_UDP_sessions $NUM_UDPs $cm_index
+    set UDP_RATE [expr 0.90 * $MAXCHANNELBW / $NUM_UDPs]
     for {set i 0} {$i < $NUM_UDPs} {incr i} {
-        create_DS_UDP_bad_flow $n2 [expr $cm_index + $i] $PACKETSIZE [expr $MAXCHANNELBW / $NUM_UDPs / 5 * 7]
+        create_DS_UDP_bad_flow $n2 [expr $cm_index + $i] $PACKETSIZE $UDP_RATE
     }
     set cm_index [expr $cm_index + $NUM_UDPs]
 }
