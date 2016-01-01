@@ -37,6 +37,9 @@ disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && ./striptarbar.sh $(4) 
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
+aircrack:
+	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
+
 gnuplot:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
@@ -54,6 +57,20 @@ dist-gzip-ffmpeg: ffmpeg
 	echo "$<-git-$(shell uname -m)/usr/bin/ffmpeg"        >  fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/MP4Box"        >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/mediametrics"  >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
+
+dist-gzip-aircrack: aircrack
+	echo "$<-git-$(shell uname -m)/usr/bin/airbase-ng"    >  fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/aircrack-ng"   >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airdecap-ng"   >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airdecloak-ng" >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/aireplay-ng"   >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airmon-ng"     >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airodump-ng"   >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airodump-ng-oui-update" >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airolib-ng"    >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airserv-ng"    >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/airtun-ng"     >> fnl-$<.txt
 	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-gnuplot: gnuplot
