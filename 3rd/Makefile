@@ -7,7 +7,8 @@ DN_PWD=$(shell pwd)
 DN_SRC=sources
 DN_TARGET_PREFIX=ffmpeg
 TARGET=all
-USE_GPU=1
+#USE_GPU=GPU_OPENCL
+USE_GPU=GPU_CUDA
 
 OPENGL_INCLUDES_DETECT=-I/usr/include
 
@@ -19,13 +20,13 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
             && sed -i "s|^DN_PATCH=.*$$|DN_PATCH=$(1)|g"  Makefile \
             && sed -i "s|^USE_GPU=.*$$|USE_GPU=$(USE_GPU)|g" Makefile \
             && cat "$(1)/Makefile.$(3)" | grep ^include | awk '{print $$2; }' | while read a ; do cp "$(1)/$$a" .; done \
-            && if [ "$(USE_GPU)" = "1" ]; then \
+            && if [ "$(USE_GPU)" = "GPU_CUDA" ]; then \
                 sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(CUDASDK)-install|g' Makefile ; \
-              else \
+              elif [ "$(USE_GPU)" = "GPU_OPENCL" ]; then \
                 echo -e "\#include <GL/gl.h>\nint main() {return 0;}" > /tmp/a.c ; \
-                cc $(OPENGL_INCLUDES_DETECT) a.c; \
+                cc $(OPENGL_INCLUDES_DETECT) /tmp/a.c; \
                 if [ $? = 0 ]; then \
-                  sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(MESA)-install|g' Makefile ; \
+                  sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(OPENCL)-install|g' Makefile ; \
                 fi ; \
               fi \
             && $(MAKE) get-sources && $(MAKE) $(4) \
@@ -71,6 +72,8 @@ dist-gzip-aircrack: aircrack
 	echo "$<-git-$(shell uname -m)/usr/bin/airolib-ng"    >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/airserv-ng"    >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/airtun-ng"     >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/hashcat"       >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/oclhashcat"    >> fnl-$<.txt
 	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-gnuplot: gnuplot

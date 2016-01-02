@@ -15,6 +15,7 @@ DN_TOP=$(PWD)
 DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=furnaceyhfudev
+# USE_GPU=GPU_CUDA or GPU_OPENCL
 USE_GPU=0
 DEPENDS_GL=
 
@@ -30,7 +31,7 @@ OPENCV_GPU_SUPPORT_CMAKE=
 OPENCV_GPU_SUPPORT_DEPEND=
 MEDIAMETRICS_GPU_SUPPORT_CONF=
 
-ifeq ($(USE_GPU),1)
+ifeq ($(USE_GPU),GPU_CUDA)
 OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
                           -D CUDA_GENERATION=Auto \
@@ -41,6 +42,8 @@ OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           $(NULL)
 OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(CUDASDK)-install
 MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
+
+elifeq ($(USE_GPU),GPU_OPENCL)
 
 endif
 

@@ -584,7 +584,7 @@ $(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
 
 else
 
-OPENSSL_VERSION=1.0.2d
+OPENSSL_VERSION=1.0.2e
 OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION).tar.gz
 OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_SRC)
 
@@ -892,6 +892,7 @@ $(LIBOPENJPEG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libopenjp2.p
 FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG_SRC)
 FL_UNINSTALL+=$(LIBOPENJPEG)-uninstall
 
+########################################
 # openjpeg 1.5.2 for ffmpeg
 LIBOPENJPEG15=openjpeg1
 LIBOPENJPEG15P=openjpeg
@@ -1840,7 +1841,7 @@ $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/config
 			--sysconfdir=$(PREFIX_CONF)/etc \
 			--libdir=$(PREFIX_CONF)/lib \
 			--sbindir=$(PREFIX_CONF)/bin \
-			--with-html-dir=$(PREFIX_CONF)/share/doc/${pkgname}-${pkgver}/html \
+			--with-html-dir=$(PREFIX_CONF)/share/doc/$(LIBUDEV1)-$(LIBUDEV1_VERSION)/html \
 			--enable-gudev \
 			--enable-introspection \
 			--enable-kmod \
@@ -3917,6 +3918,10 @@ CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_
 # http://developer.download.nvidia.com/compute/cuda/6_0/rel/installers/cuda_6.0.37_linux_32.run
 endif
 
+FL_DEP_CUDASDK= \
+    #$(PERL)-install \
+    $(NULL)
+
 $(DN_SRC)/$(CUDASDK_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(CUDASDK_URL)
 	touch $@
@@ -3949,19 +3954,20 @@ $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 		&& ls | grep "lib.*\.so" | awk '{split($$0,b,".");print $$0 "\t" b[1] "." b[2];}'  | while read A B; do ( \
 		        echo "ln -sf $$A $${B}"; \
 		        cd $(PREFIX)/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/; \
+		        SONAME=$(readelf -d $${A} | grep -Po 'SONAME.*: \[\K[^]]*') ; \
 		        if [ ! -e "$${B}" ];   then ln -sf $$A $${B};   fi; \
-		        if [ ! -e "$${B}.1" ]; then ln -sf $$A $${B}.1; fi; \
+		        if [ ! -e "$${SONAME}" ]; then ln -sf $$A $${SONAME}; fi; \
 		        cd $(PREFIX_DEST)/$(PREFIX_CONF)/lib/; \
 		        REL=`perl -e 'use File::Spec; print File::Spec->abs2rel(@ARGV) . "\n"' $(PREFIX) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/`; \
 		        if [ ! -e "$${B}" ];   then ln -sf $${REL}/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/$$A $${B};   fi; \
-		        if [ ! -e "$${B}.1" ]; then ln -sf $${REL}/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/$$A $${B}.1; fi; \
+		        if [ ! -e "$${SONAME}" ]; then ln -sf $${REL}/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/$$A $${SONAME}; fi; \
 		    ) ; done
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(CUDASDK_SRC)
 FL_UNINSTALL+=$(CUDASDK)-uninstall
 
-ifeq ($(USE_GPU),1)
+ifeq ($(USE_GPU),GPU_CUDA)
 # CUDA_GENERATION: Auto, Kepler, Fermi
 CUDA_LDLIB_PATH=$(PREFIX)/opt/$(CUDASDK)/lib64:$(PREFIX)/opt/$(CUDASDK)/lib:$(PREFIX)/opt/$(CUDASDK)/extras/CUPTI/lib/
 CUDA_LIBS=-Wl,-rpath=$(PREFIX)/opt/$(CUDASDK)/lib64,--enable-new-dtags -L$(PREFIX)/opt/$(CUDASDK)/lib64 -L$(PREFIX)/opt/$(CUDASDK)/lib -L$(PREFIX)/opt/$(CUDASDK)/extras/CUPTI/lib/ -lGL -lnvidia-tls -lnvidia-glcore -lX11 -lXext -lc -ldl
@@ -4555,6 +4561,248 @@ $(MESA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(MESA).la
 
 FL_SOURCES+=$(DN_SRC)/$(MESA_SRC)
 FL_UNINSTALL+=$(MESA)-uninstall
+
+########################################
+# OpenCL (Open Computing Language) header files
+OPENCLHEADER=openclhdr
+
+OPENCLHEADER_VERSION=2.1
+OPENCLHEADER_SRC=$(OPENCLHEADER)-$(OPENCLHEADER_VERSION).tar.gz
+OPENCLHEADER_URL=http://www.khronos.org/registry/cl/api/$(OPENCLHEADER_VERSION)/
+
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/: $(DN_SRC)/created
+	mkdir -p $@
+	touch $@
+
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/
+	$(WGET) $(OPENCLHEADER_URL)/opencl.h
+	$(WGET) $(OPENCLHEADER_URL)/cl_platform.h
+	$(WGET) $(OPENCLHEADER_URL)/cl.h
+	$(WGET) $(OPENCLHEADER_URL)/cl_ext.h
+	$(WGET) $(OPENCLHEADER_URL)/cl_egl.h
+	$(WGET) $(OPENCLHEADER_URL)/cl_gl.h
+	$(WGET) $(OPENCLHEADER_URL)/cl_gl_ext.h
+	$(WGET) $(OPENCLHEADER_URL)/cl2.hpp
+	$(WGET) $(OPENCLHEADER_URL)/cl.hpp
+	touch $@
+
+$(DN_SRC)/$(OPENCLHEADER_SRC): $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
+	cd $(DN_SRC) && tar -cvf $(OPENCLHEADER_SRC) $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	touch $@
+$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/$(OPENCLHEADER_SRC)
+	tar -xf $(DN_SRC)/$(OPENCLHEADER_SRC)
+	touch $@
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/opencl.h: $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
+	install -dm755 $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/
+	cd $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/ \
+        && for h in $(ls -1 *.h *.hpp); do \
+            install -m 644 ${h} $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/ ; \
+        done
+
+$(OPENCLHEADER)-uninstall: $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
+$(OPENCLHEADER)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/opencl.h
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPENCLHEADER_SRC)
+FL_UNINSTALL+=$(OPENCLHEADER)-uninstall
+
+########################################
+LIBCL=ocl-icd
+
+FL_DEP_LIBCL= \
+	$(OPENCLHEADER)-install \
+	$(MESA)-install \
+	$(NULL)
+
+LIBCL_VERSION=2.2.8
+LIBCL_SRC=$(LIBCL)-$(LIBCL_VERSION).tar.gz
+LIBCL_URL=http://forge.imag.fr/frs/download.php/698/$(LIBCL_SRC)
+
+$(DN_SRC)/$(LIBCL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBCL_URL)
+	touch $@
+$(LIBCL)-$(LIBCL_VERSION)/configure: $(DN_SRC)/$(LIBCL_SRC)
+	tar -xf $(DN_SRC)/$(LIBCL_SRC)
+	touch $@
+$(LIBCL)-$(LIBCL_VERSION)/Makefile: $(LIBCL)-$(LIBCL_VERSION)/configure $(FL_DEP_LIBCL)
+	cd $(LIBCL)-$(LIBCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la: $(LIBCL)-$(LIBCL_VERSION)/Makefile
+	cd $(LIBCL)-$(LIBCL_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCL).la: $(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la
+	cd $(LIBCL)-$(LIBCL_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBCL)-uninstall: $(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la
+	cd $(LIBCL)-$(LIBCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCL).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBCL_SRC)
+FL_UNINSTALL+=$(LIBCL)-uninstall
+
+########################################
+# $(call create_so_links,"$(DN_PWD)")
+create_so_links =  cd "$(1)" \
+             && ls | grep "lib.*\.so" | sed -r 's/(.*).so.*/\0 \1.so/'  | while read A B; do ( \
+                echo "ln -sf $$A $${B}"; \
+                SONAME=$(readelf -d $${A} | grep -Po 'SONAME.*: \[\K[^]]*') ; \
+                if [ ! -e "$${B}" ];   then ln -sf $$A $${B};   fi; \
+                if [ ! -e "$${SONAME}" ]; then ln -sf $$A $${SONAME}; fi; \
+            ) ; done
+
+########################################
+# nvidia-utils, nvidia-libgl, opencl-nvidia
+NVIDIAUTILS=nvidia-utils
+
+FL_DEP_NVIDIAUTILS= \
+	$(LIBCL)-install \
+	$(NULL)
+
+NVIDIAUTILS_VERSION=358.16
+
+ifeq ($(ARCHBITS),64) # 64 bit CPU
+NVIDIAUTILS_SRC=NVIDIA-Linux-x86_64-$(NVIDIAUTILS_VERSION)-no-compat32.run
+NVIDIAUTILS_URL=http://us.download.nvidia.com/XFree86/Linux-x86_64/$(NVIDIAUTILS_VERSION)/$(NVIDIAUTILS_SRC)
+else
+NVIDIAUTILS_SRC=NVIDIA-Linux-x86-$(NVIDIAUTILS_VERSION).run
+NVIDIAUTILS_URL=http://us.download.nvidia.com/XFree86/Linux-x86/$(NVIDIAUTILS_VERSION)/$(NVIDIAUTILS_SRC)
+endif
+
+$(DN_SRC)/$(NVIDIAUTILS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(NVIDIAUTILS_URL)
+	touch $@
+$(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/README.txt: $(DN_SRC)/$(NVIDIAUTILS_SRC) $(FL_DEP_NVIDIAUTILS)
+	sh $(DN_SRC)/$(NVIDIAUTILS_SRC) --extract-only
+	mv NVIDIA-Linux-* $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)
+	touch $@
+
+OPENCL_NVIDIA=opencl-nvidia
+$(OPENCL_NVIDIA)-install: $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/README.txt
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia.icd "$(PREFIX_DEST)/$(PREFIX_CONF)/etc/OpenCL/vendors/nvidia.icd"
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-compiler.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-compiler.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-opencl.so.$(NVIDIAUTILS_VERSION)   $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-opencl.so.$(NVIDIAUTILS_VERSION)
+	$(call create_so_links,"$(PREFIX_DEST)/$(PREFIX_CONF)/lib/")
+	touch $@
+
+LIBGL_NVIDIA=libgl-nvidia
+$(LIBGL_NVIDIA)-install: $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/README.txt
+	mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/extensions
+	ln -s ../../../nvidia/xorg/modules/extensions/libglx.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/extensions/libglx.so.$(NVIDIAUTILS_VERSION)
+	ln -s libglx.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/extensions/libglx.so.1
+	ln -s libglx.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/extensions/libglx.so
+	#
+	ln -s nvidia/libGL.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGL.so.$(NVIDIAUTILS_VERSION)
+	ln -s libGL.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGL.so.1
+	ln -s libGL.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGL.so
+	#
+	ln -s nvidia/libEGL.so.1 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libEGL.so.1
+	ln -s libEGL.so.1 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libEGL.so.$(NVIDIAUTILS_VERSION)
+	ln -s libEGL.so.1 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libEGL.so
+	#
+	ln -s nvidia/libGLESv1_CM.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv1_CM.so.$(NVIDIAUTILS_VERSION)
+	ln -s libGLESv1_CM.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv1_CM.so.1
+	ln -s libGLESv1_CM.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv1_CM.so
+	#
+	ln -s nvidia/libGLESv2.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv2.so.$(NVIDIAUTILS_VERSION)
+	ln -s libGLESv2.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv2.so.2
+	ln -s libGLESv2.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLESv2.so
+	touch $@
+
+$(NVIDIAUTILS)-uninstall: $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/README.txt
+
+# nvidia-utils
+$(NVIDIAUTILS)-install: $(OPENCL_NVIDIA)-install $(LIBGL_NVIDIA)-install
+	# X driver
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia_drv.so $(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/drivers/nvidia_drv.so
+	# GLX extension module for X
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libglx.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/xorg/modules/extensions/libglx.so.$(NVIDIAUTILS_VERSION)
+	ln -s libglx.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/xorg/modules/extensions/libglx.so	# X doesn't find glx otherwise
+	# OpenGL libraries
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libGL.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/libGL.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libEGL.so.1        $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/libEGL.so.1
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libEGL_nvidia.so.0 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libEGL_nvidia.so.0
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libGLESv1_CM.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/libGLESv1_CM.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libGLESv2.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/nvidia/libGLESv2.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libOpenGL.so.0     $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libOpenGL.so.0
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libGLdispatch.so.0 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libGLdispatch.so.0
+	# OpenGL core library
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-glcore.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-glcore.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-eglcore.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-eglcore.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-glsi.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-glsi.so.$(NVIDIAUTILS_VERSION)
+	# misc
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-ifr.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-ifr.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-fbc.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-fbc.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-encode.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-encode.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-cfg.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-cfg.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-ml.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-ml.so.$(NVIDIAUTILS_VERSION)
+	# VDPAU
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libvdpau_nvidia.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/vdpau/libvdpau_nvidia.so.$(NVIDIAUTILS_VERSION)
+	# nvidia-tls library
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/tls/libnvidia-tls.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-tls.so.$(NVIDIAUTILS_VERSION)
+	# CUDA
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libcuda.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcuda.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvcuvid.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvcuvid.so.$(NVIDIAUTILS_VERSION)
+	# DEBUG
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-debugdump   $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-debugdump
+	# nvidia-xconfig
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-xconfig     $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-xconfig
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-xconfig.1.gz $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-xconfig.1.gz
+	# nvidia-settings
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-settings    $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-settings
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-settings.1.gz $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-settings.1.gz
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-settings.desktop $(PREFIX_DEST)/$(PREFIX_CONF)/share/applications/nvidia-settings.desktop
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-settings.png $(PREFIX_DEST)/$(PREFIX_CONF)/share/pixmaps/nvidia-settings.png
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-gtk2.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-gtk2.so.$(NVIDIAUTILS_VERSION)
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/libnvidia-gtk3.so.$(NVIDIAUTILS_VERSION) $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnvidia-gtk3.so.$(NVIDIAUTILS_VERSION)
+	sed -e 's:__UTILS_PATH__:/usr/bin:' -e 's:__PIXMAP_PATH__:/usr/share/pixmaps:' -i $(PREFIX_DEST)/$(PREFIX_CONF)/share/applications/nvidia-settings.desktop
+	# nvidia-bug-report
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-bug-report.sh $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-bug-report.sh
+	# nvidia-smi
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-smi         $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-smi
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-smi.1.gz    $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-smi.1.gz
+	# nvidia-cuda-mps
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-cuda-mps-server         $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-cuda-mps-server
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-cuda-mps-control        $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-cuda-mps-control
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-cuda-mps-control.1.gz   $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-cuda-mps-control.1.gz
+	# nvidia-modprobe
+	# This should be removed if nvidia fixed their uvm module!
+	install -D -m4755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-modprobe           $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-modprobe
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-modprobe.1.gz       $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-modprobe.1.gz
+	# nvidia-persistenced
+	install -D -m755 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-persistenced        $(PREFIX_DEST)/$(PREFIX_CONF)/bin/nvidia-persistenced
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-persistenced.1.gz   $(PREFIX_DEST)/$(PREFIX_CONF)/share/man/man1/nvidia-persistenced.1.gz
+	cd $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION) && bsdtar -xf nvidia-persistenced-init.tar.bz2
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-persistenced-init/systemd/nvidia-persistenced.service.template $(PREFIX_DEST)/$(PREFIX_CONF)/lib/systemd/system/nvidia-persistenced.service
+	sed -i 's/__USER__/nvidia-persistenced/'    $(PREFIX_DEST)/$(PREFIX_CONF)/lib/systemd/system/nvidia-persistenced.service
+	# application profiles
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-application-profiles-$(NVIDIAUTILS_VERSION)-rc $(PREFIX_DEST)/$(PREFIX_CONF)/share/nvidia/nvidia-application-profiles-$(NVIDIAUTILS_VERSION)-rc
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-application-profiles-$(NVIDIAUTILS_VERSION)-key-documentation $(PREFIX_DEST)/$(PREFIX_CONF)/share/nvidia/nvidia-application-profiles-$(NVIDIAUTILS_VERSION)-key-documentation
+	#
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/LICENSE $(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/nvidia/LICENSE
+	ln -s nvidia $(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/nvidia-utils
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/README.txt $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/nvidia/README
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/NVIDIA_Changelog $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/nvidia/NVIDIA_Changelog
+	cp -r $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/html $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/nvidia/
+	ln -s nvidia $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/nvidia-utils
+	# distro specific files must be installed in /usr/share/X11/xorg.conf.d
+	install -D -m644 $(NVIDIAUTILS)-$(NVIDIAUTILS_VERSION)/nvidia-drm-outputclass.conf $(PREFIX_DEST)/$(PREFIX_CONF)/share/X11/xorg.conf.d/nvidia-drm-outputclass.conf
+	#
+	$(call create_so_links,"$(PREFIX_DEST)/$(PREFIX_CONF)/lib/")
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NVIDIAUTILS_SRC)
+FL_UNINSTALL+=$(NVIDIAUTILS)-uninstall
+
+########################################
+OPENCL=opencl
+
+$(OPENCL)-uninstall: $(MESA)-uninstall $(NVIDIAUTILS)-uninstall
+
+$(OPENCL)-install: $(MESA)-install $(NVIDIAUTILS)-install
+	touch $@
 
 ########################################
 # GLU, Mesa OpenGL Utility library
