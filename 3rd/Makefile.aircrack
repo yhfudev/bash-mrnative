@@ -19,10 +19,24 @@ USE_GPU=0
 DEPENDS_GL=
 
 ######################################################################
-all: get-sources aircrack hashcat pyrit
+all: get-sources aircrack hashcat-all pyrit
 
 ######################################################################
 include Makefile.common
+
+HASHCAT_GPU_DEPENDS=
+
+ifeq ($(USE_GPU),GPU_CUDA)
+PYRIT_GPU_DEPENDS=$(CPYRITCUDA)-install
+HASHCAT_GPU_DEPENDS=oclhashcat
+else
+ifeq ($(USE_GPU),GPU_OPENCL)
+PYRIT_GPU_DEPENDS=$(CPYRITOPENCL)-install
+HASHCAT_GPU_DEPENDS=oclhashcat
+endif
+endif
+
+hashcat-all: hashcat $(HASHCAT_GPU_DEPENDS)
 
 ######################################################################
 LIBNL3=libnl
@@ -229,10 +243,18 @@ FL_UNINSTALL+=$(HASHCAT)-uninstall
 # https://developer.nvidia.com/gpu-deployment-kit
 NVIDIAGDK=nvidia-gdk
 
-NVIDIAGDK_VERSION=352.55
-NVIDIAGDK_SRC=gdk_linux_amd64_352_55_release.run
-NVIDIAGDK_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/gdk/$(NVIDIAGDK_SRC)
 # http://developer.download.nvidia.com/compute/cuda/6_0/rel/gdk/gdk_331_62_release.tgz
+# http://developer.download.nvidia.com/compute/cuda/6_0/rel/gdk/gdk_331_62_release.tgz
+
+# http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_352_39_gdk_linux.run
+#NVIDIAGDK_VERSION=352.55
+#NVIDIAGDK_SRC=gdk_linux_amd64_352_55_release.run
+#NVIDIAGDK_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/gdk/$(NVIDIAGDK_SRC)
+
+# http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_352_39_gdk_linux.run
+NVIDIAGDK_VERSION=352.39
+NVIDIAGDK_SRC=cuda_352_39_gdk_linux.run
+NVIDIAGDK_URL=http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/$(NVIDIAGDK_SRC)
 
 $(DN_SRC)/$(NVIDIAGDK_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(NVIDIAGDK_URL)
@@ -252,12 +274,77 @@ FL_SOURCES+=$(DN_SRC)/$(NVIDIAGDK_SRC)
 FL_UNINSTALL+=$(NVIDIAGDK)-uninstall
 
 ########################################
+# AMD Display Library (ADL) SDK
+# http://developer.amd.com/tools-and-sdks/graphics-development/display-library-adl-sdk/
+AMDADLSDK=amdadlsdk
+
+FL_DEP_AMDADLSDK= \
+	$(catalyst-utils)-install \
+	$(NULL)
+
+AMDADLSDK_VERSION=9
+AMDADLSDK_SRC=ADL_SDK$(AMDADLSDK_VERSION).zip
+AMDADLSDK_URL=http://developer.amd.com/tools-and-sdks/graphics-development/display-library-adl-sdk/
+
+$(DN_SRC)/$(AMDADLSDK_SRC): $(DN_SRC)/created
+	#$(WGET) -O $@ -c $(AMDADLSDK_URL)
+	echo "Please download $(AMDADLSDK_SRC) by manual from $(AMDADLSDK_URL)"
+	echo "  and place the file to $(DN_SRC)/"
+	exit 1
+	#touch $@
+
+$(AMDADLSDK)-$(AMDADLSDK_VERSION)/include/adl_sdk.h: $(DN_SRC)/$(AMDADLSDK_SRC)
+	mkdir -p $(AMDADLSDK)-$(AMDADLSDK_VERSION)
+	cd $(AMDADLSDK)-$(AMDADLSDK_VERSION) && unzip $(DN_SRC)/$(AMDADLSDK_SRC)
+	rm -f $(AMDADLSDK)-install
+	#mv $(AMDADLSDK)*$(AMDADLSDK_VERSION) $(AMDADLSDK)-$(AMDADLSDK_VERSION)
+	#cd $(AMDADLSDK)-$(AMDADLSDK_VERSION)/
+	sed -e '/include/a \#include <wchar.h>'   -i $(AMDADLSDK)-$(AMDADLSDK_VERSION)/include/adl_structures.h
+	sed -e '/include/a \#include <stdbool.h>' -i $(AMDADLSDK)-$(AMDADLSDK_VERSION)/include/adl_sdk.h
+	touch $@
+
+$(AMDADLSDK)-$(AMDADLSDK_VERSION)/adlutil/adlutil: $(AMDADLSDK)-$(AMDADLSDK_VERSION)/include/adl_sdk.h
+	cd $(AMDADLSDK)-$(AMDADLSDK_VERSION)/ && cd adlutil && $(ENV_COMPILE) gcc main.c -o adlutil -DLINUX -ldl -I ../include
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/adlutil: $(AMDADLSDK)-$(AMDADLSDK_VERSION)/adlutil/adlutil
+	install -m755 -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
+	install -m755 $(AMDADLSDK)-$(AMDADLSDK_VERSION)/adlutil/adlutil $(PREFIX_DEST)/$(PREFIX_CONF)/bin
+	install -m755 -d $(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL
+	install -m644 $(AMDADLSDK)-$(AMDADLSDK_VERSION)/include/* $(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL
+	install -m755 -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/ADL
+	mv -v $(AMDADLSDK)-$(AMDADLSDK_VERSION)/Public-Documents $(AMDADLSDK)-$(AMDADLSDK_VERSION)/Sample $(AMDADLSDK)-$(AMDADLSDK_VERSION)/Sample-Managed $(AMDADLSDK)-$(AMDADLSDK_VERSION)/ADL_SDK.html $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/ADL
+	touch $@
+
+$(AMDADLSDK)-uninstall: $(AMDADLSDK)-$(AMDADLSDK_VERSION)/AMDADLSDK$(ARCHBITS).bin
+	cd $(AMDADLSDK)-$(AMDADLSDK_VERSION)/build && make uninstall
+$(AMDADLSDK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/adlutil
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(AMDADLSDK_SRC)
+FL_UNINSTALL+=$(AMDADLSDK)-uninstall
+
+########################################
+# cuda dropped from hashcat! http://hashcat.net/forum/thread-4950-post-27759.html#pid27759
+# cudahashcat
+CUDAHASHCAT=cudahashcat
+
+FL_DEP_CUDAHASHCAT= \
+	$(CUDASDK)-install \
+	$(NVIDIAGDK)-install \
+	$(NULL)
+
+########################################
 # oclhashcat
+# https://wiki.archlinux.org/index.php/GPGPU
+# https://wiki.archlinux.org/index.php?title=GPGPU&redirect=no
+# https://hashcat.net
+# GPGPU-based password recovery utility
 OCLHASHCAT=oclhashcat
 
 FL_DEP_OCLHASHCAT= \
-	$(CUDASDK)-install \
+	$(OPENCLHEADER)-install \
 	$(NVIDIAGDK)-install \
+	$(AMDADLSDK)-install \
 	$(NULL)
 
 OCLHASHCAT_VERSION=2.01
@@ -271,17 +358,17 @@ $(DN_SRC)/$(OCLHASHCAT_SRC): $(DN_SRC)/created
 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md: $(DN_SRC)/$(OCLHASHCAT_SRC)
 	tar -xf $(DN_SRC)/$(OCLHASHCAT_SRC)
 	rm -f $(OCLHASHCAT)-install
-	#mv $(OCLHASHCAT)*$(OCLHASHCAT_VERSION) $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)
+	mv oclHashcat*$(OCLHASHCAT_VERSION) $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)
 	#cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/
-	sed -i 's|deps/cuda-7\.5|$(PREFIX)/opt/$(CUDASDK)|' $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/src/Makefile
-	sed -i 's|deps/nvidia-gdk||'         $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/src/Makefile
+	sed -e 's|^typedef int bool;|//typedef int bool;|' -i $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/include/shared.h
 	touch $@
 
 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md $(FL_DEP_OCLHASHCAT)
 	touch $@
 
 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile
-	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) linux$(ARCHBITS) rules_optimize
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -Iinclude" $(MAKE_ARG) oclHashcat$(ARCHBITS).bin
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) GCC=gcc make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -I../../include -I../../tools/rules_test/" $(MAKE_ARG) -C tools/rules_optimize TARGET=rules_optimize rules_optimize.bin
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/charsets
@@ -296,7 +383,7 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION
 	cp -a  $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat.hcstat $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
 	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/docs/*     $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/oclHashcat/
 	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/extra/*    $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/oclHashcat/extra/
-	install -Dm755 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin $(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat
+	install -Dm755 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin    $@
 	touch $@
 
 $(OCLHASHCAT)-uninstall: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin
@@ -308,12 +395,246 @@ FL_SOURCES+=$(DN_SRC)/$(OCLHASHCAT_SRC)
 FL_UNINSTALL+=$(OCLHASHCAT)-uninstall
 
 ########################################
+# A tool for network monitoring and data acquisition
+TCPDUMP=tcpdump
+
+FL_DEP_TCPDUMP= \
+	$(LIBPCAP)-install \
+	$(OPENSSL)-install \
+	$(NULL)
+
+TCPDUMP_VERSION=4.7.4
+TCPDUMP_SRC=$(TCPDUMP)-$(TCPDUMP_VERSION).tar.gz
+TCPDUMP_URL=http://www.tcpdump.org/release/$(TCPDUMP_SRC)
+
+$(DN_SRC)/$(TCPDUMP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(TCPDUMP_URL)
+	touch $@
+$(TCPDUMP)-$(TCPDUMP_VERSION)/configure: $(DN_SRC)/$(TCPDUMP_SRC)
+	tar -xf $(DN_SRC)/$(TCPDUMP_SRC)
+	#patch -Np1 -i $(DN_SRC)/tcpdump_duplicate_executable.patch
+	touch $@
+$(TCPDUMP)-$(TCPDUMP_VERSION)/Makefile: $(TCPDUMP)-$(TCPDUMP_VERSION)/configure $(FL_DEP_TCPDUMP)
+	cd $(TCPDUMP)-$(TCPDUMP_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sbindir=$(PREFIX_CONF)/bin --enable-ipv6
+$(TCPDUMP)-$(TCPDUMP_VERSION)/tcpdump: $(TCPDUMP)-$(TCPDUMP_VERSION)/Makefile
+	cd $(TCPDUMP)-$(TCPDUMP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/tcpdump: $(TCPDUMP)-$(TCPDUMP_VERSION)/tcpdump
+	cd $(TCPDUMP)-$(TCPDUMP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(TCPDUMP)-uninstall: $(TCPDUMP)-$(TCPDUMP_VERSION)/tcpdump
+	cd $(TCPDUMP)-$(TCPDUMP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(TCPDUMP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/tcpdump
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(TCPDUMP_SRC)
+FL_UNINSTALL+=$(TCPDUMP)-uninstall
+
+########################################
+# A powerful interactive packet manipulation program written in Python
+SCAPY=scapy
+
+FL_DEP_SCAPY= \
+	$(TCPDUMP)-install \
+	#$(python2)-install \
+	$(python2-crypto)-install \
+	$(python2-pyx)-install \
+	$(python2-gnuplot)-install \
+	$(graphviz)-install \
+	$(sox)-install \
+	$(NULL)
+
+SCAPY_VERSION=2.3.1
+SCAPY_SRC=$(SCAPY)-$(SCAPY_VERSION).zip
+SCAPY_URL=https://bitbucket.org/secdev/scapy/downloads/$(PYRIT_SRC)
+
+$(DN_SRC)/$(SCAPY_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(SCAPY_URL)
+	touch $@
+$(SCAPY)-$(SCAPY_VERSION)/setup.py: $(DN_SRC)/$(SCAPY_SRC)
+	unzip $(DN_SRC)/$(SCAPY_SRC)
+	cd $(SCAPY)-$(SCAPY_VERSION)/ \
+        && sed -e 's/env python$/env python2/g' -i \
+            doc/scapy/*.rst \
+            scapy/contrib/*.py \
+            run_scapy \
+            scapy/pipetool.py \
+            scapy/tools/check_asdis.py \
+            scapy/layers/inet6.py setup.py
+	cd $(SCAPY)-$(SCAPY_VERSION)/ \
+        && sed -e 's/env python $/env python2/'   -i scapy/contrib/bgp.py
+	cd $(SCAPY)-$(SCAPY_VERSION)/ \
+        && sed -e 's/exec python$/exec python2/g' -i run_scapy setup.py
+	cd $(SCAPY)-$(SCAPY_VERSION)/ \
+        && sed -e 's/exec python /exec python2 /' -i test/run_tests
+	touch $@
+$(SCAPY)-$(SCAPY_VERSION)/build/scripts-2.7/scapy: $(SCAPY)-$(SCAPY_VERSION)/setup.py $(FL_DEP_SCAPY)
+	cd $(SCAPY)-$(SCAPY_VERSION)/ && $(ENV_COMPILE) python2 setup.py build
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/scapy: $(SCAPY)-$(SCAPY_VERSION)/build/scripts-2.7/scapy
+	cd $(SCAPY)-$(SCAPY_VERSION)/ && $(ENV_COMPILE) python2 setup.py install -O1 --skip-build --prefix=$(PREFIX_DEST)/$(PREFIX_CONF)
+	mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/$(SCAPY)
+	install -Dm 644 doc/scapy/*.rst $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/$(SCAPY)
+
+$(SCAPY)-uninstall: $(SCAPY)-$(SCAPY_VERSION)/build/scripts-2.7/scapy
+
+$(SCAPY)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/scapy
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(SCAPY_SRC)
+FL_UNINSTALL+=$(SCAPY)-uninstall
+
+########################################
+# python2-sqlalchemy
+# Python 2 SQL toolkit and Object Relational Mapper
+PYTHON2SQLALCHEMY=SQLAlchemy
+
+FL_DEP_PYTHON2SQLALCHEMY= \
+	#$(python2)-install \
+	$(python2-psycopg2)-install \
+	$(NULL)
+
+PYTHON2SQLALCHEMY_VERSION=1.0.11
+PYTHON2SQLALCHEMY_SRC=$(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION).tar.gz
+PYTHON2SQLALCHEMY_URL=https://pypi.python.org/packages/source/S/SQLAlchemy/$(PYTHON2SQLALCHEMY_SRC)
+
+$(DN_SRC)/$(PYTHON2SQLALCHEMY_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(PYTHON2SQLALCHEMY_URL)
+	touch $@
+$(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/setup.py: $(DN_SRC)/$(PYTHON2SQLALCHEMY_SRC)
+	tar -xf $(DN_SRC)/$(PYTHON2SQLALCHEMY_SRC)
+	touch $@
+$(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/build/lib.linux-$(shell uname -m)-2.7/sqlalchemy/cutils.so: $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/setup.py $(FL_DEP_PYTHON2SQLALCHEMY)
+	cd $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/ && $(ENV_COMPILE) python2 setup.py build
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/sqlalchemy/cutils.so: $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/build/lib.linux-$(shell uname -m)-2.7/sqlalchemy/cutils.so
+	cd $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/ && $(ENV_COMPILE) python2 setup.py install --root=$(PREFIX_DEST)/$(PREFIX_CONF)
+	cd $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/ && install -D -m644 LICENSE $(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(PYTHON2SQLALCHEMY)/LICENSE
+
+$(PYTHON2SQLALCHEMY)-uninstall: $(PYTHON2SQLALCHEMY)-$(PYTHON2SQLALCHEMY_VERSION)/build/lib.linux-$(shell uname -m)-2.7/sqlalchemy/cutils.so
+
+$(PYTHON2SQLALCHEMY)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/sqlalchemy/cutils.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(PYTHON2SQLALCHEMY_SRC)
+FL_UNINSTALL+=$(PYTHON2SQLALCHEMY)-uninstall
+
+########################################
+# Pyrit support for Nvidia-CUDA
+CPYRITCUDA=cpyrit-cuda
+
+FL_DEP_CPYRITCUDA= \
+	$(ZLIB)-install \
+	$(OPENSSL)-install \
+	$(CUDASDK)-install \
+	#$(pyrit)-install \
+	$(nvidia)-install \
+	$(python2)-install \
+	$(NULL)
+
+CPYRITCUDA_VERSION=0.4.0
+CPYRITCUDA_SRC=$(CPYRITCUDA)-$(CPYRITCUDA_VERSION).tar.gz
+CPYRITCUDA_URL=http://pyrit.googlecode.com/files/$(CPYRITCUDA_SRC)
+
+$(DN_SRC)/$(CPYRITCUDA_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CPYRITCUDA_URL)
+	touch $@
+$(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/setup.py: $(DN_SRC)/$(CPYRITCUDA_SRC)
+	tar -xf $(DN_SRC)/$(CPYRITCUDA_SRC)
+	touch $@
+$(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_cuda.so: $(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/setup.py $(FL_DEP_CPYRITCUDA)
+	cd $(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/ && $(ENV_COMPILE) python2 setup.py build
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/cpyrit/_cpyrit_cuda.so: $(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_cuda.so
+	cd $(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/ && $(ENV_COMPILE) python2 setup.py install --root=$(PREFIX_DEST)/$(PREFIX_CONF)
+
+$(CPYRITCUDA)-uninstall: $(CPYRITCUDA)-$(CPYRITCUDA_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_cuda.so
+
+$(CPYRITCUDA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/cpyrit/_cpyrit_cuda.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CPYRITCUDA_SRC)
+FL_UNINSTALL+=$(CPYRITCUDA)-uninstall
+
+########################################
+# OpenCL backend for accelerated attack against WPA-PSK authentication
+CPYRITOPENCL=cpyrit-opencl
+
+FL_DEP_CPYRITOPENCL= \
+	$(ZLIB)-install \
+	$(OPENSSL)-install \
+	$(LIBCL)-install \
+	$(OPENCLHEADER)-install \
+	#$(python2)-install \
+	$(opencl-catalyst)-install \
+	$(pyrit)-install \
+	$(NULL)
+
+CPYRITOPENCL_VERSION=0.4.0
+CPYRITOPENCL_SRC=$(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION).tar.gz
+CPYRITOPENCL_URL=http://pyrit.googlecode.com/files/$(CPYRITOPENCL_SRC)
+
+$(DN_SRC)/$(CPYRITOPENCL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CPYRITOPENCL_URL)
+	touch $@
+$(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/setup.py: $(DN_SRC)/$(CPYRITOPENCL_SRC)
+	tar -xf $(DN_SRC)/$(CPYRITOPENCL_SRC)
+	touch $@
+
+$(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_opencl.so: $(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/setup.py $(FL_DEP_CPYRITOPENCL)
+	cd $(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/ && $(ENV_COMPILE) python2 setup.py build
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/cpyrit/_cpyrit_opencl.so: $(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_opencl.so
+	cd $(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/ && $(ENV_COMPILE) python2 setup.py install --root=$(PREFIX_DEST)/$(PREFIX_CONF)
+
+$(CPYRITOPENCL)-uninstall: $(CPYRITOPENCL)-$(CPYRITOPENCL_VERSION)/build/lib.linux-$(shell uname -m)-2.7/cpyrit/_cpyrit_opencl.so
+
+$(CPYRITOPENCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/python2.7/site-packages/cpyrit/_cpyrit_opencl.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CPYRITOPENCL_SRC)
+FL_UNINSTALL+=$(CPYRITOPENCL)-uninstall
+
+########################################
+PYRIT=pyrit
+
+FL_DEP_PYRIT= \
+	$(ZLIB)-install \
+	$(LIBPCAP)-install \
+	$(OPENSSL)-install \
+	$(PYTHON2SQLALCHEMY)-install \
+	$(PYRIT_GPU_DEPENDS) \
+	#$(python2)-install \
+	$(SCAPY)-install \
+	$(NULL)
+
+PYRIT_VERSION=0.4.0
+PYRIT_SRC=$(PYRIT)-$(PYRIT_VERSION).tar.gz
+PYRIT_URL=http://pyrit.googlecode.com/files/$(PYRIT_SRC)
+
+$(DN_SRC)/$(PYRIT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(PYRIT_URL)
+	touch $@
+$(PYRIT)-$(PYRIT_VERSION)/setup.py: $(DN_SRC)/$(PYRIT_SRC)
+	tar -xf $(DN_SRC)/$(PYRIT_SRC)
+	touch $@
+$(PYRIT)-$(PYRIT_VERSION)/build/scripts-2.7/pyrit: $(PYRIT)-$(PYRIT_VERSION)/setup.py $(FL_DEP_PYRIT)
+	cd $(PYRIT)-$(PYRIT_VERSION)/ && $(ENV_COMPILE) python2 setup.py build
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/pyrit: $(PYRIT)-$(PYRIT_VERSION)/build/scripts-2.7/pyrit
+	cd $(PYRIT)-$(PYRIT_VERSION)/ && $(ENV_COMPILE) python2 setup.py install -O1 --root=$(PREFIX_DEST)/$(PREFIX_CONF)
+
+$(PYRIT)-uninstall: $(PYRIT)-$(PYRIT_VERSION)/build/scripts-2.7/pyrit
+
+$(PYRIT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pyrit
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(PYRIT_SRC)
+FL_UNINSTALL+=$(PYRIT)-uninstall
+
+########################################
 
 get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
 
 aircrack: $(AIRCRACK)-install
 
 hashcat: $(HASHCAT)-install
+
+oclhashcat: $(OCLHASHCAT)-install
 
 pyrit: $(PYRIT)-install
 

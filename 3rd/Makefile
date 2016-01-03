@@ -1,3 +1,4 @@
+#MAKE=make
 
 all: dist-gzip #ffmpeg gnuplot ns2
 #all:
@@ -25,11 +26,12 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
               elif [ "$(USE_GPU)" = "GPU_OPENCL" ]; then \
                 echo -e "\#include <GL/gl.h>\nint main() {return 0;}" > /tmp/a.c ; \
                 cc $(OPENGL_INCLUDES_DETECT) /tmp/a.c; \
-                if [ $? = 0 ]; then \
+                if [ $$? = 0 ]; then \
                   sed -i 's|^DEPENDS_GL=.*$$|DEPENDS_GL=$$(OPENCL)-install|g' Makefile ; \
                 fi ; \
               fi \
-            && $(MAKE) get-sources && $(MAKE) $(4) \
+            && $(MAKE) get-sources \
+            && $(MAKE) $(4) \
             $(NULL)
 
 # $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_LIST_INPUT")
