@@ -1,0 +1,47 @@
+diff --git a/src/base/omx_base_component.c b/src/base/omx_base_component.c
+index 4156c37..f3b5473 100644
+--- a/src/base/omx_base_component.c
++++ b/src/base/omx_base_component.c
+@@ -915,14 +915,6 @@ OSCL_EXPORT_REF OSCL_EXPORT_REF OMX_ERRORTYPE omx_base_component_GetParameter(
+     return OMX_ErrorBadParameter;
+   }
+   switch(nParamIndex) {
+-  case OMX_IndexParameterThreadsID:
+-	    if ((err = checkHeader(ComponentParameterStructure, sizeof(OMX_PARAM_BELLAGIOTHREADS_ID))) != OMX_ErrorNone) {
+-	      break;
+-	    }
+-	  threadID = (OMX_PARAM_BELLAGIOTHREADS_ID *)ComponentParameterStructure;
+-	  threadID->nThreadBufferMngtID = omx_base_component_Private->bellagioThreads->nThreadBufferMngtID;
+-	  threadID->nThreadMessageID = omx_base_component_Private->bellagioThreads->nThreadMessageID;
+-	  break;
+   case OMX_IndexParamAudioInit:
+   case OMX_IndexParamVideoInit:
+   case OMX_IndexParamImageInit:
+@@ -988,6 +980,18 @@ OSCL_EXPORT_REF OSCL_EXPORT_REF OMX_ERRORTYPE omx_base_component_GetParameter(
+       }
+     }
+     break;
++  default:
++  {
++    OMX_INDEXVENDORTYPE type1 = (OMX_INDEXVENDORTYPE) nParamIndex;
++    switch (type1) {
++  case OMX_IndexParameterThreadsID:
++	    if ((err = checkHeader(ComponentParameterStructure, sizeof(OMX_PARAM_BELLAGIOTHREADS_ID))) != OMX_ErrorNone) {
++	      break;
++	    }
++	  threadID = (OMX_PARAM_BELLAGIOTHREADS_ID *)ComponentParameterStructure;
++	  threadID->nThreadBufferMngtID = omx_base_component_Private->bellagioThreads->nThreadBufferMngtID;
++	  threadID->nThreadMessageID = omx_base_component_Private->bellagioThreads->nThreadMessageID;
++	  break;
+   case OMX_IndexVendorCompPropTunnelFlags:
+     pPropTunnelSetup = (OMX_VENDOR_PROP_TUNNELSETUPTYPE*)ComponentParameterStructure;
+ 
+@@ -1010,6 +1014,8 @@ OSCL_EXPORT_REF OSCL_EXPORT_REF OMX_ERRORTYPE omx_base_component_GetParameter(
+   default:
+     err = OMX_ErrorUnsupportedIndex;
+     break;
++    }
++  }
+   }
+   DEBUG(DEB_LEV_FUNCTION_NAME, "Out of %s for component %p\n", __func__, hComponent);
+   return err;

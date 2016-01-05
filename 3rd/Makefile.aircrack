@@ -215,7 +215,7 @@ $(HASHCAT)-$(HASHCAT_VERSION)/Makefile: $(HASHCAT)-$(HASHCAT_VERSION)/README.md 
 	touch $@
 
 $(HASHCAT)-$(HASHCAT_VERSION)/hashcat-cli$(ARCHBITS).bin: $(HASHCAT)-$(HASHCAT_VERSION)/Makefile
-	cd $(HASHCAT)-$(HASHCAT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) posix$(ARCHBITS)
+	cd $(HASHCAT)-$(HASHCAT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG) LDFLAGS="-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/" CFLAGS="-std=gnu99 $(CFLAGS) -Iinclude" posix$(ARCHBITS)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/hashcat-cli$(ARCHBITS).bin: $(HASHCAT)-$(HASHCAT_VERSION)/hashcat-cli$(ARCHBITS).bin
 	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/etc/hatcat/
@@ -347,6 +347,30 @@ FL_DEP_OCLHASHCAT= \
 	$(AMDADLSDK)-install \
 	$(NULL)
 
+USE_GIT_OCLHASHCAT=1
+
+ifeq ($(USE_GIT_OCLHASHCAT),1) # use git instead
+
+OCLHASHCAT_VERSION=git
+OCLHASHCAT_SRC=$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.git
+OCLHASHCAT_URL=https://github.com/hashcat/oclHashcat.git
+
+$(DN_SRC)/$(OCLHASHCAT_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(OCLHASHCAT_SRC)" ]; then \
+        git clone $(OCLHASHCAT_URL) $(DN_SRC)/$(OCLHASHCAT)-$(OCLHASHCAT_VERSION); \
+    fi
+	cd $(DN_SRC)/$(OCLHASHCAT)-$(OCLHASHCAT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md: $(DN_SRC)/$(OCLHASHCAT_SRC)
+	if [ ! -d "$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ $(OCLHASHCAT)-$(OCLHASHCAT_VERSION); \
+    fi
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else
+
 OCLHASHCAT_VERSION=2.01
 OCLHASHCAT_SRC=$(OCLHASHCAT)-$(OCLHASHCAT_VERSION).tar.gz
 OCLHASHCAT_URL=https://github.com/hashcat/oclHashcat/archive/v$(OCLHASHCAT_VERSION).tar.gz
@@ -360,29 +384,27 @@ $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md: $(DN_SRC)/$(OCLHASHCAT_SRC)
 	rm -f $(OCLHASHCAT)-install
 	mv oclHashcat*$(OCLHASHCAT_VERSION) $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)
 	#cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/
-	sed -e 's|^typedef int bool;|//typedef int bool;|' -i $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/include/shared.h
 	touch $@
 
-$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md $(FL_DEP_OCLHASHCAT)
+endif
+
+$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/mypatched: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md $(FL_DEP_OCLHASHCAT)
+	if [ -d $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.svn ]; then cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.hg ];  then cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && hg update -C . ; fi
+	if [ -d $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.git ]; then cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && patch -Np1 -i $(DN_PATCH)/pbs-oclhashcat-all.patch
+	sed -e 's|session_dir = arg_session_dir;|session_dir = arg_session_dir;shared_dir="$(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/";|' -i $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/src/oclHashcat.c
+	touch $@
+$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/mypatched
 	touch $@
 
 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile
-	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -Iinclude" $(MAKE_ARG) oclHashcat$(ARCHBITS).bin
-	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) GCC=gcc make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -I../../include -I../../tools/rules_test/" $(MAKE_ARG) -C tools/rules_optimize TARGET=rules_optimize rules_optimize.bin
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make CFLAGS="-std=gnu99 $(CFLAGS) -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -Iinclude" $(MAKE_ARG) oclHashcat$(ARCHBITS).bin
+	#cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) GCC=gcc make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -I../../include -I../../tools/rules_test/" $(MAKE_ARG) -C tools/rules_optimize TARGET=rules_optimize rules_optimize.bin
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/charsets
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/kernels
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/masks
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/rules
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/oclHashcat/extra
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/charsets/* $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/charsets/
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/kernels/*  $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/kernels/
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/masks/*    $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/masks/
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/rules/*    $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/rules/
-	cp -a  $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat.hcstat $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/docs/*     $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/oclHashcat/
-	cp -ar $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/extra/*    $(PREFIX_DEST)/$(PREFIX_CONF)/share/doc/oclHashcat/extra/
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && cp -ar charsets OpenCL include masks rules hashcat.hcstat docs extra $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
 	install -Dm755 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin    $@
 	touch $@
 
@@ -445,7 +467,7 @@ FL_DEP_SCAPY= \
 
 SCAPY_VERSION=2.3.1
 SCAPY_SRC=$(SCAPY)-$(SCAPY_VERSION).zip
-SCAPY_URL=https://bitbucket.org/secdev/scapy/downloads/$(PYRIT_SRC)
+SCAPY_URL=https://bitbucket.org/secdev/scapy/downloads/$(SCAPY_SRC)
 
 $(DN_SRC)/$(SCAPY_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(SCAPY_URL)

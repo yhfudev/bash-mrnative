@@ -54,7 +54,7 @@ ns2docsis:
 	rm -f ns2-compile/ns-docsis-install
 	$(call compile,$(DN_PWD),$(DN_SRC),ns2,ns2docsis)
 
-dist-gzip: dist-gzip-gnuplot dist-gzip-ns2 dist-gzip-ffmpeg
+dist-gzip: dist-gzip-aircrack dist-gzip-gnuplot dist-gzip-ffmpeg dist-gzip-ns2
 
 dist-gzip-ffmpeg: ffmpeg
 	echo "$<-git-$(shell uname -m)/usr/bin/ffmpeg"        >  fnl-$<.txt
@@ -76,6 +76,11 @@ dist-gzip-aircrack: aircrack
 	echo "$<-git-$(shell uname -m)/usr/bin/airtun-ng"     >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/hashcat"       >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/oclhashcat"    >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/bin/pyrit"         >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/lib/python2.7/"    >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/share/awk/"        >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/share/oclHashcat/" >> fnl-$<.txt
+	echo "$<-git-$(shell uname -m)/usr/etc/hatcat/"       >> fnl-$<.txt
 	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-gnuplot: gnuplot

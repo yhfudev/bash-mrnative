@@ -35,7 +35,7 @@ DN_COMPILE="${DN_TOP}/buildfromsrc"
 compile_source () {
     PARAM_MAKEFILE="$1"
     shift
-    PARAM_TARGET="$1"
+    PARAM_TARGET="$@"
     shift
 
     if [ ! "$(which module)" = "" ]; then
@@ -43,18 +43,31 @@ compile_source () {
     fi
     mkdir -p "${DN_COMPILE}" 1>&2
     cd "${DN_COMPILE}" 1>&2
-    cp "${DN_TOP}/3rd/${PARAM_MAKEFILE}" Makefile 1>&2
-    sed -i "s|^PREFIX=.*$|PREFIX=${DN_TOP}/3rdbin/|g" Makefile 1>&2
-    sed -i "s|^DN_SRC=.*$|DN_SRC=${DN_TOP}/sources/|g" Makefile 1>&2
-    sed -i "s|^DN_PATCH=.*$|DN_PATCH=${DN_TOP}/3rd|g" Makefile 1>&2
+    cp "${DN_EXEC}/${PARAM_MAKEFILE}" Makefile 1>&2
+    sed -i "s|^PREFIX=.*$|PREFIX=${DN_EXEC}/${PREFIX}-bin/|g"  Makefile 1>&2
+    sed -i "s|^DN_SRC=.*$|DN_SRC=${DN_EXEC}/sources/|g" Makefile 1>&2
+    sed -i "s|^DN_PATCH=.*$|DN_PATCH=${DN_EXEC}|g"  Makefile 1>&2
     #sed -i "s|^USE_GPU=.*$|USE_GPU=1|g" Makefile 1>&2
-    cat "${DN_TOP}/3rd/${PARAM_MAKEFILE}" | grep ^include | awk '{print $2; }' | while read a ; do cp "${DN_TOP}/3rd/$a" .; done
+    cat "${DN_EXEC}/${PARAM_MAKEFILE}" | grep ^include | awk '{print $2; }' | while read a ; do cp "${DN_EXEC}/$a" .; done
 
-    mkdir -p sources
+    mkdir -p ${DN_EXEC}/sources/
     make get-sources 1>&2
     make ${PARAM_TARGET} 1>&2
 }
 
-compile_source Makefile.gnuplot all
-compile_source Makefile.ffmpeg all
-compile_source Makefile.ns2 all
+#compile_source Makefile.gnuplot all
+#compile_source Makefile.ffmpeg all
+#compile_source Makefile.ns2 all
+
+# qsub -I -l select=1:ncpus=8:ngpus=2:mem=10gb,walltime=72:00:00
+# qsub -I -l select=1:ncpus=24:ngpus=2:mem=100gb,walltime=72:00:00
+
+if [ ! "$(which module)" = "" ]; then
+    #module purge && module load mpc cmake/2.8.7 gcc/4.4 1>&2 # for PBS's gcc
+    module purge && module load gcc/4.4 cuda-toolkit/7.0.28
+fi
+
+NUM=$(cat /proc/cpuinfo | grep processor | wc -l | awk '{print $0 / 1 + 1;}')
+
+make -j ${NUM} dist-gzip-aircrack
+# make -j ${NUM} dist-gzip

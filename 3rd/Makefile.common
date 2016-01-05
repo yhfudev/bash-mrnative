@@ -40,12 +40,15 @@ CPPFLAGS=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/
 LDFLAGS=-L$(PREFIX_DEST)/$(PREFIX_CONF)/lib/
 LD_LIBRARY_PATH=$(CUDA_LDLIB_PATH):$(PREFIX_DEST)/$(PREFIX_CONF)/lib
 
+ARCHBITS=$(shell getconf LONG_BIT)
+
 ENV_COMPILE= PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH) \
 		PKG_CONFIG_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig:$(PKG_CONFIG_PATH) \
 		LD_LIBRARY_PATH=$(LD_LIBRARY_PATH) \
 		CFLAGS="$(CFLAGS)" \
 		CPPFLAGS="$(CPPFLAGS)" \
 		LDFLAGS="$(LDFLAGS)" \
+		ABI=$(ARCHBITS) \
 		$(NULL)
 
 ENV_COMPILE1=export PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/bin:$(PATH); \
@@ -62,8 +65,6 @@ CMAKE_ARCH_FLAGS = -DENABLE_SSE=ON -DENABLE_SSE2=ON -DENABLE_SSSE3=OFF
 else
 CMAKE_ARCH_FLAGS = -DENABLE_SSE=OFF -DENABLE_SSE2=OFF -DENABLE_SSSE3=OFF -DENABLE_PRECOMPILED_HEADERS=OFF
 endif
-
-ARCHBITS=$(shell getconf LONG_BIT)
 
 ######################################################################
 #CURL=curl -s -L -O
@@ -2132,7 +2133,7 @@ $(READLINE)-$(READLINE_VERSION)/configure.ac: $(DN_SRC)/$(READLINE_SRC)
 $(READLINE)-$(READLINE_VERSION)/mypatched: $(DN_PATCH)/pbs-readline-pkgconfig.patch $(READLINE)-$(READLINE_VERSION)/configure.ac
 	# create readline.pc
 	cd $(READLINE)-$(READLINE_VERSION)/ \
-        && patch -Np1 < $(DN_PATCH)/pbs-readline-pkgconfig.patch \
+        && patch -Np1 -i $(DN_PATCH)/pbs-readline-pkgconfig.patch \
         && sed -i 's/-L$${libdir} -lreadline.*$$/-L$${libdir} -lreadline -lncursesw/' $(READLINE).pc.in
 	# ncurses
 	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|SHLIB_LIBS=.*$$|SHLIB_LIBS=-lncursesw|'    -i support/shobj-conf
@@ -4570,23 +4571,44 @@ OPENCLHEADER_VERSION=2.1
 OPENCLHEADER_SRC=$(OPENCLHEADER)-$(OPENCLHEADER_VERSION).tar.gz
 OPENCLHEADER_URL=http://www.khronos.org/registry/cl/api/$(OPENCLHEADER_VERSION)/
 
-$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/: $(DN_SRC)/created
-	mkdir -p $@
-	touch $@
-
-$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/
-	$(WGET) $(OPENCLHEADER_URL)/opencl.h
-	$(WGET) $(OPENCLHEADER_URL)/cl_platform.h
-	$(WGET) $(OPENCLHEADER_URL)/cl.h
-	$(WGET) $(OPENCLHEADER_URL)/cl_ext.h
-	$(WGET) $(OPENCLHEADER_URL)/cl_egl.h
-	$(WGET) $(OPENCLHEADER_URL)/cl_gl.h
-	$(WGET) $(OPENCLHEADER_URL)/cl_gl_ext.h
-	$(WGET) $(OPENCLHEADER_URL)/cl2.hpp
-	$(WGET) $(OPENCLHEADER_URL)/cl.hpp
-	touch $@
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_platform.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl_platform.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_ext.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl_ext.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_egl.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl_egl.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_gl.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl_gl.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_gl_ext.h: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl_gl_ext.h
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl2.hpp: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl2.hpp
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl.hpp: $(DN_SRC)/created
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/cl.hpp
+$(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/created \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_platform.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_ext.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_egl.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_gl.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl_gl_ext.h \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl2.hpp \
+        $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/cl.hpp
+	mkdir -p $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
+	$(WGET) -O $@ $(OPENCLHEADER_URL)/opencl.h
 
 $(DN_SRC)/$(OPENCLHEADER_SRC): $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
+	touch $(DN_SRC)/$(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/*
 	cd $(DN_SRC) && tar -cvf $(OPENCLHEADER_SRC) $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)
 	touch $@
 $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/$(OPENCLHEADER_SRC)
@@ -4596,8 +4618,8 @@ $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h: $(DN_SRC)/$(OPENCLHEADER_SRC)
 $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/opencl.h: $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
 	install -dm755 $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/
 	cd $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/ \
-        && for h in $(ls -1 *.h *.hpp); do \
-            install -m 644 ${h} $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/ ; \
+        && for h in $$(ls -1 *.h *.hpp); do \
+            install -m 644 $$h $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/ ; \
         done
 
 $(OPENCLHEADER)-uninstall: $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
