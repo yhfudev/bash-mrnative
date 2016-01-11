@@ -433,6 +433,11 @@ fi
         -e "s|^set[ \t[:space:]]\+MAXCHANNELBW[ \t[:space:]]\+.*$|set MAXCHANNELBW [expr ${BW_CHANNEL} * 6]|g" \
         "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/${FN_TCL}"
 
+    # change the PF alpha
+    sed -i \
+        -e "s|^set[ \t[:space:]]\+PF_ALPHA[ \t[:space:]]\+.*$|set PF_ALPHA 0.07|g" \
+        "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/${FN_TCL}"
+
     # set profile for channels
     mr_trace "setup profile ..."
     sed -i \
@@ -506,12 +511,41 @@ libapp_prepare_execution_config () {
         for idx_type9 in $LIST_TYPES ; do
             for idx_sche9 in $LIST_SCHEDULERS ; do
                 mr_trace "prefix='${PREFIX}', type='$idx_type9', sche='$idx_sche9', num='$idx_num9', exec='${DN_EXEC}', comm='${DN_COMM}', tmp='${DN_TMP_CREATECONF}'"
-                case "${PARAM_COMMAND}" in
-                sim)
-                    prepare_one_tcl_scripts "${PREFIX}" "$idx_type9" "$idx_sche9" "$idx_num9" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
-                    ;;
-                esac
-                echo -e "${PARAM_COMMAND}\t\"${PARAM_FN_CONFIG_PROJ}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
+
+                FLG_USE_PF=0
+                if [ "${idx_sche9}" = "PF" ]; then
+                    if [ ! "${PF_ALPHAS}" = "" ]; then
+                        FLG_USE_PF=1
+                    fi
+                fi
+
+                if [ "${FLG_USE_PF}" = "1" ]; then
+                    CNT=0
+                    for VAL in $PF_ALPHAS ; do
+                        CNT=$(( $CNT + 1 ))
+                        case "${PARAM_COMMAND}" in
+                        sim)
+                            prepare_one_tcl_scripts "${PREFIX}" "${idx_type9}" "${idx_sche9}" "${idx_num9}" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+                            DN_TEST0=$(simulation_directory "${PREFIX}" "${idx_type9}" "${idx_sche9}"       "${idx_num9}")
+                            DN_TEST1=$(simulation_directory "${PREFIX}" "${idx_type9}" "${idx_sche9}${CNT}" "${idx_num9}")
+                            sed -i \
+                                -e "s|^set[ \t[:space:]]\+PF_ALPHA[ \t[:space:]]\+.*$|set PF_ALPHA $VAL|g" \
+                                "${DN_TMP_CREATECONF}/${DN_TEST0}/${FN_TCL}"
+                            mv "${DN_TMP_CREATECONF}/${DN_TEST0}/" "${DN_TMP_CREATECONF}/${DN_TEST1}/"
+                            ;;
+                        esac
+                        mr_trace "create PF cmd line: ${PARAM_COMMAND}\t\"${PARAM_FN_CONFIG_PROJ}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}${CNT}\"\t${idx_num9}"
+                        echo -e "${PARAM_COMMAND}\t\"${PARAM_FN_CONFIG_PROJ}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}${CNT}\"\t${idx_num9}"
+                    done
+                else
+                    case "${PARAM_COMMAND}" in
+                    sim)
+                        prepare_one_tcl_scripts "${PREFIX}" "${idx_type9}" "${idx_sche9}" "${idx_num9}" "${DN_EXEC}" "${DN_COMM}" "${DN_TMP_CREATECONF}"
+                        ;;
+                    esac
+                    echo -e "${PARAM_COMMAND}\t\"${PARAM_FN_CONFIG_PROJ}\"\t\"${PREFIX}\"\t\"${idx_type9}\"\tunknown\t\"${idx_sche9}\"\t${idx_num9}"
+                fi
+
             done
         done
     done

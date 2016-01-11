@@ -83,6 +83,10 @@ create_cable_topology_1G $NUM_FTPs $NUM_DASHs $NUM_WEBs $NUM_CM 0.5	; # delay = 
 #
 source profile.tcl
 
+set PF_ALPHA 0.07
+#set PF alpha
+$lan set-dssch-pf-alpha $n0 $PF_ALPHA
+
 # save the node information
 set foe [open "nodemac.out" "w"]
 puts $foe "[$lan mac-address $n0]	cmts"
