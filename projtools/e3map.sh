@@ -97,9 +97,9 @@ worker_flow_throughput () {
     PARAM_NODE="$1"
     shift
 
-    #mr_trace "worker_flow_throughput(): " plot_ns2_type tpflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    #mr_trace "worker_flow_throughput(): " plot_ns2_type tpflow "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    $MYEXEC plot_ns2_type bitflow "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    $MYEXEC plot_ns2_type bitflow "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-bitflow\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -124,7 +124,7 @@ worker_stats_packet () {
     shift
 
     TM_START=$(date +%s.%N)
-    $MYEXEC plot_ns2_type pktstat "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    $MYEXEC plot_ns2_type pktstat "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pktsche\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 
@@ -148,9 +148,9 @@ worker_trans_packet () {
     PARAM_NODE="$1"
     shift
 
-    #mr_trace plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    #mr_trace plot_ns2_type pkttrans "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_START=$(date +%s.%N)
-    $MYEXEC plot_ns2_type pkttrans "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
+    $MYEXEC plot_ns2_type pkttrans "${PARAM_CONFIG_FILE}" "${PARAM_PREFIX}" "${PARAM_TYPE}" "${PARAM_FLOW_TYPE}" "${PARAM_SCHEDULE}" "${PARAM_NODE}"
     TM_END=$(date +%s.%N)
     echo -e "time-pkttran\t${PARAM_CONFIG_FILE}\t${PARAM_PREFIX}\t${PARAM_TYPE}\t${PARAM_FLOW_TYPE}\t${PARAM_SCHEDULE}\t${PARAM_NODE}\t${TM_START}\t${TM_END}"
 

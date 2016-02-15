@@ -602,8 +602,9 @@ PRIuSZ="%019d"
 # use DANGER_EXEC=echo to skip all of such executions.
 DANGER_EXEC=echo
 
+FN_LOG0=mrtrace.log
 mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
+    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" | tee -a ${FN_LOG0} 1>&2
 }
 
 mr_exec_do () {

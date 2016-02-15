@@ -40,7 +40,6 @@ BW_CHANNEL=282800000
 # use the lowest bitrate QPSK(4K FFT async) as the base bitrate (24.5MHz channel)
 #BW_CHANNEL=23600000
 
-
 # the profile set
 #NS2_PROFILE="profiles_4k_async_192m"
 #NS2_PROFILE="profiles_4k_sync_192m"
