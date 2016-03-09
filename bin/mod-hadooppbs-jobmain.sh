@@ -7,24 +7,24 @@
 #PBS -m ea
 #####################################################################
 my_getpath () {
-  PARAM_DN="$1"
-  shift
-  #readlink -f
-  DN="${PARAM_DN}"
-  FN=
-  if [ ! -d "${DN}" ]; then
-    FN=$(basename "${DN}")
-    DN=$(dirname "${DN}")
-  fi
-  DNORIG=$(pwd)
-  cd "${DN}" > /dev/null 2>&1
-  DN=$(pwd)
-  cd "${DNORIG}"
-  if [ "${FN}" = "" ]; then
-    echo "${DN}"
-  else
-    echo "${DN}/${FN}"
-  fi
+    local PARAM_DN="$1"
+    shift
+    #readlink -f
+    local DN="${PARAM_DN}"
+    local FN=
+    if [ ! -d "${DN}" ]; then
+        FN=$(basename "${DN}")
+        DN=$(dirname "${DN}")
+    fi
+    local DNORIG=$(pwd)
+    cd "${DN}" > /dev/null 2>&1
+    DN=$(pwd)
+    cd "${DNORIG}"
+    if [ "${FN}" = "" ]; then
+        echo "${DN}"
+    else
+        echo "${DN}/${FN}"
+    fi
 }
 #####################################################################
 mr_trace () {
@@ -46,7 +46,8 @@ cd $PBS_O_WORKDIR
 
 DN_EXEC="$(my_getpath "$(pwd)")"
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath ".")"
 if [ ! -f "${FN_CONF_SYS}" ]; then
     FN_CONF_SYS="${DN_EXEC}/mrsystem-working.conf"
 fi
@@ -68,7 +69,7 @@ if [ ! -d "${PROJ_HOME}" ]; then
     mr_trace "Error: not exit dir $PROJ_HOME"
     exit 1
 fi
-DN_EXEC1="${PROJ_HOME}/projtools"
+DN_BIN="${PROJ_HOME}/bin"
 
 mr_trace "02 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 
@@ -86,10 +87,10 @@ if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
 mr_trace "03 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 # Note: ensure that the variables are set correctly in bin/mod-setenv-hadoop.sh
-if [ -f "${DN_EXEC1}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_EXEC1}/mod-setenv-hadoop.sh
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
 else
-    mr_trace "Error: not found file ${DN_EXEC1}/mod-setenv-hadoop.sh"
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
     exit 1
 fi
 mr_trace "04 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
@@ -120,7 +121,13 @@ mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} jar ${HADOOP_HOME}/hadoop-0.20.2-examples.jar wordcount Data/gutenberg Outputs
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 mr_trace "05 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
-. ${DN_EXEC1}/mod-share-worker.sh
+
+if [ -f "${DN_BIN}/mod-share-worker.sh" ]; then
+. ${DN_BIN}/mod-share-worker.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-share-worker.sh"
+    exit 1
+fi
 mr_trace "06 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 
 echo

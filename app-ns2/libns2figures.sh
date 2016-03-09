@@ -53,7 +53,6 @@ get_num_range_for_profiles () {
 }
 
 
-
 # generate the stat line for a subdir
 # the format of output file PARAM_FN_OUT_TPSTATS
 # num, scheduler, cnt, min, max, sum, mean, stddev, mmr, jfi, cfi

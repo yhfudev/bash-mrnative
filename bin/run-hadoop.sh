@@ -7,24 +7,24 @@
 # License: GPL v3.0 or later
 #####################################################################
 my_getpath () {
-  PARAM_DN="$1"
-  shift
-  #readlink -f
-  DN="${PARAM_DN}"
-  FN=
-  if [ ! -d "${DN}" ]; then
-    FN=$(basename "${DN}")
-    DN=$(dirname "${DN}")
-  fi
-  DNORIG=$(pwd)
-  cd "${DN}" > /dev/null 2>&1
-  DN=$(pwd)
-  cd "${DNORIG}"
-  if [ "${FN}" = "" ]; then
-    echo "${DN}"
-  else
-    echo "${DN}/${FN}"
-  fi
+    local PARAM_DN="$1"
+    shift
+    #readlink -f
+    local DN="${PARAM_DN}"
+    local FN=
+    if [ ! -d "${DN}" ]; then
+        FN=$(basename "${DN}")
+        DN=$(dirname "${DN}")
+    fi
+    local DNORIG=$(pwd)
+    cd "${DN}" > /dev/null 2>&1
+    DN=$(pwd)
+    cd "${DNORIG}"
+    if [ "${FN}" = "" ]; then
+        echo "${DN}"
+    else
+        echo "${DN}/${FN}"
+    fi
 }
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
@@ -34,7 +34,8 @@ else
     export DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath ".")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 
 #####################################################################
@@ -43,10 +44,10 @@ source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
 
 #####################################################################
-if [ -f "${DN_EXEC}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_EXEC}/mod-setenv-hadoop.sh
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
 else
-    mr_trace "Error: not found file ${DN_EXEC}/mod-setenv-hadoop.sh"
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
     exit 1
 fi
 
@@ -165,7 +166,14 @@ mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} jar ${HADOOP_HOME}/hadoop-0.20.2-examples.jar wordcount Data/gutenberg Outputs
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 
-. ${DN_EXEC}/mod-share-worker.sh
+if [ -f "${DN_BIN}/mod-share-worker.sh" ]; then
+. ${DN_BIN}/mod-share-worker.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-share-worker.sh"
+    exit 1
+fi
+
+
 echo
 mapred_main
 

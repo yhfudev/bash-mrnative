@@ -488,6 +488,72 @@ cd projtools
 \end{frame}
 
 
+\section{Configuration}
+
+
+\begin{frame}[fragile]
+  \frametitle<presentation>{Three type of config files}
+
+    \begin{itemize}
+      \item \texttt{mrsystem.conf} -- the configs for the software, such as the number of nodes, the scratch directory etc;
+      \item \texttt{input/} or \texttt{input.conf} -- the configs for input data;
+      \item \texttt{output/} or \texttt{output.conf} -- the configs for output data;
+    \end{itemize}
+
+\end{frame}
+
+
+
+\section{Compile 3rd party tools}
+
+
+\begin{frame}[fragile]
+  \frametitle<presentation>{Compile 3rd party tools}
+
+    \begin{itemize}
+      \item using the compile scripts in folder \texttt{3rd};
+      \item current version supports compiling \texttt{ns2, ffmpeg, opencv}, and gnu tools such as \texttt{gawk, gnuplot} etc.;
+      \item the compiled binaries are packed in a \texttt{tar.gz} file;
+      \item the \texttt{tar.gz} package contains the required libraries and support files, strip other redunant binaries or files generated during compiling;
+    \end{itemize}
+
+\end{frame}
+
+
+
+
+\begin{frame}[fragile]
+  \frametitle<presentation>{Compile NS-2}
+
+    \begin{itemize}
+      \item in a Linux machine, type
+\begin{lstlisting}[language=bash]
+cd 3rd
+make dist-gzip-ns2
+\end{lstlisting}
+      \item compile \texttt{ns-2} and required tools \texttt{gawk, gnuplot} etc.
+      \item the file \texttt{ns-*.tar.gz} contains the binaries;
+    \end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle<presentation>{Compile ffmpeg}
+
+    \begin{itemize}
+      \item in a Linux machine, type
+\begin{lstlisting}[language=bash]
+cd 3rd
+make dist-gzip-ffmpeg
+\end{lstlisting}
+      \item compile \texttt{ffmpeg, gpac, mediametrics, opencv} with or without GPU supports.
+      \item the file \texttt{ffmpeg-*.tar.gz} contains the binaries;
+    \end{itemize}
+
+\end{frame}
+
+
 
 \section{Demo Project -- NS2 network simulator}
 
@@ -495,7 +561,8 @@ cd projtools
     \frametitle{NS2 network simulator introduction}
 
     \begin{itemize}
-      \item supports single host simulating
+      \item NS-2 supports only single host simulating
+      \item it's time-consuming simulating
     \end{itemize}
 }
 

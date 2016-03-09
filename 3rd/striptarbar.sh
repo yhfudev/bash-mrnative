@@ -5,7 +5,7 @@ MYCNT=0
 backup_midfile() {
     local PARAM_FN=$1
     shift
-    PREFIX1=$(echo | awk -v MYROUND=$MYROUND -v MYCNT=$MYCNT '{printf("%03d-%03d", MYROUND, MYCNT);}' )
+    PREFIX1=$(echo | awk -v MYROUND=$MYROUND -v MYCNT=$MYCNT '{printf("tmp-bak-%03d-%03d", MYROUND, MYCNT);}' )
     echo "-- backup ${PARAM_FN} TO ${PREFIX1}-${PARAM_FN}"
     cp "${PARAM_FN}" "${PREFIX1}-${PARAM_FN}"
     MYCNT=$(( $MYCNT + 1 ))

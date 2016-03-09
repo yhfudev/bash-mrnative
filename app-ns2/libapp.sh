@@ -52,7 +52,7 @@ extrace_binary() {
 
 # MUST implemented
 # to setup some environment variable for application
-# and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+# and extract the application binaries and data if the config HDFF_PATHTO_TAR_APP exist
 libapp_prepare_app_binary() {
     if [ "${HDFF_PATHTO_TAR_APP}" = "" ]; then
         # detect the application execuable
@@ -670,7 +670,7 @@ run_one_ns2 () {
             mr_trace "Error: copy temp dir: ${DN_WORKING} to $PARAM_DN_TEST"
             return
         fi
-        #rm_f_dir "${DN_WORKING}"
+        rm_f_dir "${DN_WORKING}"
     fi
 }
 

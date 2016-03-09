@@ -11,24 +11,24 @@
 # License: GPL v3.0 or later
 #####################################################################
 my_getpath () {
-  PARAM_DN="$1"
-  shift
-  #readlink -f
-  DN="${PARAM_DN}"
-  FN=
-  if [ ! -d "${DN}" ]; then
-    FN=$(basename "${DN}")
-    DN=$(dirname "${DN}")
-  fi
-  DNORIG=$(pwd)
-  cd "${DN}" > /dev/null 2>&1
-  DN=$(pwd)
-  cd "${DNORIG}"
-  if [ "${FN}" = "" ]; then
-    echo "${DN}"
-  else
-    echo "${DN}/${FN}"
-  fi
+    local PARAM_DN="$1"
+    shift
+    #readlink -f
+    local DN="${PARAM_DN}"
+    local FN=
+    if [ ! -d "${DN}" ]; then
+        FN=$(basename "${DN}")
+        DN=$(dirname "${DN}")
+    fi
+    local DNORIG=$(pwd)
+    cd "${DN}" > /dev/null 2>&1
+    DN=$(pwd)
+    cd "${DNORIG}"
+    if [ "${FN}" = "" ]; then
+        echo "${DN}"
+    else
+        echo "${DN}/${FN}"
+    fi
 }
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
@@ -83,9 +83,9 @@ convert_avail_settings () {
 # ARG 1: the # of task
 # ARG 2: the required memory for each task, GB
 get_optimized_settings() {
-    PARAM_MAXCORES=$1
+    local PARAM_MAXCORES=$1
     shift
-    PARAM_MEM_PER_CORE=$1
+    local PARAM_MEM_PER_CORE=$1
     shift
 
     if [ "${PARAM_MAXCORES}" = "" ] ; then
@@ -130,7 +130,7 @@ EOF
 
 # get # of simulation tasks from the config files in folder specified by argument
 get_sim_tasks () {
-    PARAM_DN_CONF=$1
+    local PARAM_DN_CONF=$1
     shift
 
     if [ ! -d "${PARAM_DN_CONF}" ]; then
@@ -339,7 +339,13 @@ if (( ${MR_JOB_MEM} * 6 > ${MEM} )) ; then
     MR_JOB_MEM=$(( ${MEM} / 6 ))
 fi
 
-. ./mod-setenv-hadoop.sh
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
+    exit 1
+fi
+
 if [ -d "${HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
     mr_trace "set hadoop 1.x memory: cores=$CORES, mem=$MEM; mem/cores=$((${MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
     DN_ORIG7=$(pwd)
@@ -386,7 +392,15 @@ if [ ! -x "$(which qsub)" ]; then
     mr_trace "Error: not found 'qsub'!"
     exit 1
 fi
-$MYEXEC qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "mod-hadooppbs-jobmain.sh"
+
+if [ -f "${DN_BIN}/mod-hadooppbs-jobmain.sh" ]; then
+    $MYEXEC qsub -N ns2ds31 -l $REQ ${ARG_OTHER} "${DN_BIN}/mod-hadooppbs-jobmain.sh"
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-hadooppbs-jobmain.sh"
+    exit 1
+fi
+
+
 
 mr_trace "waitting for queueing ..."
 sleep 3

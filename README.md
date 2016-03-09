@@ -1,41 +1,43 @@
 mrnativens2
 ===========
 
-
 This folder contains the scripts to run various NS2 DOCSIS 3.1 tests.
 
 
 Directory Structure
 -------------------
 
-├── lib/
-│   ├── libconfig.sh        # bash lib for read config file
-│   ├── libplot.sh          # bash lib for plotting
-│   ├── libns2figures.sh    # bash lib for plotting ns2 figures
-│   ├── libbash.sh          # bash lib misc functions
-│   └── libshrt.sh          # bash lib for multi-process support
-├── projconfigs/
-│   ├── config-baseh2l.sh   # config file for test case: 1.9 Gbps channel, with 2 profiles, change from high profile to low profile
-│   ├── config-basel2h.sh   # test case: 1.9 Gbps channel, with 2 profiles, change from low profile to high profile
-│   ├── config-verifyd30.sh # test case: Docsis 3.0 42.88 Mbps channel, various flows
-│   └── config-verifyd31.sh # test case: Docsis 3.1 1.9 Gbps channel, various flows
-├── projtools/
-│   ├── checkall.sh         # run from current dir, to check if all test cases are finished
-│   ├── cleanall.sh         # run from current dir, to clean all of the temperary files
-│   ├── plotall.sh          # run from current dir, to plot all of figures of all test cases
-│   ├── plotfigns2.sh       # called by e2red.sh, to plot all kinds of figures
-│   ├── runall.sh           # run from current dir, to check and run all of the un-finshed test cases
+├── bin/
 │   ├── run-sh1.sh          # signle host version, to check and run all of the un-finshed test cases
 │   ├── run-hadoop.sh       # hadoop version, to check and run all of the un-finshed test cases
 │   ├── run-hadooppbs.sh    # hadoop for HPC version, to check and run all of the un-finshed test cases
 │   ├── mod-hadooppbs-jobmain.sh # main entry for HPC Hadoop
 │   ├── mod-hadooppbs-setenv.sh  # environment variables for HPC Hadoop
 │   ├── mod-share-worker.sh # Hadoop main flow for both run-hadoop.sh and run-hadooppbs.sh
-│   ├── e1map.sh            # map-reduce function, map() for stage 1
-│   ├── e2map.sh            # map-reduce function, map() for stage 2
-│   ├── e2red.sh            # map-reduce function, reduce() for stage 2
+│   └── ...
+├── lib/
+│   ├── libconfig.sh        # bash lib for read config file
+│   ├── libplot.sh          # bash lib for plotting
+│   ├── libns2figures.sh    # bash lib for plotting ns2 figures
+│   ├── libbash.sh          # bash lib misc functions
+│   └── libshrt.sh          # bash lib for multi-process support
+├── app-ns2/                # the NS-2 simulation application directory
+│   ├── input/              # input/ directory contains the config files for the NS2 simulations.
+│   ├── input-examples/     # some example files for input/ directory
+│   │   ├── config-baseh2l.sh   # config file for test case: 1.9 Gbps channel, with 2 profiles, change from high profile to low profile
+│   │   ├── config-basel2h.sh   # test case: 1.9 Gbps channel, with 2 profiles, change from low profile to high profile
+│   │   ├── config-verifyd30.sh # test case: Docsis 3.0 42.88 Mbps channel, various flows
+│   │   └── config-verifyd31.sh # test case: Docsis 3.1 1.9 Gbps channel, various flows
 │   ├── libapp.sh           # help functions for NS2
+│   ├── e1map.sh            # map-reduce function, map() for stage 1, reads the config files from input/ folder and generates the input data stream for stage 2 map()
+│   ├── e2map.sh            # map-reduce function, map() for stage 2, run the simulations
+│   ├── e2red.sh            # map-reduce function, reduce() for stage 2, plot figures
 │   ├── main.tcl            # a template file for the TCL entry function of NS2
+│   ├── checkall.sh         # run from current dir, to check if all test cases are finished
+│   ├── cleanall.sh         # run from current dir, to clean all of the temperary files
+│   ├── plotall.sh          # run from current dir, to plot all of figures of all test cases
+│   ├── plotfigns2.sh       # called by e2red.sh, to plot all kinds of figures
+│   ├── runall.sh           # run from current dir, to check and run all of the un-finshed test cases
 │   ├── run-conf.tcl        # TCL config variables
 │   ├── common/             # This folder contains all of the scripts and data files to be used for the test, which will be copied to the working directory, while some of the files may also be modified for a specified test.
 │   └── ...
