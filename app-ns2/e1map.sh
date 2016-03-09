@@ -10,24 +10,24 @@
 # License: GPL v3.0 or later
 #####################################################################
 my_getpath () {
-  PARAM_DN="$1"
-  shift
-  #readlink -f
-  DN="${PARAM_DN}"
-  FN=
-  if [ ! -d "${DN}" ]; then
-    FN=$(basename "${DN}")
-    DN=$(dirname "${DN}")
-  fi
-  DNORIG=$(pwd)
-  cd "${DN}" > /dev/null 2>&1
-  DN=$(pwd)
-  cd "${DNORIG}"
-  if [ "${FN}" = "" ]; then
-    echo "${DN}"
-  else
-    echo "${DN}/${FN}"
-  fi
+    local PARAM_DN="$1"
+    shift
+    #readlink -f
+    local DN="${PARAM_DN}"
+    local FN=
+    if [ ! -d "${DN}" ]; then
+        FN=$(basename "${DN}")
+        DN=$(dirname "${DN}")
+    fi
+    local DNORIG=$(pwd)
+    cd "${DN}" > /dev/null 2>&1
+    DN=$(pwd)
+    cd "${DNORIG}"
+    if [ "${FN}" = "" ]; then
+        echo "${DN}"
+    else
+        echo "${DN}/${FN}"
+    fi
 }
 DN_EXEC=$(dirname $(my_getpath "$0") )
 if [ ! "${DN_EXEC}" = "" ]; then
@@ -36,7 +36,8 @@ else
     DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
+DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath ".")"
 #####################################################################
 if [ -f "${DN_EXEC}/liball.sh" ]; then
 . ${DN_EXEC}/liball.sh
@@ -92,9 +93,9 @@ mr_trace "e1map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 #  use mp_get_session_id to get the session id later
 mp_new_session
 
-# extract the mrnative, include the files in projtool/common which are used in setting ns2 TCL scripts
+# extract the mrnative, include the files in app-ns2/common which are used in setting ns2 TCL scripts
 libapp_prepare_mrnative_binary
-DN_EXEC="${DN_TOP}/projtools/"
+#DN_EXEC="${DN_TOP}/projtools/"
 DN_COMM="${DN_EXEC}/common/"
 
 #####################################################################
