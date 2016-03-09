@@ -89,6 +89,6 @@ noinst_HEADERS= \
     $(top_srcdir)/app-ns2/input-examples/config-proj-basel2h.sh \
     $(top_srcdir)/app-ns2/input-examples/config-proj-verifyd30.sh \
     $(top_srcdir)/app-ns2/input-examples/config-proj-verifyd31.sh \
-    $(top_srcdir)/mytest/* \
+    $(top_srcdir)/app-ns2/input/* \
     $(DOC_FILES) \
     $(NULL)
