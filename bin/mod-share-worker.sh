@@ -106,7 +106,7 @@ mr_trace "DN_TOP=${DN_TOP}; DN_EXEC=${DN_EXEC}; PROGNAME=${PROGNAME}; "
 mr_trace "PROJ_HOME=${PROJ_HOME}"
 
 #####################################################################
-# read the config files started with prefix "config-*" in folder "${DN_TOP}/mytest/"
+# read the config files started with prefix "config-*" in folder "${DN_EXEC}/input/"
 mapred_main () {
 
     # LIST_MAPREDUCE_WORK should be defined in libapp.sh

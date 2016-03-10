@@ -128,7 +128,7 @@ mapred_main_sh1 () {
     # genrate input file:
     $MYEXEC mkdir -p ${HDFS_DN_OUTPUT_PREFIX}/0/
     $MYEXEC rm -f ${HDFS_DN_OUTPUT_PREFIX}/0/*.txt
-    find_file ${DN_TOP}/mytest/ -name "config-*" | while read a; do \
+    find_file ${DN_EXEC}/input/ -name "config-*" | while read a; do \
         echo -e "config\t\"$(my_getpath ${a})\"" | save_file ${HDFS_DN_OUTPUT_PREFIX}/0/redout.txt; \
         copy_file ${a} ${HDFS_DN_OUTPUT_PREFIX}/ ; \
     done

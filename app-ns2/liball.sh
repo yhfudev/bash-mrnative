@@ -8,19 +8,24 @@
 #
 #####################################################################
 my_getpath () {
-  PARAM_DN="$1"
-  shift
-  #readlink -f
-  DN="${PARAM_DN}"
-  FN=
-  if [ ! -d "${DN}" ]; then
-    FN=$(basename "${DN}")
-    DN=$(dirname "${DN}")
-  fi
-  cd "${DN}" > /dev/null 2>&1
-  DN=$(pwd)
-  cd - > /dev/null 2>&1
-  echo "${DN}/${FN}"
+    local PARAM_DN="$1"
+    shift
+    #readlink -f
+    local DN="${PARAM_DN}"
+    local FN=
+    if [ ! -d "${DN}" ]; then
+        FN=$(basename "${DN}")
+        DN=$(dirname "${DN}")
+    fi
+    local DNORIG=$(pwd)
+    cd "${DN}" > /dev/null 2>&1
+    DN=$(pwd)
+    cd "${DNORIG}"
+    if [ "${FN}" = "" ]; then
+        echo "${DN}"
+    else
+        echo "${DN}/${FN}"
+    fi
 }
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
@@ -30,8 +35,8 @@ else
     DN_EXEC="${DN_EXEC}/"
 fi
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
-DN_EXEC="$(my_getpath "${DN_TOP}/projtools/")"
-
+DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
+DN_EXEC="$(my_getpath ".")"
 #echo "[DBG] DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}" 1>&2
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then

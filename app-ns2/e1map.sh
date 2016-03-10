@@ -95,7 +95,6 @@ mp_new_session
 
 # extract the mrnative, include the files in app-ns2/common which are used in setting ns2 TCL scripts
 libapp_prepare_mrnative_binary
-#DN_EXEC="${DN_TOP}/projtools/"
 DN_COMM="${DN_EXEC}/common/"
 
 #####################################################################

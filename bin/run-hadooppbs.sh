@@ -150,7 +150,7 @@ get_sim_tasks () {
 }
 
 #get the # of needed nodes from config-xxx.sh file
-NEEDED_CORES=$(get_sim_tasks ${DN_TOP}/mytest)
+NEEDED_CORES=$(get_sim_tasks ${DN_EXEC}/input)
 NEEDED_MEM_PER_CORE=1
 
 mr_trace "needed cores=$NEEDED_CORES"

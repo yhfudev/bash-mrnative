@@ -248,8 +248,8 @@ libapp_generate_script_4hadoop () {
 #   'callback end function' is called at the end of function
 #
 # config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+#LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
 LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
-
 
 # all the files should be in the local disk
 prepare_one_tcl_scripts () {
@@ -492,7 +492,7 @@ libapp_prepare_execution_config () {
     local RET=0
     RET=$(is_file_or_dir "${DN_COMM}")
     if [ ! "${RET}" = "d" ]; then
-        DN_COMM="${DN_TOP}/projtools/common/"
+        DN_COMM="${DN_EXEC}/common/"
         RET=$(is_file_or_dir "${DN_COMM}")
         if [ ! "${RET}" = "d" ]; then
             mr_trace "Error: Not found TCL scripts, DN_TOP=${DN_TOP}"
