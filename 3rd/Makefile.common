@@ -585,7 +585,7 @@ $(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
 
 else
 
-OPENSSL_VERSION=1.0.2e
+OPENSSL_VERSION=1.0.2g
 OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION).tar.gz
 OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_SRC)
 
@@ -722,10 +722,10 @@ FL_DEP_LIBPNG= \
 	$(ZLIB)-install \
 	$(NULL)
 
-#LIBPNG_VERSION=1.5.14
+#LIBPNG_VERSION=1.5.26
 #LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
-#LIBPNG_URL=http://downloads.sf.net/project/libpng/libpng15/older-releases/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
-LIBPNG_VERSION=1.6.19
+#LIBPNG_URL=http://downloads.sf.net/project/libpng/libpng15/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
+LIBPNG_VERSION=1.6.21
 LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
 LIBPNG_URL=http://downloads.sourceforge.net/project/libpng/libpng16/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
 
@@ -1152,7 +1152,7 @@ $(FONTCONF)-$(FONTCONF_VERSION)/configure: $(DN_SRC)/$(FONTCONF_SRC)
 	tar -xf $(DN_SRC)/$(FONTCONF_SRC)
 	touch $@
 $(FONTCONF)-$(FONTCONF_VERSION)/Makefile: $(FONTCONF)-$(FONTCONF_VERSION)/configure $(FL_DEP_FONTCONF)
-	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CPPFLAGS+="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype`" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CPPFLAGS="${CPPFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype2`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype2`" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
 $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la: $(FONTCONF)-$(FONTCONF_VERSION)/Makefile
 	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfontconfig.a: $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la
@@ -1929,6 +1929,7 @@ $(DN_SRC)/$(LIBRAW1394_SRC): $(DN_SRC)/created
 	touch $@
 $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure: $(DN_SRC)/$(LIBRAW1394_SRC)
 	tar -xf $(DN_SRC)/$(LIBRAW1394_SRC)
+	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && sed -e 's|CLOCK_MONOTONIC_RAW|CLOCK_MONOTONIC|' -i tools/testlibraw.c
 	touch $@
 $(LIBRAW1394)-$(LIBRAW1394_VERSION)/Makefile: $(LIBRAW1394)-$(LIBRAW1394_VERSION)/configure $(FL_DEP_LIBRAW1394)
 	cd $(LIBRAW1394)-$(LIBRAW1394_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
@@ -4252,8 +4253,8 @@ $(LLVM)-$(LLVM_VERSION)/build/Makefile: $(LLVM)-$(LLVM_VERSION)/mypatched
 			-DLLVM_LINK_LLVM_DYLIB=ON \
 			-DLLVM_ENABLE_RTTI=ON \
 			-DLLVM_ENABLE_FFI=ON \
-			-DLLVM_BUILD_DOCS=ON \
-			-DLLVM_ENABLE_SPHINX=ON \
+			-DLLVM_BUILD_DOCS=OFF \
+			-DLLVM_ENABLE_SPHINX=OFF \
 			-DLLVM_ENABLE_DOXYGEN=OFF \
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF \
 			-DFFI_INCLUDE_DIR=`pkg-config --variable=includedir libffi` \
@@ -4626,15 +4627,15 @@ $(OPENCLHEADER)-uninstall: $(OPENCLHEADER)-$(OPENCLHEADER_VERSION)/opencl.h
 $(OPENCLHEADER)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/opencl.h
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(OPENCLHEADER_SRC)
+#FL_SOURCES+=$(DN_SRC)/$(OPENCLHEADER_SRC)
 FL_UNINSTALL+=$(OPENCLHEADER)-uninstall
 
 ########################################
 LIBCL=ocl-icd
 
 FL_DEP_LIBCL= \
-	$(OPENCLHEADER)-install \
 	$(MESA)-install \
+	#$(OPENCLHEADER)-install \
 	$(NULL)
 
 LIBCL_VERSION=2.2.8
@@ -4851,7 +4852,7 @@ $(GLU)-$(GLU_VERSION)/configure: $(GLU)-$(GLU_VERSION)/configure.ac $(FL_DEP_GLU
 	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 $(GLU)-$(GLU_VERSION)/Makefile: $(GLU)-$(GLU_VERSION)/configure
-	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) CFLAGS="$(CFLAGS) $(CUDA_CFLAGS)" LDFLAGS="$(LDFLAGS) $(CUDA_LIBS)" ./configure --prefix=$(PREFIX_CONF) --disable-static
+	cd $(GLU)-$(GLU_VERSION)/ && $(ENV_COMPILE) CFLAGS="$(CFLAGS) $(CUDA_CFLAGS)" CPPFLAGS="$(CPPFLAGS) $(CUDA_CFLAGS)" CXXFLAGS="$(CXXFLAGS) $(CUDA_CFLAGS)" LDFLAGS="$(LDFLAGS) $(CUDA_LIBS)" ./configure --prefix=$(PREFIX_CONF) --disable-static
 	touch $@
 $(GLU)-$(GLU_VERSION)/libGLU.la: $(GLU)-$(GLU_VERSION)/Makefile
 	cd $(GLU)-$(GLU_VERSION)/ \

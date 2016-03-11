@@ -43,7 +43,7 @@ OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
 OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(CUDASDK)-install
 MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
 
-elifeq ($(USE_GPU),GPU_OPENCL)
+else ifeq ($(USE_GPU),GPU_OPENCL)
 
 endif
 
@@ -791,7 +791,7 @@ X264=x264
 #X264_SRC=$(X264)-$(X264_VERSION).tar.bz2
 X264_VERSION=last_stable_x264
 X264_SRC=last_x264.tar.bz2
-X264_SRC=last_stable_x264.tar.bz2
+#X264_SRC=last_stable_x264.tar.bz2
 X264_URL=http://download.videolan.org/pub/videolan/x264/snapshots/$(X264_SRC)
 
 $(DN_SRC)/$(X264_SRC): $(DN_SRC)/created
@@ -1789,11 +1789,13 @@ $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/R
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-#$(LIBBLURAY)-$(LIBBLURAY_VERSION)/mypatched: $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/mypatched: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
 	#cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-LIBBLURAY-newapi.patch
-	#touch $@
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && sed -i 's|#include "default_blockinput.h"|#ifdef HAVE_UNISTD_H\n#define _XOPEN_SOURCE 500\n#include <unistd.h>\n#endif\n#include "default_blockinput.h"|' contrib/libudfread/src/default_blockinput.c
+	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ && sed -i 's|#include "udfread.h"|#ifdef HAVE_UNISTD_H\n#define _XOPEN_SOURCE 500\n#include <unistd.h>\n#endif\n#include "udfread.h"|' contrib/libudfread/src/udfread.c
+	touch $@
 
-$(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/configure
+$(LIBBLURAY)-$(LIBBLURAY_VERSION)/Makefile: $(LIBBLURAY)-$(LIBBLURAY_VERSION)/mypatched
 	cd $(LIBBLURAY)-$(LIBBLURAY_VERSION)/ \
 		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-bdjava
 	touch $@
@@ -2531,6 +2533,7 @@ $(DN_SRC)/$(LIBALSA_SRC): $(DN_SRC)/created
 
 $(LIBALSA)-$(LIBALSA_VERSION)/configure: $(DN_SRC)/$(LIBALSA_SRC)
 	tar -xf $(DN_SRC)/$(LIBALSA_SRC)
+	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && sed -i 's|#include "list.h"|#include <sys/stat.h>\n#include "list.h"|' src/topology/parser.c
 	cd $(LIBALSA)-$(LIBALSA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
@@ -3435,7 +3438,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBDC1394)-install \
     $(FRIBIDI)-install  \
     $(LADSPA)-install   \
-    $(LIBAACPLUS)-install \
     $(LIBBLURAY)-install  \
     $(LIBBS2B)-install \
     $(LIBCACA)-install \
@@ -3454,7 +3456,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBUTVIDEO)-install \
     $(LIBV4L2)-install    \
     $(LIBVIDSTAB)-install \
-    $(LIBVOAACENC)-install   \
     $(LIBVOAMRWBENC)-install \
     $(LIBWAVPACK)-install \
     $(LIBWEBP)-install \
@@ -3467,6 +3468,8 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBXV)-install \
     $(OPENSSL)-install \
     $(FAAC)-install \
+    #$(LIBAACPLUS)-install \
+    $(LIBVOAACENC)-install   \
     #$(APINVENC)-install \
     #$(LIBILBC)-install \
     #$(LIBFLITE)-install \
@@ -3572,7 +3575,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --disable-gnutls --enable-openssl \
             --enable-iconv \
             --enable-ladspa \
-            --enable-libaacplus \
             --enable-libass \
             --enable-libbluray \
             --enable-libbs2b \
@@ -3603,7 +3605,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-libutvideo \
             --enable-libv4l2 \
             --enable-libvidstab \
-            --enable-libvo-aacenc \
             --enable-libvo-amrwbenc \
             --enable-libvorbis \
             --enable-libvpx \
@@ -3617,6 +3618,8 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-zlib \
             \
             --disable-debug \
+            #--enable-libaacplus \
+            #--enable-libvo-aacenc \
             $(NULL)
 
 $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/config.mak

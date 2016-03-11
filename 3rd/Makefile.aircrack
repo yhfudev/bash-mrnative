@@ -342,9 +342,10 @@ FL_DEP_CUDAHASHCAT= \
 OCLHASHCAT=oclhashcat
 
 FL_DEP_OCLHASHCAT= \
-	$(OPENCLHEADER)-install \
 	$(NVIDIAGDK)-install \
 	$(AMDADLSDK)-install \
+	$(LIBCL)-install \
+	#$(OPENCLHEADER)-install \
 	$(NULL)
 
 USE_GIT_OCLHASHCAT=1
@@ -582,7 +583,7 @@ FL_DEP_CPYRITOPENCL= \
 	$(ZLIB)-install \
 	$(OPENSSL)-install \
 	$(LIBCL)-install \
-	$(OPENCLHEADER)-install \
+	#$(OPENCLHEADER)-install \
 	#$(python2)-install \
 	$(opencl-catalyst)-install \
 	$(pyrit)-install \
