@@ -43,9 +43,9 @@ if [ -f "${DN_EXEC}/liball.sh" ]; then
 fi
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
-  DN_EXEC="${DN_EXEC_4HADOOP}"
-  DN_TOP="${DN_TOP_4HADOOP}"
-  FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
+    DN_EXEC="${DN_EXEC_4HADOOP}"
+    DN_TOP="${DN_TOP_4HADOOP}"
+    FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
 
 RET=$(is_file_or_dir "${FN_CONF_SYS}")

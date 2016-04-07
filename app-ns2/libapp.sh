@@ -30,7 +30,7 @@ my_getpath () {
 
 # untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP
 extrace_binary() {
-    PARAM_FN_TAR=$1
+    local PARAM_FN_TAR=$1
     shift
 
     local RET=$(is_local "${HDFF_DN_BIN}")
@@ -50,75 +50,63 @@ extrace_binary() {
     echo $DN
 }
 
-# MUST implemented
-# to setup some environment variable for application
-# and extract the application binaries and data if the config HDFF_PATHTO_TAR_APP exist
-libapp_prepare_app_binary() {
-    if [ "${HDFF_PATHTO_TAR_APP}" = "" ]; then
-        # detect the application execuable
-        EXEC_NS2="$(my_getpath "${DN_TOP}/../../ns")"
-        mr_trace "try detect ns2 1: ${EXEC_NS2}"
-        #echo -e "error-prepapp\ttry-get-file\t${DN_TOP}/../../ns"
-    else
+# find the exec from default dir
+find_exec_inst() {
+    local PARAM_EXEC_NAME=$1
+    shift
+    lst_app_dirs=("$(my_getpath "${DN_TOP}/../../")")
+    if [ ! "${HDFF_PATHTO_TAR_APP}" = "" ]; then
         local DN2=$(extrace_binary "${HDFF_PATHTO_TAR_APP}")
-        EXEC_NS2="$(my_getpath "${DN2}/usr/bin/ns")"
-        mr_trace "try detect ns2 2: ${EXEC_NS2}"
-        if [ ! -x "${EXEC_NS2}" ]; then
-            EXEC_NS2="$(my_getpath "${DN2}/ns-2.33/ns")"
-            mr_trace "try detect ns2 3: ${EXEC_NS2}"
-        fi
-        #echo -e "error-prepapp\ttry-get-file\t${DN2}/ns-2.33/ns"
-        if [ ! -x "${EXEC_NS2}" ]; then
-            EXEC_NS2="$(dirname ${DN2})/ns2docsis-ds31profile/ns-2.33/ns"
-            mr_trace "try detect ns2 3: ${EXEC_NS2}"
-            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
-        fi
-        if [ ! -x "${EXEC_NS2}" ]; then
-            EXEC_NS2="${HDFF_DN_BIN}/ns2docsis-ds31profile/ns-2.33/ns"
-            mr_trace "try detect ns2 4: ${EXEC_NS2}"
-            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
-        fi
-        if [ ! -x "${EXEC_NS2}" ]; then
-            EXEC_NS2="$(dirname ${HDFF_PATHTO_TAR_APP})/ns2docsis-ds31profile/ns-2.33/ns"
-            mr_trace "try detect ns2 5: ${EXEC_NS2}"
-            #echo -e "error-prepapp\ttry-get-file\t${EXEC_NS2}"
-        fi
+        lst_app_dirs+=(
+                "$(my_getpath "${DN2}/usr/bin/")"
+                "$(my_getpath "${DN2}/ns-2.33/")"
+                "$(dirname ${DN2})/ns2docsis-ds31profile/ns-2.33/"
+                "${HDFF_DN_BIN}/ns2docsis-ds31profile/ns-2.33/"
+                "$(dirname ${HDFF_PATHTO_TAR_APP})/ns2docsis-ds31profile/ns-2.33/"
+                )
     fi
 
-    lst_app_dirs=(
-        "/home/$USER/ns-docsis-i686/usr/bin/ns"
-              "$HOME/ns-docsis-i686/usr/bin/ns"
-        "/home/$USER/ns-docsis-x86_64/usr/bin/ns"
-              "$HOME/ns-docsis-x86_64/usr/bin/ns"
-        "/home/$USER/software/bin/ns2-bin/bin/ns"
-              "$HOME/software/bin/ns2-bin/bin/ns"
-        "/home/$USER/ns2docsis-ds31profile/ns-2.33/ns"
-              "$HOME/ns2docsis-ds31profile/ns-2.33/ns"
-        "/home/$USER/ns2docsis-ds31profile-svn/ns-2.33/ns"
-              "$HOME/ns2docsis-ds31profile-svn/ns-2.33/ns"
-        "/home/$USER/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns"
-              "$HOME/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/ns"
-        "/home/$USER/bin/ns"
-              "$HOME/bin/ns"
+    lst_app_dirs+=(
+        "/home/$USER/ns-docsis-i686/usr/bin/"
+              "$HOME/ns-docsis-i686/usr/bin/"
+        "/home/$USER/ns-docsis-x86_64/usr/bin/"
+              "$HOME/ns-docsis-x86_64/usr/bin/"
+        "/home/$USER/ns2docsis-ds31profile/ns-2.33/"
+              "$HOME/ns2docsis-ds31profile/ns-2.33/"
+        "/home/$USER/ns2docsis-ds31profile-svn/ns-2.33/"
+              "$HOME/ns2docsis-ds31profile-svn/ns-2.33/"
+        "/home/$USER/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/"
+              "$HOME/working/vmshare/ns2docsis-1.0-workingspace/ns2docsis-ds31profile/ns-2.33/"
+        "/home/$USER/software/bin/ns2-bin/bin/"
+              "$HOME/software/bin/ns2-bin/bin/"
+        "/home/$USER/bin/"
+              "$HOME/bin/"
         )
-    if [ ! -x "${EXEC_NS2}" ]; then
+    if [ ! -x "${EXEC_RET}" ]; then
         CNT=0
         while [[ ${CNT} < ${#lst_app_dirs[*]} ]] ; do
-            mr_trace "try detect ns2 lst_app_dirs(${CNT}):" ${lst_app_dirs[${CNT}]}
-            if [ -x "${lst_app_dirs[${CNT}]}" ]; then
-                EXEC_NS2=${lst_app_dirs[${CNT}]}
-                mr_trace "found: $EXEC_NS2"
-                detect_gawk_from "$(dirname ${EXEC_NS2})"
-                detect_gnuplot_from "$(dirname ${EXEC_NS2})"
+            mr_trace "try detect ${PARAM_EXEC_NAME} lst_app_dirs(${CNT}):" ${lst_app_dirs[${CNT}]}
+            if [ -x "${lst_app_dirs[${CNT}]}/${PARAM_EXEC_NAME}" ]; then
+                EXEC_RET=${lst_app_dirs[${CNT}]}/${PARAM_EXEC_NAME}
+                mr_trace "found: $EXEC_RET"
                 break
             fi
             CNT=$(( $CNT + 1 ))
         done
     fi
-    if [ ! -x "${EXEC_NS2}" ]; then
-        EXEC_NS2=$(which ns)
-        mr_trace "try detect ns2 13: ${EXEC_NS2}"
+    if [ ! -x "${EXEC_RET}" ]; then
+        EXEC_RET=$(which ${PARAM_EXEC_NAME})
+        mr_trace "try detect ${PARAM_EXEC_NAME} 13: ${EXEC_RET}"
     fi
+    mr_trace "EXEC_RET=${EXEC_RET}"
+    echo "${EXEC_RET}"
+}
+
+# MUST implemented
+# to setup some environment variable for application
+# and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+libapp_prepare_app_binary() {
+    EXEC_NS2=$(find_exec_inst "ns")
     mr_trace "EXEC_NS2=${EXEC_NS2}"
     if [ -x "${EXEC_NS2}" ]; then
         detect_gawk_from    "$(dirname ${EXEC_NS2})"
@@ -135,7 +123,7 @@ libapp_prepare_app_binary() {
         mr_trace "Error: not found ns2"
         echo -e "error-prepapp\tNOT-get-file\tns"
     fi
-    echo -e "env\tns2=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}\tLD=${LD_LIBRARY_PATH}"
+    echo -e "env\tns=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}\tLD=${LD_LIBRARY_PATH}"
 }
 
 # MUST implemented
@@ -349,7 +337,7 @@ prepare_one_tcl_scripts () {
             -e  "s|set NUM_WEBs\s.*$|set NUM_WEBs   0|" \
             "${PARAM_DN_TARGET}/${PARAM_DN_TEST}/run-conf.tcl"
         ;;
-    "tcp+has6"|"tcp+has6a"|"tcp+has6b")
+    tcp+has6*)
         # use fix 6 HAS flow vs multiple FTP flows
         sed -i \
             -e  "s|set NUM_FTPs\s.*$|set NUM_FTPs   ${PARAM_NUM}|" \
@@ -644,7 +632,8 @@ run_one_ns2 () {
     else
         #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
         mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" TO "${HDFF_FN_LOG}"
-        ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
+        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} 1 >> "${HDFF_FN_LOG}"
     fi
 
     mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"

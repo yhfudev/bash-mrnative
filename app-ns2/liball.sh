@@ -40,8 +40,9 @@ DN_EXEC="$(my_getpath ".")"
 #echo "[DBG] DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}" 1>&2
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
-  DN_EXEC="${DN_EXEC_4HADOOP}"
-  DN_TOP="${DN_TOP_4HADOOP}"
+    DN_EXEC="${DN_EXEC_4HADOOP}"
+    DN_TOP="${DN_TOP_4HADOOP}"
+    FN_CONF_SYS="${FN_CONF_SYS_4HADOOP}"
 fi
 
 #####################################################################

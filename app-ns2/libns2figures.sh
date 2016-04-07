@@ -240,6 +240,7 @@ generate_throughput_stats_file () {
     local PARAM_SELECT_BLOCK=$1
     shift
 
+    rm_f_dir "${PARAM_FN_OUT_TPSTATS}"
     echo "" >> ${PARAM_FN_OUT_TPSTATS}
     echo "# num, scheduler, cnt, min, max, sum, mean, stddev, mmr, jfi, cfi" >> ${PARAM_FN_OUT_TPSTATS}
     # average throughput
@@ -249,7 +250,6 @@ generate_throughput_stats_file () {
     # the dumpFinalTCPStats is defined in networks.tcl
     # output format: "$label $bytesDel $arrivals $lossno $dropRate $notimeouts $toFreq $meanRTT $thruput 0 0 0"
     #
-    rm_f_dir "${PARAM_FN_OUT_TPSTATS}"
     for num in $LIST_NODE_NUM ; do
         for sched0 in $LIST_SCHEDULERS ; do
 
