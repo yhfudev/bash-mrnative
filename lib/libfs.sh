@@ -26,6 +26,31 @@ get_hdfs_url() {
 }
 HDFS_URL="hdfs://$(get_hdfs_url)/"
 
+# convert the file name to its absolute path
+# for example:
+#   /path/to/file1  -->  /path/to/file1
+#   file:///path/to/file2   -->  file:///path/to/file2
+#   path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
+#   file://path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
+convert_filename() {
+    local PARAM_FN_PREFIX=$1
+    shift
+    local PARAM_FN_INPUT=$1
+    shift
+
+    [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && echo "r" && return
+    [[ "${PARAM_FN_INPUT}" =~ ^sftp:// ]] && echo "r" && return
+
+    if [[ "${PARAM_FN_INPUT}" =~ ^file:// ]]; then
+        PARAM_FN_INPUT="${PARAM_FN_INPUT#file://}"
+    fi
+    if [[ "${PARAM_FN_INPUT#file://}" =~ ^/ ]]; then
+        echo "${PARAM_FN_INPUT}"
+    else
+        echo "file://${PARAM_FN_PREFIX}/${PARAM_FN_INPUT#file://}"
+    fi
+}
+
 is_local() {
     local PARAM_FN_INPUT=$1
     shift
