@@ -162,6 +162,34 @@ FL_SOURCES+=$(DN_SRC)/$(EXPAT_SRC)
 FL_UNINSTALL+=$(EXPAT)-uninstall
 
 ########################################
+SWIG=swig
+SWIG_VERSION=3.0.8
+SWIG_SRC=$(SWIG)-$(SWIG_VERSION).tar.gz
+SWIG_URL=https://sourceforge.net/projects/swig/files/swig/swig-$(SWIG_VERSION)/$(SWIG_SRC)
+
+
+$(DN_SRC)/$(SWIG_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(SWIG_URL)
+	touch $@
+$(SWIG)-$(SWIG_VERSION)/README: $(DN_SRC)/$(SWIG_SRC)
+	tar -xf $(DN_SRC)/$(SWIG_SRC)
+	touch $@
+$(SWIG)-$(SWIG_VERSION)/Makefile: $(SWIG)-$(SWIG_VERSION)/README
+	cd $(SWIG)-$(SWIG_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --without-pcre
+$(SWIG)-$(SWIG_VERSION)/swig: $(SWIG)-$(SWIG_VERSION)/Makefile
+	cd $(SWIG)-$(SWIG_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/swig: $(SWIG)-$(SWIG_VERSION)/swig
+	cd $(SWIG)-$(SWIG_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(SWIG)-uninstall: $(SWIG)-$(SWIG_VERSION)/swig
+	cd $(SWIG)-$(SWIG_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(SWIG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/swig
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(SWIG_SRC)
+FL_UNINSTALL+=$(SWIG)-uninstall
+
+########################################
 CMAKE=cmake
 
 CMAKE_VERSION=2.8.12.2
@@ -667,6 +695,7 @@ $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/Ma
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) PKG_CONFIG_LIBDIR=$(PREFIX_CONF)/lib/pkgconfig install
+	ln -s libncursesw.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libncurses.a
 	touch $@
 
 $(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc
@@ -835,7 +864,7 @@ USE_GIT_LIBOPENJPEG=1
 ifeq ($(USE_GIT_LIBOPENJPEG),1) # use git instead
 
 LIBOPENJPEG_VERSION=git
-LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
+LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/.git
 LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg.git
 
 $(DN_SRC)/$(LIBOPENJPEG_SRC): $(DN_SRC)/created
@@ -1152,9 +1181,9 @@ $(FONTCONF)-$(FONTCONF_VERSION)/configure: $(DN_SRC)/$(FONTCONF_SRC)
 	tar -xf $(DN_SRC)/$(FONTCONF_SRC)
 	touch $@
 $(FONTCONF)-$(FONTCONF_VERSION)/Makefile: $(FONTCONF)-$(FONTCONF_VERSION)/configure $(FL_DEP_FONTCONF)
-	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CPPFLAGS="${CPPFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype2`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype2`" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) CFLAGS="${CFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" CPPFLAGS="${CPPFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" FREETYPE_CFLAGS="`$(ENV_COMPILE) pkg-config --cflags freetype2`" FREETYPE_LIBS="`$(ENV_COMPILE) pkg-config --libs freetype2`" $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared --disable-docs
 $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la: $(FONTCONF)-$(FONTCONF_VERSION)/Makefile
-	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && $(ENV_COMPILE) make CFLAGS="${CFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" CPPFLAGS="${CPPFLAGS} -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/freetype2/" LDFLAGS="-pthread" $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfontconfig.a: $(FONTCONF)-$(FONTCONF_VERSION)/src/libfontconfig.la
 	cd $(FONTCONF)-$(FONTCONF_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	sed -i 's/-L$${libdir} -lfontconfig[^l]*$$/-L$${libdir} -lfontconfig -lfreetype -lxml2 -lexpat -lpng/' "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/fontconfig.pc"
@@ -1267,7 +1296,7 @@ $(GETTEXT)-$(GETTEXT_VERSION)/configure: $(GETTEXT)-$(GETTEXT_VERSION)/configure
 
 $(GETTEXT)-$(GETTEXT_VERSION)/Makefile: $(GETTEXT)-$(GETTEXT_VERSION)/configure
 	cd $(GETTEXT)-$(GETTEXT_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-curses
 	touch $@
 
 $(GETTEXT)-$(GETTEXT_VERSION)/gettext-tools/src/msgen: $(GETTEXT)-$(GETTEXT_VERSION)/Makefile
@@ -1573,7 +1602,7 @@ $(ELFUTILS)-$(ELFUTILS_VERSION)/configure: $(DN_SRC)/$(ELFUTILS_SRC)
 	tar -xf $(DN_SRC)/$(ELFUTILS_SRC)
 	touch $@
 $(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile: $(ELFUTILS)-$(ELFUTILS_VERSION)/configure $(FL_DEP_ELFUTILS)
-	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && CFLAGS+=" -g" && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --program-prefix="eu-" --enable-deterministic-archives
+	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --program-prefix="eu-" --enable-deterministic-archives
 	touch $@
 $(ELFUTILS)-$(ELFUTILS_VERSION)/libelf/libelf.a: $(ELFUTILS)-$(ELFUTILS_VERSION)/Makefile
 	cd $(ELFUTILS)-$(ELFUTILS_VERSION)/ \
@@ -2016,7 +2045,7 @@ USE_GIT_LVPX=0
 ifeq ($(USE_GIT_LVPX),1) # use git instead
 
 LVPX_VERSION=git
-LVPX_SRC=$(LVPX)-$(LVPX_VERSION)/configure
+LVPX_SRC=$(LVPX)-$(LVPX_VERSION)/.git
 LVPX_URL=https://chromium.googlesource.com/webm/libvpx
 
 $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/created
@@ -3987,7 +4016,7 @@ USE_GIT_LIBOMXILB=1
 ifeq ($(USE_GIT_LIBOMXILB),1) # use git instead
 
 LIBOMXILB_VERSION=git
-LIBOMXILB_SRC=$(LIBOMXILB)-$(LIBOMXILB_VERSION)/configure.py
+LIBOMXILB_SRC=$(LIBOMXILB)-$(LIBOMXILB_VERSION)/.git
 LIBOMXILB_URL=http://git.code.sf.net/p/omxil/omxil
 
 $(DN_SRC)/$(LIBOMXILB_SRC): $(DN_SRC)/created
@@ -4083,11 +4112,12 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/$(OCAML): $(OCAML)-$(OCAML_VERSION)/$(OCAML)
 	cd $(OCAML)-$(OCAML_VERSION)/ \
 	    && make -j1 PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ MANDIR=$(PREFIX_DEST)/$(PREFIX_CONF)/share/man install
 	cd $(OCAML)-$(OCAML_VERSION)/ \
-	    && mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/{parsing,typing,utils} \
-	    && cp parsing/*.{cmi,cmo,cmx,ml,mli,mll,o} $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/parsing \
-	    && cp typing/*.{cmi,cmo,cmx,ml,mli,o}      $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/typing \
-	    && cp utils/*.{cmi,cmo,cmx,ml,mli,o}       $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/utils \
-	    && rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/typing/outcometree.{cmi,mli}
+	    && mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/ \
+	    && cp -r parsing  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/ \
+	    && cp -r typing   $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/ \
+	    && cp -r utils    $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/ \
+	    && rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/typing/outcometree.cmi \
+	    && rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/compiler-libs/typing/outcometree.mli
 
 $(OCAML)-uninstall: $(OCAML)-$(OCAML_VERSION)/$(OCAML)
 	cd $(OCAML)-$(OCAML_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
@@ -4140,7 +4170,68 @@ FL_SOURCES+=$(DN_SRC)/$(LIBEDIT_SRC)
 FL_UNINSTALL+=$(LIBEDIT)-uninstall
 
 ########################################
+# GNU gold
+BINUTILS=binutils
+
+#FL_DEP_BINUTILS= \
+#	$(NCURSES)-install \
+#	$(NULL)
+
+BINUTILS_VERSION=git
+BINUTILS_SRC=$(BINUTILS)-$(BINUTILS_VERSION)/.git
+BINUTILS_URL=git://sourceware.org/git/binutils-gdb.git
+
+$(DN_SRC)/$(BINUTILS_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(BINUTILS_SRC)" ]; then \
+        git clone --depth 1 $(BINUTILS_URL) $(DN_SRC)/$(BINUTILS)-$(BINUTILS_VERSION); \
+    fi
+	cd $(DN_SRC)/$(BINUTILS)-$(BINUTILS_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(BINUTILS)-$(BINUTILS_VERSION)/configure: $(DN_SRC)/$(BINUTILS_SRC) $(FL_DEP_BINUTILS)
+	cd $(DN_SRC)/$(BINUTILS)-$(BINUTILS_VERSION) && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(BINUTILS)-$(BINUTILS_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(BINUTILS)-$(BINUTILS_VERSION)/ $(BINUTILS)-$(BINUTILS_VERSION); \
+    fi
+	cd $(BINUTILS)-$(BINUTILS_VERSION) && git pull --rebase #&& git submodule update --init --recursive
+	touch $@
+#$(BINUTILS)-$(BINUTILS_VERSION)/mypatched: $(BINUTILS)-$(BINUTILS_VERSION)/configure.ac $(FL_DEP_BINUTILS)
+#	cd $(BINUTILS)-$(BINUTILS_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+#	touch $@
+#$(BINUTILS)-$(BINUTILS_VERSION)/configure: $(BINUTILS)-$(BINUTILS_VERSION)/mypatched
+#	cd $(BINUTILS)-$(BINUTILS_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+#	touch $@
+$(BINUTILS)-$(BINUTILS_VERSION)/Makefile: $(BINUTILS)-$(BINUTILS_VERSION)/configure
+	cd $(BINUTILS)-$(BINUTILS_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-gold --enable-plugins --disable-werror
+	touch $@
+$(BINUTILS)-$(BINUTILS_VERSION)/src/$(BINUTILS).la: $(BINUTILS)-$(BINUTILS_VERSION)/Makefile
+	cd $(BINUTILS)-$(BINUTILS_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG) all-gold
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(BINUTILS).la: $(BINUTILS)-$(BINUTILS_VERSION)/src/$(BINUTILS).la
+	cd $(BINUTILS)-$(BINUTILS_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(BINUTILS)-uninstall: $(BINUTILS)-$(BINUTILS_VERSION)/src/$(BINUTILS).la
+	cd $(BINUTILS)-$(BINUTILS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(BINUTILS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(BINUTILS).la
+	touch $@
+
+#FL_SOURCES+=$(DN_SRC)/$(BINUTILS_SRC)
+FL_UNINSTALL+=$(BINUTILS)-uninstall
+
+########################################
 LLVM=llvm
+CLANG=clang
+CLANGEXTRA=clang-tools-extra
+CLANGEXTRA_DIR=extra
+LIBCXX=libcxx
+LIBCXXABI=libcxxabi
+LLDB=lldb
+COMPILERRT=compiler-rt
+LIBOMP=libomp
+LIBOMP_DIR=openmp
+LLVMTESTSUITE=llvm-test-suite
+LLVMTESTSUITE_DIR=test-suite
 
 FL_DEP_LLVM= \
 	$(CMAKE)-install \
@@ -4148,9 +4239,268 @@ FL_DEP_LLVM= \
 	$(OCAML)-install \
 	$(LIBFFI)-install \
 	$(LIBEDIT)-install \
+	$(SWIG)-install \
 	$(NULL)
 
+USE_GIT_LLVM=1
+USE_SVN_LLVM=0
+
+ifeq ($(USE_GIT_LLVM),1) # use git instead
+
+FL_DEP_LLVM+= \
+	#$(BINUTILS)-install \
+	$(NULL)
+
+LLVM_VERSION=git
+LLVM_SRC=$(LLVM)-$(LLVM_VERSION)/.git
+LLVM_URL=http://llvm.org/git/llvm.git
+#LLVM_URL=https://github.com/llvm-mirror/llvm.git
+
+CLANG_VERSION=git
+CLANG_SRC=$(CLANG)-$(CLANG_VERSION)/.git
+CLANG_URL=http://llvm.org/git/clang.git
+#CLANG_URL=https://github.com/llvm-mirror/clang.git
+
+CLANGEXTRA_VERSION=git
+CLANGEXTRA_SRC=$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)/.git
+CLANGEXTRA_URL=http://llvm.org/git/clang-tools-extra.git
+
+LIBCXX_VERSION=git
+LIBCXX_SRC=$(LIBCXX)-$(LIBCXX_VERSION)/.git
+LIBCXX_URL=http://llvm.org/git/libcxx.git
+
+LIBCXXABI_VERSION=git
+LIBCXXABI_SRC=$(LIBCXXABI)-$(LIBCXXABI_VERSION)/.git
+LIBCXXABI_URL=http://llvm.org/git/libcxxabi.git
+
+LLDB_VERSION=git
+LLDB_SRC=$(LLDB)-$(LLDB_VERSION)/.git
+#LLDB_URL=http://llvm.org/git/lldb.git
+LLDB_URL=https://github.com/llvm-mirror/lldb.git
+
+COMPILERRT_VERSION=git
+COMPILERRT_SRC=$(COMPILERRT)-$(COMPILERRT_VERSION)/.git
+#COMPILERRT_URL=http://llvm.org/git/compiler-rt.git
+COMPILERRT_URL=https://github.com/llvm-mirror/compiler-rt.git
+
+LIBOMP_VERSION=git
+LIBOMP_SRC=$(LIBOMP)-$(LIBOMP_VERSION)/.git
+LIBOMP_URL=http://llvm.org/git/openmp.git
+
+LLVMTESTSUITE_VERSION=git
+LLVMTESTSUITE_SRC=$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION)/.git
+LLVMTESTSUITE_URL=http://llvm.org/git/test-suite.git
+
+$(DN_SRC)/$(LLVM_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LLVM_SRC)" ]; then \
+        git clone $(LLVM_URL) $(DN_SRC)/$(LLVM)-$(LLVM_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LLVM)-$(LLVM_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(DN_SRC)/$(CLANG_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(CLANG_SRC)" ]; then \
+        git clone $(CLANG_URL) $(DN_SRC)/$(CLANG)-$(CLANG_VERSION); \
+    fi
+	cd $(DN_SRC)/$(CLANG)-$(CLANG_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(CLANG_SRC)
+
+$(DN_SRC)/$(CLANGEXTRA_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(CLANGEXTRA_SRC)" ]; then \
+        git clone $(CLANGEXTRA_URL) $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION); \
+    fi
+	cd $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(CLANGEXTRA_SRC)
+
+$(DN_SRC)/$(LIBCXX_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LIBCXX_SRC)" ]; then \
+        git clone $(LIBCXX_URL) $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(CLANG_SRC)
+
+$(DN_SRC)/$(LIBCXXABI_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LIBCXXABI_SRC)" ]; then \
+        git clone $(LIBCXXABI_URL) $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(CLANG_SRC)
+
+$(DN_SRC)/$(LLDB_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LLDB_SRC)" ]; then \
+        git clone $(LLDB_URL) $(DN_SRC)/$(LLDB)-$(LLDB_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LLDB)-$(LLDB_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(LLDB_SRC)
+
+$(DN_SRC)/$(COMPILERRT_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(COMPILERRT_SRC)" ]; then \
+        git clone $(COMPILERRT_URL) $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION); \
+    fi
+	cd $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(COMPILERRT_SRC)
+
+$(DN_SRC)/$(LIBOMP_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LIBOMP_SRC)" ]; then \
+        git clone $(LIBOMP_URL) $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(LIBOMP_SRC)
+
+$(DN_SRC)/$(LLVMTESTSUITE_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(LLVMTESTSUITE_SRC)" ]; then \
+        git clone $(LLVMTESTSUITE_URL) $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION); \
+    fi
+	cd $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+FL_SOURCES+=$(DN_SRC)/$(LLVMTESTSUITE_SRC)
+
+$(LLVM)-$(LLVM_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LLVM_SRC) $(DN_SRC)/$(CLANG_SRC) $(DN_SRC)/$(LIBCXX_SRC) $(DN_SRC)/$(LIBCXXABI_SRC) $(DN_SRC)/$(LLDB_SRC) $(DN_SRC)/$(COMPILERRT_SRC) $(DN_SRC)/$(LIBOMP_SRC) $(DN_SRC)/$(LLVMTESTSUITE_SRC) $(DN_SRC)/$(CLANGEXTRA_SRC)
+	cd $(DN_SRC)/$(LLVM)-$(LLVM_VERSION)                && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(CLANG)-$(CLANG_VERSION)              && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)    && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION)            && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION)      && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LLDB)-$(LLDB_VERSION)                && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION)    && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION)            && git pull --rebase #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION) && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(LLVM)-$(LLVM_VERSION)/ $(LLVM)-$(LLVM_VERSION); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)                          && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/tools/$(CLANG)" ]; then \
+        cp -r $(DN_SRC)/$(CLANG)-$(CLANG_VERSION)/              $(LLVM)-$(LLVM_VERSION)/tools/$(CLANG); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/tools/$(CLANG)           && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/tools/clang/tools/$(CLANGEXTRA_DIR)" ]; then \
+        mkdir -p $(LLVM)-$(LLVM_VERSION)/tools/clang/tools/; \
+        cp -r $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)/    $(LLVM)-$(LLVM_VERSION)/tools/clang/tools/$(CLANGEXTRA_DIR); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/tools/clang/tools/$(CLANGEXTRA_DIR) && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXX)" ]; then \
+        cp -r $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION)/            $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXX); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXX)       && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXXABI)" ]; then \
+        cp -r $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION)/      $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXXABI); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXXABI)    && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/tools/$(LLDB)" ]; then \
+        cp -r $(DN_SRC)/$(LLDB)-$(LLDB_VERSION)/                $(LLVM)-$(LLVM_VERSION)/tools/$(LLDB); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/tools/$(LLDB)            && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/projects/$(COMPILERRT)" ]; then \
+        cp -r $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION)/    $(LLVM)-$(LLVM_VERSION)/projects/$(COMPILERRT); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/projects/$(COMPILERRT)   && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/projects/$(LIBOMP_DIR)" ]; then \
+        cp -r $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION)/            $(LLVM)-$(LLVM_VERSION)/projects/$(LIBOMP_DIR); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/projects/$(LIBOMP_DIR)       && git pull --rebase #&& git submodule update --init --recursive
+	if [ ! -d "$(LLVM)-$(LLVM_VERSION)/projects/$(LLVMTESTSUITE_DIR)" ]; then \
+        cp -r $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION)/            $(LLVM)-$(LLVM_VERSION)/projects/$(LLVMTESTSUITE_DIR); \
+    fi
+	cd $(LLVM)-$(LLVM_VERSION)/projects/$(LLVMTESTSUITE_DIR) && git pull --rebase #&& git submodule update --init --recursive
+	touch $@
+
+else ifeq ($(USE_SVN_LLVM),1) # use svn instead
+
+FL_DEP_LLVM+= \
+	#$(BINUTILS)-install \
+	$(NULL)
+
+LLVM_VERSION=svn
+LLVM_SRC=$(LLVM)-$(LLVM_VERSION)/.svn
+LLVM_URL=http://llvm.org/svn/llvm-project/llvm/trunk
+
+CLANG_VERSION=svn
+CLANG_SRC=$(CLANG)-$(CLANG_VERSION)/.svn
+CLANG_URL=http://llvm.org/svn/llvm-project/cfe/trunk
+
+CLANGEXTRA_VERSION=svn
+CLANGEXTRA_SRC=$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)/.svn
+CLANGEXTRA_URL=http://llvm.org/svn/llvm-project/clang-tools-extra/trunk
+
+LIBCXX_VERSION=svn
+LIBCXX_SRC=$(LIBCXX)-$(LIBCXX_VERSION)/.svn
+LIBCXX_URL=http://llvm.org/svn/llvm-project/libcxx/trunk
+
+LIBCXXABI_VERSION=svn
+LIBCXXABI_SRC=$(LIBCXXABI)-$(LIBCXXABI_VERSION)/.svn
+LIBCXXABI_URL=http://llvm.org/svn/llvm-project/libcxxabi/trunk
+
+LLDB_VERSION=svn
+LLDB_SRC=$(LLDB)-$(LLDB_VERSION)/.svn
+LLDB_URL=http://llvm.org/svn/llvm-project/lldb/trunk
+
+COMPILERRT_VERSION=svn
+COMPILERRT_SRC=$(COMPILERRT)-$(COMPILERRT_VERSION)/.svn
+COMPILERRT_URL=http://llvm.org/svn/llvm-project/compiler-rt/trunk
+
+LIBOMP_VERSION=svn
+LIBOMP_SRC=$(LIBOMP)-$(LIBOMP_VERSION)/.svn
+LIBOMP_URL=http://llvm.org/svn/llvm-project/openmp/trunk
+
+LLVMTESTSUITE_VERSION=svn
+LLVMTESTSUITE_SRC=$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION)/.svn
+LLVMTESTSUITE_URL=http://llvm.org/svn/llvm-project/test-suite/trunk
+
+#svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
+$(DN_SRC)/$(LLVM_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LLVM_URL) $(DN_SRC)/$(LLVM)-$(LLVM_VERSION)
+	touch $@
+$(DN_SRC)/$(CLANG_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(CLANG_URL) $(DN_SRC)/$(CLANG)-$(CLANG_VERSION)
+	touch $@
+$(DN_SRC)/$(CLANGEXTRA_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(CLANGEXTRA_URL) $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)
+	touch $@
+$(DN_SRC)/$(LIBCXX_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LIBCXX_URL) $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION)
+	touch $@
+$(DN_SRC)/$(LIBCXXABI_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LIBCXXABI_URL) $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION)
+	touch $@
+$(DN_SRC)/$(LLDB_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LLDB_URL) $(DN_SRC)/$(LLDB)-$(LLDB_VERSION)
+	touch $@
+$(DN_SRC)/$(COMPILERRT_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(COMPILERRT_URL) $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION)
+	touch $@
+$(DN_SRC)/$(LIBOMP_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LIBOMP_URL) $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION)
+	touch $@
+$(DN_SRC)/$(LLVMTESTSUITE_SRC): $(DN_SRC)/created
+	svn checkout --username anonymous $(LLVMTESTSUITE_URL) $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION)
+	touch $@
+$(LLVM)-$(LLVM_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LLVM_SRC) $(DN_SRC)/$(CLANG_SRC) $(DN_SRC)/$(LIBCXX_SRC) $(DN_SRC)/$(LIBCXXABI_SRC) $(DN_SRC)/$(LLDB_SRC) $(DN_SRC)/$(COMPILERRT_SRC) $(DN_SRC)/$(LIBOMP_SRC) $(DN_SRC)/$(LLVMTESTSUITE_SRC) $(DN_SRC)/$(CLANGEXTRA_SRC)
+#	cd $(DN_SRC)/$(LLVM)-$(LLVM_VERSION)/ && svn update
+	rm -rf $(DN_TOP)/$(LLVM)*
+	cp -r $(DN_SRC)/$(LLVM)-$(LLVM_VERSION)/                $(DN_TOP)/$(LLVM)-$(LLVM_VERSION)
+	cp -r $(DN_SRC)/$(CLANG)-$(CLANG_VERSION)/              $(LLVM)-$(LLVM_VERSION)/tools/$(CLANG)
+	cp -r $(DN_SRC)/$(CLANGEXTRA)-$(CLANGEXTRA_VERSION)/    $(LLVM)-$(LLVM_VERSION)/tools/clang/tools/$(CLANGEXTRA_DIR)
+	cp -r $(DN_SRC)/$(LIBCXX)-$(LIBCXX_VERSION)/            $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXX)
+	cp -r $(DN_SRC)/$(LIBCXXABI)-$(LIBCXXABI_VERSION)/      $(LLVM)-$(LLVM_VERSION)/projects/$(LIBCXXABI)
+	cp -r $(DN_SRC)/$(LLDB)-$(LLDB_VERSION)/                $(LLVM)-$(LLVM_VERSION)/tools/$(LLDB)
+	cp -r $(DN_SRC)/$(COMPILERRT)-$(COMPILERRT_VERSION)/    $(LLVM)-$(LLVM_VERSION)/projects/$(COMPILERRT)
+	cp -r $(DN_SRC)/$(LIBOMP)-$(LIBOMP_VERSION)/            $(LLVM)-$(LLVM_VERSION)/projects/$(LIBOMP_DIR)
+	cp -r $(DN_SRC)/$(LLVMTESTSUITE)-$(LLVMTESTSUITE_VERSION)/ $(LLVM)-$(LLVM_VERSION)/projects/$(LLVMTESTSUITE_DIR)
+#	@find $(DN_TOP)/$(LLVM)-$(LLVM_VERSION) -name ".svn" | while read A ; do rm -rf "$$A"; done
+	#cd $(LLVM)-$(LLVM_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #$(ENV_COMPILE) autoreconf -if
+	touch $@
+
+else # use released files
+
 LLVM_VERSION=3.7.0
+LLVM_VERSION=3.8.0
 LLVM_SRC=$(LLVM)-$(LLVM_VERSION).src.tar.xz
 LLVM_URL="http://llvm.org/releases/$(LLVM_VERSION)/$(LLVM_SRC)"
 
@@ -4180,39 +4530,38 @@ $(DN_SRC)/llvm-compiler-rt-new-msan.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/0001-New-MSan-mapping-layout-compiler-rt-part.patch?h=packages/llvm
 	touch $@
 FL_SOURCES+=$(DN_SRC)/llvm-compiler-rt-new-msan.patch
-$(DN_SRC)/llvm-llvm-new-msan.patch: $(DN_SRC)/created
+$(DN_SRC)/llvm-new-msan-mapping-layout-llvm-part.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/0001-New-MSan-mapping-layout-llvm-part.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-llvm-new-msan.patch
-$(DN_SRC)/llvm-clang-add-gcc-abi-tag.patch: $(DN_SRC)/created
+FL_SOURCES+=$(DN_SRC)/llvm-new-msan-mapping-layout-llvm-part.patch
+$(DN_SRC)/llvm-clang-3.7.0-add-gcc-abi-tag-support.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/clang-3.7.0-add-gcc-abi-tag-support.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-clang-add-gcc-abi-tag.patch
-$(DN_SRC)/llvm-clang-install-query.patch: $(DN_SRC)/created
+FL_SOURCES+=$(DN_SRC)/llvm-clang-3.7.0-add-gcc-abi-tag-support.patch
+$(DN_SRC)/llvm-clang-tools-extra-3.7.0-install-clang-query.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/clang-tools-extra-3.7.0-install-clang-query.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-clang-install-query.patch
+FL_SOURCES+=$(DN_SRC)/llvm-clang-tools-extra-3.7.0-install-clang-query.patch
 
-$(DN_SRC)/llvm-lldb-no-libllvm.patch: $(DN_SRC)/created
+$(DN_SRC)/llvm-lldb-3.7.0-avoid-linking-to-libLLVM.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/lldb-3.7.0-avoid-linking-to-libLLVM.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-lldb-no-libllvm.patch
+FL_SOURCES+=$(DN_SRC)/llvm-lldb-3.7.0-avoid-linking-to-libLLVM.patch
 
-$(DN_SRC)/llvm-more-symbols.patch: $(DN_SRC)/created
+$(DN_SRC)/llvm-3.7.0-export-more-symbols.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/llvm-3.7.0-export-more-symbols.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-more-symbols.patch
+FL_SOURCES+=$(DN_SRC)/llvm-3.7.0-export-more-symbols.patch
 
-$(DN_SRC)/llvm-against-libllvm.patch: $(DN_SRC)/created
+$(DN_SRC)/llvm-3.7.0-link-tools-against-libLLVM.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/llvm-3.7.0-link-tools-against-libLLVM.patch?h=packages/llvm
 	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-against-libllvm.patch
+FL_SOURCES+=$(DN_SRC)/llvm-3.7.0-link-tools-against-libLLVM.patch
 
 $(DN_SRC)/llvm-config.h: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/llvm-Config-llvm-config.h?h=packages/llvm
 	touch $@
 FL_SOURCES+=$(DN_SRC)/llvm-config.h
-
 
 $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LLVM_SRC)
 	tar -xf $(DN_SRC)/$(LLVM_SRC)
@@ -4226,21 +4575,47 @@ $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LLVM_SRC)
 	mv $(LLVM)-$(LLVM_VERSION)/compiler-rt-$(LLVM_VERSION).src       $(LLVM)-$(LLVM_VERSION)/projects/compiler-rt
 	mv $(LLVM)-$(LLVM_VERSION)/lldb-$(LLVM_VERSION).src              $(LLVM)-$(LLVM_VERSION)/tools/lldb
 	touch $@
+endif
+
+# patch for 3.9 git
+$(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz: $(DN_SRC)/created
+	$(WGET) -O $@ -c "https://launchpad.net/ubuntu/+archive/primary/+files/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz"
+	touch $@
+FL_SOURCES+=$(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz
+
+# patch for svn
+$(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch: $(DN_SRC)/created
+	$(WGET) -O $@ -c "https://aur.archlinux.org/cgit/aur.git/plain/D18035-add-gcc-abi_tag-support-mangler-part.patch?h=llvm-svn"
+	touch $@
+FL_SOURCES+=$(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch
 
 $(LLVM)-$(LLVM_VERSION)/mypatched: $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt $(FL_DEP_LLVM)
+#	tar -xvf $(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz \
+#		&& cat debian/patches/series | while read i; do \
+#				echo "pwd: `pwd`"; \
+#				patch -d $(LLVM)-$(LLVM_VERSION)/ -Np1 -i `pwd`/debian/patches/$$i ; \
+#			done
 	cd $(LLVM)-$(LLVM_VERSION)/ \
-        && patch -Np1 -i $(DN_SRC)/llvm-against-libllvm.patch \
-        && patch -Np2 -i $(DN_SRC)/llvm-more-symbols.patch \
-		&& patch -d tools/clang -Np0 -i $(DN_SRC)/llvm-clang-add-gcc-abi-tag.patch \
-        && patch -d tools/clang/tools/extra -Np1 -i $(DN_SRC)/llvm-clang-install-query.patch \
-        && patch -d tools/lldb -Np1 -i $(DN_SRC)/llvm-lldb-no-libllvm.patch \
-		&& patch -Np1 -i $(DN_SRC)/llvm-llvm-new-msan.patch \
+        && patch -d tools/clang -Np0 -i $(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch \
+        $(NULL)
+	touch $@
+
+$(LLVM)-3.7.0/mypatched: $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt $(FL_DEP_LLVM)
+	cd $(LLVM)-$(LLVM_VERSION)/ \
+        && patch -Np1 -i $(DN_SRC)/llvm-3.7.0-link-tools-against-libLLVM.patch \
+        && patch -Np2 -i $(DN_SRC)/llvm-3.7.0-export-more-symbols.patch \
+		&& patch -d tools/clang -Np0 -i $(DN_SRC)/llvm-clang-3.7.0-add-gcc-abi-tag-support.patch \
+        && patch -d tools/clang/tools/extra -Np1 -i $(DN_SRC)/llvm-clang-tools-extra-3.7.0-install-clang-query.patch \
+        && patch -d tools/lldb -Np1 -i $(DN_SRC)/llvm-lldb-3.7.0-avoid-linking-to-libLLVM.patch \
+		&& patch -Np1 -i $(DN_SRC)/llvm-new-msan-mapping-layout-llvm-part.patch \
 		&& patch -d projects/compiler-rt -Np1 -i $(DN_SRC)/llvm-compiler-rt-new-msan.patch \
         $(NULL)
 	find $(LLVM)-$(LLVM_VERSION)/tools/lldb -name Makefile -exec sed -i 's/python-config/python2-config/' {} +
 	sed -i 's|/usr/bin/env python|&2|' \
 		"$(LLVM)-$(LLVM_VERSION)/tools/lldb/scripts/Python/build-swig-Python.sh" \
 		"$(LLVM)-$(LLVM_VERSION)/tools/lldb/scripts/Python/finish-swig-Python-LLDB.sh"
+	touch $@
+$(LLVM)-3.8.0/mypatched: $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt $(FL_DEP_LLVM)
 	touch $@
 
 $(LLVM)-$(LLVM_VERSION)/build/Makefile: $(LLVM)-$(LLVM_VERSION)/mypatched
@@ -4257,8 +4632,14 @@ $(LLVM)-$(LLVM_VERSION)/build/Makefile: $(LLVM)-$(LLVM_VERSION)/mypatched
 			-DLLVM_ENABLE_SPHINX=OFF \
 			-DLLVM_ENABLE_DOXYGEN=OFF \
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF \
-			-DFFI_INCLUDE_DIR=`pkg-config --variable=includedir libffi` \
-			-DLLVM_BINUTILS_INCDIR=/usr/include \
+			-DDOXYGEN_EXECUTABLE=doxygen \
+			-DFFI_INCLUDE_DIR=`$(ENV_COMPILE) pkg-config --variable=includedir libffi` \
+			-DLLVM_BINUTILS_INCDIR=$(PREFIX_DEST)/$(PREFIX_CONF)/usr/include \
+			-D CMAKE_CXX_FLAGS=" -I$(PREFIX_DEST)/$(PREFIX_CONF)/include `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libedit`" \
+			-D CMAKE_C_FLAGS=" -I$(PREFIX_DEST)/$(PREFIX_CONF)/include `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libedit`" \
+			-D CMAKE_EXE_LINKER_FLAGS="-L1 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L2 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L3 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
             ..
 $(LLVM)-$(LLVM_VERSION)/build/lib/LLVMgold.so: $(LLVM)-$(LLVM_VERSION)/build/Makefile
 	cd $(LLVM)-$(LLVM_VERSION)/build/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -4338,7 +4719,7 @@ USE_GIT_LIBCLC=1
 ifeq ($(USE_GIT_LIBCLC),1) # use git instead
 
 LIBCLC_VERSION=git
-LIBCLC_SRC=$(LIBCLC)-$(LIBCLC_VERSION)/configure.py
+LIBCLC_SRC=$(LIBCLC)-$(LIBCLC_VERSION)/.git
 LIBCLC_URL=http://llvm.org/git/libclc
 
 $(DN_SRC)/$(LIBCLC_SRC): $(DN_SRC)/created
@@ -4372,7 +4753,10 @@ $(LIBCLC)-$(LIBCLC_VERSION)/configure.py: $(DN_SRC)/$(LIBCLC_SRC)
 endif
 
 $(LIBCLC)-$(LIBCLC_VERSION)/mypatched: $(LIBCLC)-$(LIBCLC_VERSION)/configure.py $(FL_DEP_LIBCLC)
-	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && sed -i 's/"python < $in >/sys.executable + " < $in >/g' configure.py
+	cd $(LIBCLC)-$(LIBCLC_VERSION)/ \
+		&& sed 's/"python < $in >/sys.executable + " < $in >/g' -i configure.py \
+		&& sed -e 's|if llvm_int_version <.*$$|if llvm_int_version < 370:|' -i configure.py \
+		$(NULL)
 	touch $@
 $(LIBCLC)-$(LIBCLC_VERSION)/Makefile: $(LIBCLC)-$(LIBCLC_VERSION)/mypatched
 	cd $(LIBCLC)-$(LIBCLC_VERSION)/ && $(ENV_COMPILE) python2 ./configure.py --prefix=$(PREFIX_CONF)
@@ -4480,7 +4864,6 @@ FL_SOURCES+=$(DN_SRC)/$(LIBVA_SRC)
 FL_UNINSTALL+=$(LIBVA)-uninstall
 
 ########################################
-#freeglut-devel
 MESA=mesa
 
 FL_DEP_MESA= \
@@ -4563,6 +4946,83 @@ $(MESA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(MESA).la
 
 FL_SOURCES+=$(DN_SRC)/$(MESA_SRC)
 FL_UNINSTALL+=$(MESA)-uninstall
+
+
+########################################
+# freeglut provides functionality for small OpenGL programs
+# http://freeglut.sourceforge.net
+
+FREEGLUT=freeglut
+
+FL_DEP_FREEGLUT= \
+	$(CMAKE)-install \
+	$(MESA)-install \
+	$(NULL)
+
+USE_GIT_FREEGLUT=0
+
+ifeq ($(USE_GIT_FREEGLUT),1) # use git instead
+
+FREEGLUT_VERSION=git
+FREEGLUT_SRC=$(FREEGLUT)-$(FREEGLUT_VERSION)/.git
+FREEGLUT_URL=https://github.com/dcnieho/FreeGLUT.git
+
+$(DN_SRC)/$(FREEGLUT_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(FREEGLUT_SRC)" ]; then \
+        git clone $(FREEGLUT_URL) $(DN_SRC)/$(FREEGLUT)-$(FREEGLUT_VERSION); \
+    fi
+	cd $(DN_SRC)/$(FREEGLUT)-$(FREEGLUT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(FREEGLUT)-$(FREEGLUT_VERSION)/CMakeLists.txt: $(DN_SRC)/$(FREEGLUT_SRC)
+	cd $(DN_SRC)/$(FREEGLUT)-$(FREEGLUT_VERSION)/ && git pull
+	if [ ! -d "$(FREEGLUT)-$(FREEGLUT_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(FREEGLUT)-$(FREEGLUT_VERSION)/ $(FREEGLUT)-$(FREEGLUT_VERSION); \
+    fi
+	cd $(FREEGLUT)-$(FREEGLUT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FREEGLUT)-$(FREEGLUT_VERSION)/CMakeLists.txt
+else
+
+FREEGLUT_VERSION=3.0.0
+FREEGLUT_SRC=$(FREEGLUT)-$(FREEGLUT_VERSION).tar.gz
+FREEGLUT_URL=http://downloads.sourceforge.net/freeglut/$(FREEGLUT_SRC)
+
+$(DN_SRC)/$(FREEGLUT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(FREEGLUT_URL)
+	touch $@
+
+$(FREEGLUT)-$(FREEGLUT_VERSION)/CMakeLists.txt: $(DN_SRC)/$(FREEGLUT_SRC)
+	tar -xf $(DN_SRC)/$(FREEGLUT_SRC)
+	rm -f $(FREEGLUT)-install
+	#mv $(FREEGLUT)* $(FREEGLUT)-$(FREEGLUT_VERSION)
+	#cd $(FREEGLUT)-$(FREEGLUT_VERSION)/
+	touch $@
+endif
+
+$(FREEGLUT)-$(FREEGLUT_VERSION)/build/Makefile: $(FREEGLUT)-$(FREEGLUT_VERSION)/CMakeLists.txt $(FL_DEP_FREEGLUT)
+	cd $(FREEGLUT)-$(FREEGLUT_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+            -DCMAKE_INSTALL_LIBDIR=lib \
+            -DFREEGLUT_REPLACE_GLUT=ON \
+            ..
+$(FREEGLUT)-$(FREEGLUT_VERSION)/build/libglut.pc: $(FREEGLUT)-$(FREEGLUT_VERSION)/build/Makefile
+	cd $(FREEGLUT)-$(FREEGLUT_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libglut.pc: $(FREEGLUT)-$(FREEGLUT_VERSION)/build/libglut.pc
+	cd $(FREEGLUT)-$(FREEGLUT_VERSION)/build && make DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(FREEGLUT)-uninstall: $(FREEGLUT)-$(FREEGLUT_VERSION)/build/libglut.pc
+	cd $(FREEGLUT)-$(FREEGLUT_VERSION)/build && make uninstall
+$(FREEGLUT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libglut.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(FREEGLUT_SRC)
+FL_UNINSTALL+=$(FREEGLUT)-uninstall
 
 ########################################
 # OpenCL (Open Computing Language) header files

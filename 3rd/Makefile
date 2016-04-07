@@ -37,6 +37,13 @@ compile = mkdir -p "$(1)/$(2)" && mkdir -p "$(1)/$(3)-bin" && mkdir -p "$(1)/$(3
 # $(call disttar,"$(DN_PWD)","$(DN_TARGET_PREFIX)","FN_LIST_INPUT")
 disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && ./striptarbar.sh $(4) $(3) $(3).tar.gz #&& rm -f $(3)
 
+get-sources:
+	$(call compile,$(DN_PWD),$(DN_SRC),ffmpeg,get-sources)
+	$(call compile,$(DN_PWD),$(DN_SRC),aircrack,get-sources)
+	$(call compile,$(DN_PWD),$(DN_SRC),gnuplot,get-sources)
+	$(call compile,$(DN_PWD),$(DN_SRC),ns2,get-sources)
+	#$(call compile,$(DN_PWD),$(DN_SRC),ns2docsis,get-sources)
+
 ffmpeg:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 

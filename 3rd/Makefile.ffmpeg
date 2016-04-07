@@ -35,7 +35,8 @@ ifeq ($(USE_GPU),GPU_CUDA)
 OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
                           -D CUDA_GENERATION=Auto \
-                          -D CUDA_ARCH_BIN=1.1 -D CUDA_ARCH_PTX=1.1 \
+                          -D CUDA_ARCH_BIN=1.1 \
+                          -D CUDA_ARCH_PTX=1.1 \
                           -D WITH_CUBLAS=ON \
                           -D WITH_NVCUVID=ON \
                           -D CUDA_FAST_MATH=ON \
@@ -44,6 +45,15 @@ OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(CUDASDK)-install
 MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
 
 else ifeq ($(USE_GPU),GPU_OPENCL)
+OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=OFF \
+                          -D WITH_CUBLAS=OFF \
+                          -D WITH_NVCUVID=OFF \
+                          -D CUDA_FAST_MATH=OFF \
+                          -D WITH_OPENCL=ON \
+                          -D OPENCL_ROOT_DIR=$(PREFIX)/usr \
+                          $(NULL)
+OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(OPENCL)-install
+MEDIAMETRICS_GPU_SUPPORT_CONF=
 
 endif
 
@@ -100,10 +110,6 @@ FL_DEP_HARFBUZZ= \
 
 $(DN_SRC)/$(HARFBUZZ_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(HARFBUZZ_URL)
-	cd $(HARFBUZZ)-$(HARFBUZZ_VERSION) &&
-
-$(DN_SRC)/$(HARFBUZZ_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(HARFBUZZ_URL)
 	touch $@
 $(HARFBUZZ)-$(HARFBUZZ_VERSION)/configure: $(DN_SRC)/$(HARFBUZZ_SRC)
 	tar -xf $(DN_SRC)/$(HARFBUZZ_SRC)
@@ -128,7 +134,7 @@ FL_UNINSTALL+=$(HARFBUZZ)-uninstall
 FRIBIDI=fribidi
 
 # automake 14:
-FRIBIDI_VERSION=0.19.6
+FRIBIDI_VERSION=0.19.7
 FRIBIDI_SRC=$(FRIBIDI)-$(FRIBIDI_VERSION).tar.bz2
 # automake 13:
 #FRIBIDI_VERSION=0.19.2
@@ -190,7 +196,7 @@ FL_UNINSTALL+=$(LIBENCA)-uninstall
 # --disable-harfbuzz since we don't need harfbuzz to function
 LIBASS=libass
 LIBASS_VERSION=0.12.2
-LIBASS_VERSION=0.13.0
+LIBASS_VERSION=0.13.2
 LIBASS_SRC=$(LIBASS)-$(LIBASS_VERSION).tar.gz
 #LIBASS_URL=https://libass.googlecode.com/files/$(LIBASS_SRC)
 LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
@@ -497,7 +503,7 @@ $(LAME)-$(LAME_VERSION)/mypatched: $(DN_SRC)/lame-sse.patch $(LAME)-$(LAME_VERSI
 	touch $@
 
 $(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/mypatched $(FL_DEP_LAME)
-	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-nasm --enable-static --enable-shared
+	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ncursesw/" ./configure --prefix=$(PREFIX_CONF) --enable-nasm --enable-static --enable-shared
 $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la: $(LAME)-$(LAME_VERSION)/Makefile
 	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
@@ -592,7 +598,7 @@ FL_UNINSTALL+=$(XVIDCORE)-uninstall
 AMRNB=amrnb
 AMRNB_VERSION=11.0.0.0
 AMRNB_SRC=$(AMRNB)-$(AMRNB_VERSION).tar.bz2
-AMRNB_URL=http://www.penguin.cz/~utx/ftp/amr/$(AMRNB_SRC)
+AMRNB_URL=ftp://ftp.penguin.cz/pub/users/utx/amr/$(AMRNB_SRC)
 
 $(DN_SRC)/$(AMRNB_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(AMRNB_URL)
@@ -830,9 +836,31 @@ FL_DEP_X265= \
 	$(CMAKE)-install \
 	$(NULL)
 
-USE_HG_X265=1
+USE_HG_X265=0
+USE_GIT_X265=1
 
-ifeq ($(USE_HG_X265),1) # use mercurial instead
+ifeq ($(USE_GIT_X265),1) # use git instead
+# git mirror for hg
+X265_VERSION=git
+X265_SRC=$(X265)-$(X265_VERSION)/.git
+X265_URL=https://github.com/videolan/x265.git
+
+$(DN_SRC)/$(X265_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(X265_SRC)" ]; then \
+        git clone $(X265_URL) $(DN_SRC)/$(X265)-$(X265_VERSION); \
+    fi
+	cd $(DN_SRC)/$(X265)-$(X265_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(X265)-$(X265_VERSION)/readme.rst: $(DN_SRC)/$(X265_SRC)
+	cd $(DN_SRC)/$(X265)-$(X265_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(X265)-$(X265_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(X265)-$(X265_VERSION)/ $(X265)-$(X265_VERSION); \
+    fi
+	cd $(X265)-$(X265_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else ifeq ($(USE_HG_X265),1) # use mercurial instead
 
 X265_VERSION=hg
 X265_SRC=$(X265)-$(X265_VERSION)/.hg
@@ -1600,7 +1628,7 @@ $(LADSPA)-$(LADSPA_VERSION)/mypatched: $(DN_SRC)/fix-memleak-in-plugin-scanning.
 	touch $@
 
 $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so: $(LADSPA)-$(LADSPA_VERSION)/mypatched $(LADSPA)-$(LADSPA_VERSION)/src/makefile $(FL_DEP_LADSPA)
-	cd $(LADSPA)-$(LADSPA_VERSION)/src && $(ENV_COMPILE) make $(MAKE_ARG) targets
+	cd $(LADSPA)-$(LADSPA_VERSION)/src && $(ENV_COMPILE) make $(MAKE_ARG) LIBRARIES="-Wl,--no-as-needed -ldl -lm" targets
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ladspa/amp.so: $(LADSPA)-$(LADSPA_VERSION)/plugins/amp.so
 	cd $(LADSPA)-$(LADSPA_VERSION)/src && make INSTALL_PLUGINS_DIR="$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ladspa/" \
@@ -1985,7 +2013,7 @@ $(LIBCACA)-$(LIBCACA_VERSION)/configure: $(LIBCACA)-$(LIBCACA_VERSION)/README.md
 
 $(LIBCACA)-$(LIBCACA_VERSION)/Makefile: $(LIBCACA)-$(LIBCACA_VERSION)/configure
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
+		&& $(ENV_COMPILE) CFLAGS="-I`pwd`/caca" ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man --enable-shared --disable-doc --disable-cxx --disable-gl --disable-csharp --disable-static --disable-python --disable-ruby --disable-debug
 	touch $@
 $(LIBCACA)-$(LIBCACA_VERSION)/$(LIBCACA).la: $(LIBCACA)-$(LIBCACA_VERSION)/Makefile
 	cd $(LIBCACA)-$(LIBCACA_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
@@ -3033,50 +3061,6 @@ FL_SOURCES+=$(DN_SRC)/$(LIBZVBI_SRC)
 FL_UNINSTALL+=$(LIBZVBI)-uninstall
 
 ########################################
-# Nvidia VDPAU library
-LIBVDPAU=libvdpau
-
-FL_DEP_LIBVDPAU= \
-	$(AUTOMAKE)-install \
-	$(LIBXEXT)-install \
-	$(NULL)
-
-LIBVDPAU_VERSION=1.1.1
-LIBVDPAU_SRC=$(LIBVDPAU)-$(LIBVDPAU_VERSION).tar.bz2
-LIBVDPAU_URL=http://people.freedesktop.org/~aplattner/vdpau/$(LIBVDPAU_SRC)
-
-$(DN_SRC)/$(LIBVDPAU_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBVDPAU_URL)
-	touch $@
-
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure.ac: $(DN_SRC)/$(LIBVDPAU_SRC)
-	tar -xf $(DN_SRC)/$(LIBVDPAU_SRC)
-	touch $@
-
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure.ac $(FL_DEP_LIBVDPAU)
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/configure
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-shared --disable-static --enable-pic --disable-documentation
-	touch $@
-$(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/Makefile
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVDPAU).pc: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(LIBVDPAU)-uninstall: $(LIBVDPAU)-$(LIBVDPAU_VERSION)/$(LIBVDPAU).pc
-	cd $(LIBVDPAU)-$(LIBVDPAU_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBVDPAU)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBVDPAU).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBVDPAU_SRC)
-FL_UNINSTALL+=$(LIBVDPAU)-uninstall
-
-########################################
 LIBSODIUM=libsodium
 
 FL_DEP_LIBSODIUM= \
@@ -3343,41 +3327,6 @@ FL_SOURCES+=$(DN_SRC)/$(LIBNUT_SRC)
 FL_UNINSTALL+=$(LIBNUT)-uninstall
 
 ########################################
-# DTS Coherent Acoustics decoder with support for HD extensions
-# https://github.com/foo86/dcadec.git
-LIBDCADEC=dcadec
-
-FL_DEP_LIBDCADEC= \
-	#$(aaaa)-install \
-	$(NULL)
-
-LIBDCADEC_VERSION=0.1.0
-LIBDCADEC_SRC=$(LIBDCADEC)-$(LIBDCADEC_VERSION).tar.bz2
-LIBDCADEC_URL=https://github.com/foo86/dcadec/archive/v$(LIBDCADEC_VERSION).tar.gz
-
-$(DN_SRC)/$(LIBDCADEC_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBDCADEC_URL)
-	touch $@
-
-$(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile: $(DN_SRC)/$(LIBDCADEC_SRC)
-	tar -xf $(DN_SRC)/$(LIBDCADEC_SRC)
-	touch $@
-$(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/Makefile $(FL_DEP_LIBDCADEC)
-	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' $(ENV_COMPILE) make $(MAKE_ARG)
-	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).pc: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc
-	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' PREFIX='$(PREFIX_CONF)/' make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(LIBDCADEC)-uninstall: $(LIBDCADEC)-$(LIBDCADEC_VERSION)/$(LIBDCADEC).pc
-	cd $(LIBDCADEC)-$(LIBDCADEC_VERSION)/ && CONFIG_SHARED='TRUE' PREFIX='$(PREFIX_CONF)/' make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBDCADEC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBDCADEC).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(LIBDCADEC_SRC)
-FL_UNINSTALL+=$(LIBDCADEC)-uninstall
-
-########################################
 # The NVENC Video Encoding API provides an interface to video encoder hardware on supported NVIDIA GPUs
 # https://developer.nvidia.com/nvidia-video-codec-sdk
 APINVENC=nvenc
@@ -3413,6 +3362,7 @@ FL_UNINSTALL+=$(APINVENC)-uninstall
 FFMPEG=ffmpeg
 
 FL_DEPENDENCES_FFMPEG= \
+    $(PKGCONFIG)-install \
     $(VORBIS)-install  \
     $(THEORA)-install  \
     $(LIBOGG)-install  \
@@ -3464,7 +3414,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBVDPAU)-install \
     $(LIBZMQ)-install \
     $(LIBNUT)-install \
-    $(LIBDCADEC)-install \
     $(LIBXV)-install \
     $(OPENSSL)-install \
     $(FAAC)-install \
@@ -3544,13 +3493,16 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
 	cd $(FFMPEG)-$(FFMPEG_VERSION)/ \
 		&& mkdir -p $(PREFIX)/tmp/ \
 		&& export TMPDIR="$(PREFIX)/tmp/" \
-		&& $(ENV_COMPILE) CFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
-			LDFLAGS=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` " \
-			$(ENV_COMPILE) ./configure \
+		&& $(ENV_COMPILE) \
+			CFLAGS=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			LDFLAGS=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` " \
+			./configure \
 			--prefix=$(PREFIX_CONF) \
 			--extra-version=$(STRLOGO) \
-			--extra-cflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
-			--extra-ldflags=" `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1 ` " \
+			--extra-cflags=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			--extra-cxxflags=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` -DHAVE_OPENJPEG_1_5_OPENJPEG_H=1 " \
+			--extra-ldflags=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs-only-L libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1 ` " \
+			--extra-libs=" `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1 ` " \
             \
             --enable-version3 --enable-gpl --enable-nonfree \
             \
@@ -3558,7 +3510,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             \
             --disable-ffserver --disable-ffplay \
             \
-            --disable-doc --disable-htmlpages --disable-podpages \
+            --disable-doc --disable-htmlpages --disable-podpages --doxygen=doxygen \
             \
             --enable-avresample --enable-avdevice --enable-avcodec --enable-avformat --enable-swresample --enable-swscale --enable-postproc --enable-avfilter --enable-pthreads --enable-postproc \
             --enable-network --enable-dct --enable-dwt --enable-lsp --enable-lzo --enable-mdct --enable-rdft --enable-fft --enable-faan --enable-pixelutils \
@@ -3582,7 +3534,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-libcdio \
             --enable-libcelt \
             --enable-libdc1394 \
-            --enable-libdcadec \
             --enable-libfaac \
             --enable-libfdk-aac \
             --enable-libfreetype \
@@ -4198,12 +4149,13 @@ OPENCV=opencv
 
 OPENCV_VERSION=2.4.8
 OPENCV_VERSION=2.4.11
-#OPENCV_VERSION=3.0.0
+#OPENCV_VERSION=3.1.0
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
 OPENCV_URL=https://github.com/Itseez/opencv/archive/$(OPENCV_VERSION).tar.gz
 #http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.8/opencv-2.4.8.zip
 
 FL_DEP_OPENCV= \
+	$(PKGCONFIG)-install \
 	$(ZLIB)-install \
 	$(LIBPNG)-install \
 	$(LIBDC1394)-install \
@@ -4212,6 +4164,7 @@ FL_DEP_OPENCV= \
 	$(FAAC)-install \
 	$(FFMPEG)-install \
 	$(OPENEXR)-install \
+	$(FREEGLUT)-uninstall \
 	$(OPENCV_GPU_SUPPORT_DEPEND) \
 	#$(VTK)-install \
 	$(NULL)
@@ -4223,20 +4176,25 @@ FL_DEP_OPENCV= \
 # cuda patch for opencv 2.4.11
 opencv-ebd7d08408205aebb478af1e6239f9c2e4dc2fdd.patch: $(DN_SRC)/created
 
+
 #$(OPENCV)-$(OPENCV_VERSION)-patch
-$(DN_SRC)/$(OPENCV)-2.4.11-patch: $(DN_SRC)/created
+$(DN_SRC)/$(OPENCV)-2.4.11-patch: $(DN_SRC)/created $(DN_PATCH)/pbs-opencv-cmake-pch-2.4.diff
 	# compile cuda:
 	$(WGET) -O tmp1 -c https://github.com/antran89/opencv/commit/ebd7d08408205aebb478af1e6239f9c2e4dc2fdd.patch
 	# compile with ffmpeg
 	$(WGET) -O tmp2 -c https://github.com/SpecLad/opencv/commit/799622affd8baa2d503dd632e1629d60d7ac46b2.patch
 	$(WGET) -O tmp3 -c https://github.com/SpecLad/opencv/commit/3d6413cfc617627bff518931c2534bf51f90a2d9.patch
 	$(WGET) -O tmp4 -c https://github.com/SpecLad/opencv/commit/50842b90363efbe2ec16c899a0295cdab9f5ea85.patch
-	rm -f $@; cat tmp1 > $@; cat tmp2 >> $@; cat tmp3 >> $@; cat tmp4 >> $@
+	rm -f $@; cat tmp1 > $@; cat tmp2 >> $@; cat tmp3 >> $@; cat tmp4 >> $@; cat $(DN_PATCH)/pbs-opencv-cmake-pch-2.4.diff >> $@
 	touch $@
 
-$(DN_SRC)/$(OPENCV)-3.0.0-patch: $(DN_SRC)/created
+$(DN_SRC)/$(OPENCV)-3.1.0-patch: $(DN_SRC)/created $(DN_PATCH)/pbs-opencv-cmake-pch-3.1.diff
+	#fix precompile header error
+	cat $(DN_PATCH)/pbs-opencv-cmake-pch-3.1.diff > $@
 	touch $@
-$(DN_SRC)/$(OPENCV)-git-patch: $(DN_SRC)/created
+$(DN_SRC)/$(OPENCV)-git-patch: $(DN_SRC)/created $(DN_PATCH)/pbs-opencv-cmake-pch-3.1.diff
+	#fix precompile header error
+	cat $(DN_PATCH)/pbs-opencv-cmake-pch-3.1.diff > $@
 	touch $@
 
 USE_GIT_OPENCV=1
@@ -4284,6 +4242,14 @@ $(OPENCV)-$(OPENCV_VERSION)/mypatched: $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-pat
 	if [ -d $(OPENCV)-$(OPENCV_VERSION)/.hg ];  then cd $(OPENCV)-$(OPENCV_VERSION)/ && hg update -C . ; fi
 	if [ -d $(OPENCV)-$(OPENCV_VERSION)/.git ]; then cd $(OPENCV)-$(OPENCV_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(OPENCV)-$(OPENCV_VERSION)/ && patch -p1 < $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)-patch
+	cd $(OPENCV)-$(OPENCV_VERSION)/ \
+	    && sed -e '1iint main(void) { return 0; } /*\' \
+	        -i samples/cpp/tutorial_code/features2D/AKAZE_tracking/planar_tracking.cpp \
+	    && echo "*/" >> samples/cpp/tutorial_code/features2D/AKAZE_tracking/planar_tracking.cpp
+	#cd $(OPENCV)-$(OPENCV_VERSION)/ && \
+	#    sed -e 's|#include <opencv2/tracking.hpp>|#include <opencv2/video/tracking.hpp>|' \
+	#        -i samples/cpp/tutorial_code/features2D/AKAZE_tracking/planar_tracking.cpp
+	#        -e 's|uBox = selectROI|uBox = cv::selectROI|'
 	touch $@
 
 $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatched
@@ -4318,11 +4284,11 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatche
 			-D WITH_1394=ON \
 			-D WITH_FFMPEG=ON -D FFMPEG_INCLUDE_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/include -D FFMPEG_LIB_DIR=$(PREFIX_DEST)/$(PREFIX_CONF)/lib \
 			\
-			-D CMAKE_CXX_FLAGS=" -I1 `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
-			-D CMAKE_C_FLAGS=" -I2 `$(ENV_COMPILE) pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
-			-D CMAKE_EXE_LINKER_FLAGS="-L1 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
-			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L2 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
-			-D CMAKE_SHARED_LINKER_FLAGS="-L3 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype $(CUDA_LIBS)" \
+			-D CMAKE_CXX_FLAGS=" -I1 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
+			-D CMAKE_C_FLAGS=" -I2 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags --libs libass fontconfig fribidi freetype2 $(LIBZVBI)-0.2 libcdio libcdio_cdda libcdio_paranoia $(XAVS) libopenjpeg1` $(CUDA_CFLAGS) " \
+			-D CMAKE_EXE_LINKER_FLAGS="-L1 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype -lGLU $(CUDA_LIBS)" \
+			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L2 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype -lGLU $(CUDA_LIBS)" \
+			-D CMAKE_SHARED_LINKER_FLAGS="-L3 -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lmp3lame -lvorbis -lfaac -lx264 -lxvidcore -lfreetype -lGLU $(CUDA_LIBS)" \
 			.. \
 			$(NULL)
 # -D BZIP2_LIBRARIES=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libbz2.a
@@ -4543,7 +4509,7 @@ FL_DEP_GPAC= \
 USE_GIT_GPAC=1
 USE_SVN_GPAC=0
 
-ifeq ($(USE_GIT_GPAC),1) # use svn instead
+ifeq ($(USE_GIT_GPAC),1) # use git instead
 
 GPAC_VERSION=git
 GPAC_SRC=$(GPAC)-$(GPAC_VERSION)/.git
