@@ -21,6 +21,22 @@ Directory Structure
 │   ├── libns2figures.sh    # bash lib for plotting ns2 figures
 │   ├── libbash.sh          # bash lib misc functions
 │   └── libshrt.sh          # bash lib for multi-process support
+├── app-test/               # the test script that can generate a list of the configuration of your Hadoop system
+│   ├── input/              # input/ directory contains the config files for the test.
+│   ├── libapp.sh           # help functions for the tool
+│   ├── e1map.sh            # map-reduce function, map() for stage 1
+│   ├── e2map.sh            # map-reduce function, map() for stage 2
+│   └── ...
+├── app-conv2dash/          # the media converting tools for Dynamic Adaptive Streaming over HTTP
+│   ├── input/              # input/ directory contains the config files for the DASH MPD transcodes.
+│   ├── input-examples/     # some example files for input/ directory
+│   ├── libapp.sh           # help functions for the tool
+│   ├── e1map.sh            # map-reduce function, map() for stage 1, reads the config files from input/ folder and generates the file name list
+│   ├── e1red.sh            # map-reduce function, reduce() for stage 1, get a sorted list of file names grouped by the key for stage 2 map()
+│   ├── e2map.sh            # map-reduce function, map() for stage 2, transcode the media segments
+│   ├── e2red.sh            # map-reduce function, reduce() for stage 2, output concated media files, generate the metric values for the media files/segments
+│   ├── e3map.sh            # map-reduce function, map() for stage 3, generates DASH MPD files
+│   └── ...
 ├── app-ns2/                # the NS-2 simulation application directory
 │   ├── input/              # input/ directory contains the config files for the NS2 simulations.
 │   ├── input-examples/     # some example files for input/ directory
@@ -45,8 +61,31 @@ Directory Structure
 └── mrsystem.conf           # global config variables
 
 
-Usage
------
+Usage for test
+--------------
+
+This is to test if the environment and softwares are installed correctly.
+The hardware and package list are printed out after run this script.
+
+    cd app-test
+    ../run-sh1.sh
+
+
+Usage for conv2dash
+-------------------
+You need get the following software installed in your systems:
+
+    ffmpeg
+    mediametrics (https://github.com/yhfudev/mediametrics.git)
+    MP4Box (https://github.com/gpac/gpac.git)
+
+And the directory of the binary should in your PATH envrionment.
+
+
+
+
+Usage for NS2
+-------------
 
 In summary, if you start a new test, you may want to clean the folder first:
 
