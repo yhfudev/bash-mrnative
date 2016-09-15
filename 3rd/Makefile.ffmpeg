@@ -503,7 +503,7 @@ $(LAME)-$(LAME_VERSION)/mypatched: $(DN_SRC)/lame-sse.patch $(LAME)-$(LAME_VERSI
 	touch $@
 
 $(LAME)-$(LAME_VERSION)/Makefile: $(LAME)-$(LAME_VERSION)/mypatched $(FL_DEP_LAME)
-	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ncursesw/" ./configure --prefix=$(PREFIX_CONF) --enable-nasm --enable-static --enable-shared
+	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ncursesw/" ./configure --prefix=$(PREFIX_CONF) --enable-nasm --disable-static --enable-shared
 $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la: $(LAME)-$(LAME_VERSION)/Makefile
 	cd $(LAME)-$(LAME_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmp3lame.a: $(LAME)-$(LAME_VERSION)/libmp3lame/libmp3lame.la
@@ -3473,6 +3473,7 @@ $(FFMPEG)-$(FFMPEG_VERSION)/mypatched: $(DN_PATCH)/pbs-ffmpeg-1.patch $(FFMPEG)-
 	if [ -d $(FFMPEG)-$(FFMPEG_VERSION)/.git ]; then cd $(FFMPEG)-$(FFMPEG_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ffmpeg-1.patch
 	#cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|-lopenjpeg|-lopenjp2|g' -i configure
+	cd $(FFMPEG)-$(FFMPEG_VERSION)/ && sed -e 's|ff_parse_specific_params(codec,|ff_parse_specific_params(par,|' -i libavformat/libnut.c
 	touch $@
 
 $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
@@ -4164,7 +4165,7 @@ FL_DEP_OPENCV= \
 	$(FAAC)-install \
 	$(FFMPEG)-install \
 	$(OPENEXR)-install \
-	$(FREEGLUT)-uninstall \
+	$(FREEGLUT)-install \
 	$(OPENCV_GPU_SUPPORT_DEPEND) \
 	#$(VTK)-install \
 	$(NULL)

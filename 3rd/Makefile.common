@@ -79,6 +79,24 @@ FL_SOURCES_OTHERS=
 $(DN_SRC)/created:
 	make -p $(DN_SRC)
 	touch $@
+######################################################################
+# binary tools
+SYSINSTALL=sudo pacman -S
+$(SYSINSTALL)-bin:
+	if [ -x $(SYSINSTALL) ]; then \
+	    touch $@ ; \
+	fi
+
+######################################################################
+# ruby
+RUBY=ruby
+$(RUBY)-bin: $(SYSINSTALL)-bin
+	if [ ! -x ruby ]; then \
+	    $(SYSINSTALL) ruby; \
+	fi
+	touch $@
+$(RUBY)-install: $(RUBY)-bin
+	touch $@
 
 ######################################################################
 ZLIB=zlib
@@ -2303,7 +2321,7 @@ $(WAYLAND)-$(WAYLAND_VERSION)/configure: $(DN_SRC)/$(WAYLAND_SRC)
 	#mv $(WAYLAND)$(WAYLAND_VERSION) $(WAYLAND)-$(WAYLAND_VERSION)/
 	touch $@
 $(WAYLAND)-$(WAYLAND_VERSION)/Makefile: $(WAYLAND)-$(WAYLAND_VERSION)/configure $(FL_DEP_WAYLAND)
-	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static
+	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --disable-documentation
 $(WAYLAND)-$(WAYLAND_VERSION)/libwayland-client.la: $(WAYLAND)-$(WAYLAND_VERSION)/Makefile
 	cd $(WAYLAND)-$(WAYLAND_VERSION)/ && make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libwayland-client.la: $(WAYLAND)-$(WAYLAND_VERSION)/libwayland-client.la
@@ -2387,7 +2405,7 @@ FL_DEP_LIBDRM= \
 	$(LIBPCIACCESS)-install \
 	$(NULL)
 
-LIBDRM_VERSION=2.4.65
+LIBDRM_VERSION=2.4.67
 LIBDRM_SRC=$(LIBDRM)-$(LIBDRM_VERSION).tar.gz
 LIBDRM_URL="http://dri.freedesktop.org/libdrm/$(LIBDRM_SRC)"
 
@@ -3414,7 +3432,7 @@ $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/configure: $(DN_SRC)/$(LIBXXF86VM_SRC)
 	#mv $(LIBXXF86VM)$(LIBXXF86VM_VERSION) $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/
 	touch $@
 $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/Makefile: $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/configure $(FL_DEP_LIBXXF86VM)
-	cd $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --disable-shared
+	cd $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --enable-shared
 $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/src/$(LIBXXF86VM).la: $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/Makefile
 	cd $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXXF86VM).la: $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/src/$(LIBXXF86VM).la
@@ -4056,6 +4074,7 @@ $(LIBOMXILB)-$(LIBOMXILB_VERSION)/mypatched: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/c
 	if [ -d $(LIBOMXILB)-$(LIBOMXILB_VERSION)/.git ]; then cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ \
 		&& sed -e 's|^CFLAGS=.*$$|CFLAGS="$${CFLAGS} -Wall"|' -i configure.ac \
+		&& sed -e 's|^omxregister_bellagio_LDFLAGS.*$$|omxregister_bellagio_LDFLAGS=-L$${builddir} -L$${top_builddir}/src/ -lomxil-bellagio|' -i src/Makefile.am \
 		&& patch -p1 -i $(DN_PATCH)/pbs-libomxil-bellagio-emnu.patch
 	touch $@
 $(LIBOMXILB)-$(LIBOMXILB_VERSION)/configure: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/mypatched
@@ -4689,8 +4708,8 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/clang: $(LLVM)-$(LLVM_VERSION)/build/bin/clang
 	sed -i \
                -e 's|env python$$|&2|' \
                -e 's|/usr/bin/python$$|&2|' \
-               "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-view/scan-view" \
-               "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/set-xcode-analyzer"
+               "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-view/bin/scan-view" \
+               "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/scan-build/bin/set-xcode-analyzer"
 	python2 -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer"
 	python2 -O -m compileall "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer"
 	# clang-tools-extra
@@ -4848,10 +4867,10 @@ $(LIBVA)-$(LIBVA_VERSION)/configure: $(DN_SRC)/$(LIBVA_SRC) $(FL_DEP_LIBVA)
 $(LIBVA)-$(LIBVA_VERSION)/Makefile: $(LIBVA)-$(LIBVA_VERSION)/configure
 	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
-$(LIBVA)-$(LIBVA_VERSION)/src/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/Makefile
+$(LIBVA)-$(LIBVA_VERSION)/va/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/Makefile
 	cd $(LIBVA)-$(LIBVA_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/src/$(LIBVA).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBVA).la: $(LIBVA)-$(LIBVA_VERSION)/va/$(LIBVA).la
 	cd $(LIBVA)-$(LIBVA_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
 
@@ -4889,6 +4908,7 @@ FL_DEP_MESA= \
 	$(NULL)
 
 MESA_VERSION=11.0.7
+MESA_VERSION=11.2.0
 MESA_SRC=$(MESA)-$(MESA_VERSION).tar.xz
 MESA_URL=ftp://ftp.freedesktop.org/pub/mesa/$(MESA_VERSION)/$(MESA_SRC)
 
@@ -4900,7 +4920,14 @@ $(MESA)-$(MESA_VERSION)/configure.ac: $(DN_SRC)/$(MESA_SRC)
 	touch $@
 
 $(MESA)-$(MESA_VERSION)/mypatched: $(MESA)-$(MESA_VERSION)/configure.ac $(FL_DEP_MESA)
-	cd $(MESA)-$(MESA_VERSION)/ && sed -i 's/LLVM_SO_NAME=.*/LLVM_SO_NAME=LLVM/' configure.ac
+	cd $(MESA)-$(MESA_VERSION)/ \
+            && sed -i 's/LLVM_SO_NAME=.*/LLVM_SO_NAME=LLVM/' configure.ac \
+            && sed -i 's|icddir =.*|icddir=$$(DESTDIR)/$$(sysconfdir)/OpenCL/vendors/|' src/gallium/targets/opencl/Makefile.am \
+            && sed -i 's|#include <nouveau_drm.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau_drm.h>\n|' src/mesa/drivers/dri/nouveau/nouveau_screen.c \
+            && sed -i 's|#include <nouveau_drm.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau_drm.h>\n|' src/gallium/drivers/nouveau/nouveau_screen.c \
+            && sed -i 's|#include <nouveau.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau.h>\n|' src/gallium/drivers/nouveau/nouveau_winsys.h \
+            && sed -i 's|#include <nouveau_drm.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau_drm.h>\n|' src/gallium/drivers/nouveau/nvc0/nvc0_screen.c \
+            $(NULL)
 	touch $@
 
 $(MESA)-$(MESA_VERSION)/configure: $(MESA)-$(MESA_VERSION)/mypatched
@@ -4908,8 +4935,10 @@ $(MESA)-$(MESA_VERSION)/configure: $(MESA)-$(MESA_VERSION)/mypatched
 	touch $@
 
 $(MESA)-$(MESA_VERSION)/Makefile: $(MESA)-$(MESA_VERSION)/configure
-	cd $(MESA)-$(MESA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ \
-        --with-dri-driverdir=/usr/lib/xorg/modules/dri \
+	cd $(MESA)-$(MESA_VERSION)/ && $(ENV_COMPILE) ./configure \
+            --prefix=$(PREFIX_CONF) \
+            --sysconfdir=$(PREFIX_CONF)/etc/ \
+            --with-dri-driverdir=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/dri \
             --with-gallium-drivers=r300,r600,radeonsi,nouveau,svga,swrast \
             --with-dri-drivers=i915,i965,r200,radeon,nouveau,swrast \
             --with-egl-platforms=x11,drm,wayland \
@@ -4917,6 +4946,7 @@ $(MESA)-$(MESA_VERSION)/Makefile: $(MESA)-$(MESA_VERSION)/configure
             --enable-egl \
             --enable-gbm \
             --enable-gallium-llvm \
+            --enable-shared \
             --enable-shared-glapi \
             --enable-glx \
             --enable-glx-tls \
@@ -4930,18 +4960,19 @@ $(MESA)-$(MESA_VERSION)/Makefile: $(MESA)-$(MESA_VERSION)/configure
             --enable-omx \
             --enable-nine \
             --enable-opencl --enable-opencl-icd \
-            --with-clang-libdir=/usr/lib
+            --with-clang-libdir=$(PREFIX_DEST)/$(PREFIX_CONF)/lib
+	make clean
 	touch $@
-$(MESA)-$(MESA_VERSION)/src/$(MESA).la: $(MESA)-$(MESA_VERSION)/Makefile
+$(MESA)-$(MESA_VERSION)/src/mesa/libmesa.la: $(MESA)-$(MESA_VERSION)/Makefile
 	cd $(MESA)-$(MESA_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(MESA).la: $(MESA)-$(MESA_VERSION)/src/$(MESA).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmesa.la: $(MESA)-$(MESA_VERSION)/src/mesa/libmesa.la
 	cd $(MESA)-$(MESA_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(MESA)-uninstall: $(MESA)-$(MESA_VERSION)/src/$(MESA).la
+$(MESA)-uninstall: $(MESA)-$(MESA_VERSION)/src/mesa/libmesa.la
 	cd $(MESA)-$(MESA_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(MESA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(MESA).la
+$(MESA)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmesa.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(MESA_SRC)
@@ -5094,6 +5125,7 @@ FL_UNINSTALL+=$(OPENCLHEADER)-uninstall
 LIBCL=ocl-icd
 
 FL_DEP_LIBCL= \
+	$(RUBY)-install \
 	$(MESA)-install \
 	#$(OPENCLHEADER)-install \
 	$(NULL)

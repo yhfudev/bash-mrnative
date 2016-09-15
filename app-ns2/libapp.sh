@@ -28,6 +28,8 @@ my_getpath () {
 #DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
+RANDOM_SEED=10
+
 # untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP
 extrace_binary() {
     local PARAM_FN_TAR=$1
@@ -630,10 +632,9 @@ run_one_ns2 () {
     if [ ! -x "${EXEC_NS2}" ]; then
         mr_trace "Error: not correctly set ns2 env EXEC_NS2=${EXEC_NS2}, which ns=$(which ns)"
     else
-        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
-        mr_trace ${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" TO "${HDFF_FN_LOG}"
-        #${EXEC_NS2} ${FN_TCL} 1 "${PARAM_DN_TEST}" >> "${HDFF_FN_LOG}"
-        ${EXEC_NS2} ${FN_TCL} 1 >> "${HDFF_FN_LOG}"
+        #${EXEC_NS2} ${FN_TCL} ${RANDOM_SEED} "${PARAM_DN_TEST}" 2>&1 | grep PFSCHE >> "${HDFF_FN_LOG}"
+        mr_trace ${EXEC_NS2} ${FN_TCL} ${RANDOM_SEED} TO "${HDFF_FN_LOG}"
+        ${EXEC_NS2} ${FN_TCL} ${RANDOM_SEED} >> "${HDFF_FN_LOG}"
     fi
 
     mr_trace "USE_MEDIUMPACKET='${USE_MEDIUMPACKET}'"

@@ -54,6 +54,7 @@ get_num_range_for_profiles () {
 
 
 # generate the stat line for a subdir
+# TIME_START, TIME_STOP should be set
 # the format of output file PARAM_FN_OUT_TPSTATS
 # num, scheduler, cnt, min, max, sum, mean, stddev, mmr, jfi, cfi
 generate_throughput_stats_single_folder () {
@@ -165,7 +166,7 @@ END{
 }
 EOF
         for i in $LST ; do
-            mr_trace "DEBUG == process flow throughput (stat tcp) $i ..."
+            mr_trace "DEBUG == process flow throughput (stat tcp) cat_file "${i}" TO awk -v STARTTIME=${TIME_START} -v STOPTIME=${TIME_STOP} -f ${FN_AWK_TPAVG} ..."
             V=$(cat_file "${i}" | awk -v STARTTIME=${TIME_START} -v STOPTIME=${TIME_STOP} -f ${FN_AWK_TPAVG})
             echo "${V}" >> "${FN_DAT_STATS}"
         done

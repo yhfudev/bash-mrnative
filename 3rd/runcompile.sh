@@ -38,7 +38,8 @@ compile_source () {
     PARAM_TARGET="$@"
     shift
 
-    if [ ! "$(which module)" = "" ]; then
+    module
+    if [ "$?" = "0" ]; then
         module purge && module load mpc cmake/2.8.7 gcc/4.4 1>&2 # for PBS's gcc
     fi
     mkdir -p "${DN_COMPILE}" 1>&2
@@ -62,12 +63,14 @@ compile_source () {
 # qsub -I -l select=1:ncpus=8:ngpus=2:mem=10gb,walltime=72:00:00
 # qsub -I -l select=1:ncpus=24:ngpus=2:mem=100gb,walltime=72:00:00
 
-if [ ! "$(which module)" = "" ]; then
+module
+if [ "$?" = "0" ]; then
     #module purge && module load mpc cmake/2.8.7 gcc/4.4 1>&2 # for PBS's gcc
     module purge && module load gcc/4.4 cuda-toolkit/7.0.28
 fi
 
 NUM=$(cat /proc/cpuinfo | grep processor | wc -l | awk '{print $0 / 1 + 1;}')
 
-make -j ${NUM} dist-gzip-aircrack
+#make -j ${NUM} dist-gzip-aircrack
+make -j ${NUM} dist-gzip-ffmpeg
 # make -j ${NUM} dist-gzip
