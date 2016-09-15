@@ -1,0 +1,3 @@
+# 1920 x 800
+origpic	"/newscratch/yfu/media-sources/source/tearsofsteel/tearsofsteel-stereo.flac"	"/newscratch/yfu/media-sources/source/tearsofsteel/media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_%05d.png"	10	24	1	17620
+#origvid	"/newscratch/yfu/media-sources/source/tearsofsteel/tearsofsteel-stereo.flac"	"/newscratch/yfu/media-sources/source/tearsofsteel/tearsofsteel-lossless-1080p-flac.mkv"	6

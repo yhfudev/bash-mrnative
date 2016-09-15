@@ -1,0 +1,3 @@
+# 1920 x 1080
+origpic	"/newscratch/yfu/media-sources/source/bigbuckbunny/BigBuckBunny-stereo.flac"	"/newscratch/yfu/media-sources/source/bigbuckbunny/media.xiph.org/BBB/BBB-1080-png/big_buck_bunny_%05d.png"	10	24	1	14315
+#origvid	"/newscratch/yfu/media-sources/source/bigbuckbunny/BigBuckBunny-stereo.flac"	"/newscratch/yfu/media-sources/source/bigbuckbunny/bigbuckbunny-lossless-1080p-flac.mkv"	10

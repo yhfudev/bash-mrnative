@@ -1,0 +1,3 @@
+# 4096 x 1744
+origpic	"/newscratch/yfu/media-sources/source/sintel/sintel-master-st.flac"	"/newscratch/yfu/media-sources/source/sintel/media.xiph.org/sintel/sintel-4k-png/%08d.png"	10	24	1	21312
+#origvid	"/newscratch/yfu/media-sources/source/sintel/sintel-master-st.flac"	"/newscratch/yfu/media-sources/source/sintel/sintel-lossless-1080p-flac.mkv"	10

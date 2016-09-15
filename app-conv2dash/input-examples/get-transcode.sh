@@ -1,0 +1,57 @@
+#!/bin/sh
+
+get_transcode () {
+    PARAM_RESOLUTIONS="$1"
+    shift
+    PARAM_SCREEN="$1"
+    shift
+    PARAM_FN_TRAN="$1"
+    shift
+
+    sed -i 's|^HDFF_NUM_CLONE.*$|HDFF_NUM_CLONE=16|g' "${PARAM_FN_TRAN}"
+    sed -i 's|^OPTIONS_FFM_GLOBAL.*$|OPTIONS_FFM_GLOBAL="-threads 0"|g' "${PARAM_FN_TRAN}"
+
+    sed -i 's|^HDFF_TRANSCODE_RESOLUTIONS|#HDFF_TRANSCODE_RESOLUTIONS|g' "${PARAM_FN_TRAN}"
+    sed -i 's|^HDFF_SCREEN_RESOLUTIONS|#HDFF_SCREEN_RESOLUTIONS|g'       "${PARAM_FN_TRAN}"
+
+    echo "HDFF_TRANSCODE_RESOLUTIONS=${PARAM_RESOLUTIONS}" >> "${PARAM_FN_TRAN}"
+    echo "HDFF_SCREEN_RESOLUTIONS=${PARAM_SCREEN}"         >> "${PARAM_FN_TRAN}"
+}
+
+#HDFF_SCREEN_RESOLUTIONS=320x180,640x360,854x480,1280x720,1920x1080,3840x2160,7680x4320
+
+# tears of steel # 1920 x 800
+# media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_%05d.png
+FN_TRANS="transcode.conf"
+get_transcode \
+  "1920x800+4800k+256k,1920x800+3800k+256k,1440x600+2600k+256k,1280x533+1500k+256k,960x400+1000k+192k,720x300+800k+192k,480x200+600k+192k,432x180+500k+64k,320x133+315k+64k" \
+  "1920x800,1440x600,1280x533,960x400,720x300,480x200,432x180,320x133" \
+  "${FN_TRANS}"
+
+# sintel # 4096 x 1744
+# media.xiph.org/sintel/sintel-4k-png/%08d.png
+get_transcode \
+  "4096x1744+12000k+256k,2048x872+4800k+256k,1024x436+4800k+256k,512x218+600k+64k,256x109+300k+64k" \
+  "4096x1744,2048x872,1024x436,512x218,256x109" \
+  "${FN_TRANS}"
+
+# sintel trailer 1920 x 1080
+# http://media.xiph.org/sintel/sintel_trailer-1080-png.tar.gz
+get_transcode \
+  "320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k,1280x720+1500k+256k,1280x720+2600k+256k,1920x1080+3800k+256k,1920x1080+4800k+256k" \
+  "320x180,640x360,854x480,1280x720,1920x1080,3840x2160" \
+  "${FN_TRANS}"
+
+# big buck bunny 1920 x 1080
+# media.xiph.org/BBB/BBB-1080-png/big_buck_bunny_%05d.png
+get_transcode \
+  "320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k,1280x720+1500k+256k,1280x720+2600k+256k,1920x1080+3800k+256k,1920x1080+4800k+256k" \
+  "320x180,640x360,854x480,1280x720,1920x1080,3840x2160" \
+  "${FN_TRANS}"
+
+# elephant dream 1920 x 1080
+# http://media.xiph.org/ED/ED-1080-png.tar
+get_transcode \
+  "320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k,1280x720+1500k+256k,1280x720+2600k+256k,1920x1080+3800k+256k,1920x1080+4800k+256k" \
+  "320x180,640x360,854x480,1280x720,1920x1080,3840x2160" \
+  "${FN_TRANS}"

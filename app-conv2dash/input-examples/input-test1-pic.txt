@@ -1,0 +1,2 @@
+origpic	"/newscratch/yfu/media-sources/source/sintel/trailer/sintel_trailer-audio.flac"	"/newscratch/yfu/media-sources/source/sintel/trailer/1080/sintel_trailer_2k_%04d.png"	6	24	1	1253
+#origvid	"/newscratch/yfu/media-sources/source/sintel/trailer/sintel_trailer-audio.flac"	"/newscratch/yfu/media-sources/source/sintel/trailer/sintel_trailer-lossless-1080p.mkv"	6

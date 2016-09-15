@@ -1,0 +1,3 @@
+# 1920 x 1080
+origpic	"/newscratch/yfu/media-sources/source/elephantsdream/ED-CM-St-16bit.flac"	"/newscratch/yfu/media-sources/source/elephantsdream/ED-1080-png/%05d.png"	10	24	1	15691
+#origvid	"/newscratch/yfu/media-sources/source/elephantsdream/ED-CM-St-16bit.flac"	"/newscratch/yfu/media-sources/source/elephantsdream/elephantsdream-lossless-1080p-flac.mkv"	10
