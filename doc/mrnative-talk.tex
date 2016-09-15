@@ -369,7 +369,7 @@
 
 \title{\sc{\doctitle}}
 \author{\docauthor}
-\date{Nov 25, 2015}
+%\date{Sep 15, 2016}
 
 %\pgfdeclareimage[height=1.5cm]{logo}{./figures/TigerPaw_co.eps}
 %\pgfdeclareimage[height=1.5cm]{logo}{../figures/cuseal.eps}
@@ -523,22 +523,6 @@ cd projtools
 
 
 \begin{frame}[fragile]
-  \frametitle<presentation>{Compile NS-2}
-
-    \begin{itemize}
-      \item in a Linux machine, type
-\begin{lstlisting}[language=bash]
-cd 3rd
-make dist-gzip-ns2
-\end{lstlisting}
-      \item compile \texttt{ns-2} and required tools \texttt{gawk, gnuplot} etc.
-      \item the file \texttt{ns-*.tar.gz} contains the binaries;
-    \end{itemize}
-
-\end{frame}
-
-
-\begin{frame}[fragile]
   \frametitle<presentation>{Compile ffmpeg}
 
     \begin{itemize}
@@ -555,58 +539,20 @@ make dist-gzip-ffmpeg
 
 
 
-\section{Demo Project -- NS2 network simulator}
-
-\frame {
-    \frametitle{NS2 network simulator introduction}
+\begin{frame}[fragile]
+  \frametitle<presentation>{Compile NS-2}
 
     \begin{itemize}
-      \item NS-2 supports only single host simulating
-      \item it's time-consuming simulating
+      \item in a Linux machine, type
+\begin{lstlisting}[language=bash]
+cd 3rd
+make dist-gzip-ns2
+\end{lstlisting}
+      \item compile \texttt{ns-2} and required tools \texttt{gawk, gnuplot} etc.
+      \item the file \texttt{ns-*.tar.gz} contains the binaries;
     \end{itemize}
-}
 
-
-
-\frame {
-    \frametitle{NS2 simulating scenario}
-
-    \begin{itemize}
-      \item Compare multiple packet scheduler algorithms
-      \item Deploy various number of nodes, such as 1, 3, 6, 12, 24, 48, 96 competing packet flows each from one node;
-      \item Construct different competing applications, such as UDP flows competing with several TCP flows.
-    \end{itemize}
-}
-
-
-\frame {
-    \frametitle{NS2 simulating in MapReduce programming model}
-
-\definecolor{vidtransoriginfile}{HTML}{D7FE39}
-\definecolor{vidtranstmpfile}{HTML}{EDE80F}
-\definecolor{vidtransfinalfile}{HTML}{FFE985}
-\definecolor{vidtransprocess}{HTML}{FEA93E}
-\definecolor{vidtransfuncio}{HTML}{DADAFF}
-\begin{figure}\centering
-  \includegraphics[height=0.8\textheight]{flowchart-mr-ns2sim}
-%  \caption{The system.
-%    The text in \fcolorbox{black}{vidtransoriginfile}{this color} is the original input file.
-%    The text in \fcolorbox{black}{vidtranstmpfile}{this color} is the temp file.
-%    The text in \fcolorbox{black}{vidtransfinalfile}{this color} is the final output file.
-%    The text in \fcolorbox{black}{vidtransprocess}{this color} is process block.
-%    The text in \fcolorbox{black}{vidtransfuncio}{\textcolor[HTML]{0000FF}{this color}} is the input/output of one process block.
-%The process blocks signed by a \textcolor[HTML]{FF0000}{*} are the blocks cost most of the processing time.
-%  }\label{fig:system}
-\end{figure}
-
-    \begin{itemize}
-      \item 
-      \item 
-      \item 
-    \end{itemize}
-}
-
-
+\end{frame}
 
 
 \section{Demo Project -- Media trans-coding}
@@ -668,6 +614,62 @@ An MPEG Group Of Pictures (GOP), starts with an "I" frame, follows with multiple
       \item 
     \end{itemize}
 }
+
+
+
+\section{Demo Project -- NS2 network simulator}
+
+\frame {
+    \frametitle{NS2 network simulator introduction}
+
+    \begin{itemize}
+      \item NS-2 supports only single host simulating
+      \item it's time-consuming simulating
+      \item adjust the internal parameters of networks and simulates to get the results needs a lot of work and time
+    \end{itemize}
+}
+
+
+
+\frame {
+    \frametitle{NS2 simulating scenario}
+
+    \begin{itemize}
+      \item Run thousands of simulations in a Hadoop environment
+      \item Compare multiple packet scheduler algorithms
+      \item Deploy various number of nodes, such as 1, 3, 6, 12, 24, 48, 96 competing packet flows each from one node;
+      \item Construct different competing applications, such as UDP flows competing with several TCP flows.
+    \end{itemize}
+}
+
+
+\frame {
+    \frametitle{NS2 simulating in MapReduce programming model}
+
+\definecolor{vidtransoriginfile}{HTML}{D7FE39}
+\definecolor{vidtranstmpfile}{HTML}{EDE80F}
+\definecolor{vidtransfinalfile}{HTML}{FFE985}
+\definecolor{vidtransprocess}{HTML}{FEA93E}
+\definecolor{vidtransfuncio}{HTML}{DADAFF}
+\begin{figure}\centering
+  \includegraphics[height=0.8\textheight]{flowchart-mr-ns2sim}
+%  \caption{The system.
+%    The text in \fcolorbox{black}{vidtransoriginfile}{this color} is the original input file.
+%    The text in \fcolorbox{black}{vidtranstmpfile}{this color} is the temp file.
+%    The text in \fcolorbox{black}{vidtransfinalfile}{this color} is the final output file.
+%    The text in \fcolorbox{black}{vidtransprocess}{this color} is process block.
+%    The text in \fcolorbox{black}{vidtransfuncio}{\textcolor[HTML]{0000FF}{this color}} is the input/output of one process block.
+%The process blocks signed by a \textcolor[HTML]{FF0000}{*} are the blocks cost most of the processing time.
+%  }\label{fig:system}
+\end{figure}
+
+    \begin{itemize}
+      \item 
+      \item 
+      \item 
+    \end{itemize}
+}
+
 
 
 \end{document}

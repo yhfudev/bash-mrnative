@@ -77,6 +77,8 @@ The hardware and package list are printed out after run this script.
 
 Usage for conv2dash
 -------------------
+
+The scripts in the folder app-conv2dash is to convert a multimedia content to MPD/segements files for Dynamic Adaptive Streaming over HTTP.
 You need get the following software installed in your systems:
 
     ffmpeg
