@@ -79,7 +79,7 @@ Usage for conv2dash
 -------------------
 
 The scripts in the folder app-conv2dash is to convert a multimedia content to MPD/segements files for Dynamic Adaptive Streaming over HTTP.
-You need get the following software installed in your systems:
+You need the following softwares installed in your system:
 
     ffmpeg
     mediametrics (https://github.com/yhfudev/mediametrics.git)
