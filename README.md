@@ -1,8 +1,12 @@
-mrnativens2
-===========
+mrnative
+========
 
-This folder contains the scripts to run various NS2 DOCSIS 3.1 tests.
+This folder contains the scripts to run native software in an Hadoop/HPC environment.
 
+The example application including:
+
+  * an transcoding applicatioan which convert a multimedia content to MPD/segements files for Dynamic Adaptive Streaming over HTTP
+  * an NS-2 distribution simulation framework
 
 Directory Structure
 -------------------
