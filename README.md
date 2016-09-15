@@ -81,7 +81,8 @@ You need get the following software installed in your systems:
 
 And the directory of the binary should in your PATH envrionment.
 
-
+    cd app-conv2dash
+    ../run-sh1.sh
 
 
 Usage for NS2
