@@ -700,13 +700,16 @@ $(NCURSES)-$(NCURSES_VERSION)/configure: $(DN_SRC)/$(NCURSES_SRC)
 	#cd $(NCURSES)-$(NCURSES_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 
-#$(NCURSES)-$(NCURSES_VERSION)/mypatched: $(DN_PATCH)/pbs-NCURSES-newapi.patch $(NCURSES)-$(NCURSES_VERSION)/configure
-	#cd $(NCURSES)-$(NCURSES_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-NCURSES-newapi.patch
-	#touch $@
+$(NCURSES)-$(NCURSES_VERSION)/mypatched: $(DN_PATCH)/pbs-ncurses-6.0-debian-mawk.patch $(NCURSES)-$(NCURSES_VERSION)/configure
+	cd $(NCURSES)-$(NCURSES_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-ncurses-6.0-debian-mawk.patch
+	touch $@
 
-$(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/configure $(FL_DEP_NCURSES)
+$(NCURSES)-$(NCURSES_VERSION)/Makefile: $(NCURSES)-$(NCURSES_VERSION)/mypatched $(FL_DEP_NCURSES)
 	cd $(NCURSES)-$(NCURSES_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man --with-shared --with-normal --without-debug --without-ada --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared --enable-ext-colors --enable-ext-mouse
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --mandir=$(PREFIX_CONF)/share/man \
+                  --with-shared --with-normal --without-debug --without-ada \
+                  --enable-widec --enable-pc-files --with-cxx-binding --with-cxx-shared \
+                  --enable-ext-colors --enable-ext-mouse
 	touch $@
 $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/Makefile
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
