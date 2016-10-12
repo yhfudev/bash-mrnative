@@ -2075,13 +2075,14 @@ LIBCDIO=libcdio
 
 FL_DEP_LIBCDIO= \
 	$(AUTOMAKE)-install \
-	$(NULL)
+		$(LIBCDDB)-install \
+		$(NULL)
 
 $(DN_SRC)/libcdio-0.83-linking.patch: $(DN_SRC)/created
 	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/libcdio-0.83-linking.patch?h=packages/libcdio
 	touch $@
 
-USE_GIT_LIBCDIO=1
+USE_GIT_LIBCDIO=0
 
 ifeq ($(USE_GIT_LIBCDIO),1) # use git instead
 
@@ -2104,11 +2105,19 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIO_SRC)
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
+$(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
+	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
+	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
+	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
+	touch $@
+
 else
 
 LIBCDIO_VERSION=0.93
 LIBCDIO_SRC=$(LIBCDIO)-$(LIBCDIO_VERSION).tar.bz2
-LIBCDIO_URL=http://downloads.sourceforge.net/sourceforge/$(LIBCDIO)/$(LIBCDIO_SRC)
+LIBCDIO_URL=http://ftp.gnu.org/gnu/libcdio/$(LIBCDIO_SRC)
 
 $(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBCDIO_URL)
@@ -2117,15 +2126,16 @@ $(DN_SRC)/$(LIBCDIO_SRC): $(DN_SRC)/created
 $(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac: $(DN_SRC)/$(LIBCDIO_SRC)
 	tar -xf $(DN_SRC)/$(LIBCDIO_SRC)
 	touch $@
-endif
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure.ac
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
 	    && sed -e 's|SUBDIRS = doc |SUBDIRS =|' -i Makefile.am \
 	    && sed -e 's|doc/Makefile \\|\\|' -i configure.ac \
 	    && sed -e 's|cd-info.1||' -e 's|cd-read.1||' -e 's|cd-drive.1||' -e 's|iso-read.1||' -e 's|iso-info.1||' -i src/Makefile.am
-	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) ./autogen.sh #&& $(ENV_COMPILE) autoreconf -if
+	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
+
+endif
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(LIBCDIO)-$(LIBCDIO_VERSION)/configure
 	if [ -d $(LIBCDIO)-$(LIBCDIO_VERSION)/.svn ]; then cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && svn revert -R . ; fi
@@ -2136,7 +2146,7 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/mypatched: $(DN_SRC)/libcdio-0.83-linking.patch $(
 
 $(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure $(FL_DEP_LIBCDIO)
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ \
-		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --without-cd-drive #--disable-vcd-info --enable-cpp-progs --disable-static
+		&& $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --includedir=$(PREFIX_DEST)/$(PREFIX_CONF)/include/ --without-cd-drive #--disable-vcd-info --enable-cpp-progs --disable-static
 	touch $@
 $(LIBCDIO)-$(LIBCDIO_VERSION)/$(LIBCDIO).pc: $(LIBCDIO)-$(LIBCDIO_VERSION)/Makefile
 	cd $(LIBCDIO)-$(LIBCDIO_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
