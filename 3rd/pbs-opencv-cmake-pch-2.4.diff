@@ -1,0 +1,25 @@
+--- a/cmake/OpenCVPCHSupport.cmake	2016-03-11 00:01:03.738961555 -0500
++++ b/cmake/OpenCVPCHSupport.cmake	2016-03-11 00:01:55.235374026 -0500
+@@ -112,11 +112,11 @@
+             STRING(REGEX REPLACE "^ +" "" pchsupport_compiler_cxx_arg1 ${CMAKE_CXX_COMPILER_ARG1})
+ 
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER} ${pchsupport_compiler_cxx_arg1} ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} ${pchsupport_compiler_cxx_arg1} -c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ELSE(CMAKE_CXX_COMPILER_ARG1)
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER}  ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} -c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ENDIF(CMAKE_CXX_COMPILER_ARG1)
+     ELSE(CMAKE_COMPILER_IS_GNUCXX)
+@@ -247,7 +247,7 @@
+     endif()
+ 
+     #MESSAGE("_compile_FLAGS: ${_compile_FLAGS}")
+-    #message("COMMAND ${CMAKE_CXX_COMPILER}	${_compile_FLAGS} -x c++-header -o ${_output} ${_input}")
++    #message("COMMAND ${CMAKE_CXX_COMPILER}	-c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}")
+ 
+     ADD_CUSTOM_COMMAND(
+       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}"

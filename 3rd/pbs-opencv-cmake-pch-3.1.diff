@@ -1,0 +1,29 @@
+diff --git a/cmake/OpenCVPCHSupport.cmake b/cmake/OpenCVPCHSupport.cmake
+index 243fb4c..aaf24cf 100644
+--- a/cmake/OpenCVPCHSupport.cmake
++++ b/cmake/OpenCVPCHSupport.cmake
+@@ -130,11 +130,11 @@ MACRO(_PCH_GET_COMPILE_COMMAND out_command _input _output)
+             STRING(REGEX REPLACE "^ +" "" pchsupport_compiler_cxx_arg1 ${CMAKE_CXX_COMPILER_ARG1})
+ 
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER} ${pchsupport_compiler_cxx_arg1} ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} ${pchsupport_compiler_cxx_arg1} -c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ELSE(CMAKE_CXX_COMPILER_ARG1)
+             SET(${out_command}
+-              ${CMAKE_CXX_COMPILER}  ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
++              ${CMAKE_CXX_COMPILER} -c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}
+               )
+         ENDIF(CMAKE_CXX_COMPILER_ARG1)
+     ELSE(CMAKE_COMPILER_IS_GNUCXX)
+@@ -267,8 +267,8 @@ MACRO(ADD_PRECOMPILED_HEADER _targetName _input)
+     get_target_property(DIRINC ${_targetName} INCLUDE_DIRECTORIES)
+     set_target_properties(${_targetName}_pch_dephelp PROPERTIES INCLUDE_DIRECTORIES "${DIRINC}")
+ 
+-    #MESSAGE("_compile_FLAGS: ${_compile_FLAGS}")
+-    #message("COMMAND ${CMAKE_CXX_COMPILER}	${_compile_FLAGS} -x c++-header -o ${_output} ${_input}")
++    MESSAGE("_compile_FLAGS: ${_compile_FLAGS}")
++    #message("COMMAND ${CMAKE_CXX_COMPILER}	-c ${_compile_FLAGS} -x c++-header -o ${_output} ${_input}")
+ 
+     ADD_CUSTOM_COMMAND(
+       OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${_name}"

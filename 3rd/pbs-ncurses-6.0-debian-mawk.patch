@@ -1,0 +1,14 @@
+diff -Nur ncurses-6.0-origin/ncurses/base/MKlib_gen.sh ncurses-6.0/ncurses/base/MKlib_gen.sh
+--- ncurses-6.0-origin/ncurses/base/MKlib_gen.sh	2015-08-06 20:48:24.000000000 -0400
++++ ncurses-6.0/ncurses/base/MKlib_gen.sh	2016-10-12 12:14:58.657820350 -0400
+@@ -64,6 +64,10 @@
+ 
+ preprocessor="$1 -DNCURSES_INTERNALS -I../include"
+ AWK="$2"
++if [ "$AWK"="mawk" ]; then
++    echo "change awk to gawk!!!!" > /dev/stderr
++    AWK=gawk
++fi
+ USE="$3"
+ 
+ # A patch discussed here:
