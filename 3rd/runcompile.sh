@@ -66,7 +66,8 @@ compile_source () {
 module
 if [ "$?" = "0" ]; then
     #module purge && module load mpc cmake/2.8.7 gcc/4.4 1>&2 # for PBS's gcc
-    module purge && module load gcc/4.4 cuda-toolkit/7.0.28
+    #module purge && module load gcc/4.4 cuda-toolkit/7.0.28  # old settings
+    module purge && module load gcc/6.1.0 cuda-toolkit/7.5.18
 fi
 
 NUM=$(cat /proc/cpuinfo | grep processor | wc -l | awk '{print $0 / 1 + 1;}')
