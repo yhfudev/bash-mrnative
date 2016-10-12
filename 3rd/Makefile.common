@@ -681,9 +681,9 @@ FL_UNINSTALL+=$(OPENSSL)-uninstall
 # System V Release 4.0 curses emulation library
 NCURSES=ncurses
 
-FL_DEP_AUTOMAKE= \
+FL_DEP_NCURSES= \
 	$(AUTOMAKE)-install \
-	$(GAWK)-install \
+	$(GNUAWK)-install \
 	$(NULL)
 
 NCURSES_VERSION=6.0
