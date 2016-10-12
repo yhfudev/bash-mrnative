@@ -716,7 +716,7 @@ $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/Ma
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ncursesw.pc: $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc
 	cd $(NCURSES)-$(NCURSES_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) PKG_CONFIG_LIBDIR=$(PREFIX_CONF)/lib/pkgconfig install
-	ln -s libncursesw.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libncurses.a
+	#ln -s libncursesw.a $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libncurses.a
 	touch $@
 
 $(NCURSES)-uninstall: $(NCURSES)-$(NCURSES_VERSION)/misc/ncursesw.pc
