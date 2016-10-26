@@ -2761,17 +2761,18 @@ USE_GIT_LIBUTVIDEO=1
 ifeq ($(USE_GIT_LIBUTVIDEO),1) # use git instead
 LIBUTVIDEO_VERSION=git
 LIBUTVIDEO_SRC=$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/.git
-LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo.git
+#LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo.git
+LIBUTVIDEO_URL=https://github.com/yhfudev/mirror-libutvideo.git
 
 $(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
 	if [ ! -d "$(DN_SRC)/$(LIBUTVIDEO_SRC)" ]; then \
         git clone $(LIBUTVIDEO_URL) $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); \
     fi
-	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git fetch --all #&& git submodule update --init --recursive
 	touch $@
 
 $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
-	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git pull #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION) && git fetch --all #&& git submodule update --init --recursive
 	if [ ! -d "$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)" ]; then \
         cp -r $(DN_SRC)/$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION); \
     fi
@@ -2780,16 +2781,17 @@ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
 
 else # use released files
 
-LIBUTVIDEO_VERSION=15.2.0
-LIBUTVIDEO_SRC=$(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION).tar.gz
-LIBUTVIDEO_URL=https://github.com/qyot27/libutvideo/archive/v$(LIBUTVIDEO_VERSION).tar.gz
+LIBUTVIDEO_VERSION=17.0.0
+LIBUTVIDEO_SRC=utvideo-$(LIBUTVIDEO_VERSION)-src.zip
+LIBUTVIDEO_URL=http://umezawa.dyndns.info/archive/utvideo/$(LIBUTVIDEO_SRC)
 
 $(DN_SRC)/$(LIBUTVIDEO_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBUTVIDEO_URL)
 	touch $@
 
 $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
-	tar -xf $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	#tar -xf $(DN_SRC)/$(LIBUTVIDEO_SRC)
+	unzip $(DN_SRC)/$(LIBUTVIDEO_SRC)
 	#cd $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 endif
@@ -3413,7 +3415,6 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBSOXR)-install  \
     $(LIBSPEEX)-install \
     $(LIBTWOLAME)-install \
-    $(LIBUTVIDEO)-install \
     $(LIBV4L2)-install    \
     $(LIBVIDSTAB)-install \
     $(LIBVOAMRWBENC)-install \
@@ -3426,13 +3427,14 @@ FL_DEPENDENCES_FFMPEG= \
     $(LIBNUT)-install \
     $(LIBXV)-install \
     $(OPENSSL)-install \
-    $(FAAC)-install \
     #$(LIBAACPLUS)-install \
     $(LIBVOAACENC)-install   \
     #$(APINVENC)-install \
     #$(LIBILBC)-install \
     #$(LIBFLITE)-install \
     #$(AVXSYNTH)-install \
+    #$(FAAC)-install \
+    #$(LIBUTVIDEO)-install \
     $(NULL)
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(FAAD)-install
 FL_DEPENDENCES_FFMPEG_OTHERS+=$(LIBA52)-install
@@ -3545,7 +3547,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-libcdio \
             --enable-libcelt \
             --enable-libdc1394 \
-            --enable-libfaac \
             --enable-libfdk-aac \
             --enable-libfreetype \
             --enable-libfribidi \
@@ -3564,7 +3565,6 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --enable-libspeex \
             --enable-libtheora \
             --enable-libtwolame \
-            --enable-libutvideo \
             --enable-libv4l2 \
             --enable-libvidstab \
             --enable-libvo-amrwbenc \
@@ -3582,6 +3582,8 @@ $(FFMPEG)-$(FFMPEG_VERSION)/config.mak: $(FFMPEG)-$(FFMPEG_VERSION)/mypatched
             --disable-debug \
             #--enable-libaacplus \
             #--enable-libvo-aacenc \
+            #--enable-libfaac \
+            #--enable-libutvideo \
             $(NULL)
 
 $(FFMPEG)-$(FFMPEG_VERSION)/libavcodec/libavcodec.a: $(FFMPEG)-$(FFMPEG_VERSION)/config.mak
