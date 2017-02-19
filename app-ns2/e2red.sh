@@ -93,14 +93,14 @@ mp_new_session
 
 #####################################################################
 
-## @fn worker_plotonly()
+## @fn worker_stats_throughput()
 ## @brief process throughput stats
 ## @param session_id the session id
 ## @param config_file config file
 ## @param prefix the prefix of the test
 ## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
 ##
-worker_stats_throughput () {
+worker_stats_throughput() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"

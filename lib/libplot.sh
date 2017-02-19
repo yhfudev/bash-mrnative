@@ -55,7 +55,10 @@ else
   FLG_HAS_GNUPLOT=1
 fi
 
-detect_gawk_from () {
+## @fn detect_gawk_from()
+## @brief detect the path to gawk
+## @param path the path contain gawk
+detect_gawk_from() {
     local PARAM_PATH=$1
     shift
     local EXEC_CMD="${PARAM_PATH}"
@@ -69,7 +72,10 @@ detect_gawk_from () {
     return 1
 }
 
-detect_gnuplot_from () {
+## @fn detect_gnuplot_from()
+## @brief detect the path to gnuplot
+## @param path the path contain gnuplot
+detect_gnuplot_from() {
     local PARAM_PATH=$1
     shift
     local EXEC_CMD="${PARAM_PATH}"
@@ -83,13 +89,17 @@ detect_gnuplot_from () {
     return 1
 }
 
-test_gawk_switch () {
+## @fn test_gawk_switch()
+## @brief test if gawk supports key word 'switch'
+test_gawk_switch() {
     mr_trace "patch gawk to support 'switch'"
     echo | awk '{a = 1; switch(a) { case 0: break; } }'
     echo "$?"
 }
 
-test_gnuplot_cdf () {
+## @fn test_gnuplot_cdf()
+## @brief test if gnuplot supports key word 'cumulative'
+test_gnuplot_cdf() {
     # output file name prefix
     FN_GPOUT="tmp-testcdf"
     # the data file
@@ -150,7 +160,9 @@ EOF
     echo "$RET"
 }
 
-test_gnuplot_png () {
+## @fn test_gnuplot_png()
+## @brief test if gnuplot supports output png files
+test_gnuplot_png() {
     FN_GPOUT="tmp-testpng"
 
     cat << EOF > "${FN_GPOUT}.gp"
@@ -191,7 +203,11 @@ if [ ! "$RET1" = "0" ]; then
 fi
 
 #####################################################################
-plot_script () {
+
+## @fn plot_script()
+## @brief plot the script file
+## @param FN_TMPGP the gnuplot script file
+plot_script() {
     FN_TMPGP="$1"
     shift
 
@@ -211,10 +227,15 @@ plot_script () {
     fi
 }
 
-# calculate the values min,max,sum,mean,stddev,jfi for average throughput of N nodes
-# calculate_stats 10000000000 0
-# input file/stream: 1 column of data
-calculate_stats () {
+## @fn calculate_stats()
+## @brief calculate the values min,max,sum,mean,stddev,jfi for average throughput of N nodes
+## @param IMIN initialized min value
+## @param IMAX initialized max value
+##
+## Example:
+## calculate_stats 10000000000 0
+## input file/stream: 1 column of data
+calculate_stats() {
     PARAM_IMIN=$1
     shift
     PARAM_IMAX=$1
@@ -254,7 +275,10 @@ EOF
 
 #####################################################################
 
-gplot_setheader () {
+## @fn gplot_setheader()
+## @brief set the gnuplot script header
+## @param FN_TMPGP the gnuplot script file
+gplot_setheader() {
     PARAM_FN_TMPGP=$1
     shift
 
@@ -279,7 +303,10 @@ set autoscale y
 EOF
 }
 
-gplot_settail () {
+## @fn gplot_settail()
+## @brief set the gnuplot script tail
+## @param FN_TMPGP the gnuplot script file
+gplot_settail() {
     PARAM_FN_TMPGP=$1
     shift
     PARAM_FN_OUTBASE=$1
@@ -321,15 +348,18 @@ fi
 
 }
 
-#gplot_draw_statfig "file.dat" 3 "Aggregate Throughput" "Throughput (bps)" "fig-aggtp-${PARAM_FLOW_TYPE}"
-
-# draw stat figure
-# arg 1: data file, col 1: #, col2: sched, col3-N: val
-# arg 2: column to be showed
-# arg 3: title
-# arg 4: y label
-# arg 5: figure file name
-gplot_draw_statfig () {
+## @fn gplot_draw_statfig()
+## @brief draw stat figure
+## @param FN_DATA data file, col 1: #, col2: sched, col3-N: val
+## @param COL column to be showed
+## @param TITLE figure title
+## @param YLABEL y label
+## @param FN_OUTFIG figure file name
+## @param DN_OUTFIG the dir to store the script file
+##
+## Example:
+## gplot_draw_statfig "file.dat" 3 "Aggregate Throughput" "Throughput (bps)" "fig-aggtp-${PARAM_FLOW_TYPE}"
+gplot_draw_statfig() {
     PARAM_FN_DATA=$1
     shift
     PARAM_COL=$1
@@ -377,7 +407,11 @@ EOF
 
 #####################################################################
 # Some useful sub-functions for plotting PDF/CDF figures.
-plotgen_pdf_head () {
+
+## @fn plotgen_pdf_head()
+## @brief generate gnuplot script file header for PDF figures
+## @param FN_TMPGP the gnuplot script file
+plotgen_pdf_head() {
     FN_TMPGP="$1"
     shift
 
@@ -386,7 +420,14 @@ bin(x,scale) = scale*int(x/scale)
 EOF
 }
 
-plotgen_pdf_pdf () {
+## @fn plotgen_pdf_pdf()
+## @brief generate gnuplot script file contents for PDF figures
+## @param NUMREC number of records
+## @param INTERVAL the interval of x axis
+## @param MAXVALUE the max value of the data
+## @param FN_FULL the file name of the data file
+## @param FN_TMPGP the gnuplot script file
+plotgen_pdf_pdf() {
     PARAM_NUMREC=$1
     shift
     PARAM_INTERVAL=$1
@@ -416,7 +457,14 @@ unset xrange
 EOF
 }
 
-plotgen_pdf_cdf () {
+## @fn plotgen_pdf_cdf()
+## @brief generate gnuplot script file contents for CDF figures
+## @param NUMREC number of records
+## @param INTERVAL the interval of x axis
+## @param MAXVALUE the max value of the data
+## @param FN_FULL the file name of the data file
+## @param FN_TMPGP the gnuplot script file
+plotgen_pdf_cdf() {
     #mr_trace "DEBUG: ==== args: $@"
     PARAM_NUMREC=$1
     shift
@@ -470,10 +518,23 @@ EOF
 }
 
 #####################################################################
-# 输出gnuplot脚本文件，用于绘制 概率密度函数(PDF, Probability Density Function) 和 累积分布函数(CDF, Cumulative Distribution Function)
-# 使用输入数据文件的第一列数据
-# 算法见 Gnuplot in Action 13 章 (http://www.manning.com/janert/SampleCh13.pdf)
-plotgen_pdf_with_minmax () {
+
+## @fn plotgen_pdf_with_minmax()
+## @brief 输出gnuplot脚本文件，用于绘制 概率密度函数(PDF, Probability Density Function) 和 累积分布函数(CDF, Cumulative Distribution Function)
+##
+## @param TITLE the plot figure title
+## @param XLABEL the plot figure x label
+## @param YLABEL the plot figure y label
+## @param FN_FULL the file name of the data file
+## @param FN_OUT_BASE the output figure file basename
+## @param FN_OUT_GNUPLOT the output gnuplot file name
+## @param NUMREC number of records
+## @param INTERVAL the interval of x axis
+## @param MAXVALUE the max value of the data
+##
+## 使用输入数据文件的第一列数据
+## 算法见 Gnuplot in Action 13 章 (http://www.manning.com/janert/SampleCh13.pdf)
+plotgen_pdf_with_minmax() {
     # the plot figure title
     PARAM_TITLE="$1"
     shift
@@ -603,8 +664,16 @@ _get_interval_gz () {
 }
 
 #####################################################################
-# plot CDF/PDF after calculating the min/max value of the intervals
-plotgen_pdf () {
+## @fn plotgen_pdf()
+## @brief plot CDF/PDF after calculating the min/max value of the intervals
+##
+## @param TITLE the plot figure title
+## @param XLABEL the plot figure x label
+## @param YLABEL the plot figure y label
+## @param FN_INTERVALS the interval data file
+## @param FN_BASE the output figure file basename
+## @param FN_OUT_GNUPLOT the output gnuplot file name
+plotgen_pdf() {
     PARAM_TITLE="$1"
     shift
     PARAM_XLABEL="$1"

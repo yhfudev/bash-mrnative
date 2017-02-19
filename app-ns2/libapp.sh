@@ -15,7 +15,7 @@
 ## @param dn the path name
 ##
 ## get the real name of a path, return the real path
-my_getpath () {
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -274,8 +274,13 @@ libapp_generate_script_4hadoop() {
 #LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
 LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
 
-# all the files should be in the local disk
-prepare_one_tcl_scripts () {
+## @fn prepare_one_tcl_scripts()
+## @brief generate one of the TCL scripts
+## @param command the command
+## @param fn_config_proj the config file of the application
+##
+## all the files should be in the local disk
+prepare_one_tcl_scripts() {
     # the prefix of the test
     PARAM_PREFIX=$1
     shift
@@ -606,10 +611,13 @@ FN_TCL=main.tcl
 
 #HDFF_DN_SCRATCH="/dev/shm/$USER/"
 
-# PARAM_DN_PARENT -- the parent dir for the data to be saved.
-# PARAM_DN_TEST   -- the sub dir for the data, related dir name to PARAM_DN_PARENT
-# PARAM_FN_CONFIG_PROJ -- the config file for this simulation
-run_one_ns2 () {
+## @fn run_one_ns2()
+## @brief run one task of ns2 simulations
+## @param DN_PARENT the parent dir for the data to be saved.
+## @param DN_TEST   the sub dir for the data, related dir name to PARAM_DN_PARENT
+## @param FN_CONFIG_PROJ the config file for this simulation
+##
+run_one_ns2() {
     local PARAM_DN_PARENT=$1
     shift
     local PARAM_DN_TEST=$1
@@ -702,7 +710,18 @@ run_one_ns2 () {
 }
 
 # parse the parameters and generate the requests for ploting figures
-prepare_figure_commands_for_one_stats () {
+
+
+
+## @fn prepare_figure_commands_for_one_stats()
+## @brief generate figure commands for one stat
+## @param CONFIG_FILE config file
+## @param PREFIX      the prefix of the test
+## @param TYPE        the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param SCHE        the scheduler, such as "PF", "DRR"
+## @param NUM         the number of flows
+##
+prepare_figure_commands_for_one_stats() {
     PARAM_CONFIG_FILE="$1"
     shift
     # the prefix of the test
@@ -745,8 +764,14 @@ prepare_figure_commands_for_one_stats () {
     esac
 }
 
-# clean temperary files with file name prefix "tmp-"
-clean_one_tcldir () {
+# 
+
+
+## @fn clean_one_tcldir()
+## @brief clean temperary files with file name prefix "tmp-"
+## @param DN_DEST the prefix of the test
+##
+clean_one_tcldir() {
     # the prefix of the test
     PARAM_DN_DEST=$1
     shift
@@ -762,10 +787,15 @@ clean_one_tcldir () {
     fi
 }
 
-# check the throughput log file, if the log time reach to the pre-set end time.
-# checked both for UDP and TCP packets, with file prefix CMTCPDS and CMUDPDS
-# get the TIME_STOP from your config file
-check_one_tcldir () {
+## @fn check_one_tcldir()
+## @brief check the throughput log file, if the log time reach to the pre-set end time.
+## @param FN_CONF      
+## @param DN_DEST      
+## @param FN_LOG_ERROR output file save the failed directories
+##
+## checked both for UDP and TCP packets, with file prefix CMTCPDS and CMUDPDS
+## get the TIME_STOP from your config file
+check_one_tcldir() {
     PARAM_FN_CONF=$1
     shift
     PARAM_DN_DEST=$1

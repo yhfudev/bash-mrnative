@@ -9,17 +9,16 @@
 ## @copyright GPL v3.0 or later
 ## @version 1
 ##
+
 #####################################################################
 
-## @fn my_getpath()
+## @fn simulation_directory()
 ## @brief simulation directory names
 ##
 ## return the simulation directory name
-simulation_directory () {
+simulation_directory() {
     echo "${1}_${2}_${3}_${4}"
 }
-
-
 
 ## @fn get_num_range_for_profiles()
 ## @brief calculate the range of one profile group
@@ -68,12 +67,24 @@ get_num_range_for_profiles() {
     done
 }
 
-
-# generate the stat line for a subdir
-# TIME_START, TIME_STOP should be set
-# the format of output file PARAM_FN_OUT_TPSTATS
-# num, scheduler, cnt, min, max, sum, mean, stddev, mmr, jfi, cfi
-generate_throughput_stats_single_folder () {
+## @fn generate_throughput_stats_single_folder()
+## @brief generate the stat line for a subdir
+## @param dn_base the dir contains all of the trace data in LIST_NODE_NUM,LIST_SCHEDULERS
+## @param prefix the prefix of the test
+## @param type the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param sched the scheduler, "PF", "DRR", etc.
+## @param flows the number of flows
+## @param type_file the file type, "udp" or "tcp"
+## @param fn_stat stats file name template
+## @param fn_tpflow flow throughput file name template
+## @param fn_out_tpstats the result file
+## @param lst_blocks (Profiles) block ratio, such as '0.5 0.5', the sum should be 1.0
+## @param select_block (Profiles) select block, which range should be involved; 0 -- all, 1 -- the first block, 2 -- the second block ...
+##
+## TIME_START, TIME_STOP should be set,
+## the format of output file PARAM_FN_OUT_TPSTATS:
+## num, scheduler, cnt, min, max, sum, mean, stddev, mmr, jfi, cfi
+generate_throughput_stats_single_folder() {
     # the dir contains all of the trace data in LIST_NODE_NUM,LIST_SCHEDULERS
     local PARAM_DN_BASE=$1
     shift
@@ -225,9 +236,21 @@ EOF
     echo "$PARAM_FLOWS $PARAM_SCHED ${VALS}" >> ${PARAM_FN_OUT_TPSTATS}
 }
 
-# please include "libfs.sh" before call this function
-# get the environment variable LIST_NODE_NUM,LIST_SCHEDULERS from your config file
-generate_throughput_stats_file () {
+## @fn generate_throughput_stats_file()
+## @brief generate throughput stat files
+## @param dn_base the dir contains all of the trace data in LIST_NODE_NUM,LIST_SCHEDULERS
+## @param prefix the prefix of the test
+## @param type the test type, "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param type_file the file type, "udp" or "tcp"
+## @param fn_stat stats file name template
+## @param fn_tpflow flow throughput file name template
+## @param fn_out_tpstats the result file
+## @param lst_blocks (Profiles) block ratio, such as '0.5 0.5', the sum should be 1.0
+## @param select_block (Profiles) select block, which range should be involved; 0 -- all, 1 -- the first block, 2 -- the second block ...
+##
+## please include "libfs.sh" before call this function
+## get the environment variable LIST_NODE_NUM,LIST_SCHEDULERS from your config file
+generate_throughput_stats_file() {
     # the dir contains all of the trace data in LIST_NODE_NUM,LIST_SCHEDULERS
     local PARAM_DN_BASE=$1
     shift
@@ -298,10 +321,17 @@ generate_throughput_stats_file () {
 
 #####################################################################
 
-#plot_eachflow_throughput "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${HDFF_DN_OUTPUT}/figures/${DN_TEST}" "${DN_TEST}" "title" "DSUDP*.out"
-
-# plot the flows' throughput
-plot_eachflow_throughput () {
+## @fn plot_eachflow_throughput()
+## @brief plot the flows' throughput
+## @param dn_test the test dir, should be a local dir
+## @param dn_dest the dir stores figures, should be a local dir
+## @param fn_test some part of figure file name
+## @param title the figure title
+## @param fn_tpflow flow throughput file name template
+##
+## example:
+## plot_eachflow_throughput "${HDFF_DN_OUTPUT}/dataconf/${DN_TEST}" "${HDFF_DN_OUTPUT}/figures/${DN_TEST}" "${DN_TEST}" "title" "DSUDP*.out"
+plot_eachflow_throughput() {
     # the test dir, should be a local dir
     local PARAM_DN_TEST=$1
     shift
@@ -357,8 +387,13 @@ EOF
 
 #####################################################################
 
-# the packet delay time in the queue
-plot_pktdelay_queue () {
+## @fn plot_pktdelay_queue()
+## @brief plot figures for the packet delay time in the queue
+## @param dn_test the dir of test data
+## @param dn_dest the dir for the plotted figures
+## @param dn_name the data file prefix
+##
+plot_pktdelay_queue() {
     local PARAM_DN_TEST="$1"
     shift
     local PARAM_DN_DEST="$1"
@@ -426,8 +461,13 @@ plot_pktdelay_queue () {
     fi
 }
 
-# the packet translation time
-plot_pktdelay_trans () {
+## @fn plot_pktdelay_trans()
+## @brief plot figures for the packet translation time
+## @param dn_test the dir of test data
+## @param dn_dest the dir for the plotted figures
+## @param dn_name the data file prefix
+##
+plot_pktdelay_trans() {
     local PARAM_DN_TEST="$1"
     shift
     local PARAM_DN_DEST="$1"
@@ -475,8 +515,19 @@ convert_eps2png () {
 }
 
 #####################################################################
-# the variable HDFF_DN_OUTPUT, HDFF_DN_SCRATCH should be set
-plot_ns2_type () {
+
+## @fn plot_ns2_type()
+## @brief plot figures
+## @param cmd the command of the plotting: bitflow, tpstat, pktstat, or pkttrans
+## @param config_file the config file
+## @param prefix the prefix of the flow simulation
+## @param type the type of packet, udp or tcp
+## @param flow_type the type of flows, udp or tcp
+## @param sche scheduler
+## @param num number of flows
+##
+## the variable HDFF_DN_OUTPUT, HDFF_DN_SCRATCH should be set
+plot_ns2_type() {
     local ARG_CMD1=$1
     shift
     local ARG_CONFIG_FILE1=$1

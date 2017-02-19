@@ -23,6 +23,9 @@
     #echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 #}
 
+## @fn get_hdfs_url()
+## @brief detect HDFS port
+##
 get_hdfs_url() {
     PORT=$(hdfs getconf -confKey fs.default.name | awk -F: '{print $3}')
     if [ ! "$PORT" = "" ]; then
@@ -31,24 +34,16 @@ get_hdfs_url() {
 }
 HDFS_URL="hdfs://$(get_hdfs_url)/"
 
-# convert the file name to its absolute path
-# for example:
-#   /path/to/file1  -->  /path/to/file1
-#   file:///path/to/file2   -->  file:///path/to/file2
-#   path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
-#   file://path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
-
-
 ## @fn convert_filename()
 ## @brief convert the file name to its absolute path
-## @param dn the path name
+## @param FN_PREFIX the prefix of new path
+## @param FN_INPUT the file name
 ##
 ## for example:
 ##   /path/to/file1  -->  /path/to/file1
 ##   file:///path/to/file2   -->  file:///path/to/file2
 ##   path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
 ##   file://path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
-##
 convert_filename() {
     local PARAM_FN_PREFIX=$1
     shift

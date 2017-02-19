@@ -66,7 +66,7 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 # sum the nodes of same or greater # cores
 
 ## @fn convert_avail_settings()
-## @brief sum the nodes of same or greater # cores
+## @brief sum the nodes of same or greater number cores
 ##
 convert_avail_settings() {
     MYCORES=0

@@ -129,8 +129,17 @@ worker_flow_throughput() {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# process packet time stats
-worker_stats_packet () {
+## @fn worker_stats_packet()
+## @brief process packet time stats
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param flow_type 
+## @param schedule 
+## @param node
+##
+worker_stats_packet() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"
@@ -154,8 +163,17 @@ worker_stats_packet () {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# process packet time stats
-worker_trans_packet () {
+## @fn worker_trans_packet()
+## @brief process the packet translation time
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param flow_type 
+## @param schedule 
+## @param node
+##
+worker_trans_packet() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"

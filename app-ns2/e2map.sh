@@ -230,7 +230,7 @@ worker_plotonly() {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-## @fn worker_plotonly()
+## @fn worker_clean()
 ## @brief clean data dir
 ## @param session_id the session id
 ## @param config_file config file
