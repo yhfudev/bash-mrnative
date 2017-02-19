@@ -1,3 +1,4 @@
+SUBDIRS= doc
 
 DOC_FILES0= \
     $(top_srcdir)/README.md \
