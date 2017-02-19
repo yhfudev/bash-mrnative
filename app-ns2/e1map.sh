@@ -1,15 +1,26 @@
 #!/bin/bash
-#####################################################################
-# Run ns2 using Map/Reduce paradigm -- Step 1 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script check the config file name, and
-# generate all of the TCL scripts files for ns2 and send the name of
-# config file directory to output.
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Run ns2 using Map/Reduce paradigm -- Step 1 Map part
+##
+##   In this part, the script check the config file name, and
+##   generate all of the TCL scripts files for ns2 and send the name of
+##   config file directory to output.
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -98,8 +109,13 @@ libapp_prepare_mrnative_binary
 DN_COMM="${DN_EXEC}/common/"
 
 #####################################################################
-# create TCL directories
-worker_create_tcl_config () {
+## @fn worker_create_tcl_config()
+## @brief create TCL directories
+## @param session_id the session id
+## @param config_file config file
+##
+## create TCL directories
+worker_create_tcl_config() {
     local PARAM_SESSION_ID="$1"
     shift
     local PARAM_CONFIG_FILE="$1"

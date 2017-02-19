@@ -1,14 +1,25 @@
 #!/bin/bash
-#####################################################################
-# Run ns2 using Map/Reduce paradigm -- Step 2 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script run the ns2, and plotting some basic figures,
-# generate stats files.
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Run ns2 using Map/Reduce paradigm -- Step 2 Map part
+##
+##   In this part, the script run the ns2, and plotting some basic figures,
+##   generate stats files.
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -89,7 +100,17 @@ mp_new_session
 libapp_prepare_app_binary
 
 #####################################################################
-# check ns2
+
+## @fn worker_check_ns2()
+## @brief check one data folder
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param sche the scheduler, such as "PF", "DRR"
+## @param num the number of flows
+##
+## check if one data folder contains the correct data
 worker_check_ns2() {
     PARAM_SESSION_ID="$1"
     shift
@@ -121,7 +142,15 @@ worker_check_ns2() {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# check dir
+## @fn worker_check_run()
+## @brief check one data folder and run again if not finished
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param sche the scheduler, such as "PF", "DRR"
+## @param num the number of flows
+##
 worker_check_run() {
     PARAM_SESSION_ID="$1"
     shift
@@ -167,8 +196,16 @@ worker_check_run() {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# check dir
-worker_plotonly () {
+## @fn worker_plotonly()
+## @brief plot figures
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param sche the scheduler, such as "PF", "DRR"
+## @param num the number of flows
+##
+worker_plotonly() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"
@@ -193,7 +230,15 @@ worker_plotonly () {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# clean dir
+## @fn worker_plotonly()
+## @brief clean data dir
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param sche the scheduler, such as "PF", "DRR"
+## @param num the number of flows
+##
 worker_clean() {
     PARAM_SESSION_ID="$1"
     shift

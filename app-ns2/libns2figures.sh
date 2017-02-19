@@ -1,24 +1,40 @@
 #!/bin/bash
-# bash library
-# plot
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# Copyright 2013 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-# return the simulation directory name
+## @file
+## @brief plot functions for NS2
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief simulation directory names
+##
+## return the simulation directory name
 simulation_directory () {
     echo "${1}_${2}_${3}_${4}"
 }
 
-# calculate the range of one profile group
-# for example:
-#   BLOCKS 0.5 0.5
-#   MAX=8
-#   SEL=1
-# output: 1,4
-#   SEL=2
-# output: 5,8
-get_num_range_for_profiles () {
+
+
+## @fn get_num_range_for_profiles()
+## @brief calculate the range of one profile group
+## @param max the total number of items
+## @param lst_blocks block ratio, such as '0.5 0.5', the sum should be 1.0
+## @param selet_block select block, which range should be involved; 0 -- all, 1 -- the first block, 2 -- the second block ...
+## 
+## for example:
+##   BLOCKS 0.5 0.5
+##   MAX=8
+##   SEL=1
+## output: 1,4
+##   SEL=2
+## output: 5,8
+get_num_range_for_profiles() {
     # the total # of items
     local PARAM_MAX=$1
     shift

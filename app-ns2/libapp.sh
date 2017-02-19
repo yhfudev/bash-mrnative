@@ -1,10 +1,20 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# the app related functions
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
+## @file
+## @brief the library for the app
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
 my_getpath () {
     local PARAM_DN="$1"
     shift
@@ -30,7 +40,11 @@ my_getpath () {
 
 RANDOM_SEED=10
 
-# untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP
+## @fn extrace_binary()
+## @brief untar the app binary
+## @param fn_tar the file name
+##
+## untar the app binary from the file specified by HDFF_PATHTO_TAR_APP
 extrace_binary() {
     local PARAM_FN_TAR=$1
     shift
@@ -52,7 +66,10 @@ extrace_binary() {
     echo $DN
 }
 
-# find the exec from default dir
+## @fn find_exec_inst()
+## @brief find the exec from default dir
+## @param exec_name the executable file name
+##
 find_exec_inst() {
     local PARAM_EXEC_NAME=$1
     shift
@@ -104,9 +121,12 @@ find_exec_inst() {
     echo "${EXEC_RET}"
 }
 
-# MUST implemented
-# to setup some environment variable for application
-# and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+## @fn libapp_prepare_app_binary()
+## @brief setup some environment variable for application
+##
+## to setup some environment variable for application
+## and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+## (MUST be implemented)
 libapp_prepare_app_binary() {
     EXEC_NS2=$(find_exec_inst "ns")
     mr_trace "EXEC_NS2=${EXEC_NS2}"
@@ -128,9 +148,12 @@ libapp_prepare_app_binary() {
     echo -e "env\tns=${EXEC_NS2}\tgawk=${EXEC_AWK}\tplot=${EXEC_PLOT}\tlib=${GNUPLOT_LIB}\tpsdir=${GNUPLOT_PS_DIR}\tLD=${LD_LIBRARY_PATH}"
 }
 
-# MUST implemented
-# untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
-# return the path to the untar files
+## @fn libapp_prepare_mrnative_binary()
+## @brief untar the mrnative binary
+##
+## untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
+## return the path to the untar files
+## (MUST be implemented)
 libapp_prepare_mrnative_binary() {
     if [ "${HDFF_PATHTO_TAR_MRNATIVE}" = "" ]; then
         # detect the marnative dir
@@ -148,9 +171,11 @@ libapp_prepare_mrnative_binary() {
     fi
 }
 
-# MUST implemented
-# get # of simulation tasks from a config file
-libapp_get_tasks_number_from_config () {
+## @fn libapp_get_tasks_number_from_config()
+## @brief get number of simulation tasks from a config file
+##
+## (MUST be implemented)
+libapp_get_tasks_number_from_config() {
     NUM_SCHE=1
     NUM_NODES=1
     NUM_TYPE=1
@@ -179,8 +204,16 @@ libapp_get_tasks_number_from_config () {
     echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
 }
 
-# MUST implemented
-libapp_generate_script_4hadoop () {
+## @fn libapp_generate_script_4hadoop()
+## @brief generate the TCL scripts for all of the settings
+## @param command the command
+## @param fn_config_proj the config file of the application
+##
+## my_getpath, DN_EXEC, HDFF_DN_OUTPUT, should be defined before call this function
+## HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
+## PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
+## (MUST be implemented)
+libapp_generate_script_4hadoop() {
     local PARAM_ORIG="$1"
     shift
     local PARAM_OUTPUT="$1"
@@ -462,12 +495,16 @@ fi
     mr_trace "TCL script done: ${PARAM_DN_TARGET}/${PARAM_DN_TEST}/"
 }
 
-# MUST implemented
-# generate the TCL scripts for all of the settings
-# my_getpath, DN_EXEC, DN_COMM, HDFF_DN_OUTPUT, should be defined before call this function
-# HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
-# PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
-libapp_prepare_execution_config () {
+## @fn libapp_prepare_execution_config()
+## @brief generate the TCL scripts for all of the settings
+## @param command the command
+## @param fn_config_proj the config file of the application
+##
+## my_getpath, DN_EXEC, HDFF_DN_OUTPUT, should be defined before call this function
+## HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
+## PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
+## (MUST be implemented)
+libapp_prepare_execution_config() {
     local PARAM_COMMAND=$1
     shift
     local PARAM_FN_CONFIG_PROJ=$1

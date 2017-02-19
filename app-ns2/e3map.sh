@@ -1,13 +1,24 @@
 #!/bin/bash
-#####################################################################
-# Run ns2 using Map/Reduce paradigm -- Step 3 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script plots time-consumed figures
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Run ns2 using Map/Reduce paradigm -- Step 3 Map part
+##
+##   In this part, the script plots time-consumed figures
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -82,7 +93,18 @@ mp_new_session
 
 #####################################################################
 # process flow throughput figure
-worker_flow_throughput () {
+
+## @fn worker_flow_throughput()
+## @brief process throughput stats
+## @param session_id the session id
+## @param config_file config file
+## @param prefix the prefix of the test
+## @param type the test type, one of "udp", "tcp", "has", "udp+has", "tcp+has"
+## @param flow_type 
+## @param schedule 
+## @param node
+##
+worker_flow_throughput() {
     PARAM_SESSION_ID="$1"
     shift
     PARAM_CONFIG_FILE="$1"
