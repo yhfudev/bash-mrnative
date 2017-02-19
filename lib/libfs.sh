@@ -1,18 +1,23 @@
 #!/bin/bash
-#####################################################################
-# bash library
-# the copy interfaces for various file systems, file://, hdfs:// etc.
-#   cat_file
-#   copy_file
-#   move_file
-#   is_file_or_dir
-#   is_local
-#   find_file
-#   make_dir
-#   rm_f_dir
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
+#####################################################################
+## @file
+## @brief bash library
+##
+## the copy interfaces for various file systems, file://, hdfs:// etc.
+##   cat_file
+##   copy_file
+##   move_file
+##   is_file_or_dir
+##   is_local
+##   find_file
+##   make_dir
+##   rm_f_dir
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
 #mr_trace () {
     #echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
@@ -32,6 +37,18 @@ HDFS_URL="hdfs://$(get_hdfs_url)/"
 #   file:///path/to/file2   -->  file:///path/to/file2
 #   path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
 #   file://path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
+
+
+## @fn convert_filename()
+## @brief convert the file name to its absolute path
+## @param dn the path name
+##
+## for example:
+##   /path/to/file1  -->  /path/to/file1
+##   file:///path/to/file2   -->  file:///path/to/file2
+##   path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
+##   file://path/to/file2   -->  ${DN_EXEC}/input/path/to/file2
+##
 convert_filename() {
     local PARAM_FN_PREFIX=$1
     shift
@@ -51,6 +68,11 @@ convert_filename() {
     fi
 }
 
+## @fn is_local()
+## @brief check if a file is a local file or not
+## @param fn the file name
+##
+## @return 'l' if it is local file, 'r' for remote file
 is_local() {
     local PARAM_FN_INPUT=$1
     shift
@@ -60,7 +82,10 @@ is_local() {
     echo "l"
 }
 
-# show the tail of a text file
+## @fn tail_file()
+## @brief show the tail of a text file
+## @param fn the file name
+##
 tail_file() {
     local PARAM_FN_INPUT=$1
     shift
@@ -69,7 +94,10 @@ tail_file() {
     tail "${PARAM_FN_INPUT#file://}" $@
 }
 
-# save file from stdin
+## @fn save_file()
+## @brief save file from stdin
+## @param fn the file name
+##
 save_file() {
     local PARAM_FN_SAVE=$1
     shift
@@ -77,6 +105,11 @@ save_file() {
     cat - >> "${PARAM_FN_SAVE#file://}"
 }
 
+## @fn is_file_or_dir()
+## @brief check file type
+## @param fn the file name
+##
+## @return 'e' if it is execuatable, 'f' for normal file, 'd' for directory
 is_file_or_dir() {
     local PARAM_FN_INPUT=$1
     shift
@@ -112,6 +145,10 @@ is_file_or_dir() {
     echo "e"
 }
 
+## @fn chmod_file()
+## @brief set the mode of a file
+## @param fn the file name
+##
 chmod_file() {
     local OPT=
     local OTHERS=
@@ -137,6 +174,9 @@ chmod_file() {
     done
 }
 
+## @fn cat_file()
+## @brief output the content of a file to stdout
+## @param fn the file name
 cat_file() {
     local PARAM_FN_INPUT=$1
     shift
@@ -153,7 +193,11 @@ cat_file() {
     $MYEXEC cat "${PARAM_FN_INPUT#file://}"
 }
 
-# only support -name and -iname
+## @fn find_file()
+## @brief find files by pattern
+## @param fn the file name
+##
+## only support -name and -iname
 find_file() {
     local PARAM_DN_SEARCH=$1
     shift
@@ -186,6 +230,9 @@ find_file() {
     eval $A
 }
 
+## @fn make_dir()
+## @brief create a directory
+## @param fn the file name
 make_dir() {
     local PARAM_FN_INPUT=$1
     shift
@@ -210,6 +257,9 @@ rm_f_dir0() {
     $MYEXEC rm -rf "${PARAM_FN_INPUT#file://}"
 }
 
+## @fn rm_f_dir()
+## @brief remove files
+## @param fn the file name
 rm_f_dir() {
     local PARAM_FN_INPUT=$1
     shift
@@ -240,9 +290,14 @@ rm_f_dir() {
     done
 }
 
-# using rsync style of directory name:
-#   if the path end with '/' then move the contents of that directory,
-#   if the path end without '/' then move the directory.
+## @fn move_file()
+## @brief remove files
+## @param fn_src the source file name
+## @param fn_dest the target file name
+##
+## using rsync style of directory name:
+##   if the path end with '/' then move the contents of that directory,
+##   if the path end without '/' then move the directory.
 move_file() {
     local PARAM_FN_SRC=$1
     shift
@@ -353,9 +408,14 @@ move_file() {
     fi
 }
 
-# using rsync style of directory name:
-#   if the path end with '/' then copy the contents of that directory,
-#   if the path end without '/' then copy the directory.
+## @fn copy_file()
+## @brief copy files
+## @param fn_src the source file name
+## @param fn_dest the target file name
+##
+## using rsync style of directory name:
+##   if the path end with '/' then copy the contents of that directory,
+##   if the path end without '/' then copy the directory.
 copy_file() {
     local PARAM_FN_SRC=$1
     shift
@@ -462,8 +522,12 @@ copy_file() {
     fi
 }
 
-# extract_file <compressed file> <destination dir>
-extract_file () {
+## @fn extract_file()
+## @brief extract files from a file
+## @param fn the source file name
+## @param dn the target directory
+##
+extract_file() {
     local ARG_FN=$1
     shift
     local ARG_DN=$1

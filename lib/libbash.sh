@@ -1,12 +1,17 @@
 #!/bin/bash
-# bash library
-# some useful bash script functions:
-#   ssh
-#   IPv4 address handle
-#   install functions for RedHat/CentOS/Ubuntu/Arch
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# Copyright 2013 Yunhui Fu
-# License: GPL v3.0 or later
+#####################################################################
+## @file
+## @brief bash library
+##   some useful bash script functions:
+##     ssh
+##     IPv4 address handle
+##     install functions for RedHat/CentOS/Ubuntu/Arch
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
 # detect if the ~/bin is included in environment variable $PATH
 #echo $PATH | grep "~/bin"
@@ -30,7 +35,12 @@ OSDIST=unknown
 OSVERSION=unknown
 OSNAME=unknown
 
-detect_os_type () {
+#####################################################################
+## @fn detect_os_type()
+## @brief detect the OS type
+##
+## detect the OS type, such as RedHat, Debian, Ubuntu, Arch, OpenWrt etc.
+detect_os_type() {
     test -e /etc/debian_version && OSDIST="Debian" && OSTYPE="Debian"
     grep Ubuntu /etc/lsb-release &> /dev/null && OSDIST="Ubuntu" && OSTYPE="Debian"
     test -e /etc/redhat-release && OSTYPE="RedHat"
@@ -93,38 +103,67 @@ detect_os_type () {
     export OSNAME
 }
 
-hput () {
-  KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
+
+#####################################################################
+## @fn hput()
+## @brief put a value to hash table
+## @param key the key
+## @param value the value
+##
+## put a value to hash table
+hput() {
+  local KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
   eval export hash"$KEY"='$2'
 }
 
-hget () {
-  KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
+## @fn hget()
+## @brief get a value from hash table
+## @param key the key
+##
+## get a value from hash table
+hget() {
+  local KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
   eval echo '${hash'"$KEY"'#hash}'
 }
 
+## @fn hiter()
+## @brief list all of values in the hash table
+##
 hiter() {
     for h in $(eval echo '${!'$1'*}') ; do
-        key=${h#$1*}
+        local key=${h#$1*}
         echo "$key=`hget $key`"
     done
 }
 
+## @fn ospkgset()
+## @brief set package name mapping
+## @param key the key package name (Debian)
+## @param vredhat the map package name for RedHat
+## @param varch the map package name for Arch
+##
+## set package name mapping for debian,redhat,arch
 ospkgset() {
-    PARAM_KEY=$1
+    local PARAM_KEY=$1
     shift
-    PARAM_REDHAT=$1
+    local PARAM_REDHAT=$1
     shift
-    PARAM_ARCH=$1
+    local PARAM_ARCH=$1
     shift
     hput "pkg_RedHat_$PARAM_KEY" "$PARAM_REDHAT"
     hput "pkg_Arch_$PARAM_KEY" "$PARAM_ARCH"
 }
 
-ospkgget () {
-    PARAM_OS=$1
+## @fn ospkgget()
+## @brief get package name mapping
+## @param os the OS name，RedHat or Arch
+## @param key the key package name (Debian)
+##
+## get package name mapping for debian,redhat,arch
+ospkgget() {
+    local PARAM_OS=$1
     shift
-    PARAM_KEY=$1
+    local PARAM_KEY=$1
     shift
     if [ "$PARAM_OS" = "Debian" ]; then
         echo "${PARAM_KEY}"
@@ -198,13 +237,15 @@ ospkgset nmap               nmap                nmap
 ospkgset ipmitool           ipmitool            ipmitool
 ospkgset python-mysqldb     MySQL-python        mysql-python
 
-
-
-# compile gawk with switch support
-# and install to system
-# WARNING: the CentOS boot program depend the awk, and if the system upgrade the gawk again,
-#   new installed gawk will not support 
-patch_centos_gawk () {
+## @fn patch_centos_gawk()
+## @brief compile gawk with switch support
+## @param os the OS name，RedHat or Arch
+## @param key the key package name (Debian)
+##
+## compile gawk with switch support and install it to system.
+##   WARNING: the CentOS boot program depend the awk, and if the system upgrade the gawk again,
+##   new installed gawk will not support
+patch_centos_gawk() {
     yum -y install rpmdevtools readline-devel #libsigsegv-devel
     yum -y install gcc byacc
     rpmdev-setuptree
@@ -235,8 +276,11 @@ patch_centos_gawk () {
     rm -rf ~/rpmbuild/BUILD/gawk-4.0.1/
 }
 
-# 对于非 x86 平台，如arm等，使用下载支持 x86 启动的syslinux
-download_extract_2tmp_syslinux () {
+## @fn download_extract_2tmp_syslinux()
+## @brief download syslinux files
+##
+## download the syslinux files for non-x86 platforms
+download_extract_2tmp_syslinux() {
     PKG=""
     DN_ORIG12=$(pwd)
     cd /tmp
@@ -261,8 +305,11 @@ download_extract_2tmp_syslinux () {
     cd "${DN_ORIG12}"
 }
 
-# 安装软件包，使用debian 的发行名，自动转换成其他系统下的名字。
-# 如果是 gawk 或 syslinux 则判断处理
+## @fn install_package()
+## @brief 安装软件包
+##
+## 安装软件包，使用debian 的发行名，自动转换成其他系统下的名字。
+## 如果是 gawk 或 syslinux 则判断处理
 install_package () {
     PARAM_NAME=$*
     INSTALLER=`ospkgget $OSTYPE apt-get`
@@ -603,16 +650,32 @@ PRIuSZ="%019d"
 DANGER_EXEC=echo
 
 FN_LOG0=mrtrace.log
-mr_trace () {
+
+## @fn mr_trace()
+## @brief print a trace message
+## @param msg the message
+##
+## pass a message to log file, and also to stdout
+mr_trace() {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" | tee -a ${FN_LOG0} 1>&2
 }
 
-mr_exec_do () {
+## @fn mr_exec_do()
+## @brief execute a command line
+## @param cmd the command line
+##
+## execute a command line, and also log the line
+mr_exec_do() {
     mr_trace "$@"
     $@
 }
 
-mr_exec_skip () {
+## @fn mr_exec_skip()
+## @brief skip a command line
+## @param cmd the command line
+##
+## skip a command line, and also log the line
+mr_exec_skip() {
     mr_trace "DEBUG (skip) $@"
 }
 
@@ -622,7 +685,11 @@ if [ "$FLG_SIMULATE" = "1" ]; then
     MYEXEC=mr_exec_skip
 fi
 
-fatal_error () {
+## @fn fatal_error()
+## @brief log a fatal error
+## @param msg the message
+##
+fatal_error() {
   PARAM_MSG="$1"
   mr_trace "Fatal error: ${PARAM_MSG}" 1>&2
   #exit 1
@@ -630,7 +697,12 @@ fatal_error () {
 
 #####################################################################
 HDFF_EXCLUDE_4PREFIX="\.\,?\!\-_:;\]\[\#\|\$()\"%"
-generate_prefix_from_filename () {
+
+## @fn generate_prefix_from_filename()
+## @brief generate a prefix string from a file name
+## @param fn the file name
+##
+generate_prefix_from_filename() {
   PARAM_FN="$1"
   shift
 
@@ -638,7 +710,12 @@ generate_prefix_from_filename () {
 }
 
 HDFF_EXCLUDE_4FILENAME="\""
-unquote_filename () {
+
+## @fn unquote_filename()
+## @brief remove double quotes from string
+## @param fn the file name
+##
+unquote_filename() {
   PARAM_FN="$1"
   shift
   #mr_trace "PARAM_FN=${PARAM_FN}; dirname=$(dirname "${PARAM_FN}"); readlink2=$(readlink -f "$(dirname "${PARAM_FN}")" )"

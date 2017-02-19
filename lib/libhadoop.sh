@@ -1,38 +1,42 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# Bash lib for hadoop functions
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-# this lib depend on libbash.sh, libfs.sh
+## @file
+## @brief Bash lib for hadoop functions
+##
+##   this lib depend on libbash.sh, libfs.sh
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
 
-#####################################################################
-# run map and reduce script
-#
-# ARG 1: <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
-# ARG 2: the stage #
-# ARG 3: the callback function for generating single MR script
-# ARG 4: the working directory
-# ARG 5: the input directory
-# ARG 6: the output directory
-#
-# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
-#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
-#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
-#   stream.num.map.output.key.fields >= num.key.fields.for.partition
-#   'callback end function' is called at the end of function
-#
-# This function will split the input files to several files with prefix 'splitfile-'
-# with the paremter HDFF_TOTAL_NODES from global config file. Then all these 'splitfile-' files
-# will be used as input of the map task.
-#
-# The predefined variables should exist before call this function:
-#     HDFF_TOTAL_NODES, HDFF_NUM_CLONE, HADOOP_JAR_STREAMING, HDFF_PROJ_ID, DN_EXEC
-#
-# example:
-#run_stage "e1map.sh,,6,5," 1 "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
-run_stage_hadoop () {
+## @fn run_stage_hadoop()
+## @brief run map and reduce script in Hadoop
+## @param config_line <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+## @param stage the stage #
+## @param cb_gen_mrbin the callback function for generating single MR script
+## @param hdfs_working the working directory
+## @param hdfs_input the input directory
+## @param hdfs_ouput the output directory
+##
+## <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
+##   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
+##   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
+##   stream.num.map.output.key.fields >= num.key.fields.for.partition
+##   'callback end function' is called at the end of function
+##
+## This function will split the input files to several files with prefix 'splitfile-'
+## with the paremter HDFF_TOTAL_NODES from global config file. Then all these 'splitfile-' files
+## will be used as input of the map task.
+##
+## The predefined variables should exist before call this function:
+##     HDFF_TOTAL_NODES, HDFF_NUM_CLONE, HADOOP_JAR_STREAMING, HDFF_PROJ_ID, DN_EXEC
+##
+## example:
+## run_stage "e1map.sh,,6,5," 1 "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
+run_stage_hadoop() {
     mr_trace "run_stage $@"
 
     local PARAM_CONFIG_LINE=$1
@@ -167,32 +171,32 @@ run_stage_hadoop () {
 }
 
 #####################################################################
-# run map and reduce script
-#
-# ARG 1: <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
-# ARG 2: the stage #
-# ARG 3: the callback function for generating single MR script (NOT used in this script)
-# ARG 4: the working directory
-# ARG 5: the input directory
-# ARG 6: the output directory
-#
-# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
-#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
-#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
-#   stream.num.map.output.key.fields >= num.key.fields.for.partition
-#   'callback end function' is called at the end of function
-#
-# This function will split the input files to several files with prefix 'splitfile-'
-# with the paremter HDFF_TOTAL_NODES from global config file. Then all these 'splitfile-' files
-# will be used as input of the map task.
-#
-# The predefined variables should exist before call this function:
-#     DN_EXEC
-#
-# example:
-#run_stage "e1map.sh,,6,5," 1 "cb_null" "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
-#run_stage "${DN_EXEC}/e1map.sh,,6,5," 1 "cb_null" "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
-run_stage_sh1 () {
+## @fn run_stage_sh1()
+## @brief run map and reduce script in bash
+## @param config_line <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+## @param stage the stage #
+## @param cb_gen_mrbin the callback function for generating single MR script
+## @param hdfs_working the working directory
+## @param hdfs_input the input directory
+## @param hdfs_ouput the output directory
+##
+## <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
+##   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
+##   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
+##   stream.num.map.output.key.fields >= num.key.fields.for.partition
+##   'callback end function' is called at the end of function
+##
+## This function will split the input files to several files with prefix 'splitfile-'
+## with the paremter HDFF_TOTAL_NODES from global config file. Then all these 'splitfile-' files
+## will be used as input of the map task.
+##
+## The predefined variables should exist before call this function:
+##     DN_EXEC
+##
+## example:
+## run_stage "e1map.sh,,6,5," 1 "cb_null" "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
+## run_stage "${DN_EXEC}/e1map.sh,,6,5," 1 "cb_null" "workingdir" "${DN_INPUT_HDFS}/0" "${DN_INPUT_HDFS}/1"
+run_stage_sh1() {
     mr_trace "run_stage $@"
 
     local PARAM_CONFIG_LINE=$1
@@ -236,3 +240,4 @@ run_stage_sh1 () {
     fi
     echo "${TM_MAP_MID}"
 }
+

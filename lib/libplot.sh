@@ -1,10 +1,15 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# This test case is for comparing DRR and PF
-# single channel for downsreaming
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
+#####################################################################
+## @file
+## @brief functions for plotting figures
+##
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
 
 # please make sure the following variables are set:

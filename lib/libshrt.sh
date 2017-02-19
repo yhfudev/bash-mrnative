@@ -1,32 +1,50 @@
 #!/bin/bash
-#####################################################################
-# bash library
-# some useful bash script functions:
-#   exec_ignore
-#   unquote_filename
-#   read_config_file
-#   mp_add_child_check_wait
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
+## @file
+## @brief bash library
+##
+## some useful bash script functions:
+##   exec_ignore
+##   unquote_filename
+##   read_config_file
+##   mp_add_child_check_wait
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
 # multiple processes support
 CNTCHILD=0
 PID_CHILDREN=
 
 # use this session id to trace the child process.
 MP_SESSION_ID=
-mp_new_session () {
+## @fn mp_new_session()
+## @brief create new process session id
+##
+mp_new_session() {
   CNTCHILD=0
   PID_CHILDREN=
   MP_SESSION_ID=$(uuidgen)
   mr_trace "generated session id: ${MP_SESSION_ID}"
 }
-mp_get_session_id () {
+
+## @fn mp_get_session_id()
+## @brief get current process session id
+##
+mp_get_session_id() {
   echo "${MP_SESSION_ID}"
 }
 
-mp_remove_child_record () {
+## @fn mp_remove_child_record()
+## @brief remove a child process
+## @param child_id the child process id
+##
+mp_remove_child_record() {
   PARAM_CHILD_ID=$1
   shift
 
@@ -37,8 +55,9 @@ mp_remove_child_record () {
 
 }
 
-# the parent wait all of the children
-mp_wait_all_children () {
+## @fn mp_wait_all_children()
+## @brief wait all of the children
+mp_wait_all_children() {
   mr_trace "wait all of children"
   while [ "$(echo | ${EXEC_AWK} -v A=${CNTCHILD} '{if(A>0){print 1;}else{print 0;}}' )" = "1" ]; do
     for ID2 in ${PID_CHILDREN} ; do
@@ -65,10 +84,13 @@ mp_wait_all_children () {
   #fi
 #}
 
-# the child process notify that its quit.
-# since processes will not share theirs variable values,
-# the children have to use session id from their parent.
-mp_notify_child_exit () {
+## @fn mp_notify_child_exit()
+## @brief the child process notify that its quit.
+## @param child_id the child process id
+##
+## since processes will not share theirs variable values,
+## the children have to use session id from their parent.
+mp_notify_child_exit() {
   # the session id
   PARAM_SID=$1
   shift
@@ -77,8 +99,12 @@ mp_notify_child_exit () {
   #mr_trace "child notif exit: id=${BASHPID}"
 }
 
-# add new child, check if the children are too many then wait
-mp_add_child_check_wait () {
+## @fn mp_add_child_check_wait()
+## @brief add new child,
+## @param child_id the child process id
+##
+## check if the children are too many then wait
+mp_add_child_check_wait() {
   PARAM_CHILD_ID=$1
   shift
 

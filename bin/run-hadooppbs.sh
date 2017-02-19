@@ -1,16 +1,27 @@
-#!/bin/sh
-#####################################################################
-# run hadoop in HPC PBS
+#!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# To setup the hadoop in HPC PBS environment, you need to install myhadoop,
-# and add the patch for the hadoop config files:
-#     cd software/bin/hadoop-2.7.1/etc/hadoop
-#     patch -p1 < ~/software/src/myhadoop-glennklockwood-git/myhadoop-2.2.0.patch
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief run hadoop in HPC PBS
+##
+## To setup the hadoop in HPC PBS environment, you need to install myhadoop,
+## and add the patch for the hadoop config files:
+##     cd software/bin/hadoop-2.7.1/etc/hadoop
+##     patch -p1 < ~/software/src/myhadoop-glennklockwood-git/myhadoop-2.2.0.patch
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -53,7 +64,11 @@ read_config_file "${DN_TOP}/mrsystem.conf"
 
 #####################################################################
 # sum the nodes of same or greater # cores
-convert_avail_settings () {
+
+## @fn convert_avail_settings()
+## @brief sum the nodes of same or greater # cores
+##
+convert_avail_settings() {
     MYCORES=0
     MYMEM=0
     MYNODES=0
@@ -79,9 +94,12 @@ convert_avail_settings () {
     fi
 }
 
-# find the fit settings
-# ARG 1: the # of task
-# ARG 2: the required memory for each task, GB
+
+## @fn get_optimized_settings()
+## @brief find the fit settings
+## @param max_cores the # of task
+## @param mem_per_core the required memory for each task, GB
+##
 get_optimized_settings() {
     local PARAM_MAXCORES=$1
     shift
@@ -128,8 +146,11 @@ EOF
     convert_avail_settings | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE -f tmp-opt-cores.awk
 }
 
-# get # of simulation tasks from the config files in folder specified by argument
-get_sim_tasks () {
+## @fn get_sim_tasks()
+## @brief get # of simulation tasks from the config files in folder specified by argument
+## @param dn_conf the config directory
+##
+get_sim_tasks() {
     local PARAM_DN_CONF=$1
     shift
 

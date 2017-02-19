@@ -1,5 +1,14 @@
 #!/bin/bash
-
+# -*- tab-width: 4; encoding: utf-8 -*-
+#
+#####################################################################
+## @file
+## @brief setup environment variables
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
 mr_trace () {
     echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2

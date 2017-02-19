@@ -1,4 +1,6 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
+#
 #PBS -N ns2docsis
 #PBS -l select=5:ncpus=16:mem=61gb
 #PBS -q workq
@@ -6,7 +8,21 @@
 #PBS -M yfu@clemson.edu
 #PBS -m ea
 #####################################################################
-my_getpath () {
+## @file
+## @brief the main entry for HPC PBS
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f

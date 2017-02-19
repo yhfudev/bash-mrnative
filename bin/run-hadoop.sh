@@ -1,12 +1,22 @@
 #!/bin/bash
-#####################################################################
-# run hadoop job
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief run hadoop job
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
