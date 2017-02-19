@@ -1,14 +1,24 @@
 #!/bin/bash
-#####################################################################
-# Multimedia Transcoding Using Map/Reduce Paradigm -- Step 1 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script check the file name format, and
-# collect all of the files to be processed and send it to output.
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Multimedia Transcoding Using Map/Reduce Paradigm -- Step 1 Map part
+##
+##   In this part, the script check the file name format, and
+##   collect all of the files to be processed and send it to output.
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -53,7 +63,11 @@ mp_new_session
 libapp_prepare_mrnative_binary
 
 #####################################################################
-create_snapshot () {
+## @fn create_snapshot()
+## @brief create snapshot images of mp4 file
+## @param fn_mp4 the path name of mp4 file
+##
+create_snapshot() {
     local PARAM_FN_MP4=$1
     shift
 
@@ -82,9 +96,15 @@ create_snapshot () {
 }
 
 #####################################################################
-# split .mkv file to segments
-# variable DN_DATATMP should be set before call this function
-worker_mkv_split () {
+## @fn worker_mkv_split()
+## @brief split .mkv file to segments
+## @param session_id the session id
+## @param audio_file the audio file
+## @param video_file the video file
+## @param segsec segment time in seconds
+##
+## variable DN_DATATMP should be set before call this function
+worker_mkv_split() {
     local PARAM_SESSION_ID="$1"
     shift
     local PARAM_AUDIO_FILE="$1"
@@ -155,8 +175,17 @@ worker_mkv_split () {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# list all of pic files
-worker_pic_list () {
+## @fn worker_pic_list()
+## @brief list all of pic files
+## @param session_id the session id
+## @param fn_pattern the pattern of file name
+## @param audio_file the audio file
+## @param video_file the video file
+## @param segsec segment time in seconds
+## @param video_fps the fps of video
+## @param n_start
+##
+worker_pic_list() {
     local PARAM_SESSION_ID="$1"
     shift
     local PARAM_FN_PATTERN="$1"
@@ -184,6 +213,9 @@ worker_pic_list () {
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
+## @fn process_stream_e1map()
+## @brief the main function of e1map to process input stream
+##
 process_stream_e1map() {
 
     local RET=0

@@ -1,16 +1,26 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
+#
 #####################################################################
-# Multimedia Transcoding Using Map/Reduce Paradigm -- Step 3 Reduce part
-#
-# In this part, the script will generates DASH MPD files.
-#
-# The script will generate the DASH .mpd file,
-# it also concat the metrics files.
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
+## @file
+## @brief Multimedia Transcoding Using Map/Reduce Paradigm -- Step 3 Reduce part
+##
+##   In this part, the script will generates DASH MPD files.
+##
+##   The script will generate the DASH .mpd file,
+##   it also concat the metrics files.
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
-my_getpath () {
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -52,7 +62,14 @@ fi
 mp_new_session
 
 #####################################################################
-worker_reduce_dashmpd_process () {
+
+## @fn worker_reduce_dashmpd_process()
+## @brief 
+## @param session_id the session id
+## @param destination_file
+## @param filelist
+##
+worker_reduce_dashmpd_process() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_DESTINATION_FILE="$1"
@@ -130,7 +147,13 @@ fi
   mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-worker_reduce_dashwebmgmerge_process () {
+## @fn worker_reduce_dashwebmgmerge_process()
+## @brief 
+## @param session_id the session id
+## @param destination_file
+## @param filelist
+##
+worker_reduce_dashwebmgmerge_process() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_DESTINATION_FILE="$1"

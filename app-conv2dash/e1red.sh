@@ -1,18 +1,28 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
+#
 #####################################################################
-# Multimedia Transcoding Using Map/Reduce Paradigm -- Step 1 Reduce part
-#
-# In this part, the script will get a sorted list of file names,
-# which are grouped by the key by Map/Reduce service, and
-# the Map/Reduce service should guarante that all of the contents
-# indexed by the key should be handle by the same node/thread.
-#
-# The script will generate the start frame number for each video segment.
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
+## @file
+## @brief Multimedia Transcoding Using Map/Reduce Paradigm -- Step 1 Reduce part
+##
+##   In this part, the script will get a sorted list of file names,
+##   which are grouped by the key by Map/Reduce service, and
+##   the Map/Reduce service should guarante that all of the contents
+##   indexed by the key should be handle by the same node/thread.
+##
+##   The script will generate the start frame number for each video segment.
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
-my_getpath () {
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -32,6 +42,7 @@ my_getpath () {
         echo "${DN}/${FN}"
     fi
 }
+
 #DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
 DN_EXEC=$(dirname $(my_getpath "$0") )
 if [ ! "${DN_EXEC}" = "" ]; then
@@ -57,19 +68,28 @@ libapp_prepare_app_binary
 
 #####################################################################
 
-# link all of the pictures in one folder(fmt0)
-worker_pic_linker () {
-    PARAM_SESSION_ID="$1"
+## @fn worker_pic_linker()
+## @brief link all of the pictures in one folder(fmt0)
+## @param session_id the session id
+## @param fmt the input format
+## @param video_fps the fps of video
+## @param seq_frame the sequence of frame
+## @param fn_output the output file name
+## @param fn_audio the audio file name
+##
+## link all of the pictures in one folder(fmt0)
+worker_pic_linker() {
+    local PARAM_SESSION_ID="$1"
     shift
-    PARAM_FMT0="$1"
+    local PARAM_FMT0="$1"
     shift
-    PARAM_VIDEO_FPS="$1"
+    local PARAM_VIDEO_FPS="$1"
     shift
-    PARAM_SEQ_FRAME="$1"
+    local PARAM_SEQ_FRAME="$1"
     shift
-    PARAM_FN_OUTPUT="$1"
+    local PARAM_FN_OUTPUT="$1"
     shift
-    PARAM_FN_AUDIO="$1"
+    local PARAM_FN_AUDIO="$1"
     shift
 
     #ffmpeg -r ${FPS} -i "${FN_INPUT_VIDEO}" -c:v libx264 -preset ultrafast -qp 0 -pix_fmt yuv444p -f segment -segment_time ${MR_SEGSEC} -reset_timestamps 1 -map 0 -y "${FMT2}" 1>&2
@@ -101,29 +121,36 @@ for (i = 1; i <= length(a); i ++) {
 }
 
 #####################################################################
-gen_lossless_chunk_file_name () {
-    PARAM_FN_INPUT=$1
+
+## @fn gen_lossless_chunk_file_name()
+## @brief format a file name with idx
+## @param fn_input the input file name
+## @param idx the sequence number of the file
+##
+## use the input file name as prefix to create a file name wieth sequence idx.
+gen_lossless_chunk_file_name() {
+    local PARAM_FN_INPUT=$1
     shift
-    PARAM_IDX=$1
+    local PARAM_IDX=$1
     shift
 
-    FN_BASE=$(echo "${PARAM_FN_INPUT}" | ${EXEC_AWK} -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
-    PREFIX0="$(basename "${FN_BASE}" )"
-    PREFIX1=$(generate_prefix_from_filename "${PREFIX0}" )
-    PREFIX2=$(echo "${PREFIX1}" | ${EXEC_AWK} -F% '{match($2,"[0-9]*d(.*)",b);print $1 b[1];}' )
-    PREFIX="${DN_DATATMP}/${PREFIX2}"
+    local FN_BASE=$(echo "${PARAM_FN_INPUT}" | ${EXEC_AWK} -F. '{b=$1; for (i=2; i < NF; i ++) {b=b "." $(i)}; print b}')
+    local PREFIX0="$(basename "${FN_BASE}" )"
+    local PREFIX1=$(generate_prefix_from_filename "${PREFIX0}" )
+    local PREFIX2=$(echo "${PREFIX1}" | ${EXEC_AWK} -F% '{match($2,"[0-9]*d(.*)",b);print $1 b[1];}' )
+    local PREFIX="${DN_DATATMP}/${PREFIX2}"
     # we use libx264 to generate lossless video segments, don't use webm here
-    FMT2="${PREFIX}-${PRIuSZ}.lossless.mkv"
+    local FMT2="${PREFIX}-${PRIuSZ}.lossless.mkv"
     echo | ${EXEC_AWK} -v FMT="${FMT2}" -v N=${PARAM_IDX} '{printf(FMT, N);}'
 }
 
 gen_tmpdir_picgroup () {
-    PARAM_FN=$1
+    local PARAM_FN=$1
     shift
 
-    DN_TMP="${DN_DATATMP}/piclink-$(uuidgen)"
+    local DN_TMP="${DN_DATATMP}/piclink-$(uuidgen)"
     ${MYEXEC} mkdir -p "${DN_TMP}" 1>&2
-    SUFPIC=$(echo "${PARAM_FN}" | ${EXEC_AWK} -F. '{print $NF }')
+    local SUFPIC=$(echo "${PARAM_FN}" | ${EXEC_AWK} -F. '{print $NF }')
     echo "${DN_TMP}/tmp-%019d.${SUFPIC}"
 }
 
@@ -147,11 +174,11 @@ PROCESSVID_SEQ_FRAME=0
 # picgroup   "/path/to/film-%05d.png"      "/path/to/audio1.flac" "/path/to/video-0000000000000000001.lossless.mkv" 6 24 144
 # processvid "/path/to/video-lossless.mkv" "/path/to/audio2.flac" "/path/to/video-0000000000000000001.lossless.mkv" 6
 while read MR_TYPE MR_VIDEO_IN MR_AUDIO_FILE MR_VIDEO_OUT MR_SEGSEC MR_VIDEO_FPS MR_N_START ; do
-    FN_VIDEO_IN=$( unquote_filename "${MR_VIDEO_IN}" )
-    FN_AUDIO_FILE=$( unquote_filename "${MR_AUDIO_FILE}" )
-    FN_VIDEO_OUT=$( unquote_filename "${MR_VIDEO_OUT}" )
+    local FN_VIDEO_IN=$( unquote_filename "${MR_VIDEO_IN}" )
+    local FN_AUDIO_FILE=$( unquote_filename "${MR_AUDIO_FILE}" )
+    local FN_VIDEO_OUT=$( unquote_filename "${MR_VIDEO_OUT}" )
 
-    ERR=0
+    local ERR=0
     case "${MR_TYPE}" in
     picgroup)
         if [ "${MR_VIDEO_FPS}" = "" ]; then

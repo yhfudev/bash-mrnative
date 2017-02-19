@@ -1,17 +1,27 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
+#
 #####################################################################
-# Multimedia Transcoding Using Map/Reduce Paradigm -- Step 2 Reduce part
-#
-# In this part, the script will concate media files,
-# generate the metric values for the media files/segments
-#
-# The script will concat the sorted list of media segments,
-# it also merge the audio channel to the main media file.
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
+## @file
+## @brief Multimedia Transcoding Using Map/Reduce Paradigm -- Step 2 Reduce part
+##
+##   In this part, the script will concate media files,
+##   generate the metric values for the media files/segments
+##
+##   The script will concat the sorted list of media segments,
+##   it also merge the audio channel to the main media file.
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
 #####################################################################
-my_getpath () {
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -53,9 +63,15 @@ fi
 mp_new_session
 
 #####################################################################
-# reducer -- concat
-#
-worker_reduce_concat_process () {
+## @fn worker_reduce_concat_process()
+## @brief concat the media segments
+## @param session_id the session id
+## @param desti_file
+## @param fn_audio
+## @param audio_bps
+##
+## reducer -- concat
+worker_reduce_concat_process() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_DESTINATION_FILE="$1"
@@ -145,8 +161,15 @@ fi
   mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-# encode audio with a bitrate
-worker_reduce_audenc_process () {
+## @fn worker_reduce_audenc_process()
+## @brief encode audio with a bitrate
+## @param session_id the session id
+## @param fn_audio_in
+## @param fn_audio_out
+## @param filelist
+## @param abitrate audio bitrate
+##
+worker_reduce_audenc_process() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_FN_AUDIO_IN="$1"
@@ -189,7 +212,16 @@ worker_reduce_audenc_process () {
   mp_notify_child_exit ${PARAM_SESSION_ID}
 }
 
-worker_calculate_video_metric () {
+## @fn worker_calculate_video_metric()
+## @brief generate video metrics
+## @param session_id the session id
+## @param destination_file
+## @param fn_origin
+## @param fn_compare
+## @param seq_frame
+## @param resolution
+##
+worker_calculate_video_metric() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_DESTINATION_FILE="$1"

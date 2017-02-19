@@ -1,13 +1,23 @@
 #!/bin/bash
-#####################################################################
-# Multimedia Transcoding Using Map/Reduce Paradigm -- Step 2 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script will transcode the media segments.
-#
-# Copyright 2014 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Multimedia Transcoding Using Map/Reduce Paradigm -- Step 2 Map part
+##
+##   In this part, the script will transcode the media segments.
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f
@@ -49,10 +59,22 @@ fi
 mp_new_session
 
 #####################################################################
-# transcode the video segments
-#   if the output file is .webm type, try to fire the audio encoding
-#   request of a current audio bitrate
-worker_transcode_ffmpeg () {
+## @fn worker_transcode_ffmpeg()
+## @brief transcode the video segments
+## @param session_id the session id
+## @param video_file the video file
+## @param video_out
+## @param desti_prefix
+## @param resolution_ffm
+## @param resolution_mr
+## @param video_fps the fps of video
+## @param seq_frame
+## @param audio_file the audio file
+## @param audio_bps
+##
+##   if the output file is .webm type, try to fire the audio encoding
+##   request of a current audio bitrate
+worker_transcode_ffmpeg() {
   PARAM_SESSION_ID="$1"
   shift
   PARAM_VIDEO_FILE="$1"
