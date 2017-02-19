@@ -3943,13 +3943,11 @@ ifeq ($(ARCHBITS),64) # 64 bit CPU
 # https://projects.archlinux.org/svntogit/community.git/tree/trunk/PKGBUILD?h=packages/cuda
 # http://developer.download.nvidia.com/compute/cuda/7_0/Prod/local_installers/cuda_7.0.28_linux.run
 CUDASDK=cuda7
-
 CUDASDK_VERSION=7.0.28
 CUDASDK_VERSION_CONN=7_0
 # http://developer.download.nvidia.com/compute/cuda/7.5/Prod/local_installers/cuda_7.5.18_linux.run
 CUDASDK_VERSION=7.5.18
 CUDASDK_VERSION_CONN=7.5
-
 CUDASDK_SRC=cuda_$(CUDASDK_VERSION)_linux.run
 CUDASDK_LIBSUFFIX=64
 CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_CONN)/Prod/local_installers/$(CUDASDK_SRC)
@@ -3957,6 +3955,16 @@ CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_
 #   NVIDIA-Linux-x86_64-346.46.run -- NVIDIA Accelerated Graphics Driver for Linux-x86_64
 #   cuda-linux64-rel-7.0.28-19326674.run -noprompt -prefix=$(pwd)/target
 #   cuda-samples-linux-7.0.28-19326674.run
+
+
+CUDASDK=cuda8
+CUDASDK_VERSION=8.0.44
+# https://developer.nvidia.com/compute/cuda/8.0/prod/local_installers/cuda_8.0.44_linux-run
+CUDASDK_VERSION_CONN=8.0
+CUDASDK_SRC=cuda_$(CUDASDK_VERSION)_linux-run
+CUDASDK_LIBSUFFIX=64
+CUDASDK_URL=https://developer.nvidia.com/compute/cuda/$(CUDASDK_VERSION_CONN)/prod/local_installers/$(CUDASDK_SRC)
+
 
 else # 32 bit?
 # Since NVIDIA (>6.0.37) only provides cufft, nvblas, nppc, nppi, npps libs for x64, it's naturally impossible for CMAKE to find these libs for configuring a 32bit OpenCV library.
@@ -4605,21 +4613,13 @@ $(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz: $(DN_SRC)/creat
 	touch $@
 FL_SOURCES+=$(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz
 
-# patch for svn
-$(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch: $(DN_SRC)/created
-	$(WGET) -O $@ -c "https://aur.archlinux.org/cgit/aur.git/plain/D18035-add-gcc-abi_tag-support-mangler-part.patch?h=llvm-svn"
-	touch $@
-FL_SOURCES+=$(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch
-
 $(LLVM)-$(LLVM_VERSION)/mypatched: $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt $(FL_DEP_LLVM)
 #	tar -xvf $(DN_SRC)/llvm-toolchain-snapshot_3.9~svn262954-1.debian.tar.xz \
 #		&& cat debian/patches/series | while read i; do \
 #				echo "pwd: `pwd`"; \
 #				patch -d $(LLVM)-$(LLVM_VERSION)/ -Np1 -i `pwd`/debian/patches/$$i ; \
 #			done
-	cd $(LLVM)-$(LLVM_VERSION)/ \
-        && patch -d tools/clang -Np0 -i $(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch \
-        $(NULL)
+#	cd $(LLVM)-$(LLVM_VERSION)/ && patch -d tools/clang -Np0 -i $(DN_SRC)/llvm-d18035-add-gcc-abi_tag-support-mangler-part.patch
 	touch $@
 
 $(LLVM)-3.7.0/mypatched: $(LLVM)-$(LLVM_VERSION)/CMakeLists.txt $(FL_DEP_LLVM)

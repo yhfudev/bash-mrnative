@@ -16,6 +16,39 @@
 \newcommand{\doczhcn}{}
 
 
+\newcommand\mymonofont{DejaVu Sans Mono}%{FreeMono} %{WenQuanYi Micro Hei Mono} %{Monaco}
+\newcommand\mysansfont{FreeSans}%{DejaVu Sans}
+\newcommand\myboldfont{Adobe Garamond Pro Bold}%{WenQuanYi Micro Hei Mono}%{AR PL UKai CN}%{YaHei Consolas Hybrid}%{黑体}%{標楷體}
+\newcommand\mymainfont{Adobe Garamond Pro}%{Arial}%{DejaVu Serif}%{Times New Roman} %{DejaVu Serif}
+\newcommand\myitalicfont{Adobe Garamond Pro Italic}%{DejaVu Serif}%{Times New Roman} %{Garamond}
+
+%\renewcommand\myboldfont{URW Palladio L Bold}%{WenQuanYi Micro Hei Mono}%{AR PL UKai CN}%{YaHei Consolas Hybrid}%{黑体}%{標楷體}
+%\renewcommand\mymainfont{URW Palladio L}%{Arial}%{DejaVu Serif}%{Times New Roman} %{DejaVu Serif}
+%\renewcommand\myitalicfont{URW Palladio L Italic}%{DejaVu Serif}%{Times New Roman} %{Garamond}
+
+\renewcommand\myboldfont{Arial Bold}
+\renewcommand\mymainfont{Arial}
+\renewcommand\myitalicfont{Arial Italic}
+
+\renewcommand\myboldfont{Palatino Linotype Bold}
+\renewcommand\mymainfont{Palatino Linotype}
+\renewcommand\myitalicfont{Palatino Linotype Italic}
+
+%\renewcommand\myboldfont{Apple Garamond Bold}
+%\renewcommand\mymainfont{Apple Garamond}
+%\renewcommand\myitalicfont{Apple Garamond Italic}
+
+\renewcommand\myboldfont{Adobe Garamond Pro Bold}
+\renewcommand\mymainfont{Adobe Garamond Pro}
+\renewcommand\myitalicfont{Adobe Garamond Pro Italic}
+
+\newcommand\mycjkboldfont{WenQuanYi Micro Hei Mono}%{Adobe Heiti Std}%{AR PL UKai CN}%{YaHei Consolas Hybrid}%{黑体}%{標楷體}
+\newcommand\mycjkitalicfont{Adobe Kaiti Std}
+\newcommand\mycjkmainfont{Adobe Song Std} %{AR PL UMing CN}%{仿宋}%{宋体}%{新宋体}%{文鼎ＰＬ新宋}%
+\newcommand\mycjksansfont{Adobe Ming Std}
+\newcommand\mycjkmonofont{WenQuanYi Micro Hei Mono}%{AR PL UMing CN}%{WenQuanYi Micro Hei Mono}
+
+
 \newcommand{\comments}[1]{}
 %\renewcommand{\comments}[1]{#1}
 
@@ -59,9 +92,9 @@
 
 % 根据配置来设置中文环境
 \newcommand{\zhenv}[1]{}
-\cnt{}{\renewcommand{\zhenv}[1]{#1}}{\renewcommand{\zhenv}[1]{#1}}
+\newcommand{\enenv}[1]{}
+\cnt{\renewcommand{\enenv}[1]{#1}}{\renewcommand{\zhenv}[1]{#1}}{\renewcommand{\zhenv}[1]{#1}}
 
-\zhenv{
 \usepackage{ifxetex}
 %------------------------------------------------------------------------------------------------------
 %U no, it's happy to use chinese now.
@@ -74,8 +107,11 @@
 %\usepackage{xltxtra,xunicode}
 
 \ifxetex % xelatex
+
+    \usepackage{fontspec}
+\zhenv{
     %% chinese setup
-    \usepackage[cm-default]{fontspec} % XeLaTex 配合 fontspec 可以非常方便地設置字體。 [cm-default] 選項主要用來解決使用數學環境時數學符號不能正常顯示的問題
+    %\usepackage[cm-default]{fontspec} % XeLaTex 配合 fontspec 可以非常方便地設置字體。 [cm-default] 選項主要用來解決使用數學環境時數學符號不能正常顯示的問題
     \usepackage{xltxtra,xunicode} % 這行和上行 \usepackage[cm-default]{fontspec} 解決公式不正常的問題.但是打開後有些如 itemize 的點不能顯示。
 
     \usepackage[
@@ -99,13 +135,20 @@
     %\setCJKmainfont[BoldFont={WenQuanYi Micro Hei}]{AR PL UMing CN}
     %\setCJKsansfont{AR PL UMing CN} %{Microsoft YaHei}
     %\setCJKmonofont{WenQuanYi Micro Hei Mono}
-    \setCJKmainfont[BoldFont={Adobe Heiti Std}, ItalicFont={Adobe Kaiti Std}]{Adobe Song Std}
-    \setCJKsansfont{Adobe Ming Std} %{AR PL UMing CN} %{Microsoft YaHei}
-    \setCJKmonofont{Adobe Fangsong Std}
 
-    \setmainfont{Times New Roman}
-    \setsansfont{DejaVu Sans}
-    \setmonofont{FreeMono}%{Latin Modern Mono}
+    \setCJKmainfont[BoldFont=\mycjkboldfont, ItalicFont=\mycjkitalicfont]{\mycjkmainfont}
+    \setCJKsansfont{\mycjksansfont}%{Adobe Ming Std} %{AR PL UMing CN} %{Microsoft YaHei}
+    \setCJKmonofont{\mycjkmonofont}
+
+\setmonofont[Scale=0.8]{\mymonofont} % 英文等宽字体
+\setsansfont{\mysansfont}       % 英文无衬线字体
+\setmainfont[Ligatures=TeX]{\mymainfont}        % 英文衬线字体, setmainfont=setromanfont
+\setromanfont[Mapping=tex-text,  % 沿用 LaTex 的一些习惯的标点转换，例如 en-dash 以两个减号表示
+    Ligatures={TeX,Required,Common}, % 如果此字体内置 Ligatures 定义则启用
+    ItalicFont={\myitalicfont},  % 斜体用 Times Italic，严格来说只有拉丁子母有斜体。
+    BoldFont={\myboldfont}]      % 粗体用字体
+    {\mymainfont}                % 内文使用字体, Linux 下用 "fc-list :lang=zh-cn" 列出支持的中文字体
+
     %\setsansfont{[foo.ttf]} % 直接使用当前目录下的字体文件
 
 %~ \setmainfont{Scala}           %英文字体
@@ -121,8 +164,24 @@
 %~ \newfontfamily\ni{"SimHei"}
 
     \defaultfontfeatures{Mapping=tex-text}
-\fi
 } % \zhenv
+
+
+\enenv{
+%\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{\mymainfont}       % 英文衬线字体, setmainfont=setromanfont
+\setsansfont[Ligatures=TeX]{\mysansfont}       % 英文无衬线字体
+\setromanfont[Mapping=tex-text,  % 沿用 LaTex 的一些习惯的标点转换，例如 en-dash 以两个减号表示
+    Ligatures={TeX,Required,Common}, % 如果此字体内置 Ligatures 定义则启用
+    ItalicFont={\myitalicfont},  % 斜体用 Times Italic，严格来说只有拉丁子母有斜体。
+    BoldFont={\myboldfont}]      % 粗体用字体
+    {\mymainfont}                % 内文使用字体, Linux 下用 "fc-list :lang=zh-cn" 列出支持的中文字体
+}
+
+
+\fi
+
+
 
 \usepackage{tabularx} % long table
 \usepackage{booktabs,longtable} % table in seperate pages.
@@ -223,7 +282,7 @@
 
 \usepackage{chapterbib}
 
-\usepackage{courier}
+%\usepackage{courier}
 \usepackage{listings} % list the source code
 \definecolor{ForestGreen}{rgb}{0.13,0.55,0.13}
 
@@ -333,7 +392,7 @@
 
 %----------------------------------------------------------
 
-\usepackage{fontspec,xunicode,xltxtra}
+\usepackage{xunicode,xltxtra}
 
 %\usepackage{beamerthemesplit}
 \usetheme{Madrid}
@@ -397,9 +456,9 @@
 \end{figure}
 
     \begin{itemize}
-      \item write map/reduce code in native code
-      \item run in various system settings
-      \item supports single host, single host Hadoop, Hadoop cluster, and HPC PBS over myhadoop
+      \item Use map/reduce programming model for native code
+      \item Runs in various system settings
+      \item Supports single host, single host Hadoop, Hadoop cluster, and HPC PBS over myhadoop \footnote{myhadoop \url{https://github.com/glennklockwood/myhadoop.git}}
     \end{itemize}
 }
 
@@ -409,7 +468,7 @@
 \section{Usage}
 
 \begin{frame}[fragile]
-  \frametitle<presentation>{single host}
+  \frametitle<presentation>{Single host}
 
     \begin{itemize}
       \item emulate the streaming mode map/reduce in bash;
@@ -427,7 +486,7 @@ cd projtools
 
 
 \begin{frame}[fragile]
-  \frametitle<presentation>{single host Hadoop}
+  \frametitle<presentation>{Single host Hadoop}
 
     \begin{itemize}
       \item simulate a Hadoop environment;
@@ -572,7 +631,7 @@ make dist-gzip-ns2
 
 \begin{figure}\centering
   \includegraphics[width=0.7\textwidth]{gop-ipb.png}
-  \caption{Example of a GOP structure (\href{http://en.wikipedia.org/wiki/Inter_frame}{Wikipedia}).}\label{fig:gopipb}
+  \caption{Example of a GOP structure (from \href{http://en.wikipedia.org/wiki/Inter_frame}{Wikipedia}).}\label{fig:gopipb}
 \end{figure}
 An MPEG Group Of Pictures (GOP), starts with an "I" frame, follows with multiple "P" or "B" frames.
     \begin{itemize}

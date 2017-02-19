@@ -30,12 +30,14 @@ MEDIAMETRICS_GPU_SUPPORT_CONF=
 ifeq ($(USE_GPU),GPU_CUDA)
 OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=ON \
                           -D CUDA_TOOLKIT_ROOT_DIR=$(PREFIX)/opt/$(CUDASDK) \
-                          -D CUDA_GENERATION=Auto \
-                          -D CUDA_ARCH_BIN=1.1 \
-                          -D CUDA_ARCH_PTX=1.1 \
                           -D WITH_CUBLAS=ON \
                           -D WITH_NVCUVID=ON \
+                          -D ENABLE_FAST_MATH=ON \
                           -D CUDA_FAST_MATH=ON \
+                          -D CMAKE_CXX_FLAGS=-std=c++98 \
+                          #-D CUDA_GENERATION=Auto \
+                          -D CUDA_ARCH_BIN=1.1 \
+                          -D CUDA_ARCH_PTX=1.1 \
                           $(NULL)
 OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(CUDASDK)-install
 MEDIAMETRICS_GPU_SUPPORT_CONF=--with-cuda=$(PREFIX)/opt/$(CUDASDK)
@@ -45,7 +47,6 @@ OPENCV_GPU_SUPPORT_CMAKE= -D WITH_CUDA=OFF \
                           -D WITH_CUBLAS=OFF \
                           -D WITH_NVCUVID=OFF \
                           -D CUDA_FAST_MATH=OFF \
-                          -D WITH_OPENCL=ON \
                           -D OPENCL_ROOT_DIR=$(PREFIX)/usr \
                           $(NULL)
 OPENCV_GPU_SUPPORT_DEPEND=$(GLU)-install $(OPENCL)-install
@@ -4164,8 +4165,13 @@ OPENCV_VERSION=2.4.8
 OPENCV_VERSION=2.4.11
 #OPENCV_VERSION=3.1.0
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
-OPENCV_URL=https://github.com/Itseez/opencv/archive/$(OPENCV_VERSION).tar.gz
+OPENCV_URL=https://github.com/opencv/opencv/archive/$(OPENCV_VERSION).tar.gz
 #http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.8/opencv-2.4.8.zip
+
+OPENCV_CONTRIB=opencv_contrib
+OPENCV_CONTRIB_VERSION=3.1.0
+OPENCV_CONTRIB_SRC=$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION).tar.gz
+OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$(OPENCV_CONTRIB_VERSION).tar.gz
 
 FL_DEP_OPENCV= \
 	$(PKGCONFIG)-install \
@@ -4219,28 +4225,51 @@ OPENCV_URL=https://github.com/Itseez/opencv.git
 
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
 	if [ ! -d "$(DN_SRC)/$(OPENCV_SRC)" ]; then \
-        git clone $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); \
+        git clone --mirror $(OPENCV_URL) $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION); \
     fi
-	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git fetch --all #&& git submodule update --init --recursive
 	touch $@
 
 $(OPENCV)-$(OPENCV_VERSION)/README.md: $(DN_SRC)/$(OPENCV_SRC)
-	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
+	cd $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION) && git fetch --all #&& git submodule update --init --recursive
 	if [ ! -d "$(OPENCV)-$(OPENCV_VERSION)" ]; then \
-        cp -r $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); \
+        git clone $(DN_SRC)/$(OPENCV)-$(OPENCV_VERSION)/ $(OPENCV)-$(OPENCV_VERSION); \
     fi
 	cd $(OPENCV)-$(OPENCV_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
 
-$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md $(FL_DEP_OPENCV)
+# opencv_contrib
+OPENCV_CONTRIB_VERSION=git
+OPENCV_CONTRIB_SRC=$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)/.git
+OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib.git
+$(DN_SRC)/$(OPENCV_CONTRIB_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(OPENCV_CONTRIB_SRC)" ]; then \
+        git clone --mirror $(OPENCV_CONTRIB_URL) $(DN_SRC)/$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION); \
+    fi
+	cd $(DN_SRC)/$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION) && git fetch --all #&& git submodule update --init --recursive
+	touch $@
+
+$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)/README.md: $(DN_SRC)/$(OPENCV_CONTRIB_SRC)
+	cd $(DN_SRC)/$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION) && git fetch --all #&& git submodule update --init --recursive
+	if [ ! -d "$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)" ]; then \
+        git clone $(DN_SRC)/$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)/ $(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION); \
+    fi
+	cd $(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(OPENCV)-$(OPENCV_VERSION)/README.md $(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)/README.md $(FL_DEP_OPENCV)
 
 else # use released files
 $(DN_SRC)/$(OPENCV_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(OPENCV_URL)
 	touch $@
-$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC)
+$(DN_SRC)/$(OPENCV_CONTRIB_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPENCV_CONTRIB_URL)
+	touch $@
+$(OPENCV)-$(OPENCV_VERSION)/CMakeLists.txt: $(DN_SRC)/$(OPENCV_SRC) $(DN_SRC)/$(OPENCV_CONTRIB_SRC)
 	rm -rf opencv*
 	tar -xf $(DN_SRC)/$(OPENCV_SRC)
+	tar -xf $(DN_SRC)/$(OPENCV_CONTRIB_SRC)
 	#mv opencv* $(OPENCV)-$(OPENCV_VERSION)
 	touch $@
 
@@ -4282,6 +4311,9 @@ $(OPENCV)-$(OPENCV_VERSION)/build/Makefile: $(OPENCV)-$(OPENCV_VERSION)/mypatche
 			-D INSTALL_C_EXAMPLES=ON \
 			-D BUILD_opencv_apps=OFF -D BUILD_ANDROID_EXAMPLES=OFF \
 			-D BUILD_DOCS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_TESTS=OFF \
+			-D OPENCV_EXTRA_MODULES_PATH=../../$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION)/modules \
+			-D BUILD_opencv_dnn=ON \
+			-D BUILD_LIBPROTOBUF_FROM_SOURCES=ON \
 			-D BUILD_ZLIB=ON \
 			-D BUILD_PNG=ON \
 			-D BUILD_TIFF=ON \
@@ -4318,6 +4350,5 @@ $(OPENCV)-uninstall: $(OPENCV)-$(OPENCV_VERSION)/build/lib/libopencv_core.so
 $(OPENCV)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libopencv_core.so
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC)
+FL_SOURCES+=$(DN_SRC)/$(OPENCV_SRC) $(DN_SRC)/$(OPENCV_CONTRIB_SRC)
 FL_UNINSTALL+=$(OPENCV)-uninstall
-

@@ -20,10 +20,16 @@
 %\newcommand\formatzhcn[1]{#1} % the page format for zh_CN
 
 \newcommand\mymainfont{DejaVu Serif}%{Times New Roman} %{DejaVu Serif}
-\newcommand\mymonofont{DejaVu Sans Mono}%{FreeMono} %{WenQuanYi Micro Hei Mono} %{Monaco}
 \newcommand\myboldfont{WenQuanYi Micro Hei Mono}%{AR PL UKai CN}%{YaHei Consolas Hybrid}%{黑体}%{標楷體}
-\newcommand\mysansfont{DejaVu Sans}%{FreeSans}
 \newcommand\myitalicfont{DejaVu Serif}%{Times New Roman} %{Garamond}
+
+\renewcommand\myboldfont{Adobe Garamond Pro Bold}
+\renewcommand\mymainfont{Adobe Garamond Pro}
+\renewcommand\myitalicfont{Adobe Garamond Pro Italic}
+
+
+\newcommand\mymonofont{DejaVu Sans Mono}%{FreeMono} %{WenQuanYi Micro Hei Mono} %{Monaco}
+\newcommand\mysansfont{DejaVu Sans}%{FreeSans}
 
 \newcommand\mycjkboldfont{WenQuanYi Micro Hei Mono}%{Adobe Heiti Std}%{AR PL UKai CN}%{YaHei Consolas Hybrid}%{黑体}%{標楷體}
 \newcommand\mycjkitalicfont{全字庫正楷體} %{Adobe Kaiti Std}
@@ -66,6 +72,20 @@
     \setCJKmainfont[BoldFont=\mycjkboldfont, ItalicFont=\mycjkitalicfont]{\mycjkmainfont}
     \setCJKsansfont{\mycjksansfont}%{Adobe Ming Std} %{AR PL UMing CN} %{Microsoft YaHei}
     \setCJKmonofont{\mycjkmonofont}
+
+\setmonofont[Scale=0.8]{\mymonofont} % 英文等宽字体
+\setsansfont{\mysansfont}       % 英文无衬线字体
+\setmainfont[Ligatures=TeX]{\mymainfont}        % 英文衬线字体, setmainfont=setromanfont
+\setromanfont[Mapping=tex-text,  % 沿用 LaTex 的一些习惯的标点转换，例如 en-dash 以两个减号表示
+    Ligatures={TeX,Required,Common}, % 如果此字体内置 Ligatures 定义则启用
+    ItalicFont={\myitalicfont},  % 斜体用 Times Italic，严格来说只有拉丁子母有斜体。
+    BoldFont={\myboldfont}]      % 粗体用字体
+    {\mymainfont}                % 内文使用字体, Linux 下用 "fc-list :lang=zh-cn" 列出支持的中文字体
+
+
+% 设置中文状态下, 恢复 lstlisting 的 mono 字体
+\usepackage[T1]{fontenc}
+\DeclareTextCommandDefault{\nobreakspace}{\leavevmode\nobreak\ } % EU1 encoding setup has changed \nobreakspace from being an encoding-independent command to an encoding-dependent command, but without setting up a default definition so it works in all encodings.
 
   \fi
 
