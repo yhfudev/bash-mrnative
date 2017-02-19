@@ -1,13 +1,24 @@
 #!/bin/bash
-#####################################################################
-# Run machine test using Map/Reduce paradigm -- Step 2 Map part
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# In this part, the script get the sw/hw config of the machines in the cluster
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief Run machine test using Map/Reduce paradigm -- Step 2 Map part
+##
+##   In this part, the script get the sw/hw config of the machines in the cluster
+##
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     local PARAM_DN="$1"
     shift
     #readlink -f

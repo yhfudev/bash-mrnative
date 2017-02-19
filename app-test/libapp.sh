@@ -1,11 +1,21 @@
 #!/bin/bash
+# -*- tab-width: 4; encoding: utf-8 -*-
 #
-# the app related functions
-#
-# Copyright 2015 Yunhui Fu
-# License: GPL v3.0 or later
 #####################################################################
-my_getpath () {
+## @file
+## @brief the library for the app
+## @author Yunhui Fu <yhfudev@gmail.com>
+## @copyright GPL v3.0 or later
+## @version 1
+##
+#####################################################################
+
+## @fn my_getpath()
+## @brief get the real name of a path
+## @param dn the path name
+##
+## get the real name of a path, return the real path
+my_getpath() {
     PARAM_DN="$1"
     shift
     #readlink -f
@@ -28,7 +38,11 @@ my_getpath () {
 #DN_EXEC=$(dirname $(my_getpath "$0") )
 #####################################################################
 
-# untar the ns2 binary from the file specified by HDFF_PATHTO_TAR_APP
+## @fn extrace_binary()
+## @brief untar the app binary
+## @param fn_tar the file name
+##
+## untar the app binary from the file specified by HDFF_PATHTO_TAR_APP
 extrace_binary() {
     PARAM_FN_TAR=$1
     shift
@@ -50,9 +64,12 @@ extrace_binary() {
     echo $DN
 }
 
-# MUST implemented
-# to setup some environment variable for application
-# and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+## @fn libapp_prepare_app_binary()
+## @brief setup some environment variable for application
+##
+## to setup some environment variable for application
+## and extract the apllication binaries and data if the config HDFF_PATHTO_TAR_APP exist
+## (MUST be implemented)
 libapp_prepare_app_binary() {
     if [ "${HDFF_PATHTO_TAR_APP}" = "" ]; then
         # detect the application execuable
@@ -95,9 +112,12 @@ libapp_prepare_app_binary() {
     fi
 }
 
-# MUST implemented
-# untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
-# return the path to the untar files
+## @fn libapp_prepare_mrnative_binary()
+## @brief untar the mrnative binary
+##
+## untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
+## return the path to the untar files
+## (MUST be implemented)
 libapp_prepare_mrnative_binary() {
     if [ "${HDFF_PATHTO_TAR_MRNATIVE}" = "" ]; then
         # detect the marnative dir
@@ -115,8 +135,10 @@ libapp_prepare_mrnative_binary() {
     fi
 }
 
-# MUST implemented
-# get # of simulation tasks from a config file
+## @fn libapp_get_tasks_number_from_config()
+## @brief get number of simulation tasks from a config file
+##
+## (MUST be implemented)
 libapp_get_tasks_number_from_config() {
     local NUM_NODES=1
     while read get_sim_tasks_each_file_tmp_a; do
@@ -131,8 +153,16 @@ libapp_get_tasks_number_from_config() {
     echo $NUM_NODES
 }
 
-# MUST implemented
-libapp_generate_script_4hadoop () {
+## @fn libapp_generate_script_4hadoop()
+## @brief generate the TCL scripts for all of the settings
+## @param command the command
+## @param fn_config_proj the config file of the application
+##
+## my_getpath, DN_EXEC, HDFF_DN_OUTPUT, should be defined before call this function
+## HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
+## PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
+## (MUST be implemented)
+libapp_generate_script_4hadoop() {
     local PARAM_ORIG="$1"
     shift
     local PARAM_OUTPUT="$1"
@@ -187,9 +217,16 @@ libapp_generate_script_4hadoop () {
 #config line: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
 LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,,6,5,"
 
-# MUST implemented
-# generate the run config
-libapp_prepare_execution_config () {
+## @fn libapp_prepare_execution_config()
+## @brief generate the TCL scripts for all of the settings
+## @param command the command
+## @param fn_config_proj the config file of the application
+##
+## my_getpath, DN_EXEC, HDFF_DN_OUTPUT, should be defined before call this function
+## HDFF_DN_SCRATCH should be in global config file (mrsystem.conf)
+## PREFIX, LIST_NODE_NUM, LIST_TYPES, LIST_SCHEDULERS should be in the config file passed by argument
+## (MUST be implemented)
+libapp_prepare_execution_config() {
     local PARAM_COMMAND=$1
     shift
     local PARAM_FN_CONFIG_PROJ=$1
