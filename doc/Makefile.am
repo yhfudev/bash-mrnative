@@ -1,6 +1,6 @@
 if ENABLE_DOXYGEN_DOC
 
-EXTRA_DIST=genfooter.tex genheader.tex
+EXTRA_DIST=genfooter.tex genheader.tex doxygen-bash.sed
 
 all-local: doxygen.stamp
 
@@ -9,6 +9,12 @@ DOCSOURCES := Doxyfile.in $(top_srcdir)/README.md \
     $(wildcard $(top_srcdir)/src/*.cc) \
     $(wildcard $(top_srcdir)/src/*.cpp) \
     $(wildcard $(top_srcdir)/src/*.h) \
+    $(wildcard $(top_srcdir)/bin/*.sh) \
+    $(wildcard $(top_srcdir)/lib/*.sh) \
+    $(wildcard $(top_srcdir)/app-conv2dash/*.sh) \
+    $(wildcard $(top_srcdir)/app-ns2/*.sh) \
+    $(wildcard $(top_srcdir)/app-test/*.sh) \
+    $(wildcard $(top_srcdir)/app-wpapw/*.sh) \
     $(NULL)
 
 doxygen.stamp: $(DOCSOURCES)
