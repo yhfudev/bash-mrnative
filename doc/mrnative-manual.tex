@@ -101,10 +101,121 @@
 \maketitle
 \tableofcontents
 
-\input{chap-design.tex}
-%\input{chap-implementation.tex}
+
+\input{chap-intro.tex}
+
+\input{chap-appconv2dash.tex}
+\input{chap-appwpapw.tex}
+\input{chap-appns2.tex}
+
 
 \appendix
+
+\appendix
+
+\chapter{Media Basis}
+
+\section{GOP, I, B, P Frame}
+
+An MPEG "GOP" GOB (Group Of Pictures), starts with an "I" frame (Intra-coded picture, key frame),
+follows with multiple "P" (Predicted picture) or "B" (Bi-predictive picture) frames.
+
+I frame is like a conventional static image file, P-frames and B-frames hold only part of the image.
+
+P frame holds only the changes from the \emph{previous} frame.
+
+B frame holds the differences between the current frame and both the preceding and following frames.
+
+
+\begin{figure}\centering
+  \includegraphics[width=0.95\textwidth]{figures-appconv2dash/gop-ipb.png}
+  \caption{Example of a GOP structure (\href{http://en.wikipedia.org/wiki/Inter_frame}{Wikipedia}).}\label{fig:gopipb}
+\end{figure}
+
+\section{参考}
+
+\subsection{split media files}
+How to split a video using FFMPEG so that each chunk starts with a key frame?
+\url{http://stackoverflow.com/questions/14005110/how-to-split-a-video-using-ffmpeg-so-that-each-chunk-starts-with-a-key-frame}
+
+
+
+1. Jan 30 at 6:25
+The latest builds of FFMPEG include a new option "segment" which does exactly what I think you need.
+\begin{lstlisting}[language=bash]
+ffmpeg -i INPUT.mp4 -acodec copy -f segment -vcodec copy -reset_timestamps 1 -map 0 OUTPUT%d.mp4
+\end{lstlisting}
+This produces a series of numbered output files which are split into segments based on Key Frames. In my own testing, it's worked well, although I haven't used it on anything longer than a few minutes and only in MP4 format.
+
+
+
+2. Jul 16 '13 at 22:58
+Using a newer build of ffmpeg, can achieve this by using ffprobe and the ffmpeg segment muxer.
+
+1.Use ffprobe and awk to identify the keyframes as close as possible to your desired chunk length.
+\begin{lstlisting}[language=bash]
+ffprobe -show_frames -select_streams v:0 -print_format csv **[SOURCE_VIDEO]** 2>&1 | grep -n frame,video,1 | awk 'BEGIN { FS="," } { print $1 " " $5 }' | sed 's/:frame//g' | awk 'BEGIN { previous=0; frameIdx=0; size=0; } { split($2,time,"."); current=time[1]; if (current-previous >= **[DURATION_IN_SECONDS]**){ a[frameIdx]=$1; frameIdx++; size++; previous=current;} } END { str=a[0]; for(i=1;i<size;i++) { str = str "," a[i]; } print str;}'
+\end{lstlisting}
+Where
+\begin{lstlisting}[language=bash]
+    [SOURCE_VIDEO] = path to video you want to segment
+    [DURATION_IN_SECONDS] = desired segment length in seconds
+\end{lstlisting}
+The output is comma-delimited string of keyframes.
+
+2.Use the keyframes output above as input to ffmpeg.
+\begin{lstlisting}[language=bash]
+ffmpeg -i [SOURCE_VIDEO] -codec copy -map 0 -f segment -segment_frames [OUTPUT_OF_STEP_1] [SEGMENT_PREFIX] _%03d.[SOURCE_VIDEO_EXTENSION]
+\end{lstlisting}
+Where
+\begin{lstlisting}[language=bash]
+    [SOURCE_VIDEO] = path to video you want to segment
+    [OUTPUT_OF_STEP_1] = comma-delimited string of keyframes
+    [SEGMENT_PREFIX] = name of segment output
+    [SOURCE_VIDEO_EXTENSION] = extension of source video (e.g., mp4, mkv)
+\end{lstlisting}
+
+
+
+3. Dec 23 '12 at 18:17
+Here is the solution that I could get to work:
+
+As suggested by av501 and d33pika, I used ffprobe to find where the key frames are. Because ffprobe is very verbose and can take several seconds or even minutes to output all key frames and there is no way to scope the range of frames we want from a lengthy video, I proceed into 5 steps:
+
+    Export a video chunk from the original file, around the double of the desired chunk size.
+\begin{lstlisting}[language=bash]
+ffmpeg -i source.wmv -ss 00:00:00 -t 00:00:06 -acodec copy -vcodec copy -async 1 -y  0001.wmv
+\end{lstlisting}
+    Use ffprobe to find where the keyframes are. Choose closest keyframe after desired chunk size.
+\begin{lstlisting}[language=bash]
+ffprobe -show_frames -select_streams v -print_format json=c=1 0001.wmv
+\end{lstlisting}
+    From the output of ffprobe get the \texttt{pkt\_dts\_time} of the frame just before that key frame.
+
+    ffmpeg on the exported chunk of step 1, specifying the same input and output file, and specifying -ss 00:00:00 and -t [value found in step 3].
+\begin{lstlisting}[language=bash]
+ffmpeg -i 0001.wmv -ss 00:00:00 -t 00:00:03.1350000 -acodec copy -vcodec copy -async 1 -y 0001.wmv
+\end{lstlisting}
+    Restart at step 1, using -ss [cumulated sum of values found in step 3 over iterations].
+
+Proceeding this way, I was able to have an efficient and robust way to split the video at key frames.
+
+
+
+4. Dec 23 '12 at 14:11
+Use ffprobe -show\_frames -pretty <stream> to identify the key frames.
+
+
+5. Dec 23 '12 at 3:36
+If you are willing to do some scripting and want I frames at a particular interval the one way to do it is
+
+Run ffprobe and collect the locations of the I frames from the output
+\begin{lstlisting}[language=bash]
+ffprobe -show_streams
+\end{lstlisting}
+Run a series of -ss -t commands using the same script to get the chunks you desire.
+
+You can then have your script decide minimum number of frames [say there are two I pictures within 10 frames of each other, you really don't want to be chunking it there].
 
 \chapter{References}
 
