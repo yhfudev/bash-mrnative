@@ -7,7 +7,9 @@
 %
 % 以上设定默认使用 XeLaTex 编译，并指定 Unicode 编码，供 TeXShop 自动识别
 
-\chapter{High Level Design}
+\chapter{app-ns2}
+
+\section{High Level Design}
 
 
 
@@ -18,7 +20,7 @@
 \end{enumerate}
 
 
-\section{介绍}
+\subsection{介绍}
 
 \begin{enumerate}
   \item simulation task:
@@ -29,7 +31,7 @@
 \end{enumerate}
 
 
-\section{整体结构}
+\subsection{整体结构}
 图 \ref{fig:system} 是整个系统的运行框架。
 
 \definecolor{vidtransoriginfile}{HTML}{D7FE39}
@@ -59,19 +61,19 @@ The packet delay time processing includes:
 \end{itemize}
 
 
-\chapter{Low Level Design}
+\section{Low Level Design}
 
-\section{main}
+\subsection{main}
 
 
-\subsection{Interface of the generating configurations}
+\subsubsection{Interface of the generating configurations}
 
 Use the streaming mode of Map-Reduce.
 
 The input should be the config file list.
 
-
-\subsubsection{map}
+\begin{itemize}
+  \item \textbf{Map}
 Function: generate directories and move and modify TCL scripts for the test.
 
 
@@ -92,17 +94,17 @@ sim <config_file> <prefix> <type> <scheduler> <number_of_node>
 
 There should exist the directory contains the TCL scripts and data files for the simulation.
 
+\end{itemize}
 
 
 
-
-\subsection{Interface of simulation}
+\subsubsection{Interface of simulation}
 
 This stage will run the simulation base on each directory configuration,
 and also generate the related throughput figures.
 
-
-\subsubsection{map}
+\begin{itemize}
+  \item \textbf{map}
 Function: run the simulations.
 
 
@@ -128,7 +130,7 @@ The routine should run ns2 and process stats, figures of throughput/packet.
 
 
 
-\subsubsection{reduce}
+  \item \textbf{reduce}
 Function: plot JFI figures
 
 
@@ -143,8 +145,13 @@ packet <config_file> <prefix> <type> <flow_type> <scheduler> <number_of_node>
 
 Output: figures
 
+\end{itemize}
 
-\section{utils}
+
+
+
+
+\subsection{utils}
 
 There're three types of environment be supported by the software,
 which are single host bash, hadoop, and myhadoop.
@@ -253,7 +260,7 @@ The global variables (switches) in \texttt{mrsystem.conf}:
 
 
 
-\section{Performance}
+\subsection{Performance}
 
 
 run in a single host with bash:
