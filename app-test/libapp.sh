@@ -10,6 +10,11 @@
 ##
 #####################################################################
 
+#config binary for map/reduce task
+#config line: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,,6,5,"
+
+#####################################################################
 ## @fn my_getpath()
 ## @brief get the real name of a path
 ## @param dn the path name
@@ -113,7 +118,7 @@ libapp_prepare_app_binary() {
 }
 
 ## @fn libapp_prepare_mrnative_binary()
-## @brief untar the mrnative binary
+## @brief untar the mrnative binary (this package)
 ##
 ## untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
 ## return the path to the untar files
@@ -137,11 +142,15 @@ libapp_prepare_mrnative_binary() {
 
 ## @fn libapp_get_tasks_number_from_config()
 ## @brief get number of simulation tasks from a config file
+## @param fn_config the config file name
 ##
 ## (MUST be implemented)
 libapp_get_tasks_number_from_config() {
+    local PARAM_FN_CONFIG=$1
+    shift
+
     local NUM_NODES=1
-    while read get_sim_tasks_each_file_tmp_a; do
+    cat "${PARAM_FN_CONFIG}" | while read get_sim_tasks_each_file_tmp_a; do
         A=$( echo $get_sim_tasks_each_file_tmp_a | grep NUM_CORES | sed -e 's|NUM_CORES=\(.*\)$|\1|' )
         if [ ! "$A" = "" ]; then
             #arr=($A)
@@ -212,10 +221,6 @@ libapp_generate_script_4hadoop() {
     #mr_trace cat_file "${PARAM_OUTPUT}"
     #cat_file "${PARAM_OUTPUT}"
 }
-
-#config binary for map/reduce task
-#config line: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
-LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,,6,5,"
 
 ## @fn libapp_prepare_execution_config()
 ## @brief generate the TCL scripts for all of the settings

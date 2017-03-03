@@ -5,8 +5,22 @@ This folder contains the scripts to run native software in an Hadoop/HPC environ
 
 The example applications including:
 
-  * an trans-coding application which convert a multimedia content to MPD/segments files for Dynamic Adaptive Streaming over HTTP
+  * an test app to collect the information of the hosts in the cluster
+  * an transcoding application which convert a multimedia content to MPD/segments files for Dynamic Adaptive Streaming over HTTP
+  * an hashcat distribution framework
   * an NS-2 distribution simulation framework
+
+
+Introduction
+------------
+
+One of method to speed-up a CPU-intense application is to parallel the internal processing flows.
+There're many solutions to get it done, such as
+[GNU Parallel](https://www.gnu.org/software/parallel/),
+[Hadoop](http://hadoop.apache.org/).
+Though GNU Parallel can run jobs over one or more computers,
+it need user to specify how the work is dispatched to the hosts.
+
 
 
 Directory Structure
@@ -66,8 +80,22 @@ Directory Structure
     └── mrsystem.conf           # global configure variables
 
 
+Run your code in HPC environment
+--------------------------------
+
+Install [myhadoop](https://github.com/glennklockwood/myhadoop.git):
+
+    cd
+    mkdir -p software/src/
+    cd software/src/
+    git clone https://github.com/glennklockwood/myhadoop.git myhadoop-glennklockwood-git
+
+If you install the myhadoop to other folder, please change the path variable MY_HADOOP_HOME in the file bin/mod-setenv-hadoop.sh.
+
+
+
 Usage for app-test
---------------
+------------------
 
 This is to test if the environment and softwares are installed correctly.
 The hardware and package list are printed out after run this script.
@@ -77,23 +105,118 @@ The hardware and package list are printed out after run this script.
 
 
 Usage for app-conv2dash
--------------------
+-----------------------
 
 The scripts in the folder app-conv2dash is to convert a multimedia content to MPD/segments files for Dynamic Adaptive Streaming over HTTP.
 You need the following softwares installed in your system:
 
-    ffmpeg
-    mediametrics (https://github.com/yhfudev/mediametrics.git)
-    MP4Box (https://github.com/gpac/gpac.git)
+  * [ffmpeg](https://ffmpeg.org/),
+  * [mediametrics](https://github.com/yhfudev/mediametrics.git),
+  * [MP4Box](https://github.com/gpac/gpac.git) (gpac)
 
-And the directory of the binary should in your PATH environment.
+
+To prepare the data, the user should create a config-* file in the folder app-conv2dash/input/
+and put the following in the file:
+
+    # if generate the snapshot picture, set it to 1
+    HDFF_SNAPSHOT=1
+
+    # the resolutions for transcoding
+    # video resolution + video bitrate + audio bitrate
+    #HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k,1280x720+1500k+256k,1280x720+2600k+256k,1920x1080+3800k+256k,1920x1080+4800k+256k,3840x1714+9000k+256k,3840x1714+12000k+256k
+    #HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k
+    HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k
+
+    # the screen size for mmetrics
+    # http://en.wikipedia.org/wiki/File:Vector_Video_Standards2.svg
+    # HD 1.78:1(16:9), ?,?,?,720p,1080p(2k),4k,8k
+    #HDFF_SCREEN_RESOLUTIONS=320x180,640x360,854x480,1280x720,1920x1080,3840x2160,7680x4320
+    #HDFF_SCREEN_RESOLUTIONS=320x180,640x360
+    HDFF_SCREEN_RESOLUTIONS=320x180
+
+    # WHXGA 1.60:1 (16:10), 4k
+    #HDFF_SCREEN_RESOLUTIONS=320x200,1280x800,1680x1050,1920x1200,2560x1600,5120x3200
+
+    # VGA 1.33:1 (4:3); QVGA,VGA,PAL,SVGA,XGA,?,SXGA+,UXGA,QXGA
+    #HDFF_SCREEN_RESOLUTIONS=320x240,640x480,768x576,800x600,1024x786,1280x960,1400x1050,1600x1200,2048x1536
+
+
+    # global options for ffmpeg
+    #OPTIONS_FFM_GLOBAL="-threads 0"
+    OPTIONS_FFM_GLOBAL=
+    OPTIONS_FFM_ASYNC="-async 2286 -vsync 2"
+    OPTIONS_FFM_AUDIO=
+    #OPTIONS_FFM_VIDEO="-keyint_min 48 -g 48"
+    # -keyint_min <Minimum GOP length, the minimum distance between I-frames. Recommended default: 25>
+    # -g <Keyframe interval, GOP length>
+    OPTIONS_FFM_VIDEO="-keyint_min 150 -g 150 -sc_threshold 0"
+
+    # the transcode codec for the ffmpeg -- using mpeg4
+    #OPTIONS_FFM_VCODEC="-vcodec mpeg4"
+    #OPTIONS_FFM_ACODEC="-c:a aac -strict -2"
+    #OPTIONS_FFM_VCODEC_SUFFIX="mp4"
+
+    # the transcode codec for the ffmpeg -- using webm
+    #OPTIONS_FFM_VCODEC="-vcodec libvpx-vp9 -strict experimental"
+    OPTIONS_FFM_VCODEC="-vcodec libvpx"
+    OPTIONS_FFM_ACODEC="-c:a libvorbis"
+    OPTIONS_FFM_VCODEC_SUFFIX="webm"
+
+
+And then place the input-* files in which contains the lines that specify the media input files, such as
+
+    origvid	"trailer/sintel_trailer-audio.flac"	"trailer/sintel_trailer-lossless-1080p.mkv"	10
+
+
+To run the transcoding, user should make sure the directory of the binary should in your PATH environment,
+and run following commands:
 
     cd app-conv2dash
     ../run-sh1.sh
 
 
+Usage for app-wpapw
+-------------------
+
+The scripts in the folder app-wpapw is to crack the WPA password with hashcap.
+You need the following softwares installed in your system:
+
+  * [hashcap](https://github.com/hashcat/hashcat.git),
+  * [aircrack-ng](https://www.aircrack-ng.org/)
+
+To prepare the data, the user should create a config-* file in the folder app-wpapw/input/
+and put the following in the file:
+
+    # the word list
+    HDFF_WORDLISTS=wl1.txt,wl2.txt
+
+    # the rule list for the hashcat
+    HDFF_RULELISTS=best64,combinator
+
+    # the number of entries for each segment of wordlist/pattern
+    # default: 10m
+    HDFF_SIZE_SEGMENT=10000000
+
+    # if we use mask, such as ?d?d?d?d?d for hashcat
+    HDFF_USE_MASK=1
+
+And then place the input-* files in which contains the lines that specify the media input files, such as
+
+    wpa	"wpahome/ATT749-hs.hccap"
+    wpa	"wpahome/ATT103-hs.hccap"
+
+To run the cracking, user should make sure the directory of the binary should in your PATH environment,
+and run following commands for single host cracking:
+
+    cd app-wpapw
+    ../run-sh1.sh
+
+
+
+
+
 Usage for app-ns2
--------------
+-----------------
 
 In summary, if you start a new test, you may want to clean the folder first:
 

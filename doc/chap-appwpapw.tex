@@ -52,60 +52,65 @@ hashcat -m 2500 -r rules/best64.rule for-science-hs.hccap ZD_Tirom_Merger+Trim_8
 
 \begin{lstlisting}[language=bash]
 #  <type>, <filename>, <pw type>,   <pw dictionary>
-   wifi, test.hs.hccap, dictionary, wordlist1.txt,
-   wifi, test.hs.hccap, dictionary, wordlist2.txt,
-   wifi, test.hs.hccap, dictionary, wordlist3.txt,
-   wifi, test.hs.hccap, dictionary, wordlist4.txt,
-   wifi, test.hs.hccap, dictionary, wordlist5.txt,
-   wifi, test.hs.hccap, dictionary, wordlist6.txt,
+   wpa, test.hs.hccap, dictionary, wordlist1.txt,
+   wpa, test.hs.hccap, dictionary, wordlist2.txt,
+   wpa, test.hs.hccap, dictionary, wordlist3.txt,
+   wpa, test.hs.hccap, dictionary, wordlist4.txt,
+   wpa, test.hs.hccap, dictionary, wordlist5.txt,
+   wpa, test.hs.hccap, dictionary, wordlist6.txt,
 
 #  <type>, <filename>, <pw type>,   <pw pattern>
-   wifi, test.hs.hccap, mask, 0?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 1?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 2?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 3?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 4?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 5?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 6?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 7?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 8?d?d?d?d?d?d?d?d?d, 
-   wifi, test.hs.hccap, mask, 9?d?d?d?d?d?d?d?d?d, 
+   wpa, test.hs.hccap, mask, 0?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 1?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 2?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 3?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 4?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 5?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 6?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 7?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 8?d?d?d?d?d?d?d?d?d,
+   wpa, test.hs.hccap, mask, 9?d?d?d?d?d?d?d?d?d,
 
 #  <type>, <filename>, <pw type>,   <pw pattern>, <rule>
-   wifi, test.hs.hccap, rule, 0?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 1?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 2?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 3?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 4?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 5?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 6?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 7?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 8?d?d?d?d?d?d?d?d?d, best64
-   wifi, test.hs.hccap, rule, 9?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 0?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 1?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 2?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 3?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 4?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 5?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 6?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 7?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 8?d?d?d?d?d?d?d?d?d, best64
+   wpa, test.hs.hccap, rule, 9?d?d?d?d?d?d?d?d?d, best64
 \end{lstlisting}
 
-so the hashcat will run according to the lines, and output lines if the password found:
+  \item the hashcat will run according to the lines generated,
+and output lines if the password found:
 \begin{lstlisting}[language=bash]
 #  <type>, <filename>, <result>,   <password>
-   wifi, test.hs.hccap, found, 1234567890
-   wifi, test.hs.hccap, notfound,
+   wpa, test.hs.hccap, found, 1234567890
+   wpa, test.hs.hccap, notfound,
 \end{lstlisting}
 
- dictionary
- ? support compressed?
- kali default /usr/share/wordlists/
-   such as rockyou.txt
+  \item the output lines are sorted and remove duplicated lines,
+if there's success line, then remove other failed lines of the same config.
 
-  \item the hashcat will run according to the lines generated
 \end{enumerate}
 
+
+dictionary
+? support compressed?
+kali default /usr/share/wordlists/
+such as rockyou.txt
 
 
 
 
 the gpu card run the hash code in speed of around 50k,
 specifically, it is 77366 H/s for a Tesla K40m,
-and 60960 H/s for a NVIDIA GeForce GTX 960M.
+60960 H/s for a NVIDIA GeForce GTX 960M,
+and 28989 H/s for a NVIDIA GeForce GTX 745.
+\url{http://crackingservice.com/?q=benchmark}
 
 we split the pattern to multiple segments,
 and also split the dictionary to multiple segments,

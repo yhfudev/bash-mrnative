@@ -10,6 +10,21 @@
 ##
 #####################################################################
 
+#config binary for map/reduce task
+# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
+#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
+#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
+#   stream.num.map.output.key.fields >= num.key.fields.for.partition
+#   'callback end function' is called at the end of function
+#
+# config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,e2red.sh,3,2, ,e3red.sh,4,2,"
+#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,e2red.sh,3,2,"
+#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,,3,2,"
+#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4,"
+#LIST_MAPREDUCE_WORK="e1map.sh,,4,4,"
+
+#####################################################################
 ## @fn my_getpath()
 ## @brief get the real name of a path
 ## @param dn the path name
@@ -46,7 +61,7 @@ EXEC_WEBMDASH_MANIFEST=$(which "webm_dash_manifest")
 EXEC_MP4BOX=$(which "MP4Box")
 EXEC_ITEC_MPDSEG=$(which "create_mpd_segment_info.py")
 
-FN_CONF_FFMPEG="transcode.conf"
+FN_CONF_FFMPEG="${DN_EXEC}/config-conv2dash.conf"
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
     DN_EXEC="${DN_EXEC_4HADOOP}"
@@ -67,6 +82,63 @@ if [ ! "${RET}" = "f" ]; then
     fi
 fi
 #####################################################################
+## @fn generate_default_conv2dash_config()
+## @brief generate a default config file for conv2dash
+## @param fn the config file name
+##
+generate_default_conv2dash_config() {
+    local PARAM_FN_CONFIG=$1
+    shift
+    cat << EOF > "${PARAM_FN_CONFIG}"
+
+# if generate the snapshot picture, set it to 1
+HDFF_SNAPSHOT=1
+
+# the resolutions for transcoding
+# video resolution + video bitrate + audio bitrate
+#HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k,1280x720+1500k+256k,1280x720+2600k+256k,1920x1080+3800k+256k,1920x1080+4800k+256k,3840x1714+9000k+256k,3840x1714+12000k+256k
+#HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k,853x480+1000k+192k
+HDFF_TRANSCODE_RESOLUTIONS=320x180+315k+64k,640x360+500k+64k
+
+# the screen size for mmetrics
+# http://en.wikipedia.org/wiki/File:Vector_Video_Standards2.svg
+# HD 1.78:1(16:9), ?,?,?,720p,1080p(2k),4k,8k
+#HDFF_SCREEN_RESOLUTIONS=320x180,640x360,854x480,1280x720,1920x1080,3840x2160,7680x4320
+#HDFF_SCREEN_RESOLUTIONS=320x180,640x360
+HDFF_SCREEN_RESOLUTIONS=320x180
+
+# WHXGA 1.60:1 (16:10), 4k
+#HDFF_SCREEN_RESOLUTIONS=320x200,1280x800,1680x1050,1920x1200,2560x1600,5120x3200
+
+# VGA 1.33:1 (4:3); QVGA,VGA,PAL,SVGA,XGA,?,SXGA+,UXGA,QXGA
+#HDFF_SCREEN_RESOLUTIONS=320x240,640x480,768x576,800x600,1024x786,1280x960,1400x1050,1600x1200,2048x1536
+
+
+# global options for ffmpeg
+#OPTIONS_FFM_GLOBAL="-threads 0"
+OPTIONS_FFM_GLOBAL=
+OPTIONS_FFM_ASYNC="-async 2286 -vsync 2"
+OPTIONS_FFM_AUDIO=
+#OPTIONS_FFM_VIDEO="-keyint_min 48 -g 48"
+# -keyint_min <Minimum GOP length, the minimum distance between I-frames. Recommended default: 25>
+# -g <Keyframe interval, GOP length>
+OPTIONS_FFM_VIDEO="-keyint_min 150 -g 150 -sc_threshold 0"
+
+# the transcode codec for the ffmpeg -- using mpeg4
+#OPTIONS_FFM_VCODEC="-vcodec mpeg4"
+#OPTIONS_FFM_ACODEC="-c:a aac -strict -2"
+#OPTIONS_FFM_VCODEC_SUFFIX="mp4"
+
+# the transcode codec for the ffmpeg -- using webm
+#OPTIONS_FFM_VCODEC="-vcodec libvpx-vp9 -strict experimental"
+OPTIONS_FFM_VCODEC="-vcodec libvpx"
+OPTIONS_FFM_ACODEC="-c:a libvorbis"
+OPTIONS_FFM_VCODEC_SUFFIX="webm"
+
+EOF
+}
+
+#####################################################################
 mr_trace "DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS}"
 
 RET0=$(is_file_or_dir "${FN_CONF_SYS}")
@@ -80,12 +152,18 @@ FN_TMP_1m="/tmp/config-$(uuidgen)"
 copy_file "${FN_CONF_SYS}" "${FN_TMP_1m}" 1>&2
 read_config_file "${FN_TMP_1m}"
 
+FN_TMP_1m="/tmp/config-$(uuidgen)"
+
 RET0=$(is_file_or_dir "${FN_CONF_FFMPEG}")
 if [ ! "$RET0" = "f" ]; then
     mr_trace "Warning: not found config file '${FN_CONF_FFMPEG}'!"
+
+    # generate default application configs?
+    generate_default_conv2dash_config "${FN_TMP_1m}"
+
+else
+    copy_file "${FN_CONF_FFMPEG}" "${FN_TMP_1m}" 1>&2
 fi
-FN_TMP_1m="/tmp/config-$(uuidgen)"
-copy_file "${FN_CONF_FFMPEG}" "${FN_TMP_1m}" 1>&2
 read_config_file "${FN_TMP_1m}"
 
 if [ $(is_local "${FN_TMP_1m}") = l ]; then
@@ -205,7 +283,7 @@ libapp_prepare_app_binary() {
 }
 
 ## @fn libapp_prepare_mrnative_binary()
-## @brief untar the mrnative binary
+## @brief untar the mrnative binary (this package)
 ##
 ## untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
 ## return the path to the untar files
@@ -227,15 +305,20 @@ libapp_prepare_mrnative_binary() {
     fi
 }
 
+
 ## @fn libapp_get_tasks_number_from_config()
 ## @brief get number of simulation tasks from a config file
+## @param fn_config the config file name
 ##
 ## (MUST be implemented)
 libapp_get_tasks_number_from_config() {
+    local PARAM_FN_CONFIG=$1
+    shift
+
     NUM_SCHE=1
     NUM_NODES=1
     NUM_TYPE=1
-    while read get_sim_tasks_each_file_tmp_a; do
+    cat "${PARAM_FN_CONFIG}" | while read get_sim_tasks_each_file_tmp_a; do
         A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
         if [ ! "$A" = "" ]; then
             arr=($A)
@@ -323,20 +406,6 @@ libapp_generate_script_4hadoop() {
         | sed -e "s|EXEC_ITEC_MPDSEG=.*$|EXEC_ITEC_MPDSEG=$(which create_mpd_segment_info.py)|" \
         | save_file "${PARAM_OUTPUT}"
 }
-
-#config binary for map/reduce task
-# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
-#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
-#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
-#   stream.num.map.output.key.fields >= num.key.fields.for.partition
-#   'callback end function' is called at the end of function
-#
-# config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
-LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,e2red.sh,3,2, ,e3red.sh,4,2,"
-#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,e2red.sh,3,2,"
-#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4, e2map.sh,,3,2,"
-#LIST_MAPREDUCE_WORK="e1map.sh,e1red.sh,4,4,"
-#LIST_MAPREDUCE_WORK="e1map.sh,,4,4,"
 
 ## @fn libapp_prepare_execution_config()
 ## @brief generate the TCL scripts for all of the settings

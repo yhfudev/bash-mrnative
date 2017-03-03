@@ -143,8 +143,7 @@ mapred_main_sh1 () {
         copy_file ${a} ${HDFS_DN_OUTPUT_PREFIX}/ ; \
     done
     find_file ${DN_EXEC}/input/ -name "input-*" | while read a; do \
-        echo -e "config\t\"$(my_getpath ${a})\"" | save_file ${HDFS_DN_OUTPUT_PREFIX}/0/redout.txt; \
-        copy_file ${a} ${HDFS_DN_OUTPUT_PREFIX}/ ; \
+        cat "${a}" | save_file ${HDFS_DN_OUTPUT_PREFIX}/0/redout.txt; \
     done
 
     ####################

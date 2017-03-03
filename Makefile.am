@@ -29,6 +29,25 @@ include_HEADERS = \
     $(top_srcdir)/lib/libplot.sh \
     $(top_srcdir)/lib/libshrt.sh \
     $(top_srcdir)/lib/libhadoop.sh \
+    $(top_srcdir)/app-conv2dash/e1map.sh \
+    $(top_srcdir)/app-conv2dash/e1red.sh \
+    $(top_srcdir)/app-conv2dash/e2map.sh \
+    $(top_srcdir)/app-conv2dash/e2red.sh \
+    $(top_srcdir)/app-conv2dash/e3red.sh \
+    $(top_srcdir)/app-conv2dash/liball.sh \
+    $(top_srcdir)/app-conv2dash/libapp.sh \
+    $(top_srcdir)/app-conv2dash/README.md \
+    $(top_srcdir)/app-conv2dash/input-examples/* \
+    $(top_srcdir)/app-wpapw/e1map.sh \
+    $(top_srcdir)/app-wpapw/e2map.sh \
+    $(top_srcdir)/app-wpapw/liball.sh \
+    $(top_srcdir)/app-wpapw/libapp.sh \
+    $(top_srcdir)/app-test/e1map.sh \
+    $(top_srcdir)/app-test/e2map.sh \
+    $(top_srcdir)/app-test/liball.sh \
+    $(top_srcdir)/app-test/libapp.sh \
+    $(top_srcdir)/app-test/README.md \
+    $(top_srcdir)/app-test/input/config-test.conf \
     $(top_srcdir)/app-ns2/e1map.sh \
     $(top_srcdir)/app-ns2/e2map.sh \
     $(top_srcdir)/app-ns2/e2red.sh \
@@ -76,21 +95,6 @@ include_HEADERS = \
     $(top_srcdir)/app-ns2/common/profile.tcl \
     $(top_srcdir)/app-ns2/common/sched-defs.tcl \
     $(top_srcdir)/app-ns2/common/tcpudp-util.tcl \
-    $(top_srcdir)/app-test/e1map.sh \
-    $(top_srcdir)/app-test/e2map.sh \
-    $(top_srcdir)/app-test/liball.sh \
-    $(top_srcdir)/app-test/libapp.sh \
-    $(top_srcdir)/app-test/README.md \
-    $(top_srcdir)/app-test/input/config-test.conf \
-    $(top_srcdir)/app-conv2dash/e1map.sh \
-    $(top_srcdir)/app-conv2dash/e1red.sh \
-    $(top_srcdir)/app-conv2dash/e2map.sh \
-    $(top_srcdir)/app-conv2dash/e2red.sh \
-    $(top_srcdir)/app-conv2dash/e3red.sh \
-    $(top_srcdir)/app-conv2dash/liball.sh \
-    $(top_srcdir)/app-conv2dash/libapp.sh \
-    $(top_srcdir)/app-conv2dash/README.md \
-    $(top_srcdir)/app-conv2dash/input-examples/* \
     $(NULL)
 
 noinst_HEADERS= \

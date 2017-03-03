@@ -10,6 +10,18 @@
 ##
 #####################################################################
 
+#config binary for map/reduce task
+# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
+#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
+#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
+#   stream.num.map.output.key.fields >= num.key.fields.for.partition
+#   'callback end function' is called at the end of function
+#
+# config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+#LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
+LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
+
+#####################################################################
 ## @fn my_getpath()
 ## @brief get the real name of a path
 ## @param dn the path name
@@ -149,7 +161,7 @@ libapp_prepare_app_binary() {
 }
 
 ## @fn libapp_prepare_mrnative_binary()
-## @brief untar the mrnative binary
+## @brief untar the mrnative binary (this package)
 ##
 ## untar the mrnative binary from the file specified by HDFF_PATHTO_TAR_MRNATIVE
 ## return the path to the untar files
@@ -173,13 +185,17 @@ libapp_prepare_mrnative_binary() {
 
 ## @fn libapp_get_tasks_number_from_config()
 ## @brief get number of simulation tasks from a config file
+## @param fn_config the config file name
 ##
 ## (MUST be implemented)
 libapp_get_tasks_number_from_config() {
+    local PARAM_FN_CONFIG=$1
+    shift
+
     NUM_SCHE=1
     NUM_NODES=1
     NUM_TYPE=1
-    while read get_sim_tasks_each_file_tmp_a; do
+    cat "${PARAM_FN_CONFIG}" | while read get_sim_tasks_each_file_tmp_a; do
         A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
         if [ ! "$A" = "" ]; then
             arr=($A)
@@ -262,17 +278,6 @@ libapp_generate_script_4hadoop() {
         | sed -e "s|EXEC_NS2=.*$|EXEC_NS2=$(which ns)|" \
         | save_file "${PARAM_OUTPUT}"
 }
-
-#config binary for map/reduce task
-# <config line> format: "<map>,<reduce>,<# of output key>,<# of partition key>,<callback end function>"
-#   java streaming argument 'stream.num.map.output.key.fields' is map to '# of output key'
-#   java streaming argument 'num.key.fields.for.partition' is map to '# of partition key'
-#   stream.num.map.output.key.fields >= num.key.fields.for.partition
-#   'callback end function' is called at the end of function
-#
-# config line example: "e1map.sh,e1red.sh,6,5,cb_end_stage1"
-#LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
-LIST_MAPREDUCE_WORK="e1map.sh,,6,5, e2map.sh,e2red.sh,6,5, e3map.sh,,6,5,"
 
 ## @fn prepare_one_tcl_scripts()
 ## @brief generate one of the TCL scripts

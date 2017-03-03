@@ -163,7 +163,7 @@ get_sim_tasks() {
     find_file "${PARAM_DN_CONF}" -maxdepth 1 -name "config*" \
         | (TASKS=0;
         while read get_sim_tasks_tmp_a; do
-            A=$(cat $get_sim_tasks_tmp_a | libapp_get_tasks_number_from_config)
+            A=$(libapp_get_tasks_number_from_config "$get_sim_tasks_tmp_a")
             TASKS=$(( $TASKS + $A ))
             mr_trace "got $A cores for file $a"
         done;
