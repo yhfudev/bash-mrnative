@@ -169,6 +169,9 @@ print_list_nodes() {
     done
 }
 
+MH_WORKDIR=$PWD
+MH_JOBID=$$
+
 #config
 MH_LIST_NODES=localhost
 grep MH_LIST_NODES "myhadoop.conf"
@@ -196,7 +199,7 @@ read_config_file "myhadoop.conf"
 IFS=':'; array_nodes=($MH_LIST_NODES)
 NODES=${#array_nodes[*]}
 
-mr_trace "MH_LIST_NODES=$MH_LIST_NODES"
+mr_trace "got MH_LIST_NODES=$MH_LIST_NODES"
 
 
 # get CORES

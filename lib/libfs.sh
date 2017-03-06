@@ -27,11 +27,11 @@
 ## @brief detect HDFS port
 ##
 get_hdfs_url() {
-    if which hdfs ; then
-        PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
-        mr_trace "hdfs port=${PORT}"
+    if which hdfs > /dev/null ; then
+        local PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
+        #mr_trace "hdfs port=${PORT}"
         if [ ! "$PORT" = "" ]; then
-            mr_trace "hdfs url=" $(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')
+            #mr_trace "hdfs url=$(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')"
             netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
         fi
     else
@@ -121,7 +121,7 @@ is_file_or_dir() {
     if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] ; then
         E=$(which hadoop)
         if [ ! -x "${E}" ]; then
-            mr_trace "not found hadoop in is_file_or_dir(), PATH=$PATH"
+            mr_trace "not found hadoop in is_file_or_dir(), E=$E; PATH=$PATH"
             echo "e"
             return
         fi
@@ -227,7 +227,7 @@ find_file() {
 
     mr_trace "PARAM_DN_SEARCH=${PARAM_DN_SEARCH}"
     if [[ "${PARAM_DN_SEARCH}" =~ ^hdfs:// ]] ; then
-        if which hadoop ; then
+        if which hadoop > /dev/null ; then
             HDFS_URL="hdfs://$(get_hdfs_url)"
             eval "hadoop fs -find \"${HDFS_URL}${PARAM_DN_SEARCH#hdfs://}\" $A" | while read a; do echo "hdfs://${a#${HDFS_URL}}"; done
         fi
@@ -249,6 +249,7 @@ make_dir() {
 
     if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]]; then
         HDFS_URL="hdfs://$(get_hdfs_url)"
+        mr_trace "HDFS_URL=${HDFS_URL}"
         $MYEXEC hadoop fs -mkdir -p "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}"
         echo $?
         return
