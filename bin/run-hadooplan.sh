@@ -130,20 +130,20 @@ create_mrsystem_config_lan() {
     #HDFF_DN_SCRATCH="/run/shm/${USER}/working-${HDFF_PROJ_ID}/"
     #HDFF_DN_SCRATCH="/dev/shm/${USER}/working-${HDFF_PROJ_ID}/"
     #HDFF_DN_SCRATCH="/local_scratch/\$USER/working-${HDFF_PROJ_ID}/"
-    HDFF_DN_SCRATCH="/dev/shm/${USER}/working-${HDFF_PROJ_ID}/"
+    HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
     sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${PARAM_FN_CONFIG}"
 
     # the directory for save the un-tar binary files
-    HDFF_DN_BIN=""
+    HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
     sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${PARAM_FN_CONFIG}"
 
     # tar the binary and save it to HDFS for the node extract it later
     # the tar file for application exec
-    HDFF_PATHTO_TAR_APP=""
+    HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
     sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${PARAM_FN_CONFIG}"
 
     # the HDFS path to this project
-    HDFF_PATHTO_TAR_MRNATIVE=""
+    HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
     sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
 
@@ -181,6 +181,8 @@ mr_trace "MH_LIST_NODES=$MH_LIST_NODES"
 ONE_HOST=$(print_list_nodes "${MH_LIST_NODES}" | tail -n 1)
 CORES=$(ssh ${ONE_HOST} "cat /proc/cpuinfo" | grep "core id" | sort | uniq | wc -l)
 MEM=$(ssh ${ONE_HOST} "cat /proc/meminfo" | grep MemTotal | awk '{print int($2 / 1000000);}')
+
+mr_trace "Single Host, CORES=${CORES}; MEM=${MEM}GB;"
 
 # set the generated config file
 FN_CONFIG_WORKING="${DN_EXEC}/mrsystem-working.conf"

@@ -83,36 +83,31 @@ create_mrsystem_config_hadoop() {
     shift
 
     HDFF_USER=${USER}
-    sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${PARAM_FN_CONFIG}"
 
     HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
-    sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${PARAM_FN_CONFIG}"
 
     # redirect the output to HDFS so we can fetch back later
     HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
-    sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${PARAM_FN_CONFIG}"
 
     # scratch(temp) dir
     HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
-    sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${PARAM_FN_CONFIG}"
 
     # the directory for save the un-tar binary files
     HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
-    sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${PARAM_FN_CONFIG}"
 
     # tar the binary and save it to HDFS for the node extract it later
     # the tar file for application exec
     HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
-    sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${FN_CONFIG_WORKING}"
+    sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${PARAM_FN_CONFIG}"
 
     # the HDFS path to this project
     HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
-    sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
-
-    FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
-    make_dir "$(dirname ${FN_CONF_SYS})"
-    copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
-
+    sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
 
 
@@ -127,6 +122,10 @@ copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
 
 create_mrsystem_config_hadoop "${FN_CONFIG_WORKING}"
+
+FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
+make_dir "$(dirname ${FN_CONF_SYS})"
+copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
 
 check_global_config
 
