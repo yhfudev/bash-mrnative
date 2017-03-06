@@ -80,6 +80,16 @@ Directory Structure
     └── mrsystem.conf           # global configure variables
 
 
+Run your code in a single host for test
+---------------------------------------
+
+This is to test if the environment and softwares are installed correctly.
+The hardware and package list are printed out after run this script.
+
+    cd app-test
+    ../bin/run-sh1.sh
+
+
 Run your code in HPC environment
 --------------------------------
 
@@ -92,16 +102,39 @@ Install [myhadoop](https://github.com/yhfudev/myhadoop.git):
 
 If you install the myhadoop to other folder, please change the path variable MY_HADOOP_HOME in the file bin/mod-setenv-hadoop.sh.
 
+Start hadoop:
+
+    cd mrnative/
+    cd app-test/
+    ../bin/plboot-pbs.sh
+
+run the software:
+
+    ../bin/run-hadoop.sh
 
 
-Usage for app-test
-------------------
+Run your code in a bunch of hosts in LAN
+----------------------------------------
 
-This is to test if the environment and softwares are installed correctly.
-The hardware and package list are printed out after run this script.
+Install [myhadoop](https://github.com/yhfudev/myhadoop.git) as showed above.
 
-    cd app-test
-    ../run-sh1.sh
+You need to specify the hosts to be used as hadoop cluster, for example, you need to create a myhadoop.conf file:
+
+    MH_SCRATCH_DIR=/dev/shm/$USER/
+    MH_LIST_NODES=hc1.example.com:hc2.example.com:hc3.example.com:
+
+
+Start hadoop:
+
+    cd mrnative/
+    cd app-test/
+    ../bin/plboot-lan.sh
+
+run the software:
+
+    ../bin/run-hadoop.sh
+
+
 
 
 Usage for app-conv2dash

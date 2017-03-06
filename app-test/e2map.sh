@@ -129,13 +129,16 @@ worker_check_host0() {
 
     IPS=$(ip a | grep global | awk '{print $2}' | (b=""; while read a ; do if [ "$b" = "" ]; then b="$a" ; else b="$b,$a"; fi; done; echo $b))
     echo -e "host-ips\t$HOSTNAME\t$IPS"
-   # get the mem
+    # get the mem
     MEM=$(cat /proc/meminfo | grep MemTotal | awk '{print $2}')
     echo -e "memory-size\t$HOSTNAME\t$MEM"
     # get cpu
-    CORES=$(cat /proc/cpuinfo | grep processor | wc -l)
+    THREADS=$(cat /proc/cpuinfo | grep processor | sort | uniq | wc -l)
+    CORES=$(cat /proc/cpuinfo | grep "core id" | sort | uniq | wc -l)
+
     DESC=$(cat /proc/cpuinfo | grep "model name" | sort | uniq | awk -F: '{print $2}')
     echo -e "cpu-cores\t$HOSTNAME\t$CORES"
+    echo -e "cpu-threads\t$HOSTNAME\t$THREADS"
     echo -e "cpu-desc\t$HOSTNAME\t$DESC"
     top -bn1 | grep Cpu | awk -v H=$HOSTNAME '{print "cpu-usage\t" H "\t" $1 "\t" $3}'
 

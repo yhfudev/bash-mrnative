@@ -32,7 +32,18 @@ we integrate the following functions in the software:
   \item use local disks to store data temporally: to speed up the simulation.
 \end{itemize}
 
+
+
+Figure \ref{fig:mrnativestack} shows the structure of the framework.
+The script \texttt{plboot-pbs.sh} is to set up the environment variables for hadoop run in PBS,
+and the script \texttt{plboot-lan.sh} is for the hosts in LAN.
+these two scripts will generate \texttt{myhadoop.conf} to be used by myhadoop,
+optimized parameters in \texttt{mapred-site.xml}, and/or \texttt{yarn-site.xml} for hadoop,
+
 \begin{figure}\centering
-  \includegraphics[width=0.9\textwidth]{mrnative-stack}
+  \includegraphics[width=0.7\textwidth]{mrnative-stack}
   \caption{The stack of the mrnative}\label{fig:mrnativestack}
 \end{figure}
+
+
+

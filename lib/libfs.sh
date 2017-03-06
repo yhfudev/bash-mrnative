@@ -27,9 +27,11 @@
 ## @brief detect HDFS port
 ##
 get_hdfs_url() {
-    PORT=$(hdfs getconf -confKey fs.default.name | awk -F: '{print $3}')
-    if [ ! "$PORT" = "" ]; then
-        netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
+    if which hdfs ; then
+        PORT=$(hdfs getconf -confKey fs.default.name | awk -F: '{print $3}')
+        if [ ! "$PORT" = "" ]; then
+            netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
+        fi
     fi
 }
 HDFS_URL="hdfs://$(get_hdfs_url)"
@@ -215,7 +217,9 @@ find_file() {
 
     mr_trace "PARAM_DN_SEARCH=${PARAM_DN_SEARCH}"
     if [[ "${PARAM_DN_SEARCH}" =~ ^hdfs:// ]] ; then
-        eval "hadoop fs -find \"${HDFS_URL}${PARAM_DN_SEARCH#hdfs://}\" $A" | while read a; do echo "hdfs://${a#${HDFS_URL}}"; done
+        if which hadoop ; then
+            eval "hadoop fs -find \"${HDFS_URL}${PARAM_DN_SEARCH#hdfs://}\" $A" | while read a; do echo "hdfs://${a#${HDFS_URL}}"; done
+        fi
         return
     fi
     # -maxdepth 1 -type f
