@@ -28,13 +28,18 @@
 ##
 get_hdfs_url() {
     if which hdfs ; then
-        PORT=$(hdfs getconf -confKey fs.default.name | awk -F: '{print $3}')
+        PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
+        mr_trace "hdfs port=${PORT}"
         if [ ! "$PORT" = "" ]; then
+            mr_trace "hdfs url=" $(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')
             netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
         fi
+    else
+        mr_trace "Not found hdfs!"
     fi
 }
 HDFS_URL="hdfs://$(get_hdfs_url)"
+mr_trace "HDFS_URL=${HDFS_URL}"
 
 ## @fn convert_filename()
 ## @brief convert the file name to its absolute path
@@ -86,6 +91,7 @@ is_local() {
 tail_file() {
     local PARAM_FN_INPUT=$1
     shift
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     #[[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && hadoop fs -cat "${PARAM_FN_INPUT}" | awk 'BEGIN{str="";}{str=$0;}END{print str;}' && return
     [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -tail "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
     tail "${PARAM_FN_INPUT#file://}" $@
@@ -98,6 +104,7 @@ tail_file() {
 save_file() {
     local PARAM_FN_SAVE=$1
     shift
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     [[ "${PARAM_FN_SAVE}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -appendToFile - "${HDFS_URL}${PARAM_FN_SAVE#hdfs://}" && return
     cat - >> "${PARAM_FN_SAVE#file://}"
 }
@@ -119,8 +126,9 @@ is_file_or_dir() {
             return
         fi
         mr_trace "check hdfs '${PARAM_FN_INPUT}' ..."
+        HDFS_URL="hdfs://$(get_hdfs_url)"
+        mr_trace hadoop fs -ls "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}"
         local RET=$(hadoop fs -ls "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" 2>&1 | awk 'BEGIN{f="n";}{if (match($0, "No such file or directory")) {f="e";} if (match($0, "Found")) {f="d";} if (f != "d") { if (/^-.*/) f="f"; } }END{print f;}')
-        hadoop fs -ls "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" 1>&2
         if [ "$RET" = "n" ]; then
             echo "d"
         else
@@ -160,6 +168,7 @@ chmod_file() {
                 MODE=$1
             else
                 if [[ "${1}" =~ ^hdfs:// ]] ; then
+                    HDFS_URL="hdfs://$(get_hdfs_url)"
                     $MYEXEC hadoop fs -chmod $OPT $MODE "${HDFS_URL}${1#hdfs://}"
                 else
                     $MYEXEC chmod $OPT $MODE "${1#file://}"
@@ -178,6 +187,7 @@ cat_file() {
     local PARAM_FN_INPUT=$1
     shift
 
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     mr_trace "cat_file: input=${PARAM_FN_INPUT}"
 
     [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] && $MYEXEC hadoop fs -cat "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}" && return
@@ -218,6 +228,7 @@ find_file() {
     mr_trace "PARAM_DN_SEARCH=${PARAM_DN_SEARCH}"
     if [[ "${PARAM_DN_SEARCH}" =~ ^hdfs:// ]] ; then
         if which hadoop ; then
+            HDFS_URL="hdfs://$(get_hdfs_url)"
             eval "hadoop fs -find \"${HDFS_URL}${PARAM_DN_SEARCH#hdfs://}\" $A" | while read a; do echo "hdfs://${a#${HDFS_URL}}"; done
         fi
         return
@@ -237,6 +248,7 @@ make_dir() {
     shift
 
     if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]]; then
+        HDFS_URL="hdfs://$(get_hdfs_url)"
         $MYEXEC hadoop fs -mkdir -p "${HDFS_URL}${PARAM_FN_INPUT#hdfs://}"
         echo $?
         return
@@ -249,6 +261,7 @@ rm_f_dir0() {
     local PARAM_FN_INPUT=$1
     shift
 
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     mr_trace "del dir: ${PARAM_FN_INPUT} ..."
 
     # original code:
@@ -282,6 +295,7 @@ rm_f_dir() {
     find_file "${DN1}" -maxdepth 1 -name "$(basename "${PARAM_FN_INPUT}")" | while read a; do \
         #mr_trace "process: ${a} ..."
         if [[ "${PARAM_FN_INPUT}" =~ ^hdfs:// ]] ; then \
+            HDFS_URL="hdfs://$(get_hdfs_url)"
             $MYEXEC hadoop fs -rm -f -r "${HDFS_URL}${a#hdfs://}" ; \
         else \
             $MYEXEC rm -rf "${a#file://}" ; \
@@ -303,6 +317,7 @@ move_file() {
     local PARAM_FN_DEST=$1
     shift
 
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     if [[ "${PARAM_FN_SRC}" =~ ^hdfs:// ]]; then
         local IS_OK=0
         if [[ "${PARAM_FN_DEST}" =~ ^hdfs:// ]]; then
@@ -421,6 +436,7 @@ copy_file() {
     local PARAM_FN_DEST=$1
     shift
 
+    HDFS_URL="hdfs://$(get_hdfs_url)"
     local RET=0
     if [[ "${PARAM_FN_SRC}" =~ ^hdfs:// ]]; then
         local IS_OK=0

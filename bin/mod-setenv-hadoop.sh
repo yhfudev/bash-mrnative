@@ -94,22 +94,21 @@ start_hadoop() {
     if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
         ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
 
-        mr_trace "wait for hadoop ready, sleep 15 ..."
-        sleep 15
-
     elif [ -x "${HADOOP_HOME}/bin/start-all.sh" ]; then
         ${HADOOP_HOME}/bin/start-all.sh
-
-        mr_trace "wait for hadoop ready, sleep 15 ..."
-        sleep 15
 
     else
         mr_trace "Warning: Not found ${HADOOP_HOME}/bin/start-all.sh"
         #exit 1
     fi
     #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-    echo
-    jps
+    mr_trace "wait for hadoop ready ..."
+    V=
+    while [ "V" = "" ]; do
+        V=$(jps | grep NodeManager)
+        sleep 2
+    done
+    mr_trace "hadoop ready."
 }
 
 stop_hadoop() {

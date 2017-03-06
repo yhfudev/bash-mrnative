@@ -142,9 +142,6 @@ ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh || exit 1
 #### Start the Hadoop cluster
 start_hadoop
 
-mr_trace "wait for hadoop ready, sleep 50 ..."
-sleep 50
-
 #### Run your jobs here
 mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -mkdir Data
@@ -168,6 +165,8 @@ if [ 1 = 1 ]; then
     echo
     mapred_main
 
+    mr_trace copy_file "${HDFF_DN_OUTPUT}" output1
+    copy_file "${HDFF_DN_OUTPUT}" output1
     sleep $(( 15 * 60 ))
 
 else
