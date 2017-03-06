@@ -108,6 +108,14 @@ mr_trace "e2map, DN_TOP=${DN_TOP}, DN_EXEC=${DN_EXEC}, FN_CONF_SYS=${FN_CONF_SYS
 mr_trace "e2map, HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}"
 
 #####################################################################
+# TODO:
+# 1. detect if there exist GPU, and how many cards for each node
+# and then set the HDFF_NUM_CLONE to the # of GPUs or CPUs
+# 2. modify the mp_new_session(), mp_notify_child_exit(), mp_add_child_check_wait()
+# to work with GPU or CPU
+HDFF_NUM_CLONE=1
+
+#####################################################################
 # generate session for this process and its children
 #  use mp_get_session_id to get the session id later
 mp_new_session
@@ -118,13 +126,11 @@ libapp_prepare_app_binary
 ## @fn worker_crack_hashcat()
 ## @brief run oclhashcat command to crack
 ## @param session_id the session id
-## @param bssid the BSSID
-## @param fn_dump the dump file name
+## @param pwtype the type of crack, such as dictionary, mask, or rule
+## @param fn_dump the pcap dump file name
 ## @param pattern the pattern
-## @param start the start
-## @param count the count
+## @param rule the rule used
 ##
-## run hashcat command to crack
 worker_crack_hashcat() {
     #worker_crack_hashcat "$(mp_get_session_id)" "${MR_PWTYPE}" "${FN_DUMP}" "${MR_PATTERN}" "${MR_RULE}" &
     local PARAM_SESSION_ID="$1"
@@ -138,36 +144,41 @@ worker_crack_hashcat() {
     local PARAM_RULE=$1
     shift
 
+    local RET=1
+    FN_MSG="/tmp/app-wpapw-msg-$(uuidgen)"
     mr_trace "worker_crack_hashcat(SESSION_ID=${PARAM_SESSION_ID}; PWTYPE=${PARAM_PWTYPE}; FN_DUMP=${PARAM_FN_DUMP}; PATTERN=${PARAM_PATTERN}; RULE=${PARAM_RULE}; )"
     case "${MR_PWTYPE}" in
     dictionary)
+        FN_DIC="${PARAM_PATTERN}"
+        $MYEXEC ${EXEC_HASHCAT} -m 2500 ${PARAM_FN_DUMP} "${FN_DIC}" --outfile-check-dir=$(pwd)/aaa -session-dir=$(pwd)/bbb --opencl-platform 1 > "${FN_MSG}"
+        RET=$?
         ;;
     mask)
         #VAL=$(seq ${PARAM_START} $(( ${PARAM_START} + ${PARAM_COUNT} )) | $MYEXEC ${EXEC_AIRCRACK} -b ${PARAM_BSSID} -w- ${PARAM_FN_DUMP} | grep -i found )
         #VAL=$(seq ${PARAM_START} $(( ${PARAM_START} + ${PARAM_COUNT} )) | $MYEXEC ${EXEC_PYRIT} -r ${PARAM_FN_DUMP} -i - -b ${PARAM_BSSID} attack_passthrough | grep -i found )
 
-        FN_MSG="/tmp/app-wpapw-msg-$(uuidgen)"
         $MYEXEC ${EXEC_HASHCAT} -m 2500 ${PARAM_FN_DUMP} -a 3 ${PARAM_PATTERN} --outfile-check-dir=$(pwd)/aaa -session-dir=$(pwd)/bbb --opencl-platform 1 > "${FN_MSG}"
         RET=$?
-        mr_trace "end of wpa hashcat"
-        if [ $RET = 0 ]; then
-            # found!
-            T=$(cat "${FN_MSG}" | grep Hash.Target | awk '{print $2}')
-            V0=$(cat "${FN_MSG}" | grep $T | grep -v Hash.Target)
-            V=$(echo " ${V0}" | sed -e 's|\([^\:]*[[:space:]]\+\)||' -e '/^$/d' )
-            echo -e "outwpa\t${PARAM_FN_DUMP}\tfound\t${V}"
-        else
-            mr_trace "outwpa\t${PARAM_FN_DUMP}\tnotfound\t:-("
-            echo -e "outwpa\t${PARAM_FN_DUMP}\tnotfound\t:-("
-        fi
         mr_trace "end of wpa mask"
         ;;
     rule)
+        mr_trace "end of wpa rule"
         ;;
     *)
         mr_trace "Error: unknown hashcat type '${PARAM_PWTYPE}'."
         ;;
     esac
+    mr_trace "end of wpa hashcat"
+    if [ $RET = 0 ]; then
+        # found!
+        T=$(cat "${FN_MSG}" | grep Hash.Target | awk '{print $2}')
+        V0=$(cat "${FN_MSG}" | grep $T | grep -v Hash.Target)
+        V=$(echo " ${V0}" | sed -e 's|\([^\:]*[[:space:]]\+\)||' -e '/^$/d' )
+        echo -e "outwpa\t${PARAM_FN_DUMP}\tfound\t${V}"
+    else
+        mr_trace "outwpa\t${PARAM_FN_DUMP}\tnotfound\t:-("
+        echo -e "outwpa\t${PARAM_FN_DUMP}\tnotfound\t:-("
+    fi
 
     mp_notify_child_exit ${PARAM_SESSION_ID}
 }

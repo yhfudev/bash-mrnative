@@ -83,12 +83,12 @@ Directory Structure
 Run your code in HPC environment
 --------------------------------
 
-Install [myhadoop](https://github.com/glennklockwood/myhadoop.git):
+Install [myhadoop](https://github.com/yhfudev/myhadoop.git):
 
     cd
     mkdir -p software/src/
     cd software/src/
-    git clone https://github.com/glennklockwood/myhadoop.git myhadoop-glennklockwood-git
+    git clone https://github.com/yhfudev/myhadoop.git myhadoop-yhfudev-git
 
 If you install the myhadoop to other folder, please change the path variable MY_HADOOP_HOME in the file bin/mod-setenv-hadoop.sh.
 
@@ -188,13 +188,13 @@ To prepare the data, the user should create a config-* file in the folder app-wp
 and put the following in the file:
 
     # the word list
-    HDFF_WORDLISTS=wl1.txt,wl2.txt
+    HDFF_WORDLISTS=wl1.txt:wl2.txt
 
     # the rule list for the hashcat
-    HDFF_RULELISTS=best64,combinator
+    HDFF_RULELISTS=best64:combinator
 
     # the number of entries for each segment of wordlist/pattern
-    # default: 10m
+    # default: 10000000
     HDFF_SIZE_SEGMENT=10000000
 
     # if we use mask, such as ?d?d?d?d?d for hashcat

@@ -54,7 +54,7 @@ EXEC_AIRCRACK=$(which "aircrack-ng")
 EXEC_PYRIT=$(which "pyrit")
 EXEC_WPACLEAN=$(which "wpaclean")
 
-FN_CONF_HASHCAT="${DN_EXEC}/config-wpapw.conf"
+FN_CONF_HASHCAT="input/config-wpapw.conf"
 
 if [ ! "${DN_EXEC_4HADOOP}" = "" ]; then
     DN_EXEC="${DN_EXEC_4HADOOP}"
@@ -86,11 +86,11 @@ generate_default_wpapw_config() {
 # the config file for the application
 
 # the word list
-#HDFF_WORDLISTS=wl1.txt,wl2.txt
+#HDFF_WORDLISTS=wl1.txt:wl2.txt
 HDFF_WORDLISTS=
 
 # the rule list for the hashcat
-#HDFF_RULELISTS=best64,combinator
+#HDFF_RULELISTS=best64:combinator
 HDFF_RULELISTS=
 
 # the number of entries for each segment of wordlist/pattern
@@ -312,42 +312,358 @@ libapp_prepare_mrnative_binary() {
     fi
 }
 
+#####################################################################
+# functions for generating input lines for cracking
+
+## @fn output_custom_mask_lines()
+## @brief generate the WPA crack mask lines for hashcat
+## @param num_segment the number of words in a segment
+## @param max_num the length of the string
+## @param charset the charset string, such as 1234567890ABCDEF
+## @param line_prefix the prefix line with the mask, such as "wpa\t${FN_HCCAP}\tmask\t"
+##
+output_custom_mask_lines() {
+    local PARAM_NUM_SEGMENT="$1"
+    shift
+    local PARAM_MAX="$1"
+    shift
+    local PARAM_CHARSET="$1"
+    shift
+    local PARAM_STR_PREFIX="$1"
+    shift
+
+    FN_AWK="/tmp/app-wpapw-awk-$(uuidgen)"
+    cat << EOF > "${FN_AWK}"
+{
+    num_charset=length(CHARSET);
+    split(CHARSET, charset_array, "")
+    num_suffix=0;
+    val_suffix=1;
+    while (val_suffix < NUM_SEGMENT) {
+        val_suffix = val_suffix * num_charset;
+        num_suffix = num_suffix + 1;
+    }
+    if (num_suffix >= MAX) {
+        num_suffix = MAX;
+    }
+    num_prefix = MAX - num_suffix;
+    suffix = "";
+    for (i = 0; i < num_suffix; i ++) {
+        suffix = suffix "?1";
+    }
+    # init prefix array
+    for (i = 0; i < num_prefix; i ++) {
+        prefix_idx[i] = 0;
+    }
+    while (1) {
+        # get the prefix of the mask
+        prefix_mask = ""
+        for (i = 0; i < num_prefix; i ++) {
+            prefix_mask = prefix_mask charset_array[prefix_idx[i] + 1];
+        }
+        print STR_PREFIX "-1 " CHARSET " " prefix_mask suffix "\t";
+        # increase prefix index by 1
+        c = 1;
+        for (i = 0; (c > 0) && (i < num_prefix); i ++) {
+            prefix_idx[i] = prefix_idx[i] + c;
+            if (prefix_idx[i] >= num_charset) {
+                c = 1;
+                prefix_idx[i] = 0;
+            } else {
+                c = 0;
+            }
+        }
+        if (c > 0) {
+            break;
+        }
+    }
+}
+EOF
+    echo | awk -v CHARSET=${PARAM_CHARSET} -v MAX=${PARAM_MAX} -v NUM_SEGMENT=${PARAM_NUM_SEGMENT} -v STR_PREFIX=${PARAM_STR_PREFIX} -f "${FN_AWK}"
+}
+
+## @fn output_capture_crack_with_config()
+## @brief create command lines for WPA crack
+## @param config_file the config file for crack, such as config-wpapw.conf
+## @param capture_file .cap, or .hccap file
+##
+output_capture_crack_with_config() {
+    local PARAM_CONFIG_FILE="$1"
+    shift
+    local PARAM_CAPTURE_FILE="$1"
+    shift
+
+    # read the application's config file
+    RET0=$(is_file_or_dir "${PARAM_CONFIG_FILE}")
+    if [ "$RET0" = "f" ]; then
+        read_config_file "${PARAM_CONFIG_FILE}"
+    fi
+
+    local RET=0
+    RET=$(is_file_or_dir "input/${PARAM_CAPTURE_FILE}")
+    if [ ! "${RET}" = "f" ]; then
+        mr_trace "Error: not found input file: input/$PARAM_CAPTURE_FILE"
+        return
+    fi
+
+    mr_trace "infunc create wpa config: PARAM_CAPTURE_FILE=${PARAM_CAPTURE_FILE}"
+    BSSID=
+    ESSID=
+    FN_HCCAP="input/${PARAM_CAPTURE_FILE}"
+    # get the name,bssid of AP
+    case "${PARAM_CAPTURE_FILE}" in
+    *-hs.hccap)
+        FN_MSG="/tmp/app-wpapw-msg-$(uuidgen)"
+        FN_HCCAP="input/${PARAM_CAPTURE_FILE}"
+        $MYEXEC ${EXEC_HASHCAT} -m 2500 "input/${PARAM_CAPTURE_FILE}" -a 3 1234567890 > "${FN_MSG}"
+        # example:
+        #Hash.Target......: This is my ESSID! (00:11:22:33:44:55 <-> 66:77:88:99:aa:bb)
+        mr_trace "detect line 1=$(cat "${FN_MSG}" | grep "Hash.Target")"
+        BSSID=$(cat "${FN_MSG}" | grep "Hash.Target" | awk -F\( '{print $2}' | awk      '{print $1}')
+        ESSID=$(cat "${FN_MSG}" | grep "Hash.Target" | awk -F:  '{print $2}' | awk -F\( '{print $1}')
+        grep "All hashes found in potfile!" "${FN_MSG}" 2>&1 > /dev/null
+        if [ "$?" = "0" ]; then
+            RES=$(${EXEC_HASHCAT} -m 2500 "input/${PARAM_CAPTURE_FILE}" --show)
+            echo -e "outwpa\tinput/${PARAM_CAPTURE_FILE}\tfound\t${RES}"
+            mr_trace "pre-found wpa: ${RES}"
+            return
+        fi
+        rm -f "${FN_MSG}"
+        ;;
+
+    *-hs.cap)
+        FN_MSG="/tmp/app-wpapw-msg-$(uuidgen)"
+        local PREFIX1=$(generate_prefix_from_filename "`basename ${PARAM_CAPTURE_FILE}`" )
+        FN_HCCAP="${HDFF_DN_OUTPUT}/tmp-hccap-${PREFIX1}"
+        $MYEXEC ${EXEC_AIRCRACK} -J "${FN_HCCAP}" "input/${PARAM_CAPTURE_FILE}" > "${FN_MSG}"
+        FN_HCCAP="${FN_HCCAP}.hccap"
+        # essid example:
+        # [*] ESSID (length: 12): This is my ESSID!
+        # bssid example:
+        # [*] BSSID: 00:11:22:33:44:55
+        mr_trace "detect line 2= $(cat "${FN_MSG}" | grep "*] ESSID (length:")"
+        mr_trace "detect line 2= $(cat "${FN_MSG}" | grep "*] BSSID:"        )"
+        ESSID=$(cat "${FN_MSG}" | grep "*] ESSID (length:" | awk -F: '{print $3}')
+        BSSID=$(cat "${FN_MSG}" | grep "*] BSSID:"         | awk     '{print $3}')
+        rm -f "${FN_MSG}"
+        ;;
+
+    *.cap)
+        FN_MSG="/tmp/app-wpapw-msg-$(uuidgen)"
+        local PREFIX1=$(generate_prefix_from_filename "`basename ${PARAM_CAPTURE_FILE}`" )
+        FN_HCCAP="${HDFF_DN_OUTPUT}/tmp-hccap-${PREFIX1}"
+        FN_CAP="${HDFF_DN_OUTPUT}/tmp-cap-${PREFIX1}"
+        $MYEXEC ${EXEC_WPACLEAN} "${FN_CAP}" "input/${PARAM_CAPTURE_FILE}" > /dev/null
+        $MYEXEC ${EXEC_AIRCRACK} -J "${FN_HCCAP}" "${FN_CAP}" > "${FN_MSG}"
+        FN_HCCAP="${FN_HCCAP}.hccap"
+        # essid example:
+        # [*] ESSID (length: 12): This is my ESSID!
+        # bssid example:
+        # [*] BSSID: 00:11:22:33:44:55
+        mr_trace "detect line 3= $(cat "${FN_MSG}" | grep "*] ESSID (length:")"
+        mr_trace "detect line 3= $(cat "${FN_MSG}" | grep "*] BSSID:"        )"
+        ESSID=$(cat "${FN_MSG}" | grep "*] ESSID (length:" | awk -F: '{print $3}')
+        BSSID=$(cat "${FN_MSG}" | grep "*] BSSID:"         | awk     '{print $3}')
+        rm -f "${FN_MSG}"
+        ;;
+
+    *)
+        mr_trace "Warning: unknown file 'input/${PARAM_CAPTURE_FILE}'."
+        ;;
+    esac
+    mr_trace "BSSID=${BSSID}; ESSID=${ESSID};"
+
+    if [ "${BSSID}" = "" ]; then
+        mr_trace "Warning: not found BSSID for file ${FN_HCCAP}"
+        mp_notify_child_exit ${PARAM_SESSION_ID}
+        return
+    fi
+
+    # for each word list
+    # HDFF_WORDLISTS
+    if [ ! "${HDFF_WORDLISTS}" = "" ]; then
+        IFS=':'; array=($HDFF_WORDLISTS)
+        for i in "${!array[@]}"; do
+            FN_DIC="${array[i]}"
+            echo -e "wpa\t${FN_HCCAP}\tdictionary\tinput/${FN_DIC}"
+        done
+    fi
+
+    # continue to parse the ESSID
+    if [ "${HDFF_USE_MASK}" = "1" ]; then
+        # HDFF_SIZE_SEGMENT
+        if [ "${HDFF_SIZE_SEGMENT}" = "" ]; then
+            HDFF_SIZE_SEGMENT=10000000
+        fi
+        mr_trace "HDFF_SIZE_SEGMENT=${HDFF_SIZE_SEGMENT};"
+
+        # calculate the number of digit of the suffix base 10
+        NUMLAST10=0
+        V=1
+        while (( $V < $HDFF_SIZE_SEGMENT )); do
+            V=$(( $V * 10 ))
+            NUMLAST10=$(( $NUMLAST10 + 1 ))
+        done
+
+        # the number of the prefix for 10 digital base 10 values
+        MAX_PREFIX_B10_10=1
+        C=$(( 10 - NUMLAST10 ))
+        while (( $C > 0 )); do
+            MAX_PREFIX_B10_10=$(( MAX_PREFIX_B10_10 * 10 ))
+            C=$(( C - 1 ))
+        done
+        mr_trace "NUMLAST10=${NUMLAST10}; MAX_PREFIX_B10_10=${MAX_PREFIX_B10_10};"
+
+        # ATTXXX
+        # 10 digits of 0-9 (17 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*ATT[0-9]{3}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "ATTXXX(${ESSID})"
+if [ 1 = 1 ]; then
+            #mr_trace output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 10 "0123456789" "wpa\t${FN_HCCAP}\tmask\t"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 10 "0123456789" "wpa\t${FN_HCCAP}\tmask\t"
+            #output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 4 "0123456789" "wpa\t${FN_HCCAP}\tmask\t" # debug
+            #MASK="91132055?d?d"; echo -e "wpa\t${FN_HCCAP}\tmask\t${MASK}" # debug
+else
+            C=0
+            while (( $C < $MAX_PREFIX_B10_10 )); do
+                # N -- number of total digitals
+                # S -- the length of suffix
+                # V -- the index value
+                MASK=$( echo | awk -v N=10 -v S=${NUMLAST10} -v V=${C} '{ suffix=""; for(i=0;i<S;i++) {suffix=suffix "?d";} fmt="%0" (N-S) "d%s\n"; printf(fmt,V,suffix);}' )
+                C=$(( C + 1 ))
+                mr_trace -e "wpa\t${FN_HCCAP}\tmask\t${MASK}"
+                echo -e "wpa\t${FN_HCCAP}\tmask\t${MASK}"
+            done
+fi
+        fi
+
+        # 2WIREXXX
+        # 10 digits of 0-9 (17 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*2WIRE[0-9]{3}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "2WIREXXX(${ESSID})"
+            C=0
+            while (( $C < $MAX_PREFIX_B10_10 )); do
+                MASK=$( echo | awk -v N=10 -v S=${NUMLAST10} -v V=${C} '{ suffix=""; for(i=0;i<S;i++) {suffix=suffix "?d";} fmt="%0" (N-S) "d%s\n"; printf(fmt,V,suffix);}' )
+                C=$(( C + 1 ))
+                echo -e "wpa\t${FN_HCCAP}\tmask\t${MASK}"
+            done
+        fi
+
+        # NETGEARXX
+        # Adjective + Noun + 3 numbers (dict)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*NETGEAR[0-9]{2}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "NETGEARXX(${ESSID})"
+        fi
+
+        # 3Wireless-Modem-XXXX
+        # 8 digits of 0-9 A-F, and the first 4 digits are the same as the 4 digits on the SSID!
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*3Wireless-Modem-[0-9]{4}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "3Wireless-Modem-XXXX(${ESSID})"
+            F4=$( echo ${ESSID} | awk -F- '{print $3}' )
+            MASK="-1 ?dABCDEF ${F4}?1?1?1?1"
+            echo -e "wpa\t${FN_HCCAP}\tmask\t${MASK}"
+        fi
+
+        # BOLT!SUPER 4G-XXXX
+        # 8 digits, 4 numbers + Last 4 of SSID (1 sec)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*BOLT!SUPER 4G-[0-9A-F]{6}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "BOLT!SUPER 4G-XXXX(${ESSID})"
+            L4=$( echo ${ESSID} | awk -F- '{print $3}' )
+            MASK="?d?d?d?d${L4}"
+            echo -e "wpa\t${FN_HCCAP}\tmask\t${MASK}"
+        fi
+
+        # belkin.xxx
+        # 8 digits of 2-9 a-f (2.5 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*belkin.[0-9a-f]{3}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "belkin.xxx(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "23456789abcdef" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+        # belkin.xxxx
+        # 8 digits of 0-9 A-F (7.5 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*belkin.[0-9a-f]{4}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "belkin.xxxx(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "0123456789ABCDEF" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+        # Belkin.XXXX
+        # 8 digits of 0-9 A-F (7.5 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*Belkin.[0-9A-F]{4}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "Belkin.XXXX(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "0123456789ABCDEF" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+        # Belkin_XXXXXX
+        # 8 digits of 0-9 A-F (7.5 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*Belkin_[0-9A-F]{6}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "Belkin_XXXXXX(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "0123456789ABCDEF" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+        # Orange-0a0aa0
+        # 8 digits of 0-9 a-f (7.5 hrs)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*Orange-[0-9a-f]{6}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "Orange-0a0aa0(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "0123456789abcdef" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+        # Orange-XXXX
+        # 8 digits of 2345679 ACEF (23 min)
+        OUT=$(echo ${ESSID} | awk '/[[:space:]]*Orange-[0-9a-f]{6}[[:space:]]*/{print $0}')
+        if [ ! "${OUT}" = "" ]; then
+            mr_trace "Orange-XXXX(${ESSID})"
+            output_custom_mask_lines "${HDFF_SIZE_SEGMENT}" 8 "2345679ACEF" "wpa\t${FN_HCCAP}\tmask\t"
+        fi
+
+    fi
+}
+
+
 ## @fn libapp_get_tasks_number_from_config()
 ## @brief get number of simulation tasks from a config file
 ## @param fn_config the config file name
 ##
-## (MUST be implemented)
+## (MUST be implemented) for run-hadooppbs.sh
 libapp_get_tasks_number_from_config() {
     local PARAM_FN_CONFIG=$1
     shift
 
-    NUM_SCHE=1
-    NUM_NODES=1
-    NUM_TYPE=1
-    cat "${PARAM_FN_CONFIG}" | while read get_sim_tasks_each_file_tmp_a; do
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_TYPES | sed -e 's|LIST_TYPES="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_TYPE=${#arr[@]}
-            #echo "$(basename $0) [DBG] got type=$NUM_TYPE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_NODE_NUM | sed -e 's|LIST_NODE_NUM="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_NODES=${#arr[@]}
-            #echo "$(basename $0) [DBG] got node=$NUM_NODES, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-        A=$( echo $get_sim_tasks_each_file_tmp_a | grep LIST_SCHEDULERS | sed -e 's|LIST_SCHEDULERS="\(.*\)"$|\1|' )
-        if [ ! "$A" = "" ]; then
-            arr=($A)
-            NUM_SCHE=${#arr[@]}
-            #echo "$(basename $0) [DBG] got sch=$NUM_SCHE, A=$A, from line $get_sim_tasks_each_file_tmp_a" 1>&2
-        fi
-    done
-    #mr_trace "type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
-    mr_trace "got type=$NUM_TYPE, sch=$NUM_SCHE, node=$NUM_NODES"
-    echo $(( $NUM_TYPE * $NUM_SCHE * $NUM_NODES ))
+    mr_trace "find ${PARAM_FN_CONFIG} ..."
+    find_file "${DN_EXEC}/input" -maxdepth 1 -name "input*" \
+        | (TASKS=0;
+        while read libapp_get_tasks_number_from_config_tmp_a; do
+            A=$(cat "$libapp_get_tasks_number_from_config_tmp_a" | \
+                    (B=0; while IFS=$'\t' read -r MR_CMD MR_CAPTURE_FILE ; do
+                        FN_CAPTURE_FILE=$( unquote_filename "${MR_CAPTURE_FILE}" )
+                        mr_trace "process line: '${MR_CMD} ${MR_CAPTURE_FILE}'"
+                        case "${MR_CMD}" in
+                        wpa)
+                            RET1=$(output_capture_crack_with_config "${FN_CONF_HASHCAT}" "${FN_CAPTURE_FILE}" | wc -l)
+                            mr_trace "got #=$RET1 for '${FN_CAPTURE_FILE}' with config file '${FN_CONF_HASHCAT}'"
+                            B=$(( $B + $RET1 ))
+                            ;;
+                        esac
+                    done;
+                    echo $B)
+                )
+            TASKS=$(( $TASKS + $A ))
+            mr_trace "libapp_get_tasks_number_from_config got $A cores for file '$libapp_get_tasks_number_from_config_tmp_a'"
+        done;
+        echo $TASKS)
 }
+
+#####################################################################
 
 ## @fn libapp_generate_script_4hadoop()
 ## @brief generate scripts for Hadoop environment
@@ -382,13 +698,12 @@ libapp_generate_script_4hadoop() {
     echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
     echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
     echo "FN_CONF_SYS=${FN_CONF_SYS}"       | save_file "${PARAM_OUTPUT}"
-    cat_file "${DN_FILE9}/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/bin/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libbash.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libshrt.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libfs.sh"       | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libplot.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libconfig.sh"   | save_file "${PARAM_OUTPUT}"
-    cat_file "${DN_FILE9}/libns2figures.sh" | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_FILE9}/libapp.sh"        | save_file "${PARAM_OUTPUT}"
     echo "DN_EXEC_4HADOOP=${DN_EXEC}"       | save_file "${PARAM_OUTPUT}"
     echo "DN_TOP_4HADOOP=${DN_TOP}"         | save_file "${PARAM_OUTPUT}"

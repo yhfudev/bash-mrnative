@@ -137,19 +137,29 @@ mapred_main () {
 
     HDFS_DN_WORKING_PREFIX="${DN_BASE_HDFS}/working"
 
+RET=
+C=0
+while (( $C < 10 )); do
     RET=$(is_file_or_dir "${HDFS_DN_WORKING_PREFIX}")
-    if [ ! "${RET}" = "d" ]; then
+    if [ "${RET}" = "d" ]; then
+        break;
+    else
+        mr_trace "try mkdir ${HDFS_DN_WORKING_PREFIX}"
         make_dir "${HDFS_DN_WORKING_PREFIX}"
     fi
-    RET=$(is_file_or_dir "${HDFS_DN_WORKING_PREFIX}")
+    sleep 2
+    C=$((C + 1))
+done
     if [ ! "${RET}" = "d" ]; then
         mr_trace "not found user's location: ${HDFS_DN_WORKING_PREFIX}"
         return
     fi
 
     # genrate input file:
-    rm_f_dir ${DN_OUTPUT_HDFS}/0/
-    make_dir ${DN_OUTPUT_HDFS}/0/
+    mr_trace rm_f_dir "${DN_OUTPUT_HDFS}/0/"
+    rm_f_dir "${DN_OUTPUT_HDFS}/0/"
+    mr_trace make_dir "${DN_OUTPUT_HDFS}/0/"
+    make_dir "${DN_OUTPUT_HDFS}/0/"
 
     find_file "${DN_OUTPUT_HDFS}/" -name "config-*" | while read a; do rm_f_dir "${a}" ; done
 
@@ -158,10 +168,17 @@ mapred_main () {
     [[            "${DN_BASE_HDFS}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${DN_BASE_HDFS}/"
 
     ####################
-    mr_trace "generating input file ..."
-    find_file ${DN_EXEC}/input/ -name "config-*" | while read a; do \
-        echo -e "config\t\"${DN_OUTPUT_HDFS}/$(basename ${a})\"" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt; \
-        copy_file "${a}" "${DN_OUTPUT_HDFS}/"; \
+    mr_trace "importing 'config-*' files ..."
+    find_file ${DN_EXEC}/input/ -name "config-*" | while read a; do
+        mr_trace "attach config line '${a}' to '${DN_OUTPUT_HDFS}/0/redout.txt' ..."
+        echo -e "config\t\"${DN_OUTPUT_HDFS}/$(basename ${a})\"" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt;
+        copy_file "${a}" "${DN_OUTPUT_HDFS}/";
+    done
+
+    mr_trace "importing \'input-*' files ..."
+    find_file ${DN_EXEC}/input/ -name "input-*" | while read a; do
+        mr_trace "attach file '${a}' to '${DN_OUTPUT_HDFS}/0/redout.txt' ..."
+        cat_file "${a}" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt;
     done
 
     ####################

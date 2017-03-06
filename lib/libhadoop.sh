@@ -12,6 +12,165 @@
 ##
 #####################################################################
 
+## @fn hadoop_set_memory()
+## @brief change the memory related config for hadoop
+## @param HADOOP_HOME the environment variable HADOOP_HOME
+## @param mem the total memory size(in MB) available for application in each node
+##
+## HADOOP_HOME should be set before this function
+hadoop_set_memory() {
+    local PARAM_HADOOP_HOME=$1
+    shift
+    local PARAM_MEM=$1
+    shift
+
+    # set the vcores to 1 to let bash script generate multiple processes.
+    local CORES=1
+    # in this block, you need set two files in the hadoop 2.x config files
+    # mapred-site.xml.template
+    # <property>
+    #     <name>mapreduce.map.memory.mb</name>
+    #     <value>512</value>
+    # </property>
+    # <property>
+    #     <name>mapreduce.reduce.memory.mb</name>
+    #     <value>1024</value>
+    # </property>
+    # <property>
+    #     <name>mapreduce.map.java.opts</name>
+    #     <value>-Xmx384m</value>
+    # </property>
+    # <property>
+    #     <name>mapreduce.reduce.java.opts</name>
+    #     <value>-Xmx768m</value>
+    # </property>
+    #<!-- A value of 0 disables the timeout -->
+    #<!--
+    #<property>
+    #    <name>mapreduce.task.timeout</name>
+    #    <value>0</value>
+    #</property>
+    #-->
+    #<!-- setting the vcores -->
+    #<property>
+    #    <name>mapreduce.map.cpu.vcores</name>
+    #    <value>1</value>
+    #</property>
+    #<property>
+    #    <name>mapreduce.reduce.cpu.vcores</name>
+    #    <value>1</value>
+    #</property>
+    #
+    # yarn-site.xml.template
+    # <property>
+    #     <name>yarn.nodemanager.resource.memory-mb</name>
+    #     <value>3072</value>
+    # </property>
+    # <property>
+    #     <name>yarn.scheduler.minimum-allocation-mb</name>
+    #     <value>256</value>
+    # </property>
+    # <property>
+    #     <name>yarn.scheduler.maximum-allocation-mb</name>
+    #     <value>3072</value>
+    # </property>
+    # <property>
+    #     <name>yarn.nodemanager.vmem-check-enabled</name>
+    #     <value>false</value>
+    #     <description>Whether virtual memory limits will be enforced for containers</description>
+    # </property>
+    # <property>
+    #     <name>yarn.nodemanager.vmem-pmem-ratio</name>
+    #     <value>4</value>
+    #     <description>Ratio between virtual memory to physical memory when setting memory limits for containers</description>
+    # </property>
+    #<!-- setting the vcores -->
+    #<property>
+    #    <name>yarn.app.mapreduce.am.resource.cpu-vcores</name>
+    #    <value>1</value>
+    #</property>
+    #<property>
+    #    <name>yarn.scheduler.maximum-allocation-vcores</name>
+    #    <value>24</value>
+    #</property>
+    #<property>
+    #    <name>yarn.scheduler.minimum-allocation-vcores</name>
+    #    <value>1</value>
+    #</property>
+    #<property>
+    #    <name>yarn.nodemanager.resource.cpu-vcores</name>
+    #    <value>24</value>
+    #</property>
+    #
+    # or hadoop 1.x config files mapred-site.xml.template
+    # <property>
+    #     <name>mapred.job.map.memory.mb</name>
+    #     <value>512</value>
+    # </property>
+    # <property>
+    #     <name>mapred.job.reduce.memory.mb</name>
+    #     <value>1024</value>
+    # </property>
+    # <property>
+    #     <name>mapred.map.child.java.opts</name>
+    #     <value>-Xmx384m</value>
+    # </property>
+    # <property>
+    #     <name>mapred.reduce.child.java.opts</name>
+    #     <value>-Xmx768m</value>
+    # </property>
+    local MR_JOB_MEM=2048
+    local MR_JOB_MEM=8192
+    local MR_JOB_MEM=512
+    if (( ${MR_JOB_MEM} < ${PARAM_MEM}/${CORES} )) ; then
+        MR_JOB_MEM=$(( ${PARAM_MEM}/${CORES} ))
+    fi
+    if (( ${MR_JOB_MEM} * 6 > ${PARAM_MEM} )) ; then
+        MR_JOB_MEM=$(( ${PARAM_MEM} / 6 ))
+    fi
+
+    if [ -d "${PARAM_HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
+        mr_trace "set hadoop 1.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
+        DN_ORIG7=$(pwd)
+        cd "${PARAM_HADOOP_HOME}/conf"
+        cp mapred-site.xml.template mapred-site.xml
+
+        sed -i \
+            -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
+            -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
+            -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
+            -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
+            mapred-site.xml
+        cd "${DN_ORIG7}"
+
+    elif [ -d "${PARAM_HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
+
+        mr_trace "set hadoop 2.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
+        DN_ORIG7=$(pwd)
+        cd "${PARAM_HADOOP_HOME}/etc/hadoop"
+        cp mapred-site.xml.template mapred-site.xml
+        cp   yarn-site.xml.template   yarn-site.xml
+
+        sed -i \
+            -e "s|<value>3072</value>|<value>${PARAM_MEM}</value>|" \
+            -e  "s|<value>256</value>|<value>${MR_JOB_MEM}</value>|" \
+            -e   "s|<value>24</value>|<value>${CORES}</value>|" \
+            yarn-site.xml
+
+        sed -i \
+            -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
+            -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
+            -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
+            -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
+            mapred-site.xml
+        cd "${DN_ORIG7}"
+    else
+        mr_trace "unknown hadoop version from dir '${PARAM_HADOOP_HOME}'"
+        exit 1
+    fi
+}
+
+
 ## @fn run_stage_hadoop()
 ## @brief run map and reduce script in Hadoop
 ## @param config_line <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
@@ -70,9 +229,6 @@ run_stage_hadoop() {
     fi
     if [ "${HDFF_NUM_CLONE}" = "" ]; then
         HDFF_NUM_CLONE=0
-    fi
-    if (( ${HDFF_NUM_CLONE} < 4 )) ; then
-        HDFF_NUM_CLONE=4
     fi
     mr_trace "adjusted HDFF_TOTAL_NODES=${HDFF_TOTAL_NODES}, HDFF_NUM_CLONE=${HDFF_NUM_CLONE}"
 
@@ -147,7 +303,7 @@ run_stage_hadoop() {
     #make_dir "${PARAM_HDFS_OUTPUT}"
     #[[ "${PARAM_HDFS_OUTPUT}"  =~ ^hdfs:// ]] && chmod_file -R 777 "${PARAM_HDFS_OUTPUT}"
     mr_trace "hadoop stream: -input ${PARAM_HDFS_WORKING} -output ${PARAM_HDFS_OUTPUT} ${HD_MAP} ${HD_RED}"
-    ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
+    $MYEXEC ${EXEC_HADOOP} jar ${HADOOP_JAR_STREAMING} \
         -D mapred.job.name=${HDFF_PROJ_ID}-${PARAM_STAGE} \
         -D mapreduce.task.timeout=0 \
         -D stream.num.map.output.key.fields=${PARAM_KEYS_SEP} \

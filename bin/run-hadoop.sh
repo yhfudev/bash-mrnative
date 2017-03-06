@@ -73,6 +73,49 @@ fi
 #hdfs dfsadmin -safemode leave
 
 #####################################################################
+
+## @fn create_mrsystem_config_hadoop()
+## @brief create mrsystem config file for hadoop cluster
+## @param fn_config the config file name
+##
+create_mrsystem_config_hadoop() {
+    local PARAM_FN_CONFIG=$1
+    shift
+
+    HDFF_USER=${USER}
+    sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
+
+    HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
+    sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
+
+    # redirect the output to HDFS so we can fetch back later
+    HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
+    sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
+
+    # scratch(temp) dir
+    HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
+    sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${FN_CONFIG_WORKING}"
+
+    # the directory for save the un-tar binary files
+    HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
+    sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${FN_CONFIG_WORKING}"
+
+    # tar the binary and save it to HDFS for the node extract it later
+    # the tar file for application exec
+    HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
+    sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${FN_CONFIG_WORKING}"
+
+    # the HDFS path to this project
+    HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
+    sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
+
+    FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
+    make_dir "$(dirname ${FN_CONF_SYS})"
+    copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
+
+}
+
+
 # read basic config from mrsystem.conf
 # such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
 read_config_file "${DN_TOP}/mrsystem.conf"
@@ -83,36 +126,7 @@ rm_f_dir "${FN_CONFIG_WORKING}"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
 
-HDFF_USER=${USER}
-sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
-
-HDFF_DN_BASE="hdfs:///tmp/${HDFF_USER}/output-${HDFF_PROJ_ID}/"
-sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
-
-# redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
-sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
-
-# scratch(temp) dir
-HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
-sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${FN_CONFIG_WORKING}"
-
-# the directory for save the un-tar binary files
-HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
-sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${FN_CONFIG_WORKING}"
-
-# tar the binary and save it to HDFS for the node extract it later
-# the tar file for application exec
-HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
-sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${FN_CONFIG_WORKING}"
-
-# the HDFS path to this project
-HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
-sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
-
-FN_CONF_SYS="${HDFF_DN_BASE}/mrsystem-working.conf"
-make_dir "$(dirname ${FN_CONF_SYS})"
-copy_file "${FN_CONFIG_WORKING}" "${FN_CONF_SYS}"
+create_mrsystem_config_hadoop "${FN_CONFIG_WORKING}"
 
 check_global_config
 

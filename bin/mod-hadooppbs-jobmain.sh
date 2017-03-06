@@ -43,22 +43,27 @@ my_getpath() {
     fi
 }
 #####################################################################
-mr_trace () {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
+mr_trace() {
+    echo "$(date +"%Y-%m-%d %H:%M:%S.%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
 }
 
 #####################################################################
 
-# the number of nodes: select=xxx
-export PBS_NUM_NODES=$(cat $PBS_NODEFILE | uniq | wc -l)
+if [ "z$PBS_JOBID" != "z" ]; then
+    MH_WORKDIR=$PBS_O_WORKDIR
+    MH_JOBID=$PBS_JOBID
+elif [ "z$PE_NODEFILE" != "z" ]; then
+    MH_WORKDIR=$SGE_O_WORKDIR
+    MH_JOBID=$JOB_ID
+elif [ "z$SLURM_JOBID" != "z" ]; then
+    MH_WORKDIR=$SLURM_SUBMIT_DIR
+    MH_JOBID=$SLURM_JOBID
+else
+    MH_WORKDIR=$PWD
+    MH_JOBID=$$
+fi
 
-mr_trace "PBS_NUM_NODES=$PBS_NUM_NODES"
-
-source /etc/profile.d/modules.sh
-module purge
-#module add java
-
-cd $PBS_O_WORKDIR
+cd $MH_WORKDIR
 
 DN_EXEC="$(my_getpath "$(pwd)")"
 DN_TOP="$(my_getpath "${DN_EXEC}/../")"
@@ -79,7 +84,7 @@ mr_trace "0 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 
 export PROJ_HOME=$DN_TOP
 if [ ! -d "${PROJ_HOME}" ]; then
-    export PROJ_HOME=/home/$USER/mapreduce-ns2docsis
+    export PROJ_HOME=/home/$USER/mapreduce-mrnative
 fi
 if [ ! -d "${PROJ_HOME}" ]; then
     mr_trace "Error: not exit dir $PROJ_HOME"
@@ -97,7 +102,7 @@ mr_trace "02 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 #
 # Make sure that this is accessible to all nodes
 # where your personal cluster's configuration will be located
-export HADOOP_CONF_DIR=${PBS_O_WORKDIR}/hadoopconfigs-$PBS_JOBID
+export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
 mkdir -p "${HADOOP_CONF_DIR}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
@@ -121,7 +126,8 @@ export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
 # Make sure number of nodes is the same as what you have requested from PBS
 # usage: ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -h
 mr_trace "Set up the configurations for myHadoop"
-${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -n ${PBS_NUM_NODES} -c ${HADOOP_CONF_DIR} -s /local_scratch/$USER/$PBS_JOBID
+mr_trace ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -c ${HADOOP_CONF_DIR}
+${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -c ${HADOOP_CONF_DIR}
 
 #### Start the Hadoop cluster
 start_hadoop
@@ -157,5 +163,5 @@ stop_hadoop
 
 #### Clean up the working directories after job completion
 mr_trace "Clean up"
-${MY_HADOOP_HOME}/bin/myhadoop-cleanup.sh -n ${PBS_NUM_NODES}
+${MY_HADOOP_HOME}/bin/myhadoop-cleanup.sh
 mr_trace "Done hadoop"

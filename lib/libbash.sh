@@ -40,7 +40,7 @@ fi
 ##
 ## pass a message to log file, and also to stdout
 mr_trace() {
-    echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" | tee -a ${FN_LOG} 1>&2
+    echo "$(date +"%Y-%m-%d %H:%M:%S.%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" | tee -a ${FN_LOG} 1>&2
 }
 
 ## @fn mr_exec_do()
@@ -50,7 +50,7 @@ mr_trace() {
 ## execute a command line, and also log the line
 mr_exec_do() {
     mr_trace "$@"
-    $@
+    eval "$@"
 }
 
 ## @fn mr_exec_skip()

@@ -32,7 +32,7 @@ get_hdfs_url() {
         netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
     fi
 }
-HDFS_URL="hdfs://$(get_hdfs_url)/"
+HDFS_URL="hdfs://$(get_hdfs_url)"
 
 ## @fn convert_filename()
 ## @brief convert the file name to its absolute path

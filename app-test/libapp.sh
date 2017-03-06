@@ -197,7 +197,7 @@ libapp_generate_script_4hadoop() {
     echo "DN_EXEC=${DN_EXEC}"               | save_file "${PARAM_OUTPUT}"
     echo "DN_TOP=${DN_TOP}"                 | save_file "${PARAM_OUTPUT}"
     echo "FN_CONF_SYS=${FN_CONF_SYS}"       | save_file "${PARAM_OUTPUT}"
-    cat_file "${DN_FILE9}/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
+    cat_file "${DN_TOP}/bin/mod-setenv-hadoop.sh" | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libbash.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libshrt.sh"     | save_file "${PARAM_OUTPUT}"
     cat_file "${DN_TOP}/lib/libfs.sh"       | save_file "${PARAM_OUTPUT}"
