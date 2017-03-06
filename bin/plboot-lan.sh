@@ -3,9 +3,9 @@
 #
 #####################################################################
 ## @file
-## @brief run hadoop in HPC PBS
+## @brief boot hadoop in LAN hosts
 ##
-## To setup the hadoop in HPC PBS environment, you need to install myhadoop,
+## To setup the hadoop in LAN environment, you need to install myhadoop,
 ## and add the patch for the hadoop config files:
 ##     cd software/bin/hadoop-2.7.1/etc/hadoop
 ##     patch -p1 < ~/software/src/myhadoop-glennklockwood-git/myhadoop-2.2.0.patch
@@ -70,86 +70,6 @@ mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXE
 #####################################################################
 # sum the nodes of same or greater # cores
 
-## @fn convert_avail_settings()
-## @brief sum the nodes of same or greater number cores
-##
-convert_avail_settings() {
-    MYCORES=0
-    MYMEM=0
-    MYNODES=0
-    while read CORES MEM NODES ; do
-        if [ ! "${MYCORES}" = "${CORES}" ]; then
-            if (( ${MYCORES} > 0 )) ; then
-                echo "${MYCORES} ${MYMEM} ${MYNODES}"
-            fi
-            MYCORES=${CORES}
-            MYMEM=${MEM}
-            MYNODES=${NODES}
-        elif [ ! "${MYMEM}" = "${MEM}" ]; then
-            echo "${MYCORES} ${MYMEM} ${MYNODES}"
-            MYMEM=${MEM}
-            MYNODES=$(( ${MYNODES} + ${NODES} ))
-        else
-            MYMEM=${MEM}
-            MYNODES=$(( ${MYNODES} + ${NODES} ))
-        fi
-    done
-    if (( ${MYCORES} > 0 )) ; then
-        echo "${MYCORES} ${MYMEM} ${MYNODES}"
-    fi
-}
-
-## @fn get_optimized_settings()
-## @brief find the fit settings
-## @param max_cores the # of task
-## @param mem_per_core the required memory for each task, GB
-##
-get_optimized_settings() {
-    local PARAM_MAXCORES=$1
-    shift
-    local PARAM_MEM_PER_CORE=$1
-    shift
-
-    if [ "${PARAM_MAXCORES}" = "" ] ; then
-        PARAM_MAXCORES=1
-    fi
-    if [ "${PARAM_MEM_PER_CORE}" = "" ] ; then
-        PARAM_MEM_PER_CORE=0
-    fi
-    if (( ${PARAM_MAXCORES} < 1 )) ; then
-        PARAM_MAXCORES=1
-    fi
-
-    cat << EOF > tmp-opt-cores.awk
-BEGIN{
-    fit=0; avail_c=0; avail_m=0; avail_n=0;
-}{
-    cores=\$1; mem=\$2; nodes=\$3;
-    if (fit==0 && avail_c*avail_n <= cores*nodes && cores > 0 && mem/cores >= MPC) {
-        avail_c = cores;
-        avail_n = nodes;
-        avail_m = mem;
-    }
-    if (fit==0 && MAXC <= cores * nodes && cores > 0 && MC <= mem / cores) {
-        avail_c = cores;
-        avail_n = nodes;
-        avail_m = mem;
-        fit=1;
-    }
-}END{
-    if (avail_c * avail_n < MAXC) {
-        print avail_c " " avail_m " " avail_n;
-    } else {
-        # cores, mem, nodes
-        printf("%d %d %d\n", avail_c, avail_m, (MAXC + avail_c - 1) / avail_c);
-    }
-}
-EOF
-
-    #echo "ARGS: '${PARAM_MAXCORES} ${PARAM_MEM_PER_CORE}'"
-    convert_avail_settings | awk -v MAXC=$PARAM_MAXCORES -v MPC=$PARAM_MEM_PER_CORE -f tmp-opt-cores.awk
-}
-
 ## @fn get_sim_tasks()
 ## @brief get # of simulation tasks from the config files in folder specified by argument
 ## @param dn_conf the config directory
@@ -174,13 +94,13 @@ get_sim_tasks() {
         echo $TASKS)
 }
 
-## @fn create_mrsystem_config_pbs()
-## @brief create mrsystem config file for PBS
+## @fn create_mrsystem_config_lan()
+## @brief create mrsystem config file for LAN hosts
 ## @param nodes the number of nodes
 ## @param cores the number of cores of the cpu/gpu for each node
 ## @param fn_config the config file name
 ##
-create_mrsystem_config_pbs() {
+create_mrsystem_config_lan() {
     local PARAM_NODES=$1
     shift
     local PARAM_CORES=$1
@@ -191,7 +111,7 @@ create_mrsystem_config_pbs() {
     HDFF_USER=${USER}
     sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${PARAM_FN_CONFIG}"
 
-    HDFF_DN_BASE="file:///scratch2/$USER/output-${HDFF_PROJ_ID}/"
+    HDFF_DN_BASE="file:///dev/shm/$USER/output-${HDFF_PROJ_ID}/"
     sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${PARAM_FN_CONFIG}"
 
     # set cores in mrsystem.conf file
@@ -210,23 +130,22 @@ create_mrsystem_config_pbs() {
     #HDFF_DN_SCRATCH="/run/shm/${USER}/working-${HDFF_PROJ_ID}/"
     #HDFF_DN_SCRATCH="/dev/shm/${USER}/working-${HDFF_PROJ_ID}/"
     #HDFF_DN_SCRATCH="/local_scratch/\$USER/working-${HDFF_PROJ_ID}/"
-    HDFF_DN_SCRATCH="/dev/shm/${USER}/working-${HDFF_PROJ_ID}/"
+    HDFF_DN_SCRATCH="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
     sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${PARAM_FN_CONFIG}"
 
     # the directory for save the un-tar binary files
-    HDFF_DN_BIN=""
+    HDFF_DN_BIN="/dev/shm/${HDFF_USER}/working-${HDFF_PROJ_ID}/bin"
     sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${PARAM_FN_CONFIG}"
 
     # tar the binary and save it to HDFS for the node extract it later
     # the tar file for application exec
-    HDFF_PATHTO_TAR_APP=""
+    HDFF_PATHTO_TAR_APP="${HDFF_DN_BASE}/${HDFF_FN_TAR_APP}"
     sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${PARAM_FN_CONFIG}"
 
     # the HDFS path to this project
-    HDFF_PATHTO_TAR_MRNATIVE=""
+    HDFF_PATHTO_TAR_MRNATIVE="${HDFF_DN_BASE}/${HDFF_FN_TAR_MRNATIVE}"
     sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
-
 
 #get the # of needed nodes from config-xxx.sh file
 NEEDED_CORES=$(get_sim_tasks ${DN_EXEC}/input)
@@ -239,43 +158,60 @@ mr_trace "needed cores=$NEEDED_CORES"
 #exit 0 # debug
 
 mr_trace "checking cores quota ..."
-if [ ! -x "$(which whatsfree)" ]; then
-    mr_trace "Error: not found 'checkqueuecfg'!"
-    exit 1
-fi
-checkqueuecfg > tmp-checkqueuecfg.txt
-MAX_CORES=$(cat tmp-checkqueuecfg.txt  | grep "(" | grep -v "gpus" | awk 'BEGIN{max=0;}{if ($4 > 0) {a=split($1,b,"-"); if (max<b[2]) max=b[2]; } }END{print max;}')
-if (( $NEEDED_CORES > $MAX_CORES )) ; then
-    NEEDED_CORES=$MAX_CORES
+
+print_list_nodes() {
+    local PARAM_LIST_NODES=$1
+    shift
+
+    IFS=':'; array_nodes=($PARAM_LIST_NODES)
+    for i in "${!array_nodes[@]}"; do
+        echo "${array_nodes[i]}"
+    done
+}
+
+#config
+MH_LIST_NODES=localhost
+grep MH_LIST_NODES "myhadoop.conf"
+if [ ! $? = 0 ]; then
+    echo "MH_LIST_NODES=${MH_LIST_NODES}" >> "myhadoop.conf"
 fi
 
-mr_trace "checking avail cores ..."
-if [ ! -x "$(which whatsfree)" ]; then
-    mr_trace "Error: not found 'whatsfree'!"
-    exit 1
+MH_SCRATCH_DIR=/dev/shm/$USER/$MH_JOBID
+grep MH_SCRATCH_DIR "myhadoop.conf"
+if [ $? = 0 ]; then
+    sed -i -e "s|^MH_SCRATCH_DIR=.*$|MH_SCRATCH_DIR=${MH_SCRATCH_DIR}|" "myhadoop.conf"
+else
+    echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}" >> "myhadoop.conf"
 fi
-# get the free nodes list: (cores, mem, num)
-whatsfree | grep -v 24 | grep -v "PHASE 0" | grep -v "TOTAL NODES" \
-    | awk 'BEGIN{cnt=0;}{nodes=$8; cores=$19; mem=$21; if (nodes > 0) print cores " " (0+mem) " " nodes;}END{}' \
-    | grep -v "  0" | sort -n -r -k1 -k2 -k3 \
-    > tmp-whatsfree.txt
 
-A=$(cat tmp-whatsfree.txt | get_optimized_settings $NEEDED_CORES $NEEDED_MEM_PER_CORE )
-if [ "$A" = "" ]; then
-    mr_trace "Error in get # of nodes."
-    exit 1
+export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
+grep HADOOP_CONF_DIR "myhadoop.conf"
+if [ $? = 0 ]; then
+    sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "myhadoop.conf"
+else
+    echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "myhadoop.conf"
 fi
-REQ=$(echo $A | awk '{print "select=" $3 ":ncpus=" $1 ":mem=" ($2 - 3) "gb";}')
-CORES=$(echo $A | awk '{print $1;}')
-NODES=$(echo $A | awk '{print $3;}')
-MEM=$(echo $A | awk '{print ($2-3)*1024;}')
+
+read_config_file "myhadoop.conf"
+IFS=':'; array_nodes=($MH_LIST_NODES)
+NODES=${#array_nodes[*]}
+
+mr_trace "MH_LIST_NODES=$MH_LIST_NODES"
+
+
+# get CORES
+ONE_HOST=$(print_list_nodes "${MH_LIST_NODES}" | tail -n 1)
+CORES=$(ssh ${ONE_HOST} "cat /proc/cpuinfo" | grep "core id" | sort | uniq | wc -l)
+MEM=$(ssh ${ONE_HOST} "cat /proc/meminfo" | grep MemTotal | awk '{print int($2 / 1000000);}')
+
+mr_trace "Single Host, CORES=${CORES}; MEM=${MEM}GB;"
 
 # set the generated config file
 FN_CONFIG_WORKING="${DN_EXEC}/mrsystem-working.conf"
 rm_f_dir "${FN_CONFIG_WORKING}"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
-create_mrsystem_config_pbs "$NODES" "$CORES" "${FN_CONFIG_WORKING}"
+create_mrsystem_config_lan "$NODES" "$CORES" "${FN_CONFIG_WORKING}"
 
 
 if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
@@ -289,41 +225,14 @@ hadoop_set_memory "${HADOOP_HOME}" "${MEM}"
 
 mr_trace "needed cores=$NEEDED_CORES"
 
-#ARG_OTHER="-o pbs_hadoop_run.stdout -e pbs_hadoop_run.stderr"
-if [ ! -x "$(which qsub)" ]; then
-    mr_trace "Error: not found 'qsub'!"
-    exit 1
-fi
 
-if [ "z$PBS_JOBID" != "z" ]; then
-    MH_WORKDIR=$PBS_O_WORKDIR
-    MH_JOBID=$PBS_JOBID
-elif [ "z$PE_NODEFILE" != "z" ]; then
-    MH_WORKDIR=$SGE_O_WORKDIR
-    MH_JOBID=$JOB_ID
-elif [ "z$SLURM_JOBID" != "z" ]; then
-    MH_WORKDIR=$SLURM_SUBMIT_DIR
-    MH_JOBID=$SLURM_JOBID
-else
-    MH_WORKDIR=$PWD
-    MH_JOBID=$$
-fi
-
-#config
-cat << EOF > myhadoop.conf
-MH_SCRATCH_DIR=/local_scratch/$USER/$MH_JOBID
-EOF
-
-
+# start hadoop
 
 if [ -f "${DN_BIN}/mod-hadooppbs-jobmain.sh" ]; then
-    $MYEXEC qsub -N mrnativetask -l $REQ ${ARG_OTHER} "${DN_BIN}/mod-hadooppbs-jobmain.sh"
+    "${DN_BIN}/mod-hadooppbs-jobmain.sh" &
 else
     mr_trace "Error: not found file ${DN_BIN}/mod-hadooppbs-jobmain.sh"
     exit 1
 fi
 
 
-mr_trace "waitting for queueing ..."
-sleep 3
-qstat -anu ${USER}
