@@ -122,12 +122,22 @@ rm -rf ${HADOOP_HOME}/logs/*
 
 export PATH=$HADOOP_HOME/bin:$MH_HOME/bin:$PATH
 
+### Cleanup script and signal trap
+plboot_hadoop_terminate() {
+  $HADOOP_HOME/bin/stop-all.sh
+  stop_hadoop
+  ${MY_HADOOP_HOME}/bin/myhadoop-cleanup.sh
+  exit
+}
+trap plboot_hadoop_terminate SIGHUP SIGINT SIGTERM
+
+
 #### Set up the configuration
 # Make sure number of nodes is the same as what you have requested from PBS
 # usage: ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -h
 mr_trace "Set up the configurations for myHadoop"
-mr_trace ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -c ${HADOOP_CONF_DIR}
-${MY_HADOOP_HOME}/bin/myhadoop-configure.sh -c ${HADOOP_CONF_DIR}
+mr_trace ${MY_HADOOP_HOME}/bin/myhadoop-configure.sh
+${MY_HADOOP_HOME}/bin/myhadoop-configure.sh || exit 1
 
 #### Start the Hadoop cluster
 start_hadoop
@@ -144,24 +154,27 @@ mr_trace "Run some test Hadoop jobs"
 #${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR} dfs -ls Outputs
 mr_trace "05 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 
-if [ -f "${DN_BIN}/mod-share-worker.sh" ]; then
+mr_trace "you may access the web page: http://firstnode:8088"
+
+if [ 1 = 1 ]; then
+    if [ -f "${DN_BIN}/mod-share-worker.sh" ]; then
 . ${DN_BIN}/mod-share-worker.sh
+    else
+        mr_trace "Error: not found file ${DN_BIN}/mod-share-worker.sh"
+        exit 1
+    fi
+    mr_trace "06 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
+
+    echo
+    mapred_main
+
+    sleep $(( 15 * 60 ))
+
 else
-    mr_trace "Error: not found file ${DN_BIN}/mod-share-worker.sh"
-    exit 1
+    sleep $(( 72 * 60 * 60 ))
 fi
-mr_trace "06 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
-
-echo
-mapred_main
-
-#sleep $(( 72 * 60 * 60 ))
-sleep $(( 15 * 60 ))
-
-#### Stop the Hadoop cluster
-stop_hadoop
 
 #### Clean up the working directories after job completion
 mr_trace "Clean up"
-${MY_HADOOP_HOME}/bin/myhadoop-cleanup.sh
+plboot_hadoop_terminate
 mr_trace "Done hadoop"

@@ -173,7 +173,7 @@ hadoop_set_memory() {
 
 ## @fn run_stage_hadoop()
 ## @brief run map and reduce script in Hadoop
-## @param config_line <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+## @param config_line config line, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
 ## @param stage the stage #
 ## @param cb_gen_mrbin the callback function for generating single MR script
 ## @param hdfs_working the working directory
@@ -329,7 +329,7 @@ run_stage_hadoop() {
 #####################################################################
 ## @fn run_stage_sh1()
 ## @brief run map and reduce script in bash
-## @param config_line <config line>, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
+## @param config_line config line, such as "e1map.sh,e1red.sh,6,5,cb_end_stage1"
 ## @param stage the stage #
 ## @param cb_gen_mrbin the callback function for generating single MR script
 ## @param hdfs_working the working directory

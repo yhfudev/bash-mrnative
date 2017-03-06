@@ -60,6 +60,55 @@ PROGNAME=$(basename "$0")
 ARG_DN_BASE="$1"
 
 #####################################################################
+
+## @fn create_mrsystem_config_sh1()
+## @brief create mrsystem config file for single host
+## @param dn_base the base dir
+## @param cores the number of cores of the cpu/gpu for each node
+## @param fn_config the config file name
+##
+create_mrsystem_config_sh1() {
+    local PARAM_DN_BASE=$1
+    shift
+    local PARAM_FN_CONFIG=$1
+    shift
+
+    HDFF_USER=${USER}
+    sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
+
+    if [ "${PARAM_DN_BASE}" = "" ]; then
+        HDFF_DN_BASE="$(pwd)/output-${HDFF_PROJ_ID}/"
+    else
+        HDFF_DN_BASE="${PARAM_DN_BASE}"
+    fi
+    sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
+
+    # redirect the output to HDFS so we can fetch back later
+    HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
+    sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
+
+    # scratch(temp) dir
+    HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
+    DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
+    if [ ! "$DN_SHM" = "" ]; then
+        HDFF_DN_SCRATCH="${DN_SHM}/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
+    fi
+    sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${FN_CONFIG_WORKING}"
+
+    # the directory for save the un-tar binary files
+    HDFF_DN_BIN=""
+    sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${FN_CONFIG_WORKING}"
+
+    # tar the binary and save it to HDFS for the node extract it later
+    # the tar file for application exec
+    HDFF_PATHTO_TAR_APP=""
+    sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${FN_CONFIG_WORKING}"
+
+    # the HDFS path to this project
+    HDFF_PATHTO_TAR_MRNATIVE=""
+    sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
+}
+
 # read basic config from mrsystem.conf
 # such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
 read_config_file "${DN_TOP}/mrsystem.conf"
@@ -70,40 +119,7 @@ rm_f_dir "${FN_CONFIG_WORKING}"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
 
-HDFF_USER=${USER}
-sed -i -e "s|^HDFF_USER=.*$|HDFF_USER=${HDFF_USER}|" "${FN_CONFIG_WORKING}"
-
-if [ "${ARG_DN_BASE}" = "" ]; then
-    HDFF_DN_BASE="$(pwd)/output-${HDFF_PROJ_ID}/"
-else
-    HDFF_DN_BASE="${ARG_DN_BASE}"
-fi
-sed -i -e "s|^HDFF_DN_BASE=.*$|HDFF_DN_BASE=${HDFF_DN_BASE}|" "${FN_CONFIG_WORKING}"
-
-# redirect the output to HDFS so we can fetch back later
-HDFF_DN_OUTPUT="${HDFF_DN_BASE}"
-sed -i -e "s|^HDFF_DN_OUTPUT=.*$|HDFF_DN_OUTPUT=${HDFF_DN_OUTPUT}|" "${FN_CONFIG_WORKING}"
-
-# scratch(temp) dir
-HDFF_DN_SCRATCH="/tmp/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
-DN_SHM=$(df | grep shm | tail -n 1 | awk '{print $6}')
-if [ ! "$DN_SHM" = "" ]; then
-    HDFF_DN_SCRATCH="${DN_SHM}/${HDFF_USER}/working-${HDFF_PROJ_ID}/"
-fi
-sed -i -e "s|^HDFF_DN_SCRATCH=.*$|HDFF_DN_SCRATCH=${HDFF_DN_SCRATCH}|" "${FN_CONFIG_WORKING}"
-
-# the directory for save the un-tar binary files
-HDFF_DN_BIN=""
-sed -i -e "s|^HDFF_DN_BIN=.*$|HDFF_DN_BIN=${HDFF_DN_BIN}|" "${FN_CONFIG_WORKING}"
-
-# tar the binary and save it to HDFS for the node extract it later
-# the tar file for application exec
-HDFF_PATHTO_TAR_APP=""
-sed -i -e "s|^HDFF_PATHTO_TAR_APP=.*$|HDFF_PATHTO_TAR_APP=${HDFF_PATHTO_TAR_APP}|" "${FN_CONFIG_WORKING}"
-
-# the HDFS path to this project
-HDFF_PATHTO_TAR_MRNATIVE=""
-sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${FN_CONFIG_WORKING}"
+create_mrsystem_config_sh1 "${ARG_DN_BASE}"
 
 #mr_trace "DN_EXEC=${DN_EXEC}; DN_TOP=${DN_TOP}"
 
