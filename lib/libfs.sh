@@ -19,27 +19,31 @@
 ## @version 1
 ##
 #####################################################################
-#mr_trace () {
-    #echo "$(date +"%Y-%m-%d %H:%M:%S,%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-#}
 
 ## @fn get_hdfs_url()
 ## @brief detect HDFS port
 ##
+## the global environment variable HADOOP_CONF_DIR should be used when possible
 get_hdfs_url() {
-    if which hdfs > /dev/null ; then
-        local PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
-        #mr_trace "hdfs port=${PORT}"
-        if [ ! "$PORT" = "" ]; then
-            #mr_trace "hdfs url=$(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')"
-            netstat -na | grep LISTEN | grep $PORT | awk '{print $4}'
-        fi
+    if [ -d "${HADOOP_CONF_DIR}" ]; then
+        local A=$(grep -A 1 fs.defaultFS "${HADOOP_CONF_DIR}/core-site.xml" | grep "<value>" | awk -F\> '{print $2}' | awk -F\< '{print $1}' | awk -F/ '{print $3}')
+        echo $A
+        mr_trace "use HADOOP_CONF_DIR=${HADOOP_CONF_DIR}, got HDFS_URL=hdfs://$(A)"
+
     else
-        mr_trace "Not found hdfs!"
+        if which hdfs > /dev/null ; then
+            local PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
+            #mr_trace "hdfs port=${PORT}"
+            if [ ! "$PORT" = "" ]; then
+                local A=$(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')
+                mr_trace "use hdfs=$(which hdfs), got HDFS_URL=hdfs://$(A)"
+            fi
+        else
+            mr_trace "Not found hdfs, unable to set HDFS_URL!"
+        fi
     fi
 }
 HDFS_URL="hdfs://$(get_hdfs_url)"
-mr_trace "HDFS_URL=${HDFS_URL}"
 
 ## @fn convert_filename()
 ## @brief convert the file name to its absolute path
