@@ -156,8 +156,9 @@ start_job() {
     )
 
     # remove the contents from slaves
-    for HOST_ADDR in $(print_nodelist) ; do
-        for i in "${!LIST_FILES_REMOTE[@]}"; do
+    for i in "${!LIST_FILES_REMOTE[@]}"; do
+        rm_f_dir "${LIST_FILES_REMOTE[i]}"
+        for HOST_ADDR in $(print_nodelist) ; do
             mr_trace "remove ${LIST_FILES_REMOTE[i]} FROM ${HOST_ADDR}"
             $MYEXEC ssh "${HOST_ADDR}" "rm -rf ${LIST_FILES_REMOTE[i]}"
         done
@@ -175,7 +176,6 @@ start_job() {
 ##
 ## stop all of instance of the cluster
 stop_job() {
-
     # stop slaves
     for HOST_ADDR in $(print_nodelist) ; do
         if [ "${HOST_ADDR}" = "`hostname`" ]; then
@@ -191,6 +191,7 @@ stop_job() {
     # stop local
     killall java
     killall bash
+    ps -ef | egrep 'bash|java' | grep "^$USER" | awk '{print $2}' | while read a; do kill -9 $a; done
 }
 
 read_config_file "mrsystem-working.conf"
