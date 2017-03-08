@@ -70,30 +70,6 @@ mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXE
 #####################################################################
 # sum the nodes of same or greater # cores
 
-## @fn get_sim_tasks()
-## @brief get # of simulation tasks from the config files in folder specified by argument
-## @param dn_conf the config directory
-##
-get_sim_tasks() {
-    local PARAM_DN_CONF=$1
-    shift
-
-    if [ ! -d "${PARAM_DN_CONF}" ]; then
-        mr_trace "not exist file $PARAM_DN_CONF"
-        echo 0
-        return
-    fi
-    TASKS=0
-    find_file "${PARAM_DN_CONF}" -maxdepth 1 -name "config*" \
-        | (TASKS=0;
-        while read get_sim_tasks_tmp_a; do
-            A=$(libapp_get_tasks_number_from_config "$get_sim_tasks_tmp_a")
-            TASKS=$(( $TASKS + $A ))
-            mr_trace "get_sim_tasks got $A cores for file $get_sim_tasks_tmp_a"
-        done;
-        echo $TASKS)
-}
-
 ## @fn create_mrsystem_config_lan()
 ## @brief create mrsystem config file for LAN hosts
 ## @param nodes the number of nodes
@@ -147,17 +123,6 @@ create_mrsystem_config_lan() {
     sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
 
-#get the # of needed nodes from config-xxx.sh file
-NEEDED_CORES=$(get_sim_tasks ${DN_EXEC}/input)
-# the memory in GB for each core
-NEEDED_MEM_PER_CORE=1
-
-mr_trace "needed cores=$NEEDED_CORES"
-#debug:
-#NEEDED_CORES=3000
-#exit 0 # debug
-
-mr_trace "checking cores quota ..."
 
 print_list_nodes() {
     local PARAM_LIST_NODES=$1
@@ -169,6 +134,7 @@ print_list_nodes() {
     done
 }
 
+#####################################################################
 MH_WORKDIR=$PWD
 MH_JOBID=$$
 
@@ -202,18 +168,21 @@ NODES=${#array_nodes[*]}
 mr_trace "got MH_LIST_NODES=$MH_LIST_NODES"
 
 
+#####################################################################
 # get CORES
 ONE_HOST=$(print_list_nodes "${MH_LIST_NODES}" | tail -n 1)
 CORES=$(ssh ${ONE_HOST} "cat /proc/cpuinfo" | grep "core id" | sort | uniq | wc -l)
-MEM=$(ssh ${ONE_HOST} "cat /proc/meminfo" | grep MemTotal | awk '{print int($2 / 1000000);}')
+MEM=$(ssh ${ONE_HOST} "cat /proc/meminfo" | grep MemTotal | awk '{print int($2 / 1000);}')
 
-mr_trace "Single Host, CORES=${CORES}; MEM=${MEM}GB;"
+mr_trace "Single Host, CORES=${CORES}; MEM=${MEM}MB;"
 
 # set the generated config file
 FN_CONFIG_WORKING="${DN_EXEC}/mrsystem-working.conf"
 rm_f_dir "${FN_CONFIG_WORKING}"
 copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
+
+mr_trace "create_mrsystem_config_lan $NODES $CORES ${FN_CONFIG_WORKING}"
 create_mrsystem_config_lan "$NODES" "$CORES" "${FN_CONFIG_WORKING}"
 
 
@@ -224,10 +193,9 @@ else
     exit 1
 fi
 
+#####################################################################
+mr_trace hadoop_set_memory "${HADOOP_HOME}" "${MEM}"
 hadoop_set_memory "${HADOOP_HOME}" "${MEM}"
-
-mr_trace "needed cores=$NEEDED_CORES"
-
 
 # start hadoop
 
