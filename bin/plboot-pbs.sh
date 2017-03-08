@@ -60,14 +60,6 @@ source ${DN_LIB}/libhadoop.sh
 source ${DN_EXEC}/libapp.sh
 
 #####################################################################
-# read basic config from mrsystem.conf
-# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
-read_config_file "${DN_TOP}/mrsystem.conf"
-
-
-mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXEC};"
-
-#####################################################################
 # sum the nodes of same or greater # cores
 
 ## @fn convert_avail_settings()
@@ -227,7 +219,56 @@ create_mrsystem_config_pbs() {
     sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
 
+#####################################################################
+mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXEC};"
 
+# read basic config from mrsystem.conf
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+read_config_file "${DN_TOP}/mrsystem.conf"
+
+read_config_file "${DN_EXEC}/mrsystem-working.conf"
+libapp_prepare_app_binary
+
+#####################################################################
+if [ "z$PBS_JOBID" != "z" ]; then
+    MH_WORKDIR=$PBS_O_WORKDIR
+    MH_JOBID=$PBS_JOBID
+elif [ "z$PE_NODEFILE" != "z" ]; then
+    MH_WORKDIR=$SGE_O_WORKDIR
+    MH_JOBID=$JOB_ID
+elif [ "z$SLURM_JOBID" != "z" ]; then
+    MH_WORKDIR=$SLURM_SUBMIT_DIR
+    MH_JOBID=$SLURM_JOBID
+else
+    MH_WORKDIR=$PWD
+    MH_JOBID=$$
+fi
+
+#config
+MH_SCRATCH_DIR=/dev/shm/$USER/$MH_JOBID
+grep MH_SCRATCH_DIR "myhadoop.conf"
+if [ $? = 0 ]; then
+    sed -i -e "s|^MH_SCRATCH_DIR=.*$|MH_SCRATCH_DIR=${MH_SCRATCH_DIR}|" "myhadoop.conf"
+else
+    echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}" >> "myhadoop.conf"
+fi
+
+export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
+grep HADOOP_CONF_DIR "myhadoop.conf"
+if [ $? = 0 ]; then
+    sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "myhadoop.conf"
+else
+    echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "myhadoop.conf"
+fi
+
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
+    exit 1
+fi
+
+#####################################################################
 #get the # of needed nodes from config-xxx.sh file
 NEEDED_CORES=$(get_sim_tasks ${DN_EXEC}/input)
 # the memory in GB for each core
@@ -277,14 +318,7 @@ copy_file "${DN_TOP}/mrsystem.conf" "${FN_CONFIG_WORKING}"
 FN_CONF_SYS="${FN_CONFIG_WORKING}"
 create_mrsystem_config_pbs "$NODES" "$CORES" "${FN_CONFIG_WORKING}"
 
-
-if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_BIN}/mod-setenv-hadoop.sh
-else
-    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
-    exit 1
-fi
-
+#####################################################################
 hadoop_set_memory "${HADOOP_HOME}" "${MEM}"
 
 mr_trace "needed cores=$NEEDED_CORES"
@@ -293,37 +327,6 @@ mr_trace "needed cores=$NEEDED_CORES"
 if [ ! -x "$(which qsub)" ]; then
     mr_trace "Error: not found 'qsub'!"
     exit 1
-fi
-
-if [ "z$PBS_JOBID" != "z" ]; then
-    MH_WORKDIR=$PBS_O_WORKDIR
-    MH_JOBID=$PBS_JOBID
-elif [ "z$PE_NODEFILE" != "z" ]; then
-    MH_WORKDIR=$SGE_O_WORKDIR
-    MH_JOBID=$JOB_ID
-elif [ "z$SLURM_JOBID" != "z" ]; then
-    MH_WORKDIR=$SLURM_SUBMIT_DIR
-    MH_JOBID=$SLURM_JOBID
-else
-    MH_WORKDIR=$PWD
-    MH_JOBID=$$
-fi
-
-#config
-MH_SCRATCH_DIR=/dev/shm/$USER/$MH_JOBID
-grep MH_SCRATCH_DIR "myhadoop.conf"
-if [ $? = 0 ]; then
-    sed -i -e "s|^MH_SCRATCH_DIR=.*$|MH_SCRATCH_DIR=${MH_SCRATCH_DIR}|" "myhadoop.conf"
-else
-    echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}" >> "myhadoop.conf"
-fi
-
-export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
-grep HADOOP_CONF_DIR "myhadoop.conf"
-if [ $? = 0 ]; then
-    sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "myhadoop.conf"
-else
-    echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "myhadoop.conf"
 fi
 
 if [ -f "${DN_BIN}/mod-hadooppbs-jobmain.sh" ]; then
