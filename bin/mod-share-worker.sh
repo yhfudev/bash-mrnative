@@ -175,11 +175,15 @@ done
         copy_file "${a}" "${DN_OUTPUT_HDFS}/";
     done
 
-    mr_trace "importing \'input-*' files ..."
+    mr_trace "importing 'input-*' files ..."
     find_file ${DN_EXEC}/input/ -name "input-*" | while read a; do
-        mr_trace "attach file '${a}' to '${DN_OUTPUT_HDFS}/0/redout.txt' ..."
+        mr_trace "attach input file '${a}' to '${DN_OUTPUT_HDFS}/0/redout.txt' ..."
+        A=$(cat_file ${a})
+        mr_trace "${a} contains: $A"
         cat_file "${a}" | save_file ${DN_OUTPUT_HDFS}/0/redout.txt;
     done
+    A=$(cat_file ${DN_OUTPUT_HDFS}/0/redout.txt)
+    mr_trace "${DN_OUTPUT_HDFS}/0/redout.txt contains: $A"
 
     ####################
     TM_PRE=$(date +%s)
