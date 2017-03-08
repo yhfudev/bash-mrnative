@@ -10,9 +10,9 @@
 ## @version 1
 ##
 #####################################################################
-mr_trace() {
-    echo "$(date +"%Y-%m-%d %H:%M:%S.%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
-}
+#mr_trace() {
+#    echo "$(date +"%Y-%m-%d %H:%M:%S.%N" | cut -c1-23) [self=${BASHPID},$(basename $0)] $@" 1>&2
+#}
 
 #####################################################################
 # Set this to location of myHadoop
@@ -44,7 +44,19 @@ fi
 
 export HADOOP_HOME="/usr/hdp/current/hadoop-client/"
 if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/opt/applications/hadoop-3.0.0-alpha2"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
     export HADOOP_HOME="/opt/applications/hadoop-2.7.3"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/opt/applications/hadoop-2.7.1"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/opt/applications/hadoop-2.6.5"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/opt/applications/hadoop-2.5.2"
 fi
 if [ ! -d "${HADOOP_HOME}" ]; then
     export HADOOP_HOME="/opt/applications/hadoop-2.3.0"
@@ -53,14 +65,25 @@ if [ ! -d "${HADOOP_HOME}" ]; then
     export HADOOP_HOME="/opt/applications/hadoop-1.2.1"
 fi
 if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/home/$USER/software/hadoop-3.0.0-alpha2"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
     export HADOOP_HOME="/home/$USER/software/hadoop-2.7.3/"
-    mr_trace "HADOOP_HOME=${HADOOP_HOME}"
 fi
 if [ ! -d "${HADOOP_HOME}" ]; then
-    export HADOOP_HOME="/home/$USER/software/bin/hadoop-2.3.0/"
+    export HADOOP_HOME="/home/$USER/software/hadoop-2.7.1/"
 fi
 if [ ! -d "${HADOOP_HOME}" ]; then
-    export HADOOP_HOME="/home/$USER/software/bin/hadoop-1.2.1/"
+    export HADOOP_HOME="/home/$USER/software/hadoop-2.6.5/"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/home/$USER/software/hadoop-2.5.2/"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/home/$USER/software/hadoop-2.3.0/"
+fi
+if [ ! -d "${HADOOP_HOME}" ]; then
+    export HADOOP_HOME="/home/$USER/software/hadoop-1.2.1/"
 fi
 # don't use /newscratch, the hadoop will write lot to the folder, and it downgrade the perfomance!
 #export HADOOP_HOME="/newscratch/$USER/software/hadoop-1.2.1/"
@@ -69,12 +92,15 @@ export PATH=$HADOOP_HOME/bin:$PATH
 #####################################################################
 EXEC_HADOOP=$(which hadoop)
 if [ ! -x "${EXEC_HADOOP}" ]; then
-if [ -d "${HADOOP_CONF_DIR}" ]; then
-    EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config ${HADOOP_CONF_DIR}"
+if [ "${HADOOP_CONF_DIR}" != "" ]; then
+    EXEC_HADOOP="${HADOOP_HOME}/bin/hadoop --config '${HADOOP_CONF_DIR}'"
 fi
 fi
 
 HADOOP_JAR_STREAMING=/usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar
+if [ ! -f "${HADOOP_JAR_STREAMING}" ]; then
+    HADOOP_JAR_STREAMING=${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-3.0.0-alpha2.jar
+fi
 if [ ! -f "${HADOOP_JAR_STREAMING}" ]; then
     HADOOP_JAR_STREAMING=${HADOOP_HOME}/share/hadoop/tools/lib/hadoop-streaming-2.7.3.jar
 fi
@@ -90,7 +116,7 @@ fi
 
 #####################################################################
 start_hadoop() {
-    mr_trace "Start all Hadoop daemons"
+    #mr_trace "Start all Hadoop daemons"
     if [ -x "${HADOOP_HOME}/sbin/start-yarn.sh" ]; then
         ${HADOOP_HOME}/sbin/start-dfs.sh && ${HADOOP_HOME}/sbin/start-yarn.sh
 
@@ -98,21 +124,21 @@ start_hadoop() {
         ${HADOOP_HOME}/bin/start-all.sh
 
     else
-        mr_trace "Warning: Not found ${HADOOP_HOME}/bin/start-all.sh"
+        echo "Warning: Not found ${HADOOP_HOME}/bin/start-all.sh" > /dev/stderr
         #exit 1
     fi
-    #${HADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
-    mr_trace "wait for hadoop ready ..."
+    #${HWADOOP_HOME}/bin/hadoop dfsadmin -safemode leave
+    #mr_trace "wait for hadoop ready ..."
     V=
     while [ "V" = "" ]; do
         V=$(jps | grep NodeManager)
         sleep 2
     done
-    mr_trace "hadoop ready."
+    #mr_trace "hadoop ready."
 }
 
 stop_hadoop() {
-    mr_trace "Stop all Hadoop daemons"
+    #mr_trace "Stop all Hadoop daemons"
     jps
     if [ -x "${HADOOP_HOME}/sbin/stop-yarn.sh" ]; then
         ${HADOOP_HOME}/sbin/stop-yarn.sh && ${HADOOP_HOME}/sbin/stop-dfs.sh
@@ -121,7 +147,7 @@ stop_hadoop() {
         ${HADOOP_HOME}/bin/stop-all.sh
 
     else
-        mr_trace "Warning: Not found ${HADOOP_HOME}/bin/stop-all.sh"
+        echo "Warning: Not found ${HADOOP_HOME}/bin/stop-all.sh" > /dev/stderr
         #exit 1
     fi
     echo
