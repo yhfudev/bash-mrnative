@@ -102,7 +102,11 @@ mr_trace "02 DN_TOP=$DN_TOP; DN_EXEC=${DN_EXEC}"
 #
 # Make sure that this is accessible to all nodes
 # where your personal cluster's configuration will be located
-export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
+if [ "${HADOOP_CONF_DIR}" = "" ]; then
+    mr_trace "Please specify the variable HADOOP_CONF_DIR"
+    exit 1
+fi
+
 mkdir -p "${HADOOP_CONF_DIR}"
 if [ ! "$?" = "0" ]; then mr_trace "Error in mkdir ${HADOOP_CONF_DIR}" ; fi
 
