@@ -12,6 +12,457 @@
 ##
 #####################################################################
 
+## @fn hadoop_set_default_mapredsitexml_1x()
+## @brief create a default settings for file mapred-site.xml (Hadoop 1.x)
+## @param FN_MAPREDSITE the file name for mapred-site.xml
+##
+## The content of the hadoop/conf/mapred-site.xml includes
+##  1. the configure from the myhadoop
+##  2. the memory parameters for this package
+hadoop_set_default_mapredsitexml_1x() {
+    local PARAM_FN_MAPREDSITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_MAPREDSITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+<property>
+  <name>mapred.job.tracker</name>
+  <value>MASTER_NODE:54311</value>
+  <description>The host and port that the MapReduce job tracker runs
+  at.  If "local", then jobs are run in-process as a single map
+  and reduce task.
+  </description>
+</property>
+
+<property>
+  <name>mapred.local.dir</name>
+  <value>MAPRED_LOCAL_DIR</value>
+  <final>true</final>
+</property>
+
+<property>
+  <name>mapred.tasktracker.map.tasks.maximum</name>
+  <value>MAPRED_TASKTRACKER_MAP_TASKS_MAXIMUM</value>
+  <description>The MH_MAP_TASKS_MAXIMUM will set the maximum amount of
+     MAP tasks to be started on a single TASK node, this is either CPU
+     or memory bound.</description>
+</property>
+
+<property>
+  <name>mapred.tasktracker.reduce.tasks.maximum</name>
+  <value>MAPRED_TASKTRACKER_REDUCE_TASKS_MAXIMUM</value>
+  <description>The MH_REDUCE_TASKS_MAXIMUM will set the maximum amount
+     of REDUCE tasks to be started on a single TASK node, this is most
+     likely memory bound.</description>
+</property>
+
+<property>
+  <name>mapred.map.tasks</name>
+  <value>MAPRED_MAP_TASKS</value>
+  <description>The MH_MAP_TASKS is used to hint the application of the
+     total amount of MAP tasks that can be run on the cluster.</description>
+</property>
+
+<property>
+  <name>mapred.reduce.tasks</name>
+  <value>MAPRED_REDUCE_TASKS</value>
+  <description>The MH_REDUCE_TASKS is used to hint the application of
+     the total amount of REDUCE tasks that can be run on the cluster.</description>
+</property>
+
+    <property>
+        <name>mapred.job.map.memory.mb</name>
+        <value>512</value>
+    </property>
+    <property>
+        <name>mapred.job.reduce.memory.mb</name>
+        <value>1024</value>
+    </property>
+    <property>
+        <name>mapred.map.child.java.opts</name>
+        <value>-Xmx384m</value>
+    </property>
+    <property>
+        <name>mapred.reduce.child.java.opts</name>
+        <value>-Xmx768m</value>
+    </property>
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_mapredsitexml()
+## @brief create a default settings for file mapred-site.xml (>= Hadoop 2.x)
+## @param FN_MAPREDSITE the file name for mapred-site.xml
+##
+## The content of the hadoop/etc/hadoop/mapred-site.xml includes
+##  1. the configure from the myhadoop
+##  2. the memory parameters for this package
+hadoop_set_default_mapredsitexml() {
+    local PARAM_FN_MAPREDSITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_MAPREDSITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+<property>
+  <name>mapreduce.framework.name</name>
+  <value>yarn</value>
+  <description>The runtime framework for executing MapReduce jobs. Can be one of
+    local, classic or yarn.</description>
+</property>
+
+<property>
+    <name>mapreduce.map.memory.mb</name>
+    <value>512</value>
+</property>
+<property>
+    <name>mapreduce.reduce.memory.mb</name>
+    <value>1024</value>
+</property>
+<property>
+    <name>mapreduce.map.java.opts</name>
+    <value>-Xmx384m</value>
+</property>
+<property>
+    <name>mapreduce.reduce.java.opts</name>
+    <value>-Xmx768m</value>
+</property>
+
+
+<!-- A value of 0 disables the timeout -->
+<!--
+<property>
+    <name>mapreduce.task.timeout</name>
+    <value>0</value>
+</property>
+-->
+<!-- setting the vcores -->
+<property>
+    <name>mapreduce.map.cpu.vcores</name>
+    <value>1</value>
+</property>
+<property>
+    <name>mapreduce.reduce.cpu.vcores</name>
+    <value>1</value>
+</property>
+
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_yarnsitexml()
+## @brief create a default settings for file yarn-site.xml (>= Hadoop 2.x)
+## @param FN_YARNSITE the file name for yarn-site.xml
+##
+## The content of the hadoop/etc/hadoop/yarn-site.xml includes
+##  1. the configure from the myhadoop
+##  2. the memory parameters for this package
+hadoop_set_default_yarnsitexml() {
+    local PARAM_FN_YARNSITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_YARNSITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+<!-- Site specific YARN configuration properties -->
+  <property>
+    <name>yarn.resourcemanager.hostname</name>
+    <value>MASTER_NODE</value>
+    <description>The hostname of the RM.</description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.local-dirs</name>
+    <value>MAPRED_LOCAL_DIR</value>
+    <description>The hostname of the RM.
+        Default: \${hadoop.tmp.dir}/nm-local-dir</description>
+  </property>
+
+<!-- yarn.nodemanager.log-dirs defaults to \${yarn.log.dir}/userlogs, where
+     yarn.log.dir is set by yarn-env.sh via the YARN_LOG_DIR environment
+     variable -->
+
+<!-- these are necessary for mapreduce to work with YARN -->
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+    <description>The valid service name should only contain a-zA-Z0-9_ and can
+        not start with numbers.  Default: none</description>
+  </property>
+
+<!--
+  <property>
+    <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    <description>Java class to handle the shuffle stage of
+        mapreduce.
+        Default:  org.apache.hadoop.mapred.ShuffleHandler</description>
+  </property>
+-->
+
+<property>
+    <name>yarn.nodemanager.resource.memory-mb</name>
+    <value>3072</value>
+</property>
+<property>
+    <name>yarn.scheduler.minimum-allocation-mb</name>
+    <value>256</value>
+</property>
+<property>
+    <name>yarn.scheduler.maximum-allocation-mb</name>
+    <value>3072</value>
+</property>
+
+<property>
+    <name>yarn.nodemanager.vmem-check-enabled</name>
+    <value>false</value>
+    <description>Whether virtual memory limits will be enforced for containers</description>
+</property>
+<property>
+    <name>yarn.nodemanager.vmem-pmem-ratio</name>
+    <value>4</value>
+    <description>Ratio between virtual memory to physical memory when setting memory limits for containers</description>
+</property>
+
+<!-- setting the vcores -->
+<property>
+    <name>yarn.app.mapreduce.am.resource.cpu-vcores</name>
+    <value>1</value>
+</property>
+<property>
+    <name>yarn.scheduler.maximum-allocation-vcores</name>
+    <value>24</value>
+</property>
+<property>
+    <name>yarn.scheduler.minimum-allocation-vcores</name>
+    <value>1</value>
+</property>
+<property>
+    <name>yarn.nodemanager.resource.cpu-vcores</name>
+    <value>24</value>
+</property>
+
+</configuration>
+EOF
+}
+
+######################################################################
+
+## @fn hadoop_set_default_coresitexml_1x()
+## @brief create a default settings for file core-site.xml (Hadoop 1.x)
+## @param FN_CORESITE the file name for core-site.xml
+##
+## The content of the hadoop/conf/core-site.xml includes
+##  1. the configure from the myhadoop
+hadoop_set_default_coresitexml_1x() {
+    local PARAM_FN_CORESITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_CORESITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+<property>
+  <name>hadoop.tmp.dir</name>
+  <value>HADOOP_TMP_DIR</value>
+  <description>A base for other temporary directories.</description>
+</property>
+
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://MASTER_NODE:54310</value>
+  <description>The name of the default file system.  A URI whose
+  scheme and authority determine the FileSystem implementation.  The
+  uri's scheme determines the config property (fs.SCHEME.impl) naming
+  the FileSystem implementation class.  The uri's authority is used to
+  determine the host, port, etc. for a filesystem.</description>
+</property>
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_coresitexml()
+## @brief create a default settings for file core-site.xml (>= Hadoop 2.x)
+## @param FN_CORESITE the file name for core-site.xml
+##
+## The content of the hadoop/etc/hadoop/core-site.xml includes
+##  1. the configure from the myhadoop
+hadoop_set_default_coresitexml() {
+    local PARAM_FN_CORESITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_CORESITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+<property>
+  <name>hadoop.tmp.dir</name>
+  <value>HADOOP_TMP_DIR</value>
+  <description>A base for other temporary directories.</description>
+</property>
+
+<property>
+  <name>fs.defaultFS</name>
+  <value>hdfs://MASTER_NODE:54310</value>
+</property>
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_hdfssitexml_1x()
+## @brief create a default settings for file hdfs-site.xml (Hadoop 1.x)
+## @param FN_HDFSSITE the file name for hdfs-site.xml
+##
+## The content of the hadoop/conf/hdfs-site.xml includes
+##  1. the configure from the myhadoop
+hadoop_set_default_hdfssitexml_1x() {
+    local PARAM_FN_HDFSSITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_HDFSSITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+  <property>
+    <name>dfs.name.dir</name>
+    <value>DFS_NAME_DIR</value>
+    <description>Determines where on the local filesystem the DFS name node
+      should store the name table.  If this is a comma-delimited list
+      of directories then the name table is replicated in all of the
+      directories, for redundancy. </description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>dfs.data.dir</name>
+    <value>DFS_DATA_DIR</value>
+    <description>Determines where on the local filesystem an DFS data node
+       should store its blocks.  If this is a comma-delimited
+       list of directories, then data will be stored in all named
+       directories, typically on different devices.
+       Directories that do not exist are ignored.
+    </description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>dfs.replication</name>
+    <value>DFS_REPLICATION</value>
+    <description>HDFS is partly designed to allow storage failures and uses
+       replication for this. Since either your data on myhadoop jobs is only
+       supposed to live through a single run or you can use persistent data
+       that will most likely run on solid hardware it is quite save to keep
+       replication at 1 and reduce the IO overhead.
+    </description>
+  </property>
+
+  <property>
+    <name>dfs.block.size</name>
+    <value>DFS_BLOCK_SIZE</value>
+    <description>The HDFS block size defines the size of the parts in which
+       the HDFS files will be divided and distributed over the data nodes.
+  </description>
+  </property>
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_hdfssitexml()
+## @brief create a default settings for file hdfs-site.xml (>= Hadoop 2.x)
+## @param FN_HDFSSITE the file name for hdfs-site.xml
+##
+## The content of the hadoop/etc/hadoop/hdfs-site.xml includes
+##  1. the configure from the myhadoop
+hadoop_set_default_hdfssitexml() {
+    local PARAM_FN_HDFSSITE="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_HDFSSITE}"
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>DFS_NAME_DIR</value>
+    <description>Determines where on the local filesystem the DFS name node
+      should store the name table.  If this is a comma-delimited list
+      of directories then the name table is replicated in all of the
+      directories, for redundancy. </description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>DFS_DATA_DIR</value>
+    <description>Determines where on the local filesystem an DFS data node
+       should store its blocks.  If this is a comma-delimited
+       list of directories, then data will be stored in all named
+       directories, typically on different devices.
+       Directories that do not exist are ignored.
+    </description>
+    <final>true</final>
+  </property>
+
+  <property>
+   <name>dfs.namenode.secondary.http-address</name>
+   <value>MASTER_NODE:50090</value>
+   <description>The secondary namenode http server address and
+       port.</description>
+   <final>true</final>
+  </property>
+
+</configuration>
+EOF
+}
+
+## @fn hadoop_set_default_hdfsdefaultxml()
+## @brief create a default settings for file hdfs-default.xml  (>= Hadoop 2.x)
+## @param FN_HDFSDEFAULT the file name for hdfs-default.xml
+##
+## The content of the hadoop/etc/hadoop/hdfs-default.xml  includes
+##  1. the configure for data node failed
+hadoop_set_default_hdfsdefaultxml() {
+    local PARAM_FN_HDFSDEFAULT="$1"
+    shift
+
+cat << EOF > "${PARAM_FN_HDFSDEFAULT}"
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+  <property>
+    <name>dfs.client.block.write.replace-datanode-on-failure.enable</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>dfs.client.block.write.replace-datanode-on-failure.policy</name>
+    <value>ALWAYS</value>
+  </property>
+  <property>
+    <name>dfs.client.block.write.replace-datanode-on-failure.best-effort</name>
+    <value>true</value>
+  </property>
+</configuration>
+EOF
+}
+
+######################################################################
+
 ## @fn hadoop_set_memory()
 ## @brief change the memory related config for hadoop
 ## @param HADOOP_HOME the environment variable HADOOP_HOME
@@ -19,108 +470,18 @@
 ##
 ## HADOOP_HOME should be set before this function
 hadoop_set_memory() {
-    local PARAM_HADOOP_HOME=$1
+    local PARAM_HADOOP_HOME="$1"
     shift
     local PARAM_MEM=$1
     shift
 
+    mr_trace "hadoop_set_memory(): PARAM_MEM=${PARAM_MEM}; PARAM_HADOOP_HOME=${PARAM_HADOOP_HOME}"
+
     # set the vcores to 1 to let bash script generate multiple processes.
     local CORES=1
-    # in this block, you need set two files in the hadoop 2.x config files
-    # mapred-site.xml.template
-    # <property>
-    #     <name>mapreduce.map.memory.mb</name>
-    #     <value>512</value>
-    # </property>
-    # <property>
-    #     <name>mapreduce.reduce.memory.mb</name>
-    #     <value>1024</value>
-    # </property>
-    # <property>
-    #     <name>mapreduce.map.java.opts</name>
-    #     <value>-Xmx384m</value>
-    # </property>
-    # <property>
-    #     <name>mapreduce.reduce.java.opts</name>
-    #     <value>-Xmx768m</value>
-    # </property>
-    #<!-- A value of 0 disables the timeout -->
-    #<!--
-    #<property>
-    #    <name>mapreduce.task.timeout</name>
-    #    <value>0</value>
-    #</property>
-    #-->
-    #<!-- setting the vcores -->
-    #<property>
-    #    <name>mapreduce.map.cpu.vcores</name>
-    #    <value>1</value>
-    #</property>
-    #<property>
-    #    <name>mapreduce.reduce.cpu.vcores</name>
-    #    <value>1</value>
-    #</property>
-    #
-    # yarn-site.xml.template
-    # <property>
-    #     <name>yarn.nodemanager.resource.memory-mb</name>
-    #     <value>3072</value>
-    # </property>
-    # <property>
-    #     <name>yarn.scheduler.minimum-allocation-mb</name>
-    #     <value>256</value>
-    # </property>
-    # <property>
-    #     <name>yarn.scheduler.maximum-allocation-mb</name>
-    #     <value>3072</value>
-    # </property>
-    # <property>
-    #     <name>yarn.nodemanager.vmem-check-enabled</name>
-    #     <value>false</value>
-    #     <description>Whether virtual memory limits will be enforced for containers</description>
-    # </property>
-    # <property>
-    #     <name>yarn.nodemanager.vmem-pmem-ratio</name>
-    #     <value>4</value>
-    #     <description>Ratio between virtual memory to physical memory when setting memory limits for containers</description>
-    # </property>
-    #<!-- setting the vcores -->
-    #<property>
-    #    <name>yarn.app.mapreduce.am.resource.cpu-vcores</name>
-    #    <value>1</value>
-    #</property>
-    #<property>
-    #    <name>yarn.scheduler.maximum-allocation-vcores</name>
-    #    <value>24</value>
-    #</property>
-    #<property>
-    #    <name>yarn.scheduler.minimum-allocation-vcores</name>
-    #    <value>1</value>
-    #</property>
-    #<property>
-    #    <name>yarn.nodemanager.resource.cpu-vcores</name>
-    #    <value>24</value>
-    #</property>
-    #
-    # or hadoop 1.x config files mapred-site.xml.template
-    # <property>
-    #     <name>mapred.job.map.memory.mb</name>
-    #     <value>512</value>
-    # </property>
-    # <property>
-    #     <name>mapred.job.reduce.memory.mb</name>
-    #     <value>1024</value>
-    # </property>
-    # <property>
-    #     <name>mapred.map.child.java.opts</name>
-    #     <value>-Xmx384m</value>
-    # </property>
-    # <property>
-    #     <name>mapred.reduce.child.java.opts</name>
-    #     <value>-Xmx768m</value>
-    # </property>
-    local MR_JOB_MEM=2048
-    local MR_JOB_MEM=8192
+
+    #local MR_JOB_MEM=2048
+    #local MR_JOB_MEM=8192
     local MR_JOB_MEM=512
     if (( ${MR_JOB_MEM} < ${PARAM_MEM}/${CORES} )) ; then
         MR_JOB_MEM=$(( ${PARAM_MEM}/${CORES} ))
@@ -129,11 +490,28 @@ hadoop_set_memory() {
         MR_JOB_MEM=$(( ${PARAM_MEM} / 6 ))
     fi
 
+    mr_trace "hadoop_set_memory(): adjusted MR_JOB_MEM=${MR_JOB_MEM}; PARAM_HADOOP_HOME=${PARAM_HADOOP_HOME}"
+
+    FN_TEMP_MAPREDSITE="mapred-site.xml"
+    FN_TEMP_YARNSITE="yarn-site.xml"
+    FN_TEMP_CORESITE="core-site.xml"
+    FN_TEMP_HDFSSITE="hdfs-site.xml"
+    FN_TEMP_HDFSDEFAULT="hdfs-default.xml"
+
     if [ -d "${PARAM_HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
         mr_trace "set hadoop 1.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
         DN_ORIG7=$(pwd)
         cd "${PARAM_HADOOP_HOME}/conf"
-        cp mapred-site.xml.template mapred-site.xml
+
+        rm -f "${FN_TEMP_CORESITE}"
+        hadoop_set_default_coresitexml_1x "${FN_TEMP_CORESITE}"
+        rm -f "${FN_TEMP_HDFSSITE}"
+        hadoop_set_default_hdfssitexml_1x "${FN_TEMP_HDFSSITE}"
+        rm -f "${FN_TEMP_HDFSDEFAULT}"
+        hadoop_set_default_hdfsdefaultxml "${FN_TEMP_HDFSDEFAULT}"
+
+        rm -f "${FN_TEMP_MAPREDSITE}"
+        hadoop_set_default_mapredsitexml_1x "${FN_TEMP_MAPREDSITE}"
 
         sed -i \
             -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
@@ -141,15 +519,27 @@ hadoop_set_memory() {
             -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
             -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
             mapred-site.xml
+
         cd "${DN_ORIG7}"
 
-    elif [ -d "${PARAM_HADOOP_HOME}/etc/hadoop" ]; then   # Hadoop 2.x
+    elif [ -d "${PARAM_HADOOP_HOME}/etc/hadoop" ]; then   # >= Hadoop 2.x
 
         mr_trace "set hadoop 2.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
         DN_ORIG7=$(pwd)
+
         cd "${PARAM_HADOOP_HOME}/etc/hadoop"
-        cp mapred-site.xml.template mapred-site.xml
-        cp   yarn-site.xml.template   yarn-site.xml
+
+        rm -f "${FN_TEMP_CORESITE}"
+        hadoop_set_default_coresitexml "${FN_TEMP_CORESITE}"
+        rm -f "${FN_TEMP_HDFSSITE}"
+        hadoop_set_default_hdfssitexml "${FN_TEMP_HDFSSITE}"
+        rm -f "${FN_TEMP_HDFSDEFAULT}"
+        hadoop_set_default_hdfsdefaultxml "${FN_TEMP_HDFSDEFAULT}"
+
+        rm -f "${FN_TEMP_MAPREDSITE}"
+        hadoop_set_default_mapredsitexml "${FN_TEMP_MAPREDSITE}"
+        rm -f "${FN_TEMP_YARNSITE}"
+        hadoop_set_default_yarnsitexml   "${FN_TEMP_YARNSITE}"
 
         sed -i \
             -e "s|<value>3072</value>|<value>${PARAM_MEM}</value>|" \
@@ -163,6 +553,7 @@ hadoop_set_memory() {
             -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
             -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
             mapred-site.xml
+
         cd "${DN_ORIG7}"
     else
         mr_trace "unknown hadoop version from dir '${PARAM_HADOOP_HOME}'"
@@ -170,6 +561,7 @@ hadoop_set_memory() {
     fi
 }
 
+######################################################################
 
 ## @fn run_stage_hadoop()
 ## @brief run map and reduce script in Hadoop
