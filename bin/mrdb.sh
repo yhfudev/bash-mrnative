@@ -178,7 +178,12 @@ stop_job() {
     # stop slaves
     for HOST_ADDR in $(print_nodelist) ; do
         if [ "${HOST_ADDR}" = "`hostname`" ]; then
-            mr_trace "skip job AT ${HOST_ADDR}"
+            mr_trace "skip local job 1 AT ${HOST_ADDR}"
+            continue
+        fi
+        ip a | grep "${HOST_ADDR}/"
+        if [ $? = 0 ]; then
+            mr_trace "skip local job 2 AT ${HOST_ADDR}"
             continue
         fi
         mr_trace "stop job AT ${HOST_ADDR}"
@@ -189,6 +194,8 @@ stop_job() {
 
     # stop local
     killall java
+    ps -ef | egrep 'java' | grep "^$USER" | awk '{print $2}' | while read a; do kill -9 $a; done
+    sleep 5
     killall bash
     ps -ef | egrep 'bash|java' | grep "^$USER" | awk '{print $2}' | while read a; do kill -9 $a; done
 }
