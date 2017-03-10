@@ -102,9 +102,9 @@ function print_nodelist {
 backup_logs() {
 
     local LIST_FILES_REMOTE=(
-        "/tmp/hsperfdata_yfu/"
+        "/tmp/hsperfdata_$USER/"
         "/tmp/hadoop/"
-        "/dev/shm/yfu/"
+        "/dev/shm/$USER/"
     )
     local LIST_FILES_LOCAL=(
         "myhadoop.conf"
@@ -143,9 +143,9 @@ backup_logs() {
 ## clean the dirs
 clean_dir() {
     local LIST_FILES_REMOTE=(
-        "/tmp/hsperfdata_yfu/"
+        "/tmp/hsperfdata_$USER/"
         "/tmp/hadoop/"
-        "/dev/shm/yfu/"
+        "/dev/shm/$USER/"
         "/tmp/tmp-*"
     )
     local LIST_FILES_LOCAL=(
