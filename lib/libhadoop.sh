@@ -419,6 +419,17 @@ cat << EOF > "${PARAM_FN_HDFSSITE}"
   </property>
 
   <property>
+    <name>dfs.replication</name>
+    <value>DFS_REPLICATION</value>
+    <description>HDFS is partly designed to allow storage failures and uses
+       replication for this. Since either your data on myhadoop jobs is only
+       supposed to live through a single run or you can use persistent data
+       that will most likely run on solid hardware it is quite save to keep
+       replication at 1 and reduce the IO overhead.
+    </description>
+  </property>
+
+  <property>
    <name>dfs.namenode.secondary.http-address</name>
    <value>MASTER_NODE:50090</value>
    <description>The secondary namenode http server address and
@@ -500,61 +511,55 @@ hadoop_set_memory() {
 
     if [ -d "${PARAM_HADOOP_HOME}/conf" ]; then           # Hadoop 1.x
         mr_trace "set hadoop 1.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
-        DN_ORIG7=$(pwd)
-        cd "${PARAM_HADOOP_HOME}/conf"
+        local DN_CONF="${PARAM_HADOOP_HOME}/conf"
 
-        rm -f "${FN_TEMP_CORESITE}"
-        hadoop_set_default_coresitexml_1x "${FN_TEMP_CORESITE}"
-        rm -f "${FN_TEMP_HDFSSITE}"
-        hadoop_set_default_hdfssitexml_1x "${FN_TEMP_HDFSSITE}"
-        rm -f "${FN_TEMP_HDFSDEFAULT}"
-        hadoop_set_default_hdfsdefaultxml "${FN_TEMP_HDFSDEFAULT}"
+        rm -f "${DN_CONF}/${FN_TEMP_CORESITE}"
+        hadoop_set_default_coresitexml_1x "${DN_CONF}/${FN_TEMP_CORESITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_HDFSSITE}"
+        hadoop_set_default_hdfssitexml_1x "${DN_CONF}/${FN_TEMP_HDFSSITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_HDFSDEFAULT}"
+        hadoop_set_default_hdfsdefaultxml "${DN_CONF}/${FN_TEMP_HDFSDEFAULT}"
 
-        rm -f "${FN_TEMP_MAPREDSITE}"
-        hadoop_set_default_mapredsitexml_1x "${FN_TEMP_MAPREDSITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
+        hadoop_set_default_mapredsitexml_1x "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
 
         sed -i \
             -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
             -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
             -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
             -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
-            mapred-site.xml
-
-        cd "${DN_ORIG7}"
+            "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
 
     elif [ -d "${PARAM_HADOOP_HOME}/etc/hadoop" ]; then   # >= Hadoop 2.x
 
         mr_trace "set hadoop 2.x memory: cores=$CORES, mem=${PARAM_MEM}; mem/cores=$((${PARAM_MEM}/${CORES})), MR_JOB_MEM=${MR_JOB_MEM}"
-        DN_ORIG7=$(pwd)
+        local DN_CONF="${PARAM_HADOOP_HOME}/etc/hadoop"
 
-        cd "${PARAM_HADOOP_HOME}/etc/hadoop"
+        rm -f "${DN_CONF}/${FN_TEMP_CORESITE}"
+        hadoop_set_default_coresitexml "${DN_CONF}/${FN_TEMP_CORESITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_HDFSSITE}"
+        hadoop_set_default_hdfssitexml "${DN_CONF}/${FN_TEMP_HDFSSITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_HDFSDEFAULT}"
+        hadoop_set_default_hdfsdefaultxml "${DN_CONF}/${FN_TEMP_HDFSDEFAULT}"
 
-        rm -f "${FN_TEMP_CORESITE}"
-        hadoop_set_default_coresitexml "${FN_TEMP_CORESITE}"
-        rm -f "${FN_TEMP_HDFSSITE}"
-        hadoop_set_default_hdfssitexml "${FN_TEMP_HDFSSITE}"
-        rm -f "${FN_TEMP_HDFSDEFAULT}"
-        hadoop_set_default_hdfsdefaultxml "${FN_TEMP_HDFSDEFAULT}"
-
-        rm -f "${FN_TEMP_MAPREDSITE}"
-        hadoop_set_default_mapredsitexml "${FN_TEMP_MAPREDSITE}"
-        rm -f "${FN_TEMP_YARNSITE}"
-        hadoop_set_default_yarnsitexml   "${FN_TEMP_YARNSITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
+        hadoop_set_default_mapredsitexml "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
+        rm -f "${DN_CONF}/${FN_TEMP_YARNSITE}"
+        hadoop_set_default_yarnsitexml   "${DN_CONF}/${FN_TEMP_YARNSITE}"
 
         sed -i \
             -e "s|<value>3072</value>|<value>${PARAM_MEM}</value>|" \
             -e  "s|<value>256</value>|<value>${MR_JOB_MEM}</value>|" \
             -e   "s|<value>24</value>|<value>${CORES}</value>|" \
-            yarn-site.xml
+            "${DN_CONF}/${FN_TEMP_YARNSITE}"
 
         sed -i \
             -e  "s|<value>512</value>|<value>$(( ${MR_JOB_MEM}     ))</value>|" \
             -e "s|<value>1024</value>|<value>$(( ${MR_JOB_MEM}*3   ))</value>|" \
             -e  "s|<value>-Xmx384m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3/4 ))m</value>|" \
             -e  "s|<value>-Xmx768m</value>|<value>-Xmx$(( ${MR_JOB_MEM}*3*3/4   ))m</value>|" \
-            mapred-site.xml
+            "${DN_CONF}/${FN_TEMP_MAPREDSITE}"
 
-        cd "${DN_ORIG7}"
     else
         mr_trace "unknown hadoop version from dir '${PARAM_HADOOP_HOME}'"
         exit 1

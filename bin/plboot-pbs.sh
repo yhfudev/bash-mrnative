@@ -53,6 +53,13 @@ DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
 DN_EXEC="$(my_getpath ".")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
+    exit 1
+fi
+
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
@@ -259,13 +266,6 @@ if [ $? = 0 ]; then
     sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "myhadoop.conf"
 else
     echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "myhadoop.conf"
-fi
-
-if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_BIN}/mod-setenv-hadoop.sh
-else
-    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
-    exit 1
 fi
 
 #####################################################################

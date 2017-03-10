@@ -53,19 +53,18 @@ DN_BIN="$(my_getpath "${DN_TOP}/bin/")"
 DN_EXEC="$(my_getpath ".")"
 DN_LIB="$(my_getpath "${DN_TOP}/lib/")"
 #####################################################################
+if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
+.   ${DN_BIN}/mod-setenv-hadoop.sh
+else
+    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
+    exit 1
+fi
+
 source ${DN_LIB}/libbash.sh
 source ${DN_LIB}/libfs.sh
 source ${DN_LIB}/libconfig.sh
 source ${DN_LIB}/libhadoop.sh
 source ${DN_EXEC}/libapp.sh
-
-#####################################################################
-# read basic config from mrsystem.conf
-# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
-read_config_file "${DN_TOP}/mrsystem.conf"
-
-
-mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXEC};"
 
 #####################################################################
 # sum the nodes of same or greater # cores
@@ -123,7 +122,6 @@ create_mrsystem_config_lan() {
     sed -i -e "s|^HDFF_PATHTO_TAR_MRNATIVE=.*$|HDFF_PATHTO_TAR_MRNATIVE=${HDFF_PATHTO_TAR_MRNATIVE}|" "${PARAM_FN_CONFIG}"
 }
 
-
 print_list_nodes() {
     local PARAM_LIST_NODES=$1
     shift
@@ -135,33 +133,43 @@ print_list_nodes() {
 }
 
 #####################################################################
+# read basic config from mrsystem.conf
+# such as HDFF_PROJ_ID, HDFF_NUM_CLONE etc
+mr_trace read_config_file "${DN_TOP}/mrsystem.conf"
+read_config_file "${DN_TOP}/mrsystem.conf"
+
+mr_trace "DN_TOP=${DN_TOP}; DN_BIN=${DN_BIN}; DN_LIB=${DN_LIB}; DN_EXEC=${DN_EXEC};"
+
+#####################################################################
+FN_MYHADOOPCONF="${DN_EXEC}/myhadoop.conf"
+
 MH_WORKDIR=$PWD
 MH_JOBID=$$
 
 #config
-MH_LIST_NODES=localhost
-grep MH_LIST_NODES "myhadoop.conf"
+grep MH_LIST_NODES "${FN_MYHADOOPCONF}"
 if [ ! $? = 0 ]; then
-    echo "MH_LIST_NODES=${MH_LIST_NODES}" >> "myhadoop.conf"
+    echo "MH_LIST_NODES=localhost" >> "${FN_MYHADOOPCONF}"
 fi
 
-MH_SCRATCH_DIR=/dev/shm/$USER/$MH_JOBID
-grep MH_SCRATCH_DIR "myhadoop.conf"
+MH_SCRATCH_DIR="/dev/shm/$USER/$MH_JOBID"
+grep MH_SCRATCH_DIR "${FN_MYHADOOPCONF}"
 if [ $? = 0 ]; then
-    sed -i -e "s|^MH_SCRATCH_DIR=.*$|MH_SCRATCH_DIR=${MH_SCRATCH_DIR}|" "myhadoop.conf"
+    sed -i -e "s|^MH_SCRATCH_DIR=.*$|MH_SCRATCH_DIR=${MH_SCRATCH_DIR}|" "${FN_MYHADOOPCONF}"
 else
-    echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}" >> "myhadoop.conf"
+    echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}" >> "${FN_MYHADOOPCONF}"
 fi
 
 export HADOOP_CONF_DIR=${MH_WORKDIR}/hadoopconfigs-$MH_JOBID
-grep HADOOP_CONF_DIR "myhadoop.conf"
+grep HADOOP_CONF_DIR "${FN_MYHADOOPCONF}"
 if [ $? = 0 ]; then
-    sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "myhadoop.conf"
+    sed -i -e "s|^HADOOP_CONF_DIR=.*$|HADOOP_CONF_DIR=${HADOOP_CONF_DIR}|" "${FN_MYHADOOPCONF}"
 else
-    echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "myhadoop.conf"
+    echo "HADOOP_CONF_DIR=${HADOOP_CONF_DIR}" >> "${FN_MYHADOOPCONF}"
 fi
 
-read_config_file "myhadoop.conf"
+mr_trace read_config_file "${FN_MYHADOOPCONF}"
+read_config_file "${FN_MYHADOOPCONF}"
 IFS=':'; array_nodes=($MH_LIST_NODES)
 NODES=${#array_nodes[*]}
 
@@ -185,13 +193,6 @@ FN_CONF_SYS="${FN_CONFIG_WORKING}"
 mr_trace "create_mrsystem_config_lan $NODES $CORES ${FN_CONFIG_WORKING}"
 create_mrsystem_config_lan "$NODES" "$CORES" "${FN_CONFIG_WORKING}"
 
-
-if [ -f "${DN_BIN}/mod-setenv-hadoop.sh" ]; then
-.   ${DN_BIN}/mod-setenv-hadoop.sh
-else
-    mr_trace "Error: not found file ${DN_BIN}/mod-setenv-hadoop.sh"
-    exit 1
-fi
 
 #####################################################################
 mr_trace hadoop_set_memory "${HADOOP_HOME}" "${MEM}"

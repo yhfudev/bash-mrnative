@@ -25,6 +25,8 @@ if [ "$1" = "" ]; then
 fi
 
 case "$1" in
+clean)
+    ;;
 start)
     ;;
 stop)
@@ -111,6 +113,7 @@ backup_logs() {
         "output1"
         "${HADOOP_CONF_DIR}"
         "hadoopconfigs-*"
+        "HADOOP_TMP_DIR"
     )
     local TIMESTAMP="$(date +'%Y%m%d-%H%M')"
     local DN_COLLECT="log-${TIMESTAMP}"
@@ -124,7 +127,7 @@ backup_logs() {
         make_dir "${DN_TARGET}"
         for i in "${!LIST_FILES_REMOTE[@]}"; do
             mr_trace "copy TO ${DN_TARGET} FROM ${HOST_ADDR}:${LIST_FILES_REMOTE[i]}"
-            $MYEXEC scp -r "${HOST_ADDR}:${LIST_FILES_REMOTE[i]}" "${DN_TARGET}"
+            scp -r "${HOST_ADDR}:${LIST_FILES_REMOTE[i]}" "${DN_TARGET}"
         done
         CNT=$((CNT + 1))
     done
@@ -134,14 +137,11 @@ backup_logs() {
     done
 }
 
-## @fn start_job()
-## @brief start a new job
+## @fn clean_dir()
+## @brief clean the dirs
 ##
-## clean the dirs first, then start the job
-start_job() {
-    #rm -rf /tmp/tmp-e* /tmp/hsperfdata_yfu/ hadoopconfigs-* output1/ tmp-e* mrtrace.log /dev/shm/yfu/ /tmp/hadoop/;
-    #../bin/plboot-lan.sh
-
+## clean the dirs
+clean_dir() {
     local LIST_FILES_REMOTE=(
         "/tmp/hsperfdata_yfu/"
         "/tmp/hadoop/"
@@ -153,6 +153,7 @@ start_job() {
         "output1"
         "${HADOOP_CONF_DIR}"
         "hadoopconfigs-*"
+        "HADOOP_TMP_DIR"
     )
 
     # remove the contents from slaves
@@ -160,15 +161,13 @@ start_job() {
         rm_f_dir "${LIST_FILES_REMOTE[i]}"
         for HOST_ADDR in $(print_nodelist) ; do
             mr_trace "remove ${LIST_FILES_REMOTE[i]} FROM ${HOST_ADDR}"
-            $MYEXEC ssh "${HOST_ADDR}" "rm -rf ${LIST_FILES_REMOTE[i]}"
+            ssh "${HOST_ADDR}" "rm -rf ${LIST_FILES_REMOTE[i]}"
         done
     done
 
     for i in "${!LIST_FILES_LOCAL[@]}"; do
         rm_f_dir "${LIST_FILES_LOCAL[i]}"
     done
-
-    ${DN_BIN}/plboot-lan.sh
 }
 
 ## @fn stop_job()
@@ -183,15 +182,28 @@ stop_job() {
             continue
         fi
         mr_trace "stop job AT ${HOST_ADDR}"
-        $MYEXEC ssh "${HOST_ADDR}" "killall java"
-        $MYEXEC ssh "${HOST_ADDR}" "killall bash"
-        $MYEXEC ssh "${HOST_ADDR}" "ps -ef | egrep 'bash|java' | grep "^\$USER" | awk '{print \$2}' | while read a; do kill -9 \$a; done"
+        ssh "${HOST_ADDR}" "killall java"
+        ssh "${HOST_ADDR}" "ps -ef | egrep 'bash|java' | grep "^\$USER" | awk '{print \$2}' | while read a; do kill -9 \$a; done"
+        ssh "${HOST_ADDR}" "killall bash"
     done
 
     # stop local
     killall java
     killall bash
     ps -ef | egrep 'bash|java' | grep "^$USER" | awk '{print $2}' | while read a; do kill -9 $a; done
+}
+
+## @fn start_job()
+## @brief start a new job
+##
+## clean the dirs first, then start the job
+start_job() {
+    clean_dir
+
+export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -x # start DEBUG
+    ${DN_BIN}/plboot-lan.sh
+set +x # stop DEBUG
 }
 
 read_config_file "mrsystem-working.conf"
@@ -204,6 +216,9 @@ echo "MH_LIST_NODES=${MH_LIST_NODES}"
 echo "MH_SCRATCH_DIR=${MH_SCRATCH_DIR}"
 
 case "$1" in
+clean)
+    clean_dir
+    ;;
 start)
     start_job
     ;;

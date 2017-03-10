@@ -27,16 +27,16 @@
 get_hdfs_url() {
     if [ -d "${HADOOP_CONF_DIR}" ]; then
         local A=$(grep -A 1 fs.defaultFS "${HADOOP_CONF_DIR}/core-site.xml" | grep "<value>" | awk -F\> '{print $2}' | awk -F\< '{print $1}' | awk -F/ '{print $3}')
-        echo $A
-        mr_trace "use HADOOP_CONF_DIR=${HADOOP_CONF_DIR}, got HDFS_URL=hdfs://$(A)"
+        echo ${A}
+        #mr_trace "use HADOOP_CONF_DIR=${HADOOP_CONF_DIR}, got HDFS_URL=hdfs://${A}"
 
     else
         if which hdfs > /dev/null ; then
             local PORT=$(hdfs getconf -confKey fs.defaultFS | awk -F: '{print $3}')
-            #mr_trace "hdfs port=${PORT}"
             if [ ! "$PORT" = "" ]; then
                 local A=$(netstat -na | grep LISTEN | grep $PORT | awk '{print $4}')
-                mr_trace "use hdfs=$(which hdfs), got HDFS_URL=hdfs://$(A)"
+                echo ${A}
+                #mr_trace "use hdfs=$(which hdfs), got HDFS_URL=hdfs://${A}"
             fi
         else
             mr_trace "Not found hdfs, unable to set HDFS_URL!"

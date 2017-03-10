@@ -39,14 +39,14 @@ read_config_file() {
             if [ "z${!V0}" == "z" ]; then
                 if [ "z${!VARIABLE}" == "z" ]; then
                     eval "${V0}=\"${VALUE}\""
-                    eval "${VARIABLE}=\"${VALUE}\""
-                    #mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
+                    eval "export ${VARIABLE}=\"${VALUE}\""
+                    mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
                 #else mr_trace "Keeping $VARIABLE=${!VARIABLE} from user environment"
                 fi
             else
                 eval "${V0}=\"${VALUE}\""
-                eval "${VARIABLE}=\"${VALUE}\""
-                #mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
+                eval "export ${VARIABLE}=\"${VALUE}\""
+                mr_trace "Setting ${VARIABLE}=${VALUE} from $PARAM_FN_CONF"
             fi
             #mr_trace "VARIABLE=${VARIABLE}; VALUE=${VALUE}"
         fi

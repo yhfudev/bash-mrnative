@@ -16,9 +16,9 @@
 
 #####################################################################
 # Set this to location of myHadoop
-export MY_HADOOP_HOME="/home/$USER/software/src/myhadoop-glennklockwood-git/"
+export MY_HADOOP_HOME="/home/$USER/software/myhadoop-yhfudev-git/"
 if [ ! -d "${MY_HADOOP_HOME}" ]; then
-    export MY_HADOOP_HOME="/home/$USER/software/myhadoop-yhfudev-git/"
+    export MY_HADOOP_HOME="/home/$USER/software/src/myhadoop-glennklockwood-git/"
 fi
 if [ ! -d "${MY_HADOOP_HOME}" ]; then
     export MY_HADOOP_HOME="/home/$USER/Downloads/hadoop/hadoopsys-myhadoop/myhadoop-svn/myHadoop-core"
