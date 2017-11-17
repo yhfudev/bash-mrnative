@@ -13,11 +13,19 @@
 ## @version 1
 ##
 #####################################################################
+#DN_EXEC=`echo "$0" | ${EXEC_AWK} -F/ '{b=$1; for (i=2; i < NF; i ++) {b=b "/" $(i)}; print b}'`
+DN_EXEC="$(dirname "$0")"
+if [ ! "${DN_EXEC}" = "" ]; then
+    DN_EXEC="${DN_EXEC}/"
+else
+    DN_EXEC="./"
+fi
+
 # detect if the ~/bin is included in environment variable $PATH
 #echo $PATH | grep "~/bin"
 #if [ ! "$?" = "0" ]; then
-    #echo 'PATH=~/bin/:$PATH' >> ~/.bashrc
-    #export PATH=~/bin:$PATH
+#    #echo 'PATH=~/bin/:$PATH' >> ~/.bashrc
+#    export PATH=~/bin:/sbin/:/usr/sbin/:$PATH
 #fi
 
 #####################################################################
@@ -27,11 +35,37 @@ PRIuSZ="%019d"
 #####################################################################
 # becareful the danger execution, such as rm -rf ...
 # use DANGER_EXEC=echo to skip all of such executions.
-DANGER_EXEC=echo
+DANGER_EXEC="echo [DryRunDanger]"
+
+FN_STDERR="/dev/stderr"
+OUT_ERR=">> ${FN_STDERR}"
+if [ ! -f "$FN_STDERR" ]; then
+    OUT_ERR=""
+    FN_STDERR="/dev/null"
+fi
+
+# the temporary directory
+DN_TMP=/tmp/
+# check the temporary directory size
+LIST_DN=$(df | grep -v "1K-blocks" | gawk '{prefix=$6; sz=$2; if (sz<100000) {unvalid[prefix]=1;} else {unvalid[prefix]=0;} }END{for (prefix in unvalid){if ("/" == substr(prefix,length(prefix),1)) dir=prefix "tmp"; else dir=prefix "/tmp"; if ((unvalid[prefix]!="1") && (unvalid[dir]!="1")) print dir; } }')
+for DN_TMP in $LIST_DN; do
+  mkdir -p "${DN_TMP}"
+  touch "${DN_TMP}/temptest"
+  RET=$?
+  if [ "$RET" = "0" ]; then
+    rm -f "${DN_TMP}/temptest"
+    break;
+  fi
+  rm -f "${DN_TMP}/temptest"
+done
 
 if [ "${FN_LOG}" = "" ]; then
     FN_LOG=mrtrace.log
     #FN_LOG="/dev/stderr"
+fi
+
+if [ "${FN_LOG}" = "" ]; then
+    FN_LOG="/dev/stderr"
 fi
 
 ## @fn mr_trace()
@@ -62,10 +96,30 @@ mr_exec_skip() {
     mr_trace "DEBUG (skip) $@"
 }
 
-MYEXEC=mr_exec_do
-#MYEXEC=
+myexec_ignore () {
+    mr_trace "[DBG] (skip) $*"
+    A=
+    while [ ! "$1" = "" ]; do
+        A="$A \"$1\""
+        shift
+    done
+    #mr_trace "[DBG] (skip) $A"
+}
+myexec_trace () {
+    mr_trace "[DBG] $*"
+    A=
+    while [ ! "$1" = "" ]; do
+        A="$A \"$1\""
+        shift
+    done
+    #mr_trace "[DBG] $A"
+    eval $A
+}
+
+DO_EXEC=mr_exec_do
+#DO_EXEC=
 if [ "$FLG_SIMULATE" = "1" ]; then
-    MYEXEC=mr_exec_skip
+    DO_EXEC=mr_exec_skip
 fi
 
 ## @fn fatal_error()
@@ -79,13 +133,160 @@ fatal_error() {
 }
 
 #####################################################################
+extract_file () {
+  ARG_FN=$1
+  shift
+
+  mr_trace "[DBG] Extract compressed file: '${ARG_FN}'"
+
+  if [ -f "${ARG_FN}" ]; then
+    DN_CUR=`pwd`
+    DN_DIC=`echo "${ARG_FN}" | awk -F/ '{if (NF <= 1) name=""; else name=$1; for (i=2; i < NF; i ++) name=name "/" $i } END {print name}'`
+    FN_CUR=`echo "${ARG_FN}" | awk -F/ '{name=$NF; } END {print name}'`
+    FN_BASE=`echo "${FN_CUR}" | awk -F. '{name=$1; for (i=2; i < NF; i ++) name=name "." $i } END {print name}'`
+    if [ "${DN_DIC}" = "" ]; then
+        DN_DIC="${DN_CUR}"
+    fi
+
+    mr_trace "DN_CUR=$DN_CUR; DN_DIC=$DN_DIC; FN_CUR=$FN_CUR; FN_BASE=$FN_BASE"; #exit 0
+
+    case "${FN_CUR}" in
+    *.tar.Z)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      #compress -dc file.tar.Z | tar xvf -
+      tar -xvZf "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.tar.gz)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      tar -xzf "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.tar.bz2)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      tar -xjf "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.tar.xz)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      xzcat "${FN_CUR}" | tar -x
+      cd "${DN_CUR}"
+      ;;
+    *.cpio.gz)
+      echo "extract (cpio) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      gzip -dc "${FN_CUR}" | cpio -div
+      cd "${DN_CUR}"
+      ;;
+    *.gz)
+      echo "extract (gunzip) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      gunzip -d -c "${FN_CUR}" > "${FN_BASE}.tmptmp"
+      mv "${FN_BASE}.tmptmp" "${FN_BASE}"
+      cd "${DN_CUR}"
+      ;;
+    *.bz2)
+      echo "extract (bunzip2) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      bunzip2 -d -c "${FN_CUR}" > "${FN_BASE}.tmptmp"
+      mv "${FN_BASE}.tmptmp" "${FN_BASE}"
+      cd "${DN_CUR}"
+      ;;
+    *.rpm)
+      echo "extract (rpm) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      rpm2cpio "${FN_CUR}" | cpio -div
+      cd "${DN_CUR}"
+      ;;
+    *.rar)
+      echo "extract (unrar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      unrar x "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.zip)
+      echo "extract (unzip) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      unzip "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.deb)
+      # ar xv "${FN_CUR}" && tar -xf data.tar.gz
+      echo "extract (dpkg) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      dpkg -x "${FN_CUR}" .
+      cd "${DN_CUR}"
+      ;;
+    *.dz)
+      echo "extract (dictzip) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      dictzip -d -c "${FN_CUR}" > "${FN_BASE}.tmptmp"
+      mv "${FN_BASE}.tmptmp" "${FN_BASE}"
+      cd "${DN_CUR}"
+      ;;
+    *.Z)
+      echo "extract (uncompress) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      gunzip -d -c "${FN_CUR}" > "${FN_BASE}.tmptmp"
+      mv "${FN_BASE}.tmptmp" "${FN_BASE}"
+      cd "${DN_CUR}"
+      ;;
+    *.a)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      tar -xv "${FN_BASE}"
+      cd "${DN_CUR}"
+      ;;
+    *.tgz)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      tar -xzf "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.tbz)
+      echo "extract (tar) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      tar -xjf "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *.cgz)
+      echo "extract (cpio) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      gzip -dc "${FN_CUR}" | cpio -div
+      cd "${DN_CUR}"
+      ;;
+    *.cpio)
+      echo "extract (cpio) ${DN_DIC}/${FN_CUR} ..."
+      cd "${DN_DIC}"
+      cpio -div "${FN_CUR}"
+      cd "${DN_CUR}"
+      ;;
+    *)
+      #echo "skip ${DN_DIC}/${FN_CUR} ..."
+      ;;
+    esac
+  else
+    echo "Not found file: ${DN_DIC}/${FN_CUR}"
+    return 1
+  fi
+  return 0;
+}
+
+#####################################################################
 EXEC_SSH="$(which ssh) -oBatchMode=yes -CX"
 EXEC_SCP="$(which scp)"
-EXEC_AWK="$(which awk)"
+EXEC_AWK="$(which gawk)"
 EXEC_SED="$(which sed)"
 
-EXEC_SUDO=sudo
-if [ "`whoami`" = "root" ]; then
+EXEC_SUDO="$(which sudo)"
+if [ ! -x "${EXEC_SUDO}" ]; then
+    EXEC_SUDO=""
+fi
+if [ "$USER" = "root" ]; then
     EXEC_SUDO=
 fi
 
@@ -108,12 +309,12 @@ detect_os_type() {
     grep Ubuntu /etc/lsb-release &> /dev/null && OSDIST="Ubuntu" && OSTYPE="Debian"
     test -e /etc/redhat-release && OSTYPE="RedHat"
     test -e /etc/fedora-release && OSTYPE="RedHat"
-    which pacman &> /dev/null && OSTYPE="Arch"
-    which opkg &> /dev/null && OSTYPE="OpenWrt"
-    which emerge &> /dev/null && OSTYPE="Gentoo"
-    which zypper &> /dev/null && OSTYPE="SUSE"
-    which rug &> /dev/null && OSTYPE="Novell"
-    #which smart && OSTYPE="Smart" # http://labix.org/smart
+    which pacman 2>&1 > /dev/null && OSTYPE="Arch"
+    which opkg 2>&1 > /dev/null && OSTYPE="OpenWrt"
+    which emerge 2>&1 && OSTYPE="Gentoo"
+    which zypper 2>&1 && OSTYPE="SUSE"
+    which rug 2>&1 && OSTYPE="Novell"
+    #which smart 2>&1 && OSTYPE="Smart" # http://labix.org/smart
 
     OSDIST=
     OSVERSION=
@@ -135,6 +336,7 @@ detect_os_type() {
         ;;
 
     Arch)
+        EXEC_APTGET="`which pacman`"
         if [ -f "/etc/os-release" ]; then
             OSDIST=$(cat /etc/os-release | grep ^ID= | awk -F= '{print $2}')
             OSVERSION=1
@@ -143,14 +345,22 @@ detect_os_type() {
         ;;
 
     OpenWrt)
+        EXEC_APTGET="`which opkg`"
         if [ -f "/etc/os-release" ]; then
             OSDIST=$(cat /etc/os-release | grep ^ID= | awk -F= '{print $2}')
             OSVERSION=1
-            OSNAME=openwrt
+            #OSDIST=$(cat /etc/os-release | grep ^NAME= | awk -F= '{print $2}')
+            OSDIST=
+            if [ x${OSDIST} = x ]; then
+                OSNAME=openwrt
+            fi
+        fi
+        if [ ! -f "/tmp/opkg-lists/reboot_base" ]; then
+            $DO_EXEC $EXEC_APTGET update
         fi
         ;;
     *)
-        mr_trace "Error: Not supported OS: $OSTYPE"
+        mr_trace "[ERR] Not supported OS: $OSTYPE"
         exit 0
         ;;
     esac
@@ -161,15 +371,14 @@ detect_os_type() {
         OSNAME=$(lsb_release -cs)
     fi
     if [ "${OSDIST}" = "" ]; then
-        mr_trace "Error: Not found lsb_release."
+        mr_trace "Error: Not found lsb_release!"
     fi
-    mr_trace "Detected $OSTYPE system: $OSDIST $OSVERSION $OSNAME"
+    mr_trace "[INFO] Detected $OSTYPE system: $OSDIST $OSVERSION $OSNAME"
     export OSTYPE
     export OSDIST
     export OSVERSION
     export OSNAME
 }
-
 
 #####################################################################
 ## @fn hput()
@@ -179,7 +388,7 @@ detect_os_type() {
 ##
 ## put a value to hash table
 hput() {
-  local KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
+  local KEY=`echo "$1" | tr '[:punct:][:blank:]-' '_'`
   eval export hash"$KEY"='$2'
 }
 
@@ -189,7 +398,7 @@ hput() {
 ##
 ## get a value from hash table
 hget() {
-  local KEY=`echo "$1" | tr '[:punct:][:blank:]' '_'`
+  local KEY=`echo "$1" | tr '[:punct:][:blank:]-' '_'`
   eval echo '${hash'"$KEY"'#hash}'
 }
 
@@ -217,8 +426,11 @@ ospkgset() {
     shift
     local PARAM_ARCH=$1
     shift
+    local PARAM_OPENWRT=$1
+    shift
     hput "pkg_RedHat_$PARAM_KEY" "$PARAM_REDHAT"
     hput "pkg_Arch_$PARAM_KEY" "$PARAM_ARCH"
+    hput "pkg_OpenWrt_$PARAM_KEY" "$PARAM_OPENWRT"
 }
 
 ## @fn ospkgget()
@@ -241,26 +453,26 @@ ospkgget() {
 
 # Debian/Ubuntu, RedHat/Fedora/CentOS, Arch, OpenWrt
 ospkgset apt-get            yum                 pacman              opkg
-ospkgset apt-file           yum                 pkgfile
-ospkgset u-boot-tools       uboot-tools         uboot-tools
-ospkgset mtd-utils          mtd-utils           mtd-utils
+ospkgset apt-file           yum                 pkgfile             opkg
+ospkgset u-boot-tools       uboot-tools         uboot-tools         uboot-envtools
+ospkgset mtd-utils          mtd-utils           mtd-utils           mtd-utils
 ospkgset initramfs-tools    initramfs-tools     mkinitcpio
-ospkgset build-essential    'Development Tools' base-devel
+ospkgset build-essential    'Development Tools' base-devel          ""
 ospkgset devscripts         rpmdevtools         abs
-ospkgset lsb-release        redhat-lsb-core     redhat-lsb-core
-ospkgset openssh-client     openssh-clients     openssh-clients
-ospkgset parted             parted              parted
-ospkgset subversion         svn                 subversion
-ospkgset git-all            git                 git
-ospkgset dhcp3-server       dhcp                dhcp
-ospkgset dhcp3-client       dhcp                dhcpcd
-ospkgset tftpd-hpa          tftp-server         tftp-hpa
-ospkgset syslinux           syslinux            syslinux
-ospkgset nfs-kernel-server  nfs-utils           nfs-utils
-ospkgset nfs-common         nfs-utils           nfs-utils
-ospkgset bind9              bind                bind
-ospkgset portmap            portmap             ""
-ospkgset libncurses-dev     ncurses-devel       ncurses
+ospkgset lsb-release        redhat-lsb-core     redhat-lsb-core     ""
+ospkgset openssh-client     openssh-clients     openssh-clients     openssh-client
+ospkgset parted             parted              parted              parted
+ospkgset subversion         svn                 svn                 subversion-client
+ospkgset git-all            git                 git                 git
+ospkgset dhcp3-server       dhcp                dhcp                dnsmasq
+ospkgset dhcp3-client       dhcp                dhcpcd              dnsmasq
+ospkgset tftpd-hpa          tftp-server         tftp-hpa            dnsmasq
+ospkgset syslinux           syslinux            syslinux            syslinux
+ospkgset nfs-kernel-server  nfs-utils           nfs-utils           nfs-kernel-server
+ospkgset nfs-common         nfs-utils           nfs-utils           nfs-utils
+ospkgset bind9              bind                bind                bind-server
+ospkgset portmap            portmap             ""                  portmap
+ospkgset libncurses-dev     ncurses-devel       ncurses             libncurses-dev
 ospkgset kpartx             kpartx              multipath-tools
 ospkgset lib32stdc++6       libstdc++.i686      lib32-libstdc++5
 #                           libstdc++.so.6
@@ -272,7 +484,9 @@ ospkgset bsdtar             bsdtar              libarchive
 
 ospkgset uuid-runtime       util-linux          util-linux
 
+
 ospkgset wiringpi           wiringpi            wiringpi-git
+
 
 # fixme: fedora: pixz?
 ospkgset pixz               xz                  pixz
@@ -284,49 +498,50 @@ ospkgset qemu-user-static   qemu-user           qemu-user-static-exp
 # fedora, qemu provides qemu.binfmt, and the kernel already contains binfmt support
 ospkgset binfmt-support     qemu                binfmt-support
 
-ospkgset apache2            httpd               apache
+ospkgset apache2            httpd               apache              apache
 #ospkgset apache2-mpm-prefork
 #ospkgset apache2-utils
-ospkgset libapache2-mod-php5 php-apache         php-apache
-ospkgset php5-common        php                 php-apache
-#ospkgset php5-cli           php
-#ospkgset php5-mcrypt
-#ospkgset php5-mysql         php-mysql
-#ospkgset php5-pgsql
-ospkgset php5-sqlite        php-sqlite          php-sqlite
-#ospkgset php5-dev
-#ospkgset php5-curl
-#ospkgset php5-idn
-ospkgset php5-imagick       php-imagick         php-imagick
-#ospkgset php5-imap
-#ospkgset php5-memcache
-#ospkgset php5-ps
-#ospkgset php5-pspell
-#ospkgset php5-recode
-#ospkgset php5-tidy
-#ospkgset php5-xmlrpc
-#ospkgset php5-xsl
-#ospkgset php5-json
-#ospkgset php5-gd            php-gd
-#ospkgset php5-snmp          php-snmp
-#ospkgset php-versioncontrol-svn
-#ospkgset php-pear           php-pear
-ospkgset snmp               net-snmp-utils      net-snmp
-ospkgset graphviz           graphviz            graphviz
-ospkgset php5-mcrypt        php-mcrypt          php-mcrypt
-ospkgset subversion         subversion          subversion
-ospkgset mysql-server       mysql-server        mariadb
-ospkgset mysql-client       mysql               mariadb-clients
+ospkgset libapache2-mod-php5 php-apache         php-apache          php7-fpm
+ospkgset php5-common        php                 php-apache          php7
+#ospkgset php5-cli           php                 php                 php7-cli
+#ospkgset php5-mcrypt        ""                  ""                  php7-mod-mcrypt
+#ospkgset php5-mysql         php-mysql           ""                  php7-mod-mysqli
+#ospkgset php5-pgsql         ""                  ""                  
+ospkgset php5-sqlite        php-sqlite          php-sqlite          php7-mod-sqlite3
+#ospkgset php5-dev           ""                  ""                  ""
+#ospkgset php5-curl          ""                  ""                  ""
+#ospkgset php5-idn           ""                  ""                  ""
+ospkgset php5-imagick       php-imagick         php-imagick         ""
+#ospkgset php5-imap          ""                  ""                  ""
+#ospkgset php5-memcache      ""                  ""                  ""
+#ospkgset php5-ps            ""                  ""                  ""
+#ospkgset php5-pspell        ""                  ""                  ""
+#ospkgset php5-recode        ""                  ""                  ""
+#ospkgset php5-tidy          ""                  ""                  ""
+#ospkgset php5-xmlrpc        ""                  ""                  ""
+#ospkgset php5-xsl           ""                  ""                  ""
+#ospkgset php5-json          ""                  ""                  ""
+#ospkgset php5-gd            php-gd              ""                  ""
+#ospkgset php5-snmp          php-snmp            ""                  ""
+#ospkgset php-versioncontrol-svn ""              ""                  ""
+#ospkgset php-pear           php-pear            ""                  ""
+ospkgset snmp               net-snmp-utils      net-snmp            snmpd
+ospkgset graphviz           graphviz            graphviz            ""
+ospkgset php5-mcrypt        php-mcrypt          php-mcrypt          php7-mod-mcrypt
+ospkgset mysql-server       mysql-server        mariadb             mysql-server
+ospkgset mysql-client       mysql               mariadb-clients     mysql-server
 #ospkgset mysql-perl         ?                   perl-dbd-mysql
-#ospkgset rrdtool            rrdtool
-#ospkgset fping              fping
-ospkgset imagemagick        ImageMagick         imagemagick
-ospkgset whois              jwhois              whois
-ospkgset mtr-tiny           mtr                 mtr
-ospkgset nmap               nmap                nmap
-ospkgset ipmitool           ipmitool            ipmitool
-ospkgset python-mysqldb     MySQL-python        mysql-python
+#ospkgset rrdtool            rrdtool             ""                  rrdtool1
+#ospkgset fping              fping               fping               fping
+ospkgset imagemagick        ImageMagick         imagemagick         ""
+ospkgset whois              jwhois              whois               ""
+ospkgset mtr-tiny           mtr                 mtr                 mtr
+ospkgset nmap               nmap                nmap                nmap
+ospkgset ipmitool           ipmitool            ipmitool            ipmitool
+ospkgset python-mysqldb     MySQL-python        mysql-python        python-mysql
 
+# mount loop, openwrt
+# block-mount komd-loop kmod-fs-isofs
 ospkgset gpsd               gpsd                gpsd
 ospkgset gpsd-clients       gpsd-clients        gpsd
 
@@ -339,63 +554,100 @@ ospkgset gpsd-clients       gpsd-clients        gpsd
 ##   WARNING: the CentOS boot program depend the awk, and if the system upgrade the gawk again,
 ##   new installed gawk will not support
 patch_centos_gawk() {
-    yum -y install rpmdevtools readline-devel #libsigsegv-devel
-    yum -y install gcc byacc
-    rpmdev-setuptree
+    $DO_EXEC yum -y install rpmdevtools readline-devel #libsigsegv-devel
+    $DO_EXEC yum -y install gcc byacc
+    $DO_EXEC rpmdev-setuptree
 
     #FILELIST="gawk.spec gawk-3.1.8.tar.bz2 gawk-3.1.8-double-free-wstptr.patch gawk-3.1.8-syntax.patch"
     #URL="http://archive.fedoraproject.org/pub/archive/fedora/linux/updates/14/SRPMS/gawk-3.1.8-3.fc14.src.rpm"
     FILELIST="gawk.spec gawk-4.0.1.tar.gz"
     URL="http://archive.fedoraproject.org/pub/archive/fedora/linux/updates/17/SRPMS/gawk-4.0.1-1.fc17.src.rpm"
     cd ~/rpmbuild/SOURCES/; rm -f ${FILELIST}; cd - > /dev/null; rm -f ${FILELIST}
-    wget -c "${URL}" -O ~/rpmbuild/SRPMS/$(basename "${URL}")
-    rpm2cpio ~/rpmbuild/SRPMS/$(basename "${URL}") | cpio -div
-    mv ${FILELIST} ~/rpmbuild/SOURCES/
-    sed -i 's@configure @configure --enable-switch --disable-libsigsegv @g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
-    sed -i 's@--with-libsigsegv-prefix=[^ ]*@@g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
-    sed -i 's@Conflicts: filesystem@#Conflicts: filesystem@g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
+    $DO_EXEC wget -c "${URL}" -O ~/rpmbuild/SRPMS/$(basename "${URL}")
+    $DO_EXEC rpm2cpio ~/rpmbuild/SRPMS/$(basename "${URL}") | cpio -div
+    $DO_EXEC mv ${FILELIST} ~/rpmbuild/SOURCES/
+    $DO_EXEC sed -i 's@configure @configure --enable-switch --disable-libsigsegv @g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
+    $DO_EXEC sed -i 's@--with-libsigsegv-prefix=[^ ]*@@g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
+    $DO_EXEC sed -i 's@Conflicts: filesystem@#Conflicts: filesystem@g' ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
 
     # we don't install gawk to system's directory
     # instead, we install the new gawk in ~/bin
-    #rpmbuild -bb --clean ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
-    ##sudo rpm -U --force ~/rpmbuild/RPMS/$(uname -i)/gawk-4.0.1-1.el6.$(uname -i).rpm
-    #sudo rpm -U --force ~/rpmbuild/RPMS/$(uname -p)/gawk-4.0.1-1.el6.$(uname -p).rpm
-    #ln -s $(which gawk) /bin/gawk
-    #ln -s $(which gawk) /bin/awk
-    rpmbuild -bb ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
-    mkdir -p ~/bin/
-    cp ~/rpmbuild/BUILD/gawk-4.0.1/gawk ~/bin/
-    ln -s ~/bin/gawk ~/bin/awk
-    rm -rf ~/rpmbuild/BUILD/gawk-4.0.1/
+    #$DO_EXEC rpmbuild -bb --clean ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
+    ##$DO_EXEC ${EXEC_SUDO} rpm -U --force ~/rpmbuild/RPMS/$(uname -i)/gawk-4.0.1-1.el6.$(uname -i).rpm
+    #$DO_EXEC ${EXEC_SUDO} rpm -U --force ~/rpmbuild/RPMS/$(uname -p)/gawk-4.0.1-1.el6.$(uname -p).rpm
+    #$DO_EXEC ln -s $(which gawk) /bin/gawk
+    #$DO_EXEC ln -s $(which gawk) /bin/awk
+    $DO_EXEC rpmbuild -bb ~/rpmbuild/SOURCES/$(echo "${FILELIST}" | awk '{print $1}')
+    $DO_EXEC mkdir -p ~/bin/
+    $DO_EXEC cp ~/rpmbuild/BUILD/gawk-4.0.1/gawk ~/bin/
+    $DO_EXEC ln -s ~/bin/gawk ~/bin/awk
+    $DO_EXEC rm -rf ~/rpmbuild/BUILD/gawk-4.0.1/
 }
+
+DN_INSTALLED_SYSLINUX="${DN_TMP}/syslinux-6.03/myinstall/"
 
 ## @fn download_extract_2tmp_syslinux()
 ## @brief download syslinux files
 ##
 ## download the syslinux files for non-x86 platforms
-download_extract_2tmp_syslinux() {
-    PKG=""
-    DN_ORIG12=$(pwd)
-    cd /tmp
+download_extract_2tmp_syslinux () {
+    mr_trace "[DBG] download and extract syslinux for i686/x86_64 platform ..."
+
+    $DO_EXEC mkdir -p "${DN_TMP}"
+    $DO_EXEC cd "${DN_TMP}"
+    URL_REAL="https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.gz"
+    FN_SYSLI=$(basename ${URL_REAL})
+
+    $DO_EXEC wget --no-check-certificate "${URL_REAL}"
+
+    if [ -f "${FN_SYSLI}" ]; then
+        $DO_EXEC extract_file "${FN_SYSLI}"
+        DN_SRC="${DN_TMP}/syslinux-6.03/"
+        DN_INSTALL=${DN_SRC}/myinstall/
+        $DO_EXEC mkdir -p "${DN_INSTALL}"
+        $DO_EXEC cp "${DN_SRC}/bios/core/pxelinux.0"                    "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/memdisk/memdisk"                    "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/elflink/ldlinux/ldlinux.c32"  "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/menu/vesamenu.c32"            "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/lib/libcom32.c32"             "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/libutil/libutil.c32"          "${DN_INSTALLED_SYSLINUX}"
+
+        $DO_EXEC cp "${DN_SRC}/bios/com32/menu/menu.c32"                "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/mboot/mboot.c32"              "${DN_INSTALLED_SYSLINUX}"
+        $DO_EXEC cp "${DN_SRC}/bios/com32/chain/chain.c32"              "${DN_INSTALLED_SYSLINUX}"
+    else
+        mr_trace "[ERR] not found file ${FN_SYSLI}"
+    fi
+    $DO_EXEC cd -
+}
+
+# download Arch Linux package syslinux
+download_extract_2tmp_syslinux_from_arch () {
+    mr_trace "[DBG] download and extract syslinux for i686/x86_64 platform ..."
+
+    $DO_EXEC mkdir -p "${DN_TMP}"
+    $DO_EXEC cd "${DN_TMP}"
+
     DATE1=$(date +%Y-%m-%d)
-    rm -f index.html*
+    $DO_EXEC rm -f index.html*
     URL_ORIG="https://www.archlinux.org/packages/core/i686/syslinux/download/"
     URL_REAL=$(wget --no-check-certificate ${URL_ORIG} 2>&1 | grep pkg | grep $DATE1 | awk '{print $3}')
     FN_SYSLI=$(basename ${URL_REAL})
     if [ ! -f "${FN_SYSLI}" ]; then
         if [ ! -f index.html ]; then
-            mr_trace "Error: not found downloaded file from ${URL_ORIG}(${URL_REAL})"
+            mr_trace "[ERR] not found downloaded file from ${URL_ORIG}(${URL_REAL})"
         else
             mr_trace "[DBG] rename index.html to ${FN_SYSLI}"
-            mv index.html "${FN_SYSLI}"
+            $DO_EXEC mv index.html "${FN_SYSLI}"
         fi
     fi
-    if [ ! -f "${FN_SYSLI}" ]; then
-        mr_trace "Error: not found file ${FN_SYSLI}"
-        exit 0
+    if [ -f "${FN_SYSLI}" ]; then
+        $DO_EXEC extract_file "${FN_SYSLI}"
+    else
+        mr_trace "[ERR] not found file ${FN_SYSLI}"
     fi
-    tar -xf "${FN_SYSLI}"
-    cd "${DN_ORIG12}"
+
+    $DO_EXEC cd -
 }
 
 ## @fn yum_groupinfo()
@@ -433,14 +685,18 @@ yum_groupcheck() {
     fi
 }
 
+opkg_list() {
+    opkg list $1 | grep $1
+}
+
 ## @fn check_available_package()
 ## @brief check if the packages exist
 ## @param name the package names
 check_available_package() {
-    PARAM_NAME=$*
-    #INSTALLER=`ospkgget $OSTYPE apt-get`
-    EXEC_CHKPKG="dpkg -s"
-    EXEC_CHKGRP="dpkg -s"
+    local PARAM_NAME=$*
+    #local INSTALLER=`ospkgget $OSTYPE apt-get`
+    local EXEC_CHKPKG="dpkg -s"
+    local EXEC_CHKGRP="dpkg -s"
     case "$OSTYPE" in
     RedHat)
         EXEC_CHKPKG="yum info"
@@ -454,6 +710,10 @@ check_available_package() {
     Gentoo)
         EXEC_CHKPKG="emerge -S"
         EXEC_CHKGRP="emerge -S"
+        ;;
+    OpenWrt)
+        EXEC_CHKPKG=opkg_list
+        EXEC_CHKGRP=opkg_list
         ;;
     *)
         mr_trace "[ERR] Not supported OS: $OSTYPE"
@@ -482,14 +742,18 @@ check_available_package() {
     echo "ok"
 }
 
+opkg_listinstalled() {
+    opkg list-installed $1 | grep $1
+}
+
 ## @fn check_installed_package()
 ## @brief check if the packages installed
 ## @param name the package names
 check_installed_package() {
-    PARAM_NAME=$*
-    #INSTALLER=`ospkgget $OSTYPE apt-get`
-    EXEC_CHKPKG="dpkg -s"
-    EXEC_CHKGRP="dpkg -s"
+    local PARAM_NAME=$*
+    #local INSTALLER=`ospkgget $OSTYPE apt-get`
+    local EXEC_CHKPKG="dpkg -s"
+    local EXEC_CHKGRP="dpkg -s"
     case "$OSTYPE" in
     RedHat)
         EXEC_CHKPKG="rpm -qi"
@@ -503,6 +767,10 @@ check_installed_package() {
     Gentoo)
         EXEC_CHKPKG="emerge -pv" # and emerge -S
         EXEC_CHKGRP="emerge -pv" # and emerge -S
+        ;;
+    OpenWrt)
+        EXEC_CHKPKG=opkg_listinstalled
+        EXEC_CHKGRP=opkg_listinstalled
         ;;
     *)
         mr_trace "[ERR] Not supported OS: $OSTYPE"
@@ -542,10 +810,14 @@ check_installed_package() {
 install_package() {
     local PARAM_NAME=$*
     local INSTALLER=`ospkgget $OSTYPE apt-get`
+
+    mr_trace ospkgget $OSTYPE apt-get
+    mr_trace "INSTALLER=${INSTALLER}"
+
     local PKGLST=
     local FLG_GAWK_RH=0
     for i in $PARAM_NAME ; do
-        PKG=$(ospkgget $OSTYPE $i)
+        local PKG=$(ospkgget $OSTYPE $i)
         if [ "${PKG}" = "" ]; then
             PKG="$i"
         fi
@@ -553,7 +825,7 @@ install_package() {
         if [ "$i" = "gawk" ]; then
             if [ "$OSTYPE" = "RedHat" ]; then
                 mr_trace "[DBG] patch gawk to support 'switch'"
-                echo | awk '{a = 1; switch(a) { case 0: break; } }'
+                echo | awk '{a = 1; switch(a) { case 0: break; } }' > /dev/null
                 if [ $? = 1 ]; then
                     FLG_GAWK_RH=1
                     PKG="rpmdevtools libsigsegv-devel readline-devel"
@@ -567,25 +839,25 @@ install_package() {
                 mr_trace "[DBG] Ignore $i"
                 PKG=""
             fi
-            if [ "$i" = "syslinux" ]; then
-                MACH=$(uname -m)
-                case "$MACH" in
-                x86_64|i386|i686)
-                    mr_trace "[DBG] use standard method"
-                    ;;
+        fi
+        if [ "$i" = "syslinux" ]; then
+            MACH=$(uname -m)
+            case "$MACH" in
+            x86_64|i386|i686)
+                mr_trace "[DBG] use standard method"
+                ;;
 
-                *)
-                    mr_trace "[DBG] Arch $MACH yet another installation of $i"
-                    mr_trace "[DBG] Download package for $MACH"
-                    download_extract_2tmp_syslinux
-                    ;;
-                esac
-            fi
+            *)
+                mr_trace "[DBG] $MACH yet another installation of $i"
+                mr_trace "[DBG] Download package for $MACH"
+                download_extract_2tmp_syslinux
+                ;;
+            esac
         fi
         PKGLST="${PKGLST} ${PKG}"
     done
 
-    INST_OPTS=""
+    local INST_OPTS=""
     case "$OSTYPE" in
     Debian)
         INST_OPTS="install -y --force-yes"
@@ -608,22 +880,33 @@ install_package() {
             fi
         fi
         ;;
+    OpenWrt)
+        INST_OPTS="install"
+        ;;
+
     *)
         mr_trace "[ERR] Not supported OS: $OSTYPE"
         exit 0
         ;;
     esac
 
-    mr_trace "try to install packages: ${PKGLST}"
-    ${EXEC_SUDO} $INSTALLER ${INST_OPTS} ${PKGLST}
-    if [ ! "$?" = "0" ]; then
-        echo "fail"
-    fi
-
+    mr_trace ${EXEC_SUDO} ${INSTALLER} ${INST_OPTS} ${PKGLST}
+    $DO_EXEC ${EXEC_SUDO} ${INSTALLER} ${INST_OPTS} ${PKGLST}
     if [ "${FLG_GAWK_RH}" = "1" ]; then
         patch_centos_gawk
     fi
-    echo "ok"
+}
+
+install_package_skip_installed() {
+    local PARAM_NAME=$*
+
+    local RET=0
+    for PKG1x5 in $PARAM_NAME ; do
+        RET=$(check_installed_package ${PKG1x5})
+        if [ ! "$RET" = "ok" ]; then
+            install_package ${PKG1x5}
+        fi
+    done
 }
 
 ## @fn install_arch_yaourt()
@@ -716,30 +999,42 @@ detect_os_type 1>&2
 #hiter hash
 #install_package apt-get subversion
 #exit 0
+
 ######################################################################
 EXEC_SSH="$(which ssh)"
 if [ ! -x "${EXEC_SSH}" ]; then
-  mr_trace "[DBG] Try to install ssh."
-  install_package openssh-client
+    mr_trace "[DBG] Try to install ssh."
+    install_package openssh-client
 fi
 
 EXEC_SSH="$(which ssh)"
 if [ ! -x "${EXEC_SSH}" ]; then
-  mr_trace "[ERR] Not exist ssh!"
-  exit 1
+    mr_trace "[ERR] Not exist ssh!"
+    exit 1
 fi
 EXEC_SSH="$(which ssh) -oBatchMode=yes -CX"
 
-EXEC_AWK="$(which gawk)"
-if [ ! -x "${EXEC_AWK}" ]; then
-  mr_trace "[DBG] Try to install gawk."
-  install_package gawk
+EXEC_XZ="$(which xz)"
+if [ ! -x "${EXEC_XZ}" ]; then
+    mr_trace "[DBG] Try to install xz."
+    install_package xz
+fi
+EXEC_XZ="$(which xz)"
+if [ ! -x "${EXEC_XZ}" ]; then
+    mr_trace "[ERR] Not exist xz!"
+    exit 1
 fi
 
 EXEC_AWK="$(which gawk)"
 if [ ! -x "${EXEC_AWK}" ]; then
-  mr_trace "[ERR] Not exist awk!"
-  exit 1
+    mr_trace "[DBG] Try to install gawk."
+    install_package gawk
+fi
+
+EXEC_AWK="$(which gawk)"
+if [ ! -x "${EXEC_AWK}" ]; then
+    mr_trace "[ERR] Not exist awk!"
+    exit 1
 fi
 
 ######################################################################
@@ -749,7 +1044,7 @@ fi
 ## @brief generate the cert of localhost
 ssh_check_id_file() {
     if [ ! -f ~/.ssh/id_rsa.pub ]; then
-        mr_trace "generate id ..."
+        mr_trace "[DBG] generate id ..."
         mkdir -p ~/.ssh/
         ssh-keygen
     fi
@@ -775,6 +1070,7 @@ ssh_ensure_connection() {
 ######################################################################
 # Math Lib:
 
+# 最大公约数 (Greatest Common Divisor, GCD)
 # 最小公倍数 (Least Common Multiple, LCM)
 
 ## @fn gcd()
@@ -805,8 +1101,8 @@ gcd() {
         a=$b
         b=$tmp
     done
-    #echo "GDC=$a"
-    #echo "LCM=$(($NUM1 * $NUM2 / $a))"
+    #mr_trace "GDC=$a"
+    #mr_trace "LCM=$(($NUM1 * $NUM2 / $a))"
     echo $(($NUM1 * $NUM2 / $a))
 }
 
