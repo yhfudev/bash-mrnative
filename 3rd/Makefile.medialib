@@ -3855,6 +3855,90 @@ FL_SOURCES+=$(DN_SRC)/$(HDF5_SRC)
 FL_UNINSTALL+=$(HDF5)-uninstall
 
 ########################################
+CURL=curl
+
+FL_DEP_CURL= \
+	$(ZLIB)-install \
+	$(OPENSSL)-install \
+	$(NULL)
+
+USE_GIT_CURL=1
+
+ifeq ($(USE_GIT_CURL),1) # use git instead
+CURL_VERSION=git
+CURL_SRC=$(CURL)-$(CURL_VERSION)/.git
+CURL_URL=https://github.com/curl/curl.git
+
+$(DN_SRC)/$(CURL_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(CURL_SRC)" ]; then \
+        git clone $(CURL_URL) $(DN_SRC)/$(CURL)-$(CURL_VERSION); \
+    fi
+	cd $(DN_SRC)/$(CURL)-$(CURL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(CURL)-$(CURL_VERSION)/configure.ac: $(DN_SRC)/$(CURL_SRC)
+	cd $(DN_SRC)/$(CURL)-$(CURL_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(CURL)-$(CURL_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(CURL)-$(CURL_VERSION)/ $(CURL)-$(CURL_VERSION); \
+    fi
+	cd $(CURL)-$(CURL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else # use released files
+
+CURL_VERSION=7.57.0
+CURL_SRC=$(CURL)-$(CURL_VERSION).tar.gz
+CURL_URL=https://curl.haxx.se/download/$(CURL_SRC)
+
+$(DN_SRC)/$(CURL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CURL_URL)
+	touch $@
+
+$(CURL)-$(CURL_VERSION)/configure.ac: $(DN_SRC)/$(CURL_SRC)
+	tar -xf $(DN_SRC)/$(CURL_SRC)
+	touch $@
+
+endif
+
+
+$(CURL)-$(CURL_VERSION)/configure: $(CURL)-$(CURL_VERSION)/configure.ac
+	cd $(CURL)-$(CURL_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+
+$(CURL)-$(CURL_VERSION)/Makefile: $(CURL)-$(CURL_VERSION)/configure $(FL_DEP_CURL)
+	cd $(CURL)-$(CURL_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --sbindir=$(PREFIX_CONF)/bin --enable-plugins \
+	    --mandir=$(PREFIX_CONF)/share/man \
+	    --disable-ldap \
+	    --disable-ldaps \
+	    --enable-ipv6 \
+	    --enable-manual \
+	    --enable-versioned-symbols \
+	    --enable-threaded-resolver \
+	    --with-gssapi \
+	    --with-random=/dev/urandom \
+	    --with-ca-bundle=$(PREFIX_CONF)/etc/ssl/certs/ca-certificates.crt \
+	    $(NULL)
+
+$(CURL)-$(CURL_VERSION)/libcurl.pc: $(CURL)-$(CURL_VERSION)/Makefile
+	cd $(CURL)-$(CURL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurl.pc: $(CURL)-$(CURL_VERSION)/libcurl.pc
+	cd $(CURL)-$(CURL_VERSION)/ \
+		&& make install \
+		$(NULL)
+	touch $@
+
+$(CURL)-uninstall: $(CURL)-$(CURL_VERSION)/libcurl.pc
+	cd $(CURL)-$(CURL_VERSION)/build && make uninstall
+$(CURL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurl.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CURL_SRC)
+FL_UNINSTALL+=$(CURL)-uninstall
+
+
+########################################
 # gdal: A translator library for raster geospatial data formats
 # http://www.gdal.org/
 GDAL=gdal
@@ -3875,7 +3959,7 @@ FL_DEP_GDAL= \
 	$(libmariadbclient)-install \
 	$(libgeotiff)-install \
 	$(geos)-install \
-	$(curl)-install \
+	$(CURL)-install \
 	$(cfitsio)-install \
 	$(NULL)
 
