@@ -683,9 +683,9 @@ FL_UNINSTALL+=$(XMRSTAK)-uninstall
 
 CMINMUL=cpuminer-multi
 
-#FL_DEP_CMINMUL= \
-#    $(AUTOMAKE)-install \
-#    $(NULL)
+FL_DEP_CMINMUL= \
+    $(CURL)-install \
+    $(NULL)
 
 USE_GIT_CMINMUL=1
 
@@ -725,18 +725,15 @@ $(CMINMUL)-$(CMINMUL_VERSION)/configure.ac: $(DN_SRC)/$(CMINMUL_SRC)
 
 endif
 
-$(CMINMUL)-$(CMINMUL_VERSION)/mypatched: $(CMINMUL)-$(CMINMUL_VERSION)/configure.ac #$(DN_PATCH)/mypatchnone.patch
-	cd $(CMINMUL)-$(CMINMUL_VERSION)/ \
-	    #&& patch -uNp1 -i $(DN_PATCH)/mypatchnone.patch \
-	    $(NULL)
-	touch $@
-
-$(CMINMUL)-$(CMINMUL_VERSION)/configure: $(CMINMUL)-$(CMINMUL_VERSION)/mypatched $(FL_DEP_CMINMUL)
-	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) autoconf # autoreconf -if
+$(CMINMUL)-$(CMINMUL_VERSION)/configure: $(CMINMUL)-$(CMINMUL_VERSION)/configure.ac $(FL_DEP_CMINMUL)
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) ./autogen.sh
+	#cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) aclocal
+	#cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	#cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) automake -ac
 	touch $@
 
 $(CMINMUL)-$(CMINMUL_VERSION)/Makefile: $(CMINMUL)-$(CMINMUL_VERSION)/configure
-	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --with-curl=$(PREFIX_CONF) --with-crypto=$(PREFIX_CONF)
 $(CMINMUL)-$(CMINMUL_VERSION)/cpuminer: $(CMINMUL)-$(CMINMUL_VERSION)/Makefile
 	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/cpuminer: $(CMINMUL)-$(CMINMUL_VERSION)/cpuminer
