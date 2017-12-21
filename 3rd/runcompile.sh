@@ -48,7 +48,7 @@ compile_source () {
     sed -i "s|^PREFIX=.*$|PREFIX=${DN_EXEC}/${PREFIX}-bin/|g"  Makefile 1>&2
     sed -i "s|^DN_SRC=.*$|DN_SRC=${DN_EXEC}/sources/|g" Makefile 1>&2
     sed -i "s|^DN_PATCH=.*$|DN_PATCH=${DN_EXEC}|g"  Makefile 1>&2
-    #sed -i "s|^USE_GPU=.*$|USE_GPU=1|g" Makefile 1>&2
+    #sed -i "s|^USE_GPU=.*$|USE_GPU=GPU_CUDA|g" Makefile 1>&2
     cat "${DN_EXEC}/${PARAM_MAKEFILE}" | grep ^include | awk '{print $2; }' | while read a ; do cp "${DN_EXEC}/$a" .; done
 
     mkdir -p ${DN_EXEC}/sources/

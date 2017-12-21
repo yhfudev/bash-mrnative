@@ -16,7 +16,7 @@ DN_PATCH=$(PWD)/../sources
 PREFIX=$(PWD)/target
 STRLOGO=furnaceyhfudev
 # USE_GPU=GPU_CUDA or GPU_OPENCL
-USE_GPU=0
+USE_GPU=NONE
 DEPENDS_GL=
 
 ######################################################################

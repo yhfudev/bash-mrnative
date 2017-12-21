@@ -356,7 +356,7 @@ FL_DEP_PKGCONFIG= \
 	#$(aaaa)-install \
 	$(NULL)
 
-PKGCONFIG_VERSION=0.29
+PKGCONFIG_VERSION=0.29.2
 PKGCONFIG_SRC=$(PKGCONFIG)-$(PKGCONFIG_VERSION).tar.gz
 PKGCONFIG_URL=http://pkgconfig.freedesktop.org/releases/$(PKGCONFIG_SRC)
 
@@ -524,7 +524,7 @@ FL_DEP_AUTOMAKE= \
 	$(INTLTOOL)-install  \
 	$(NULL)
 
-AUTOMAKE_VERSION=1.15
+AUTOMAKE_VERSION=1.15.1
 AUTOMAKE_SRC=$(AUTOMAKE)-$(AUTOMAKE_VERSION).tar.xz
 AUTOMAKE_URL=ftp://ftp.gnu.org/gnu/$(AUTOMAKE)/$(AUTOMAKE_SRC)
 
@@ -545,7 +545,7 @@ $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/Ma
 	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
-	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install # V=1 VERBOSE=1
 	touch $@
 
 $(AUTOMAKE)-uninstall: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
@@ -4006,11 +4006,11 @@ $(CUDASDK)-uninstall: $(CUDASDK)-$(CUDASDK_VERSION)/pkg
 	rm -rf  "$(PREFIX)/opt/$(CUDASDK)/"
 $(CUDASDK)-install: $(CUDASDK)-$(CUDASDK_VERSION)/pkg $(FL_DEP_CUDASDK)
 	cd $(CUDASDK)-$(CUDASDK_VERSION)/pkg \
-		&& perl install-linux.pl -prefix="$(PREFIX)/opt/$(CUDASDK)" -noprompt \
-		&& perl install-sdk-linux.pl -cudaprefix="$(PREFIX)/opt/$(CUDASDK)" -prefix="$(PREFIX)/opt/$(CUDASDK)/samples" -noprompt \
+		&& perl -I. install-linux.pl -prefix="$(PREFIX)/opt/$(CUDASDK)" -noprompt \
+		&& perl -I. install-sdk-linux.pl -cudaprefix="$(PREFIX)/opt/$(CUDASDK)" -prefix="$(PREFIX)/opt/$(CUDASDK)/samples" -noprompt \
 		&& sed -i "/unsupported GNU/d" $(PREFIX)/opt/$(CUDASDK)/include/host_config.h \
 		&& cd .. \
-		&& cd nvdrv && cp lib* $(PREFIX)/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/ \
+		&& cd nvdrv && cp -r lib* $(PREFIX)/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/ \
 		&& ls | grep "lib.*\.so" | awk '{split($$0,b,".");print $$0 "\t" b[1] "." b[2];}'  | while read A B; do ( \
 		        echo "ln -sf $$A $${B}"; \
 		        cd $(PREFIX)/opt/$(CUDASDK)/lib$(CUDASDK_LIBSUFFIX)/; \
@@ -5329,6 +5329,8 @@ GLU=glu
 
 FL_DEP_GLU= \
 	$(DEPENDS_GL) \
+	$(LIBX11)-install \
+	$(LIBXEXT)-install \
 	#$(GLIB2)-install \
 	#$(MESA)-install \
 	$(NULL)
