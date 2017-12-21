@@ -1,0 +1,773 @@
+# Auto-Build bitcoin from source
+
+# Prerequist:
+# 1. basic compiler
+#  1) RedHat/CentOS:
+#     yum -y groupinstall "Development Tools"
+#     yum -y install gcc-c++ rpm-build rpmdevtools binutils-devel autoconf automake libtool autogen intltool bison flex gdb make cvs subversion git mercurial patch gawk
+#  2) Debian/Ubuntu
+#     sudo apt-get install -y build-essential g++ autoconf automake libtool autogen intltool bison flex gdb make cvs subversion subversion-tools git mercurial patch gawk
+
+######################################################################
+# define the directory stores all of the source code packages
+DN_SRC=$(PWD)/../sources
+DN_TOP=$(PWD)
+DN_PATCH=$(PWD)/../sources
+PREFIX=$(PWD)/target
+STRLOGO=yhfudev
+USE_GPU=NONE
+DEPENDS_GL=
+
+######################################################################
+all: get-sources bitcoin
+
+######################################################################
+include Makefile.common
+include Makefile.medialib
+
+
+########################################
+LIBGMP=gmp
+
+FL_DEP_LIBGMP= \
+	#$(LIBGMP)-install \
+	$(NULL)
+
+LIBGMP_VERSION=6.1.2
+LIBGMP_SRC=$(LIBGMP)-$(LIBGMP_VERSION).tar.xz
+LIBGMP_URL=https://gmplib.org/download/gmp/$(LIBGMP_SRC)
+
+$(DN_SRC)/$(LIBGMP_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBGMP_URL)
+	touch $@
+$(LIBGMP)-$(LIBGMP_VERSION)/configure: $(DN_SRC)/$(LIBGMP_SRC)
+	tar -xf $(DN_SRC)/$(LIBGMP_SRC)
+	touch $@
+#$(LIBGMP)-$(LIBGMP_VERSION)/configure: $(LIBGMP)-$(LIBGMP_VERSION)/configure.ac
+#	cd $(LIBGMP)-$(LIBGMP_VERSION)/ && ./autogen.sh
+$(LIBGMP)-$(LIBGMP_VERSION)/Makefile: $(LIBGMP)-$(LIBGMP_VERSION)/configure $(FL_DEP_LIBGMP)
+	cd $(LIBGMP)-$(LIBGMP_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --enable-cxx --enable-fat
+
+$(LIBGMP)-$(LIBGMP_VERSION)/libgmp.la: $(LIBGMP)-$(LIBGMP_VERSION)/Makefile
+	cd $(LIBGMP)-$(LIBGMP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgmp.la: $(LIBGMP)-$(LIBGMP_VERSION)/libgmp.la
+	cd $(LIBGMP)-$(LIBGMP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBGMP)-uninstall: $(LIBGMP)-$(LIBGMP_VERSION)/libgmp.la
+	cd $(LIBGMP)-$(LIBGMP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBGMP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgmp.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBGMP_SRC)
+FL_UNINSTALL+=$(LIBGMP)-uninstall
+
+########################################
+LIBNETTLE=nettle
+
+FL_DEP_LIBNETTLE= \
+	$(LIBGMP)-install \
+	$(NULL)
+
+LIBNETTLE_VERSION=3.4
+LIBNETTLE_SRC=$(LIBNETTLE)-$(LIBNETTLE_VERSION).tar.gz
+LIBNETTLE_URL=https://ftp.gnu.org/gnu/nettle/$(LIBNETTLE_SRC)
+
+$(DN_SRC)/$(LIBNETTLE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBNETTLE_URL)
+	touch $@
+$(LIBNETTLE)-$(LIBNETTLE_VERSION)/configure: $(DN_SRC)/$(LIBNETTLE_SRC)
+	tar -xf $(DN_SRC)/$(LIBNETTLE_SRC)
+	touch $@
+#$(LIBNETTLE)-$(LIBNETTLE_VERSION)/configure: $(LIBNETTLE)-$(LIBNETTLE_VERSION)/configure.ac
+#	cd $(LIBNETTLE)-$(LIBNETTLE_VERSION)/ && ./autogen.sh
+$(LIBNETTLE)-$(LIBNETTLE_VERSION)/Makefile: $(LIBNETTLE)-$(LIBNETTLE_VERSION)/configure $(FL_DEP_LIBNETTLE)
+	cd $(LIBNETTLE)-$(LIBNETTLE_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --disable-static
+
+$(LIBNETTLE)-$(LIBNETTLE_VERSION)/libnettle.so: $(LIBNETTLE)-$(LIBNETTLE_VERSION)/Makefile
+	cd $(LIBNETTLE)-$(LIBNETTLE_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnettle.so: $(LIBNETTLE)-$(LIBNETTLE_VERSION)/libnettle.so
+	cd $(LIBNETTLE)-$(LIBNETTLE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBNETTLE)-uninstall: $(LIBNETTLE)-$(LIBNETTLE_VERSION)/libnettle.so
+	cd $(LIBNETTLE)-$(LIBNETTLE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBNETTLE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnettle.so
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBNETTLE_SRC)
+FL_UNINSTALL+=$(LIBNETTLE)-uninstall
+
+########################################
+LIBTASN1=libtasn1
+
+FL_DEP_LIBTASN1= \
+	#$(LIBTASN1)-install \
+	$(NULL)
+
+LIBTASN1_VERSION=4.12
+LIBTASN1_SRC=$(LIBTASN1)-$(LIBTASN1_VERSION).tar.gz
+LIBTASN1_URL=https://ftp.gnu.org/gnu/libtasn1/$(LIBTASN1_SRC)
+
+$(DN_SRC)/$(LIBTASN1_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBTASN1_URL)
+	touch $@
+$(LIBTASN1)-$(LIBTASN1_VERSION)/configure: $(DN_SRC)/$(LIBTASN1_SRC)
+	tar -xf $(DN_SRC)/$(LIBTASN1_SRC)
+	touch $@
+#$(LIBTASN1)-$(LIBTASN1_VERSION)/configure: $(LIBTASN1)-$(LIBTASN1_VERSION)/configure.ac
+#	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && ./autogen.sh
+$(LIBTASN1)-$(LIBTASN1_VERSION)/Makefile: $(LIBTASN1)-$(LIBTASN1_VERSION)/configure $(FL_DEP_LIBTASN1)
+	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --with-packager=$(STRLOGO) \
+	    --with-packager-bug-reports="$(STRLOGO)" \
+	    --with-packager-version=$(LIBTASN1_VERSION)-1 \
+	    $(NULL)
+
+$(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/Makefile
+	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc
+	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBTASN1)-uninstall: $(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc
+	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBTASN1)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTASN1).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBTASN1_SRC)
+FL_UNINSTALL+=$(LIBTASN1)-uninstall
+
+########################################
+LIBUNISTRING=libunistring
+
+FL_DEP_LIBUNISTRING= \
+	#$(LIBUNISTRING)-install \
+	$(NULL)
+
+LIBUNISTRING_VERSION=0.9.8
+LIBUNISTRING_SRC=$(LIBUNISTRING)-$(LIBUNISTRING_VERSION).tar.xz
+LIBUNISTRING_URL=https://ftp.gnu.org/gnu/$(LIBUNISTRING)/$(LIBUNISTRING_SRC)
+
+$(DN_SRC)/$(LIBUNISTRING_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUNISTRING_URL)
+	touch $@
+$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/configure: $(DN_SRC)/$(LIBUNISTRING_SRC)
+	tar -xf $(DN_SRC)/$(LIBUNISTRING_SRC)
+	touch $@
+#$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/configure: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/configure.ac
+#	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && ./autogen.sh
+$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/Makefile: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/configure $(FL_DEP_LIBUNISTRING)
+	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    $(NULL)
+
+$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/Makefile
+	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNISTRING).pc: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc
+	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBUNISTRING)-uninstall: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc
+	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBUNISTRING)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNISTRING).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUNISTRING_SRC)
+FL_UNINSTALL+=$(LIBUNISTRING)-uninstall
+
+########################################
+P11KIT=p11-kit
+
+FL_DEP_P11KIT= \
+	$(LIBTASN1)-install \
+	$(LIBFFI)-install \
+	$(NULL)
+
+USE_GIT_P11KIT=0
+
+ifeq ($(USE_GIT_P11KIT),1) # use git instead
+P11KIT_VERSION=git
+P11KIT_SRC=$(P11KIT)-$(P11KIT_VERSION)/.git
+P11KIT_URL=https://github.com/p11-glue/p11-kit.git
+
+$(DN_SRC)/$(P11KIT_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(P11KIT_SRC)" ]; then \
+        git clone $(P11KIT_URL) $(DN_SRC)/$(P11KIT)-$(P11KIT_VERSION); \
+    fi
+	cd $(DN_SRC)/$(P11KIT)-$(P11KIT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(P11KIT)-$(P11KIT_VERSION)/configure.ac: $(DN_SRC)/$(P11KIT_SRC)
+	cd $(DN_SRC)/$(P11KIT)-$(P11KIT_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(P11KIT)-$(P11KIT_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(P11KIT)-$(P11KIT_VERSION)/ $(P11KIT)-$(P11KIT_VERSION); \
+    fi
+	cd $(P11KIT)-$(P11KIT_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(P11KIT)-$(P11KIT_VERSION)/configure.ac
+
+else # use released files
+
+P11KIT_VERSION=0.23.9
+P11KIT_SRC=$(P11KIT)-$(P11KIT_VERSION).tar.gz
+P11KIT_URL=https://github.com/p11-glue/p11-kit/archive/$(P11KIT_VERSION).tar.gz
+
+$(DN_SRC)/$(P11KIT_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(P11KIT_URL)
+	touch $@
+
+$(P11KIT)-$(P11KIT_VERSION)/configure.ac: $(DN_SRC)/$(P11KIT_SRC)
+	tar -xf $(DN_SRC)/$(P11KIT_SRC)
+	touch $@
+
+endif
+
+$(P11KIT)-$(P11KIT_VERSION)/configure: $(P11KIT)-$(P11KIT_VERSION)/configure.ac
+	cd $(P11KIT)-$(P11KIT_VERSION)/ && NOCONFIGURE=1 ./autogen.sh
+
+$(P11KIT)-$(P11KIT_VERSION)/Makefile: $(P11KIT)-$(P11KIT_VERSION)/configure $(FL_DEP_P11KIT)
+	cd $(P11KIT)-$(P11KIT_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --sysconfdir=$(PREFIX_CONF)/etc \
+	    --localstatedir=$(PREFIX_CONF)/var \
+	    --libexecdir=$(PREFIX_CONF)/lib \
+	    --disable-doc \
+	    --with-module-path=$(PREFIX_CONF)/lib/pkcs11 \
+	    --with-trust-paths=$(PREFIX_CONF)/etc/ca-certificates/trust-source:$(PREFIX_CONF)/share/ca-certificates/trust-source
+	    $(NULL)
+
+$(P11KIT)-$(P11KIT_VERSION)/p11-kit/p11-kit: $(P11KIT)-$(P11KIT_VERSION)/Makefile
+	cd $(P11KIT)-$(P11KIT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/p11-kit: $(P11KIT)-$(P11KIT_VERSION)/p11-kit/p11-kit
+	cd $(P11KIT)-$(P11KIT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	  && ln -srf "$(PREFIX_CONF)/bin/update-ca-trust" "$(PREFIX_CONF)/lib/p11-kit/trust-extract-compat"
+
+$(P11KIT)-uninstall: $(P11KIT)-$(P11KIT_VERSION)/p11-kit/p11-kit
+	cd $(P11KIT)-$(P11KIT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(P11KIT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/p11-kit
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(P11KIT_SRC)
+FL_UNINSTALL+=$(P11KIT)-uninstall
+
+########################################
+HELP2MAN=help2man
+
+FL_DEP_HELP2MAN= \
+	$(HELP2MAN)-install \
+	$(NULL)
+
+HELP2MAN_VERSION=1.47.5
+HELP2MAN_SRC=$(HELP2MAN)-$(HELP2MAN_VERSION).tar.xz
+HELP2MAN_URL=https://ftp.gnu.org/gnu/$(HELP2MAN)/$(HELP2MAN_SRC)
+
+$(DN_SRC)/$(HELP2MAN_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HELP2MAN_URL)
+	touch $@
+$(HELP2MAN)-$(HELP2MAN_VERSION)/configure.ac: $(DN_SRC)/$(HELP2MAN_SRC)
+	tar -xf $(DN_SRC)/$(HELP2MAN_SRC)
+	touch $@
+$(HELP2MAN)-$(HELP2MAN_VERSION)/configure: $(HELP2MAN)-$(HELP2MAN_VERSION)/configure.ac
+	#cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && $(ENV_COMPILE) aclocal
+	cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	#cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && $(ENV_COMPILE) automake
+	#cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && $(ENV_COMPILE) automake -ac
+$(HELP2MAN)-$(HELP2MAN_VERSION)/Makefile: $(HELP2MAN)-$(HELP2MAN_VERSION)/configure $(FL_DEP_HELP2MAN)
+	cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	      --mandir=$(PREFIX_CONF)/usr/share/man \
+	      --infodir=$(PREFIX_CONF)/usr/share/info \
+	      --libdir=$(PREFIX_CONF)/usr/lib
+	    $(NULL)
+
+$(HELP2MAN)-$(HELP2MAN_VERSION)/help2man: $(HELP2MAN)-$(HELP2MAN_VERSION)/Makefile
+	cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/help2man: $(HELP2MAN)-$(HELP2MAN_VERSION)/help2man
+	cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(HELP2MAN)-uninstall: $(HELP2MAN)-$(HELP2MAN_VERSION)/help2man
+	cd $(HELP2MAN)-$(HELP2MAN_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(HELP2MAN)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/help2man
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(HELP2MAN_SRC)
+FL_UNINSTALL+=$(HELP2MAN)-uninstall
+
+########################################
+LIBIDN=libidn
+
+FL_DEP_LIBIDN= \
+	$(HELP2MAN)-install \
+	$(NULL)
+
+LIBIDN_VERSION=1.33
+LIBIDN_SRC=$(LIBIDN)-$(LIBIDN_VERSION).tar.gz
+LIBIDN_URL=https://ftp.gnu.org/gnu/$(LIBIDN)/$(LIBIDN_SRC)
+
+$(DN_SRC)/$(LIBIDN_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBIDN_URL)
+	touch $@
+$(LIBIDN)-$(LIBIDN_VERSION)/configure.ac: $(DN_SRC)/$(LIBIDN_SRC)
+	tar -xf $(DN_SRC)/$(LIBIDN_SRC)
+	touch $@
+$(LIBIDN)-$(LIBIDN_VERSION)/configure: $(LIBIDN)-$(LIBIDN_VERSION)/configure.ac
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) aclocal
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) automake
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) automake -ac
+$(LIBIDN)-$(LIBIDN_VERSION)/Makefile: $(LIBIDN)-$(LIBIDN_VERSION)/configure $(FL_DEP_LIBIDN)
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    $(NULL)
+
+$(LIBIDN)-$(LIBIDN_VERSION)/$(LIBIDN).pc: $(LIBIDN)-$(LIBIDN_VERSION)/Makefile
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBIDN).pc: $(LIBIDN)-$(LIBIDN_VERSION)/$(LIBIDN).pc
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBIDN)-uninstall: $(LIBIDN)-$(LIBIDN_VERSION)/$(LIBIDN).pc
+	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBIDN)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBIDN).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBIDN_SRC)
+FL_UNINSTALL+=$(LIBIDN)-uninstall
+
+########################################
+LIBUNBOUND=unbound
+
+FL_DEP_LIBUNBOUND= \
+	#$(LIBUNBOUND)-install \
+	$(NULL)
+# 'openssl' 'ldns' 'libevent' 'fstrm' 'protobuf-c' 'dnssec-anchors
+
+LIBUNBOUND_VERSION=1.6.7
+LIBUNBOUND_SRC=$(LIBUNBOUND)-$(LIBUNBOUND_VERSION).tar.gz
+LIBUNBOUND_URL=https://unbound.net/downloads/$(LIBUNBOUND_SRC)
+
+
+$(DN_SRC)/$(LIBUNBOUND_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBUNBOUND_URL)
+	touch $@
+$(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/configure: $(DN_SRC)/$(LIBUNBOUND_SRC)
+	tar -xf $(DN_SRC)/$(LIBUNBOUND_SRC)
+	touch $@
+#$(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/configure: $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/configure.ac
+#	cd $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/ && ./autogen.sh
+$(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/Makefile: $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/configure $(FL_DEP_LIBUNBOUND)
+	cd $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+		--sysconfdir=$(PREFIX_CONF)/etc \
+		--localstatedir=$(PREFIX_CONF)/var \
+		--sbindir=$(PREFIX_CONF)/bin \
+		--disable-rpath \
+		--enable-dnstap \
+		--enable-pie \
+		--enable-relro-now \
+		--with-conf-file=$(PREFIX_CONF)/etc/unbound/unbound.conf \
+		--with-pidfile=$(PREFIX_CONF)/run/unbound.pid \
+		--with-rootkey-file=$(PREFIX_CONF)/etc/trusted-key.key \
+		--with-libevent \
+	    $(NULL)
+
+$(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/$(LIBUNBOUND).pc: $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/Makefile
+	cd $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNBOUND).pc: $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/$(LIBUNBOUND).pc
+	cd $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install \
+	    && mkdir -p $(PREFIX_CONF)/etc/unbound/ && cp doc/example.conf.in $(PREFIX_CONF)/etc/unbound/unbound.conf.example
+
+$(LIBUNBOUND)-uninstall: $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/$(LIBUNBOUND).pc
+	cd $(LIBUNBOUND)-$(LIBUNBOUND_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBUNBOUND)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNBOUND).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBUNBOUND_SRC)
+FL_UNINSTALL+=$(LIBUNBOUND)-uninstall
+
+########################################
+LIBGNUTLS=gnutls
+
+FL_DEP_LIBGNUTLS= \
+	$(LIBNETTLE)-install \
+	$(LIBTASN1)-install \
+	$(LIBUNISTRING)-install \
+	$(P11KIT)-install \
+	$(LIBIDN)-install \
+	$(READLINE)-install \
+	#$(LIBUNBOUND)-install \
+	$(NULL)
+
+LIBGNUTLS_VERSION=3.5.16
+LIBGNUTLS_SRC=$(LIBGNUTLS)-$(LIBGNUTLS_VERSION).tar.xz
+LIBGNUTLS_URL=https://www.gnupg.org/ftp/gcrypt/gnutls/v3.5/$(LIBGNUTLS_SRC)
+
+$(DN_SRC)/$(LIBGNUTLS_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBGNUTLS_URL)
+	touch $@
+$(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/configure: $(DN_SRC)/$(LIBGNUTLS_SRC)
+	tar -xf $(DN_SRC)/$(LIBGNUTLS_SRC)
+	touch $@
+#$(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/configure: $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/configure.ac
+#	cd $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/ && ./autogen.sh
+$(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/Makefile: $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/configure $(FL_DEP_LIBGNUTLS)
+	cd $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --with-zlib \
+	    --disable-static \
+	    --without-idn \
+	    --enable-guile --with-guile-site-dir=no \
+	    --with-default-trust-store-pkcs11="pkcs11:model=p11-kit-trust;manufacturer=PKCS%2311%20Kit"
+
+$(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/lib/libgnutls.la: $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/Makefile
+	cd $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgnutls.la: $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/lib/libgnutls.la
+	cd $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBGNUTLS)-uninstall: $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/lib/libgnutls.la
+	cd $(LIBGNUTLS)-$(LIBGNUTLS_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBGNUTLS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libgnutls.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBGNUTLS_SRC)
+FL_UNINSTALL+=$(LIBGNUTLS)-uninstall
+
+
+########################################
+LIBMICROHTTPD=libmicrohttpd
+
+FL_DEP_LIBMICROHTTPD= \
+	$(LIBGNUTLS)-install \
+	$(NULL)
+
+LIBMICROHTTPD_VERSION=0.9.58
+LIBMICROHTTPD_SRC=$(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION).tar.gz
+LIBMICROHTTPD_URL=https://ftp.gnu.org/gnu/$(LIBMICROHTTPD)/$(LIBMICROHTTPD_SRC)
+
+$(DN_SRC)/$(LIBMICROHTTPD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBMICROHTTPD_URL)
+	touch $@
+$(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/configure: $(DN_SRC)/$(LIBMICROHTTPD_SRC)
+	tar -xf $(DN_SRC)/$(LIBMICROHTTPD_SRC)
+	touch $@
+#$(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/configure: $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/configure.ac
+#	cd $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/ && ./autogen.sh
+$(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/Makefile: $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/configure $(FL_DEP_LIBMICROHTTPD)
+	cd $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --disable-dependency-tracking \
+	    --disable-examples \
+	    --enable-curl \
+	    --enable-https \
+	    --enable-largefile \
+	    --enable-messages \
+	    --with-pic
+
+$(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/src/microhttpd/libmicrohttpd.la: $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/Makefile
+	cd $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmicrohttpd.la: $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/src/microhttpd/libmicrohttpd.la
+	cd $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBMICROHTTPD)-uninstall: $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/src/microhttpd/libmicrohttpd.la
+	cd $(LIBMICROHTTPD)-$(LIBMICROHTTPD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBMICROHTTPD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libmicrohttpd.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBMICROHTTPD_SRC)
+FL_UNINSTALL+=$(LIBMICROHTTPD)-uninstall
+
+########################################
+NUMACTL=numactl
+
+FL_DEP_NUMACTL= \
+	#$(NUMACTL)-install \
+	$(NULL)
+
+
+USE_GIT_NUMACTL=0
+
+ifeq ($(USE_GIT_NUMACTL),1) # use git instead
+NUMACTL_VERSION=git
+NUMACTL_SRC=$(NUMACTL)-$(NUMACTL_VERSION)/.git
+NUMACTL_URL=https://github.com/fireice-uk/xmr-stak.git
+
+$(DN_SRC)/$(NUMACTL_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(NUMACTL_SRC)" ]; then \
+        git clone $(NUMACTL_URL) $(DN_SRC)/$(NUMACTL)-$(NUMACTL_VERSION); \
+    fi
+	cd $(DN_SRC)/$(NUMACTL)-$(NUMACTL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(NUMACTL)-$(NUMACTL_VERSION)/configure.ac: $(DN_SRC)/$(NUMACTL_SRC)
+	cd $(DN_SRC)/$(NUMACTL)-$(NUMACTL_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(NUMACTL)-$(NUMACTL_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(NUMACTL)-$(NUMACTL_VERSION)/ $(NUMACTL)-$(NUMACTL_VERSION); \
+    fi
+	cd $(NUMACTL)-$(NUMACTL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NUMACTL)-$(NUMACTL_VERSION)/configure.ac
+
+else # use released files
+
+NUMACTL_VERSION=2.0.11
+NUMACTL_SRC=$(NUMACTL)-$(NUMACTL_VERSION).tar.gz
+NUMACTL_URL=https://github.com/numactl/numactl/archive/v$(NUMACTL_VERSION).tar.gz
+
+$(DN_SRC)/$(NUMACTL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(NUMACTL_URL)
+	touch $@
+
+$(NUMACTL)-$(NUMACTL_VERSION)/configure.ac: $(DN_SRC)/$(NUMACTL_SRC)
+	tar -xf $(DN_SRC)/$(NUMACTL_SRC)
+	touch $@
+
+endif
+
+
+$(NUMACTL)-$(NUMACTL_VERSION)/configure: $(NUMACTL)-$(NUMACTL_VERSION)/configure.ac
+	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+
+$(NUMACTL)-$(NUMACTL_VERSION)/Makefile: $(NUMACTL)-$(NUMACTL_VERSION)/configure $(FL_DEP_NUMACTL)
+	cd $(NUMACTL)-$(NUMACTL_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --sbindir=$(PREFIX_CONF)/bin --enable-plugins \
+	    $(NULL)
+
+$(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc: $(NUMACTL)-$(NUMACTL_VERSION)/Makefile
+	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/NUMACTL.pc: $(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc
+	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(NUMACTL)-uninstall: $(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc
+	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(NUMACTL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/NUMACTL.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(NUMACTL_SRC)
+FL_UNINSTALL+=$(NUMACTL)-uninstall
+
+
+########################################
+HWLOC=hwloc
+
+FL_DEP_HWLOC= \
+	$(NUMACTL)-install \
+	$(LIBTOOL)-install \
+	$(NULL)
+
+HWLOC_VERSION=1.11.8
+HWLOC_SRC=$(HWLOC)-$(HWLOC_VERSION).tar.bz2
+HWLOC_URL=http://www.open-mpi.org/software/hwloc/v1.11/downloads/$(HWLOC_SRC)
+
+
+$(DN_SRC)/$(HWLOC_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(HWLOC_URL)
+	touch $@
+$(HWLOC)-$(HWLOC_VERSION)/configure: $(DN_SRC)/$(HWLOC_SRC)
+	tar -xf $(DN_SRC)/$(HWLOC_SRC)
+	touch $@
+#$(HWLOC)-$(HWLOC_VERSION)/configure: $(HWLOC)-$(HWLOC_VERSION)/configure.ac
+#	cd $(HWLOC)-$(HWLOC_VERSION)/ && ./autogen.sh
+$(HWLOC)-$(HWLOC_VERSION)/Makefile: $(HWLOC)-$(HWLOC_VERSION)/configure $(FL_DEP_HWLOC)
+	cd $(HWLOC)-$(HWLOC_VERSION)/ \
+	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --sbindir=$(PREFIX_CONF)/bin --enable-plugins \
+	    $(NULL)
+
+$(HWLOC)-$(HWLOC_VERSION)/hwloc.pc: $(HWLOC)-$(HWLOC_VERSION)/Makefile
+	cd $(HWLOC)-$(HWLOC_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/hwloc.pc: $(HWLOC)-$(HWLOC_VERSION)/hwloc.pc
+	cd $(HWLOC)-$(HWLOC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(HWLOC)-uninstall: $(HWLOC)-$(HWLOC_VERSION)/hwloc.pc
+	cd $(HWLOC)-$(HWLOC_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(HWLOC)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/hwloc.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(HWLOC_SRC)
+FL_UNINSTALL+=$(HWLOC)-uninstall
+
+
+########################################
+# compile xmr-stak
+
+XMRSTAK=xmr-stak
+
+FL_DEP_XMRSTAK= \
+	$(OPENCV_GPU_SUPPORT_DEPEND) \
+	$(LIBMICROHTTPD)-install \
+	$(OPENSSL)-install \
+	$(HWLOC)-install \
+	#$(PKGCONFIG)-install \
+	#$(CMAKE)-install \
+	#$(NULL)
+
+USE_GIT_XMRSTAK=0
+
+ifeq ($(USE_GIT_XMRSTAK),1) # use git instead
+XMRSTAK_VERSION=git
+XMRSTAK_SRC=$(XMRSTAK)-$(XMRSTAK_VERSION)/.git
+XMRSTAK_URL=https://github.com/fireice-uk/xmr-stak.git
+
+$(DN_SRC)/$(XMRSTAK_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(XMRSTAK_SRC)" ]; then \
+        git clone $(XMRSTAK_URL) $(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION); \
+    fi
+	cd $(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(XMRSTAK_SRC)
+	cd $(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(XMRSTAK)-$(XMRSTAK_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION)/ $(XMRSTAK)-$(XMRSTAK_VERSION); \
+    fi
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt
+
+else # use released files
+#https://github.com/fireice-uk/xmr-stak/archive/v2.1.0.tar.gz
+XMRSTAK_VERSION=2.1.0
+XMRSTAK_SRC=$(XMRSTAK)-$(XMRSTAK_VERSION).tar.gz
+XMRSTAK_URL=https://github.com/fireice-uk/xmr-stak/archive/v$(XMRSTAK_VERSION).tar.gz
+
+$(DN_SRC)/$(XMRSTAK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(XMRSTAK_URL)
+	touch $@
+
+$(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(XMRSTAK_SRC)
+	tar -xf $(DN_SRC)/$(XMRSTAK_SRC)
+	touch $@
+
+endif
+
+$(XMRSTAK)-$(XMRSTAK_VERSION)/mypatched: $(DN_PATCH)/pbs-xmrstak-nodonate.patch $(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/ \
+	    && patch -uNp1 -i $(DN_PATCH)/pbs-xmrstak-nodonate.patch \
+	    $(NULL)
+	touch $@
+
+$(XMRSTAK)-$(XMRSTAK_VERSION)/build/Makefile: $(XMRSTAK)-$(XMRSTAK_VERSION)/mypatched $(FL_DEP_XMRSTAK)
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+	    $(OPENCV_GPU_SUPPORT_CMAKE) \
+	    -DOpenCL_ENABLE=OFF \
+            ..
+$(XMRSTAK)-$(XMRSTAK_VERSION)/build/bin/xmr-stak: $(XMRSTAK)-$(XMRSTAK_VERSION)/build/Makefile
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/xmr-stak: $(XMRSTAK)-$(XMRSTAK_VERSION)/build/bin/xmr-stak
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build \
+		&& make install \
+		&& cp bin/libxmrstak_cuda_backend.so   $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ \
+		&& cp bin/libxmrstak_opencl_backend.so $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ \
+		$(NULL)
+	touch $@
+
+$(XMRSTAK)-uninstall: $(XMRSTAK)-$(XMRSTAK_VERSION)/build/bin/xmr-stak
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build && make uninstall
+$(XMRSTAK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/xmr-stak
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(XMRSTAK_SRC)
+FL_UNINSTALL+=$(XMRSTAK)-uninstall
+
+
+########################################
+# compile cpuminer-multi
+# https://www.hiddenjadestone.com/2017/06/25/aeon/cpu-pool-mining-with-ubuntu/
+
+CMINMUL=cpuminer-multi
+
+#FL_DEP_CMINMUL= \
+#    $(AUTOMAKE)-install \
+#    $(NULL)
+
+USE_GIT_CMINMUL=1
+
+ifeq ($(USE_GIT_CMINMUL),1) # use git instead
+CMINMUL_VERSION=git
+CMINMUL_SRC=$(CMINMUL)-$(CMINMUL_VERSION)/.git
+CMINMUL_URL=https://github.com/tpruvot/cpuminer-multi.git
+
+$(DN_SRC)/$(CMINMUL_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(CMINMUL_SRC)" ]; then \
+        git clone $(CMINMUL_URL) $(DN_SRC)/$(CMINMUL)-$(CMINMUL_VERSION); \
+    fi
+	cd $(DN_SRC)/$(CMINMUL)-$(CMINMUL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(CMINMUL)-$(CMINMUL_VERSION)/configure.ac: $(DN_SRC)/$(CMINMUL_SRC)
+	cd $(DN_SRC)/$(CMINMUL)-$(CMINMUL_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(CMINMUL)-$(CMINMUL_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(CMINMUL)-$(CMINMUL_VERSION)/ $(CMINMUL)-$(CMINMUL_VERSION); \
+    fi
+	cd $(CMINMUL)-$(CMINMUL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else # use released files
+#https://github.com/tpruvot/cpuminer-multi/archive/v1.3.1-multi.tar.gz
+CMINMUL_VERSION=1.3.1
+CMINMUL_SRC=$(CMINMUL)-$(CMINMUL_VERSION).tar.gz
+CMINMUL_URL=https://github.com/CMINMUL/CMINMUL/archive/v$(CMINMUL_VERSION)-multi.tar.gz
+
+$(DN_SRC)/$(CMINMUL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(CMINMUL_URL)
+	touch $@
+
+$(CMINMUL)-$(CMINMUL_VERSION)/configure.ac: $(DN_SRC)/$(CMINMUL_SRC)
+	tar -xf $(DN_SRC)/$(CMINMUL_SRC)
+	touch $@
+
+endif
+
+$(CMINMUL)-$(CMINMUL_VERSION)/mypatched: $(CMINMUL)-$(CMINMUL_VERSION)/configure.ac #$(DN_PATCH)/mypatchnone.patch
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ \
+	    #&& patch -uNp1 -i $(DN_PATCH)/mypatchnone.patch \
+	    $(NULL)
+	touch $@
+
+$(CMINMUL)-$(CMINMUL_VERSION)/configure: $(CMINMUL)-$(CMINMUL_VERSION)/mypatched $(FL_DEP_CMINMUL)
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) autoconf # autoreconf -if
+	touch $@
+
+$(CMINMUL)-$(CMINMUL_VERSION)/Makefile: $(CMINMUL)-$(CMINMUL_VERSION)/configure
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+$(CMINMUL)-$(CMINMUL_VERSION)/cpuminer: $(CMINMUL)-$(CMINMUL_VERSION)/Makefile
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/cpuminer: $(CMINMUL)-$(CMINMUL_VERSION)/cpuminer
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/man/man1
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(CMINMUL)-uninstall: $(CMINMUL)-$(CMINMUL_VERSION)/ns
+	cd $(CMINMUL)-$(CMINMUL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(CMINMUL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/cpuminer
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(CMINMUL_SRC)
+FL_UNINSTALL+=$(CMINMUL)-uninstall
+
+########################################
+
+get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
+
+bitcoin: $(XMRSTAK)-install $(CMINMUL)-install
+
+uninstall: $(FL_UNINSTALL)
+
+clean:
+	@rm -rf target $(FL_DEP_OTCL) $(FL_DEP_CMINMUL)
+
+distclean: clean
+	@mkdir -p target/
+	@touch i_should_be_removed
+	@(echo "nullname" && ls) | grep -v run.sh | grep -v target | grep -v Makefile | grep -v distclean | grep -v sources | grep -v .patch | xargs sh -c 'mv "$$@" target'
+	@rm -rf target

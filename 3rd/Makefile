@@ -39,12 +39,16 @@ disttar = cd $(1) && rm -f $(3) && ln -s $(2)-bin $(3) && ./striptarbar.sh $(4) 
 
 get-sources:
 	$(call compile,$(DN_PWD),$(DN_SRC),ffmpeg,get-sources)
+	$(call compile,$(DN_PWD),$(DN_SRC),bitcoin,get-sources)
 	$(call compile,$(DN_PWD),$(DN_SRC),aircrack,get-sources)
 	$(call compile,$(DN_PWD),$(DN_SRC),gnuplot,get-sources)
 	$(call compile,$(DN_PWD),$(DN_SRC),ns2,get-sources)
 	#$(call compile,$(DN_PWD),$(DN_SRC),ns2docsis,get-sources)
 
 ffmpeg:
+	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
+
+bitcoin:
 	$(call compile,$(DN_PWD),$(DN_SRC),$@,all)
 
 aircrack:
@@ -67,6 +71,10 @@ dist-gzip-ffmpeg: ffmpeg
 	echo "$<-git-$(shell uname -m)/usr/bin/ffmpeg"        >  fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/MP4Box"        >> fnl-$<.txt
 	echo "$<-git-$(shell uname -m)/usr/bin/mediametrics"  >> fnl-$<.txt
+	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
+
+dist-gzip-bitcoin: bitcoin
+	echo "$<-git-$(shell uname -m)/usr/bin/cpuminer-multi" >  fnl-$<.txt
 	$(call disttar,$(DN_PWD),$<,$<-git-$(shell uname -m),fnl-$<.txt)
 
 dist-gzip-aircrack: aircrack
