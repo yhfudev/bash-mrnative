@@ -28,11 +28,11 @@ HASHCAT_GPU_DEPENDS=
 
 ifeq ($(USE_GPU),GPU_CUDA)
 PYRIT_GPU_DEPENDS=$(CPYRITCUDA)-install
-HASHCAT_GPU_DEPENDS=oclhashcat
+HASHCAT_GPU_DEPENDS=hashcat
 else
 ifeq ($(USE_GPU),GPU_OPENCL)
 PYRIT_GPU_DEPENDS=$(CPYRITOPENCL)-install
-HASHCAT_GPU_DEPENDS=oclhashcat
+HASHCAT_GPU_DEPENDS=hashcat
 endif
 endif
 
@@ -324,22 +324,12 @@ FL_SOURCES+=$(DN_SRC)/$(AMDADLSDK_SRC)
 FL_UNINSTALL+=$(AMDADLSDK)-uninstall
 
 ########################################
-# cuda dropped from hashcat! http://hashcat.net/forum/thread-4950-post-27759.html#pid27759
-# cudahashcat
-CUDAHASHCAT=cudahashcat
-
-FL_DEP_CUDAHASHCAT= \
-	$(CUDASDK)-install \
-	$(NVIDIAGDK)-install \
-	$(NULL)
-
-########################################
-# oclhashcat
+# hashcat
 # https://wiki.archlinux.org/index.php/GPGPU
 # https://wiki.archlinux.org/index.php?title=GPGPU&redirect=no
 # https://hashcat.net
 # GPGPU-based password recovery utility
-OCLHASHCAT=oclhashcat
+OCLHASHCAT=hashcat
 
 FL_DEP_OCLHASHCAT= \
 	$(NVIDIAGDK)-install \
@@ -354,7 +344,7 @@ ifeq ($(USE_GIT_OCLHASHCAT),1) # use git instead
 
 OCLHASHCAT_VERSION=git
 OCLHASHCAT_SRC=$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.git
-OCLHASHCAT_URL=https://github.com/hashcat/oclHashcat.git
+OCLHASHCAT_URL=https://github.com/hashcat/hashcat.git
 
 $(DN_SRC)/$(OCLHASHCAT_SRC): $(DN_SRC)/created
 	if [ ! -d "$(DN_SRC)/$(OCLHASHCAT_SRC)" ]; then \
@@ -372,9 +362,9 @@ $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/README.md: $(DN_SRC)/$(OCLHASHCAT_SRC)
 
 else
 
-OCLHASHCAT_VERSION=2.01
+OCLHASHCAT_VERSION=3.30
 OCLHASHCAT_SRC=$(OCLHASHCAT)-$(OCLHASHCAT_VERSION).tar.gz
-OCLHASHCAT_URL=https://github.com/hashcat/oclHashcat/archive/v$(OCLHASHCAT_VERSION).tar.gz
+OCLHASHCAT_URL=https://github.com/hashcat/hashcat/archive/v$(OCLHASHCAT_VERSION).tar.gz
 
 $(DN_SRC)/$(OCLHASHCAT_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(OCLHASHCAT_URL)
@@ -394,24 +384,24 @@ $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/mypatched: $(OCLHASHCAT)-$(OCLHASHCAT_VERSIO
 	if [ -d $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.hg ];  then cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && hg update -C . ; fi
 	if [ -d $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/.git ]; then cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
 	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && patch -Np1 -i $(DN_PATCH)/pbs-oclhashcat-all.patch
-	sed -e 's|session_dir = arg_session_dir;|session_dir = arg_session_dir;shared_dir="$(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/";|' -i $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/src/oclHashcat.c
+	sed -e 's|session_dir = arg_session_dir;|session_dir = arg_session_dir;shared_dir="$(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/";|' -i $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/src/hashcat.c
 	touch $@
 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/mypatched
 	touch $@
 
-$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile
-	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make CFLAGS="-std=gnu99 $(CFLAGS) -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -Iinclude" $(MAKE_ARG) oclHashcat$(ARCHBITS).bin
+$(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat$(ARCHBITS).bin: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/Makefile
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) make CFLAGS="-std=gnu99 $(CFLAGS) -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -Iinclude" $(MAKE_ARG) hashcat$(ARCHBITS).bin
 	#cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && $(ENV_COMPILE) GCC=gcc make CFLAGS="-I$(PREFIX_DEST)/$(PREFIX_CONF)/include/ADL/ -I$(PREFIX_DEST)/$(PREFIX_CONF)/include/nvidia/gdk/ -I../../include -I../../tools/rules_test/" $(MAKE_ARG) -C tools/rules_optimize TARGET=rules_optimize rules_optimize.bin
 	touch $@
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin
-	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
-	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && cp -ar charsets OpenCL include masks rules hashcat.hcstat docs extra $(PREFIX_DEST)/$(PREFIX_CONF)/share/oclHashcat/
-	install -Dm755 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin    $@
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/hashcat: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat$(ARCHBITS).bin
+	install -d $(PREFIX_DEST)/$(PREFIX_CONF)/share/hashcat/
+	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/ && cp -ar charsets OpenCL include masks rules hashcat.hcstat docs extra $(PREFIX_DEST)/$(PREFIX_CONF)/share/hashcat/
+	install -Dm755 $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat$(ARCHBITS).bin    $@
 	touch $@
 
-$(OCLHASHCAT)-uninstall: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/oclHashcat$(ARCHBITS).bin
+$(OCLHASHCAT)-uninstall: $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/hashcat$(ARCHBITS).bin
 	cd $(OCLHASHCAT)-$(OCLHASHCAT_VERSION)/build && make uninstall
-$(OCLHASHCAT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/oclhashcat
+$(OCLHASHCAT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/hashcat
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(OCLHASHCAT_SRC)
@@ -655,9 +645,9 @@ get-sources: $(DN_SRC)/created $(FL_SOURCES) $(FL_SOURCES_OTHERS)
 
 aircrack: $(AIRCRACK)-install
 
-hashcat: $(HASHCAT)-install
+#hashcat: $(HASHCAT)-install
 
-oclhashcat: $(OCLHASHCAT)-install
+hashcat: $(OCLHASHCAT)-install
 
 pyrit: $(PYRIT)-install
 

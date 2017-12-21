@@ -186,6 +186,7 @@ done
     mr_trace "${DN_OUTPUT_HDFS}/0/redout.txt contains: $A"
 
     ####################
+    # run all of mapreduce jobs, eXmap.sh and eXred.sh
     TM_PRE=$(date +%s)
     MSG_TM=
 
