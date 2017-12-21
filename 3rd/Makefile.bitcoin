@@ -127,12 +127,12 @@ $(LIBTASN1)-$(LIBTASN1_VERSION)/Makefile: $(LIBTASN1)-$(LIBTASN1_VERSION)/config
 	    --with-packager-version=$(LIBTASN1_VERSION)-1 \
 	    $(NULL)
 
-$(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/Makefile
+$(LIBTASN1)-$(LIBTASN1_VERSION)/lib/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/Makefile
 	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTASN1).pc: $(LIBTASN1)-$(LIBTASN1_VERSION)/lib/$(LIBTASN1).pc
 	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBTASN1)-uninstall: $(LIBTASN1)-$(LIBTASN1_VERSION)/$(LIBTASN1).pc
+$(LIBTASN1)-uninstall: $(LIBTASN1)-$(LIBTASN1_VERSION)/lib/$(LIBTASN1).pc
 	cd $(LIBTASN1)-$(LIBTASN1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(LIBTASN1)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBTASN1).pc
 	touch $@
@@ -164,14 +164,14 @@ $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/Makefile: $(LIBUNISTRING)-$(LIBUNISTRING
 	  && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
 	    $(NULL)
 
-$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/Makefile
+$(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/lib/libunistring.la: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/Makefile
 	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNISTRING).pc: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libunistring.la: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/lib/libunistring.la
 	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBUNISTRING)-uninstall: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/$(LIBUNISTRING).pc
+$(LIBUNISTRING)-uninstall: $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/lib/libunistring.la
 	cd $(LIBUNISTRING)-$(LIBUNISTRING_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBUNISTRING)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(LIBUNISTRING).pc
+$(LIBUNISTRING)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libunistring.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBUNISTRING_SRC)
@@ -536,14 +536,14 @@ $(NUMACTL)-$(NUMACTL_VERSION)/Makefile: $(NUMACTL)-$(NUMACTL_VERSION)/configure 
 	    --sbindir=$(PREFIX_CONF)/bin --enable-plugins \
 	    $(NULL)
 
-$(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc: $(NUMACTL)-$(NUMACTL_VERSION)/Makefile
+$(NUMACTL)-$(NUMACTL_VERSION)/libnuma.la: $(NUMACTL)-$(NUMACTL_VERSION)/Makefile
 	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/NUMACTL.pc: $(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnuma.la: $(NUMACTL)-$(NUMACTL_VERSION)/libnuma.la
 	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(NUMACTL)-uninstall: $(NUMACTL)-$(NUMACTL_VERSION)/NUMACTL.pc
+$(NUMACTL)-uninstall: $(NUMACTL)-$(NUMACTL_VERSION)/libnuma.la
 	cd $(NUMACTL)-$(NUMACTL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(NUMACTL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/NUMACTL.pc
+$(NUMACTL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libnuma.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(NUMACTL_SRC)
@@ -605,7 +605,7 @@ FL_DEP_XMRSTAK= \
 	#$(CMAKE)-install \
 	#$(NULL)
 
-USE_GIT_XMRSTAK=0
+USE_GIT_XMRSTAK=1
 
 ifeq ($(USE_GIT_XMRSTAK),1) # use git instead
 XMRSTAK_VERSION=git
@@ -626,8 +626,6 @@ $(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt: $(DN_SRC)/$(XMRSTAK_SRC)
     fi
 	cd $(XMRSTAK)-$(XMRSTAK_VERSION) && git pull #&& git submodule update --init --recursive
 	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(XMRSTAK)-$(XMRSTAK_VERSION)/CMakeLists.txt
 
 else # use released files
 #https://github.com/fireice-uk/xmr-stak/archive/v2.1.0.tar.gz
