@@ -39,7 +39,7 @@ compile_source () {
     PARAM_TARGET="$@"
     shift
 
-    module
+    which module
     if [ "$?" = "0" ]; then
         module purge && module load mpc cmake/2.8.7 gcc/4.4 1>&2 # for PBS's gcc
     fi
