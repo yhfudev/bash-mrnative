@@ -257,7 +257,7 @@ FL_UNINSTALL+=$(P11KIT)-uninstall
 HELP2MAN=help2man
 
 FL_DEP_HELP2MAN= \
-	$(HELP2MAN)-install \
+	#$(HELP2MAN)-install \
 	$(NULL)
 
 HELP2MAN_VERSION=1.47.5
@@ -313,6 +313,7 @@ $(DN_SRC)/$(LIBIDN_SRC): $(DN_SRC)/created
 $(LIBIDN)-$(LIBIDN_VERSION)/configure.ac: $(DN_SRC)/$(LIBIDN_SRC)
 	tar -xf $(DN_SRC)/$(LIBIDN_SRC)
 	touch $@
+
 $(LIBIDN)-$(LIBIDN_VERSION)/configure: $(LIBIDN)-$(LIBIDN_VERSION)/configure.ac
 	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) aclocal
 	cd $(LIBIDN)-$(LIBIDN_VERSION)/ && $(ENV_COMPILE) autoreconf -if
@@ -601,9 +602,9 @@ FL_DEP_XMRSTAK= \
 	$(LIBMICROHTTPD)-install \
 	$(OPENSSL)-install \
 	$(HWLOC)-install \
+	$(CMAKE)-install \
 	#$(PKGCONFIG)-install \
-	#$(CMAKE)-install \
-	#$(NULL)
+	$(NULL)
 
 USE_GIT_XMRSTAK=1
 
@@ -652,13 +653,14 @@ $(XMRSTAK)-$(XMRSTAK_VERSION)/mypatched: $(DN_PATCH)/pbs-xmrstak-nodonate.patch 
 $(XMRSTAK)-$(XMRSTAK_VERSION)/build/Makefile: $(XMRSTAK)-$(XMRSTAK_VERSION)/mypatched $(FL_DEP_XMRSTAK)
 	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/ && mkdir -p build && cd build \
 		&& $(ENV_COMPILE) cmake \
+	    -DCMAKE_CXX_FLAGS="-std=c++11" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
 	    $(OPENCV_GPU_SUPPORT_CMAKE) \
 	    -DOpenCL_ENABLE=OFF \
             ..
 $(XMRSTAK)-$(XMRSTAK_VERSION)/build/bin/xmr-stak: $(XMRSTAK)-$(XMRSTAK_VERSION)/build/Makefile
-	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build && $(ENV_COMPILE) make $(MAKE_ARG)
+	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build && CXXFLAG="-std=c++11" $(ENV_COMPILE) make $(MAKE_ARG)
 	touch $@
 $(PREFIX_DEST)/$(PREFIX_CONF)/bin/xmr-stak: $(XMRSTAK)-$(XMRSTAK_VERSION)/build/bin/xmr-stak
 	cd $(XMRSTAK)-$(XMRSTAK_VERSION)/build \

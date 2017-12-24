@@ -3,6 +3,14 @@ mrnative
 
 This folder contains the scripts to run native software in an Hadoop/HPC environment.
 
+
+License | Travis | Appveyor | Coverity
+------- | ------ | -------- | --------
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/yhfudev/bash-mrnative/blob/master/COPYING) | [![Travis Build status](https://travis-ci.org/yhfudev/bash-mrnative.svg?branch=master)](https://travis-ci.org/yhfudev/bash-mrnative) | [![Appveyor Build status](https://ci.appveyor.com/api/projects/status/buoorufye2chq2r8?svg=true
+)](https://ci.appveyor.com/project/yhfudev/bash-mrnative/branch/master) | [![Coverity Scan Build Status](https://scan.coverity.com/projects/14695/badge.svg)](https://scan.coverity.com/projects/yhfudev-bash-mrnative)
+
+
+
 The example applications including:
 
   * an test app to collect the information of the hosts in the cluster

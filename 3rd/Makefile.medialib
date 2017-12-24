@@ -57,7 +57,7 @@ endif
 ######################################################################
 
 GRAPHITE2=graphite2
-GRAPHITE2_VERSION=1.2.4
+GRAPHITE2_VERSION=1.3.10
 GRAPHITE2_SRC=$(GRAPHITE2)-$(GRAPHITE2_VERSION).tgz
 GRAPHITE2_URL=http://sourceforge.net/projects/silgraphite/files/graphite2/$(GRAPHITE2_SRC)
 
@@ -96,7 +96,7 @@ FL_UNINSTALL+=$(GRAPHITE2)-uninstall
 ########################################
 HARFBUZZ=harfbuzz
 HARFBUZZ_VERSION=0.9.9
-HARFBUZZ_VERSION=0.9.40
+HARFBUZZ_VERSION=0.9.42
 HARFBUZZ_SRC=$(HARFBUZZ)-$(HARFBUZZ_VERSION).tar.bz2
 HARFBUZZ_URL=http://www.freedesktop.org/software/harfbuzz/release/$(HARFBUZZ_SRC)
 
@@ -162,8 +162,7 @@ FL_UNINSTALL+=$(FRIBIDI)-uninstall
 
 ########################################
 LIBENCA=enca
-LIBENCA_VERSION=1.15
-LIBENCA_VERSION=1.16
+LIBENCA_VERSION=1.19
 LIBENCA_SRC=$(LIBENCA)-$(LIBENCA_VERSION).tar.gz
 LIBENCA_URL=http://dl.cihar.com/enca/$(LIBENCA_SRC)
 
@@ -192,8 +191,8 @@ FL_UNINSTALL+=$(LIBENCA)-uninstall
 ########################################
 # --disable-harfbuzz since we don't need harfbuzz to function
 LIBASS=libass
-LIBASS_VERSION=0.12.2
 LIBASS_VERSION=0.13.2
+LIBASS_VERSION=0.14.0
 LIBASS_SRC=$(LIBASS)-$(LIBASS_VERSION).tar.gz
 #LIBASS_URL=https://libass.googlecode.com/files/$(LIBASS_SRC)
 LIBASS_URL=https://github.com/libass/libass/archive/$(LIBASS_VERSION).tar.gz
@@ -260,7 +259,7 @@ FL_UNINSTALL+=$(LIBASS)-uninstall
 #http://git.xiph.org/speex.git
 LIBSPEEX=speex
 LIBSPEEX_VERSION=1.2rc1
-LIBSPEEX_VERSION=1.2rc2
+LIBSPEEX_VERSION=1.2.0
 LIBSPEEX_SRC=$(LIBSPEEX)-$(LIBSPEEX_VERSION).tar.gz
 LIBSPEEX_URL=http://downloads.xiph.org/releases/speex/$(LIBSPEEX_SRC)
 
@@ -287,8 +286,7 @@ FL_UNINSTALL+=$(LIBSPEEX)-uninstall
 
 ########################################
 OPUS=opus
-OPUS_VERSION=1.1
-OPUS_VERSION=1.1.1-beta
+OPUS_VERSION=1.2.1
 OPUS_SRC=$(OPUS)-$(OPUS_VERSION).tar.gz
 OPUS_URL=http://downloads.xiph.org/releases/opus/$(OPUS_SRC)
 
@@ -371,8 +369,8 @@ FL_UNINSTALL_OTHERS+=$(LIBA52)-uninstall
 
 ########################################
 FAAD=faad2
-FAAD_VERSION=2.7
-FAAD_SRC=$(FAAD)-$(FAAD_VERSION).tar.bz2
+FAAD_VERSION=2.8.0
+FAAD_SRC=$(FAAD)-$(FAAD_VERSION).tar.gz
 FAAD_URL=http://sourceforge.net/projects/faac/files/$(FAAD)-src/$(FAAD)-$(FAAD_VERSION)/$(FAAD_SRC)
 
 $(DN_SRC)/$(FAAD_SRC): $(DN_SRC)/created
@@ -401,8 +399,8 @@ FL_UNINSTALL_OTHERS+=$(FAAD)-uninstall
 # libfaac is not updated for three years+
 # best open-source audio library is the fdk_acc library which is part of the Android project
 FAAC=faac
-FAAC_VERSION=1.28
-FAAC_SRC=$(FAAC)-$(FAAC_VERSION).tar.bz2
+FAAC_VERSION=1.29
+FAAC_SRC=$(FAAC)-$(FAAC_VERSION).tar.gz
 FAAC_URL=http://sourceforge.net/projects/faac/files/faac-src/faac-$(FAAC_VERSION)/$(FAAC_SRC)
 
 $(DN_SRC)/$(FAAC_SRC): $(DN_SRC)/created
@@ -443,7 +441,7 @@ FL_DEP_FDKAAC= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-FDKAAC_VERSION=0.1.4
+FDKAAC_VERSION=0.1.5
 FDKAAC_SRC=$(FDKAAC)-$(FDKAAC_VERSION).tar.gz
 FDKAAC_URL=http://sourceforge.net/projects/opencore-amr/files/$(FDKAAC)/$(FDKAAC_SRC)
 
@@ -478,9 +476,9 @@ FL_DEP_LAME= \
 	$(NCURSES)-install \
 	$(NULL)
 
-LAME_VERSION=3.99.5
+LAME_VERSION=3.100
 LAME_SRC=$(LAME)-$(LAME_VERSION).tar.gz
-LAME_URL=http://sourceforge.net/projects/lame/files/lame/3.99/$(LAME_SRC)
+LAME_URL=http://sourceforge.net/projects/lame/files/lame/3.100/$(LAME_SRC)
 
 $(DN_SRC)/lame-sse.patch: $(DN_SRC)/created
 	$(WGET) -O $@ -c https://projects.archlinux.org/svntogit/packages.git/plain/trunk/sse.patch?h=packages/lame
@@ -653,7 +651,7 @@ FL_UNINSTALL+=$(AMRWB)-uninstall
 
 ########################################
 OPENCOREAMR=opencore-amr
-OPENCOREAMR_VERSION=0.1.3
+OPENCOREAMR_VERSION=0.1.5
 OPENCOREAMR_SRC=$(OPENCOREAMR)-$(OPENCOREAMR_VERSION).tar.gz
 OPENCOREAMR_URL=http://sourceforge.net/projects/opencore-amr/files/opencore-amr/$(OPENCOREAMR_SRC)
 
@@ -755,6 +753,7 @@ FL_UNINSTALL+=$(LIBVOAACENC)-uninstall
 LIBWAVPACK=wavpack
 
 LIBWAVPACK_VERSION=4.75.2
+LIBWAVPACK_VERSION=5.1.0
 LIBWAVPACK_SRC=$(LIBWAVPACK)-$(LIBWAVPACK_VERSION).tar.bz2
 LIBWAVPACK_URL=http://www.wavpack.com/$(LIBWAVPACK_SRC)
 
@@ -825,6 +824,7 @@ FL_UNINSTALL+=$(X264)-uninstall
 # https://bitbucket.org/multicoreware/x265
 X265=x265
 X265_VERSION=1.8
+X265_VERSION=2.6
 X265_SRC=$(X265)_$(X265_VERSION).tar.gz
 X265_URL=https://bitbucket.org/multicoreware/x265/downloads/$(X265_SRC)
 
@@ -1038,7 +1038,7 @@ FL_UNINSTALL+=$(XAVS)-uninstall
 
 ########################################
 LIBOGG=libogg
-LIBOGG_VERSION=1.3.2
+LIBOGG_VERSION=1.3.3
 LIBOGG_SRC=$(LIBOGG)-$(LIBOGG_VERSION).tar.gz
 LIBOGG_URL=http://downloads.xiph.org/releases/ogg/$(LIBOGG_SRC)
 $(DN_SRC)/$(LIBOGG_SRC): $(DN_SRC)/created
@@ -1142,7 +1142,7 @@ FL_UNINSTALL+=$(THEORA)-uninstall
 # http://log4cpp.sourceforge.net/
 LOG4CPP=log4cpp
 
-LOG4CPP_VERSION=1.1.1
+LOG4CPP_VERSION=1.1.3
 LOG4CPP_SRC=$(LOG4CPP)-$(LOG4CPP_VERSION).tar.gz
 LOG4CPP_URL=http://sourceforge.net/projects/log4cpp/files/log4cpp-1.1.x%20%28new%29/log4cpp-1.1/$(LOG4CPP_SRC)
 
@@ -1184,7 +1184,7 @@ FL_DEP_LIBDATRIE= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-LIBDATRIE_VERSION=0.2.9
+LIBDATRIE_VERSION=0.2.10
 LIBDATRIE_SRC=$(LIBDATRIE)-$(LIBDATRIE_VERSION).tar.xz
 LIBDATRIE_URL=http://linux.thai.net/pub/thailinux/software/libthai/$(LIBDATRIE_SRC)
 
@@ -1232,7 +1232,7 @@ FL_DEP_LIBTHAI= \
 	$(LIBDATRIE)-install \
 	$(NULL)
 
-LIBTHAI_VERSION=0.1.22
+LIBTHAI_VERSION=0.1.27
 LIBTHAI_SRC=$(LIBTHAI)-$(LIBTHAI_VERSION).tar.xz
 LIBTHAI_URL=http://linux.thai.net/pub/thailinux/software/libthai/$(LIBTHAI_SRC)
 
@@ -1289,7 +1289,7 @@ FL_DEP_CAIRO= \
 	$(valgrind)-install \
 	$(NULL)
 
-USE_GIT_CAIRO=1
+USE_GIT_CAIRO=0
 
 ifeq ($(USE_GIT_CAIRO),1) # use git instead
 CAIRO_VERSION=git
@@ -1312,7 +1312,7 @@ $(CAIRO)-$(CAIRO_VERSION)/README.md: $(DN_SRC)/$(CAIRO_SRC)
 	touch $@
 
 else # use released files
-CAIRO_VERSION=1.14.4
+CAIRO_VERSION=1.14.12
 CAIRO_SRC=$(CAIRO)-$(CAIRO_VERSION).tar.xz
 CAIRO_URL=http://cairographics.org/releases/$(CAIRO_SRC)
 
@@ -1382,7 +1382,7 @@ FL_DEP_PANGOCAIRO= \
 	$(FREETYPE)-install \
 	$(NULL)
 
-USE_GIT_PANGOCAIRO=1
+USE_GIT_PANGOCAIRO=0
 
 ifeq ($(USE_GIT_PANGOCAIRO),1) # use git instead
 PANGOCAIRO_VERSION=git
@@ -1405,9 +1405,9 @@ $(PANGOCAIRO)-$(PANGOCAIRO_VERSION)/README.md: $(DN_SRC)/$(PANGOCAIRO_SRC)
 	touch $@
 
 else # use released files
-PANGOCAIRO_VERSION=1.38.1
-PANGOCAIRO_SRC=$(PANGOCAIRO)-$(PANGOCAIRO_VERSION).tar.gz
-PANGOCAIRO_URL=http://download.gnome.org/sources/$(PANGOCAIRO)/$(PANGOCAIRO_SRC)
+PANGOCAIRO_VERSION=1.40.14
+PANGOCAIRO_SRC=$(PANGOCAIRO)-$(PANGOCAIRO_VERSION).tar.xz
+PANGOCAIRO_URL=https://download.gnome.org/sources/pango/1.40/$(PANGOCAIRO_SRC)
 
 $(DN_SRC)/$(PANGOCAIRO_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(PANGOCAIRO_URL)
@@ -1650,7 +1650,7 @@ FL_UNINSTALL+=$(LADSPA)-uninstall
 # http://www.fftw.org/
 FFTW=fftw
 
-FFTW_VERSION=3.3.4
+FFTW_VERSION=3.3.7
 FFTW_SRC=$(FFTW)-$(FFTW_VERSION).tar.gz
 FFTW_URL=http://www.fftw.org/$(FFTW_SRC)
 
@@ -1777,7 +1777,7 @@ FL_DEP_LIBBLURAY= \
 	$(FONTCONF)-install \
 	$(NULL)
 
-USE_GIT_LIBBLURAY=1
+USE_GIT_LIBBLURAY=0
 
 ifeq ($(USE_GIT_LIBBLURAY),1) # use git instead
 LIBBLURAY_VERSION=git
@@ -1800,7 +1800,7 @@ $(LIBBLURAY)-$(LIBBLURAY_VERSION)/README.md: $(DN_SRC)/$(LIBBLURAY_SRC)
 	touch $@
 
 else # use released files
-LIBBLURAY_VERSION=0.9.1
+LIBBLURAY_VERSION=1.0.2
 LIBBLURAY_SRC=$(LIBBLURAY)-$(LIBBLURAY_VERSION).tar.bz2
 LIBBLURAY_URL=ftp://ftp.videolan.org/pub/videolan/libbluray/$(LIBBLURAY_VERSION)/$(LIBBLURAY_SRC)
 
@@ -1921,7 +1921,7 @@ FL_DEP_IMLIB2= \
 	$(LIBXEXT)-install \
 	$(NULL)
 
-IMLIB2_VERSION=1.4.7
+IMLIB2_VERSION=1.4.10
 IMLIB2_SRC=$(IMLIB2)-$(IMLIB2_VERSION).tar.gz
 IMLIB2_URL=http://sourceforge.net/projects/enlightenment/files/imlib2-src/$(IMLIB2_VERSION)/$(IMLIB2_SRC)
 
@@ -2038,6 +2038,7 @@ LIBCDDB=libcddb
 LIBCDDB_VERSION=1.3.2
 LIBCDDB_SRC=$(LIBCDDB)-$(LIBCDDB_VERSION).tar.bz2
 LIBCDDB_URL=http://downloads.sourceforge.net/sourceforge/$(LIBCDDB)/$(LIBCDDB_SRC)
+#https://sourceforge.net/projects/libcddb/files/libcddb/1.3.2/libcddb-1.3.2.tar.gz
 
 $(DN_SRC)/$(LIBCDDB_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBCDDB_URL)
@@ -2116,7 +2117,7 @@ $(LIBCDIO)-$(LIBCDIO_VERSION)/configure: $(LIBCDIO)-$(LIBCDIO_VERSION)/configure
 
 else
 
-LIBCDIO_VERSION=0.93
+LIBCDIO_VERSION=1.1.0
 LIBCDIO_SRC=$(LIBCDIO)-$(LIBCDIO_VERSION).tar.bz2
 LIBCDIO_URL=http://ftp.gnu.org/gnu/libcdio/$(LIBCDIO_SRC)
 
@@ -2174,8 +2175,8 @@ FL_DEP_LIBCDIOPARANOIA= \
 	$(LIBCDIO)-install \
 	$(NULL)
 
-LIBCDIOPARANOIA_VERSION=10.2+0.93+1
-LIBCDIOPARANOIA_SRC=$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION).tar.bz2
+LIBCDIOPARANOIA_VERSION=10.2+0.94+2
+LIBCDIOPARANOIA_SRC=$(LIBCDIOPARANOIA)-$(LIBCDIOPARANOIA_VERSION).tar.gz
 LIBCDIOPARANOIA_URL=http://ftp.gnu.org/gnu/libcdio/$(LIBCDIOPARANOIA_SRC)
 
 $(DN_SRC)/$(LIBCDIOPARANOIA_SRC): $(DN_SRC)/created
@@ -2258,9 +2259,9 @@ FL_UNINSTALL+=$(LIBCELT)-uninstall
 
 LIBGME=libgme
 
-LIBGME_VERSION=0.6.0
-LIBGME_SRC=$(LIBGME)-$(LIBGME_VERSION).tar.bz2
-LIBGME_URL=https://game-music-emu.googlecode.com/files/game-music-emu-$(LIBGME_VERSION).tar.bz2
+LIBGME_VERSION=0.6.2
+LIBGME_SRC=$(LIBGME)-$(LIBGME_VERSION).tar.xz
+LIBGME_URL=https://bitbucket.org/mpyne/game-music-emu/downloads/game-music-emu-$(LIBGME_VERSION).tar.xz
 
 FL_DEP_LIBGME= \
 	$(CMAKE)-install \
@@ -2302,7 +2303,7 @@ FL_DEP_LIBMODPLUG= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-LIBMODPLUG_VERSION=0.8.8.5
+LIBMODPLUG_VERSION=0.8.9.0
 LIBMODPLUG_SRC=$(LIBMODPLUG)-$(LIBMODPLUG_VERSION).tar.gz
 LIBMODPLUG_URL=http://sourceforge.net/projects/modplug-xmms/files/libmodplug/$(LIBMODPLUG_VERSION)/$(LIBMODPLUG_SRC)
 
@@ -2342,7 +2343,7 @@ FL_DEP_ORC= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-ORC_VERSION=0.4.24
+ORC_VERSION=0.4.28
 ORC_SRC=$(ORC)-$(ORC_VERSION).tar.xz
 ORC_URL=http://gstreamer.freedesktop.org/data/src/orc/$(ORC_SRC)
 
@@ -2424,7 +2425,7 @@ FL_DEP_LIBSHINE= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-LIBSHINE_VERSION=3.1.0
+LIBSHINE_VERSION=3.1.1
 LIBSHINE_SRC=$(LIBSHINE)-$(LIBSHINE_VERSION).tar.gz
 LIBSHINE_URL=https://github.com/toots/shine/archive/$(LIBSHINE_VERSION).tar.gz
 
@@ -2520,7 +2521,7 @@ FL_DEP_FLAC= \
 	$(LIBOGG)-install \
 	$(NULL)
 
-FLAC_VERSION=1.3.1
+FLAC_VERSION=1.3.2
 FLAC_SRC=$(FLAC)-$(FLAC_VERSION).tar.xz
 FLAC_URL=http://downloads.xiph.org/releases/flac/$(FLAC_SRC)
 
@@ -2562,7 +2563,7 @@ FL_DEP_LIBALSA= \
 	$(LIBOGG)-install \
 	$(NULL)
 
-LIBALSA_VERSION=1.1.0
+LIBALSA_VERSION=1.1.5
 LIBALSA_SRC=$(LIBALSA)-$(LIBALSA_VERSION).tar.bz2
 LIBALSA_URL=ftp://ftp.alsa-project.org/pub/lib/$(LIBALSA_SRC)
 
@@ -2606,7 +2607,7 @@ FL_DEP_LIBSNDFILE= \
 	$(VORBIS)-install \
 	$(NULL)
 
-LIBSNDFILE_VERSION=1.0.25
+LIBSNDFILE_VERSION=1.0.28
 LIBSNDFILE_SRC=$(LIBSNDFILE)-$(LIBSNDFILE_VERSION).tar.gz
 LIBSNDFILE_URL=http://www.mega-nerd.com/libsndfile/files/$(LIBSNDFILE_SRC)
 
@@ -2782,7 +2783,7 @@ $(LIBUTVIDEO)-$(LIBUTVIDEO_VERSION)/configure: $(DN_SRC)/$(LIBUTVIDEO_SRC)
 
 else # use released files
 
-LIBUTVIDEO_VERSION=17.0.0
+LIBUTVIDEO_VERSION=18.2.1
 LIBUTVIDEO_SRC=utvideo-$(LIBUTVIDEO_VERSION)-src.zip
 LIBUTVIDEO_URL=http://umezawa.dyndns.info/archive/utvideo/$(LIBUTVIDEO_SRC)
 
@@ -2865,7 +2866,7 @@ FL_DEP_LIBV4L2= \
 	#$(LIBICONV)-install \
 	$(NULL)
 
-LIBV4L2_VERSION=1.6.3
+LIBV4L2_VERSION=1.12.6
 LIBV4L2_SRC=$(LIBV4L2)-$(LIBV4L2_VERSION).tar.bz2
 LIBV4L2_URL=http://linuxtv.org/downloads/v4l-utils/$(LIBV4L2_SRC)
 
@@ -2930,10 +2931,10 @@ $(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBVIDSTAB_SRC)
 
 else # use released files
 
-LIBVIDSTAB_VERSION=1.1
+LIBVIDSTAB_VERSION=1.1.0
 LIBVIDSTAB_VERSION=0.98b
-LIBVIDSTAB_SRC=$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION).tar.bz2
-LIBVIDSTAB_URL=https://github.com/georgmartius/vid.stab/archive/release-$(LIBVIDSTAB_VERSION).tar.gz
+LIBVIDSTAB_SRC=$(LIBVIDSTAB)-$(LIBVIDSTAB_VERSION).tar.gz
+LIBVIDSTAB_URL=https://github.com/georgmartius/vid.stab/archive/v$(LIBVIDSTAB_VERSION).tar.gz
 
 $(DN_SRC)/$(LIBVIDSTAB_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBVIDSTAB_URL)
@@ -3080,7 +3081,7 @@ FL_DEP_LIBSODIUM= \
 	$(AUTOMAKE)-install \
 	$(NULL)
 
-LIBSODIUM_VERSION=1.0.6
+LIBSODIUM_VERSION=1.0.9
 LIBSODIUM_SRC=$(LIBSODIUM)-$(LIBSODIUM_VERSION).tar.gz
 LIBSODIUM_URL=http://download.dnscrypt.org/$(LIBSODIUM)/releases/$(LIBSODIUM_SRC)
 
@@ -3125,7 +3126,7 @@ FL_DEP_LIBZMQ= \
 	#$(util-linux)-install \
 	$(NULL)
 
-LIBZMQ_VERSION=4.1.3
+LIBZMQ_VERSION=4.1.4
 LIBZMQ_SRC=$(LIBZMQ)-$(LIBZMQ_VERSION).tar.gz
 LIBZMQ_URL=http://download.zeromq.org/$(LIBZMQ_SRC)
 
@@ -3623,7 +3624,7 @@ FL_DEP_FFMS2= \
 	$(FFMPEG)-install \
 	$(NULL)
 
-FFMS2_VERSION=2.22
+FFMS2_VERSION=2.23
 FFMS2_SRC=$(FFMS2)-$(FFMS2_VERSION).tar.gz
 FFMS2_URL=https://github.com/FFMS/ffms2/archive/$(FFMS2_VERSION).tar.gz
 
@@ -3658,7 +3659,7 @@ FL_UNINSTALL+=$(FFMS2)-uninstall
 ########################################
 # ilmbase, An high dynamic-range image file format library
 ILMBASE=ilmbase
-ILMBASE_VERSION=2.2.0
+ILMBASE_VERSION=2.2.1
 ILMBASE_SRC=$(ILMBASE)-$(ILMBASE_VERSION).tar.gz
 ILMBASE_URL=http://download.savannah.nongnu.org/releases/openexr/$(ILMBASE_SRC)
 
@@ -3687,7 +3688,7 @@ FL_UNINSTALL+=$(ILMBASE)-uninstall
 # OpenEXR, a high dynamic-range (HDR) image file format
 # http://www.openexr.com/
 OPENEXR=openexr
-OPENEXR_VERSION=2.2.0
+OPENEXR_VERSION=2.2.1
 OPENEXR_SRC=$(OPENEXR)-$(OPENEXR_VERSION).tar.gz
 OPENEXR_URL=http://download.savannah.nongnu.org/releases/openexr/$(OPENEXR_SRC)
 
@@ -3733,7 +3734,7 @@ FL_UNINSTALL+=$(OPENEXR)-uninstall
 # JSONCPP, A C++ library for interacting with JSON
 # https://github.com/open-source-parsers/jsoncpp
 JSONCPP=jsoncpp
-JSONCPP_VERSION=1.6.5
+JSONCPP_VERSION=1.8.4
 JSONCPP_SRC=$(JSONCPP)-$(JSONCPP_VERSION).tar.gz
 JSONCPP_URL=https://github.com/open-source-parsers/jsoncpp/archive/$(JSONCPP_VERSION).tar.gz
 
@@ -3774,7 +3775,7 @@ FL_UNINSTALL+=$(JSONCPP)-uninstall
 # GL2PS, an OpenGL to PostScript printing library
 # http://geuz.org/gl2ps/
 GL2PS=gl2ps
-GL2PS_VERSION=1.3.9
+GL2PS_VERSION=1.4.0
 GL2PS_SRC=$(GL2PS)-$(GL2PS_VERSION).tgz
 GL2PS_URL=http://geuz.org/gl2ps/src/$(GL2PS_SRC)
 
@@ -3819,9 +3820,9 @@ FL_UNINSTALL+=$(GL2PS)-uninstall
 # http://www.hdfgroup.org/HDF5/
 
 HDF5=hdf5
-HDF5_VERSION=1.8.16
+HDF5_VERSION=1.8.20
 HDF5_SRC=$(HDF5)-$(HDF5_VERSION).tar.gz
-HDF5_URL=ftp://ftp.hdfgroup.org/HDF5/current/src/$(HDF5_SRC)
+HDF5_URL=https://support.hdfgroup.org/ftp/HDF5/current18/src/$(HDF5_SRC)
 
 $(DN_SRC)/$(HDF5_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(HDF5_URL)
@@ -3942,7 +3943,7 @@ FL_UNINSTALL+=$(CURL)-uninstall
 # gdal: A translator library for raster geospatial data formats
 # http://www.gdal.org/
 GDAL=gdal
-GDAL_VERSION=2.0.1
+GDAL_VERSION=2.2.3
 GDAL_SRC=$(GDAL)-$(GDAL_VERSION).tar.gz
 GDAL_URL=http://download.osgeo.org/gdal/$(GDAL_VERSION)/$(GDAL_SRC)
 
@@ -4034,17 +4035,20 @@ FL_DEP_VTK= \
 	$(MPI4PY)-install \
 	$(NULL)
 
-VTK_VERSION=6.3.0
+VTK_VERSION=8.1.0
 
 FL_SOURCES+=$(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz
 FL_SOURCES+=$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 
+#http://www.vtk.org/files/release/8.1/VTK-8.1.0.tar.gz
+#http://www.vtk.org/files/release/8.1/VTKLargeData-8.1.0.tar.gz
+
 $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
-	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)Data-$(VTK_VERSION).tar.gz
+	$(WGET) -O $@ -c http://www.vtk.org/files/release/8.1/$(VTK)Data-$(VTK_VERSION).tar.gz
 	touch $@
 
 $(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz: $(DN_SRC)/created
-	$(WGET) -O $@ -c http://www.vtk.org/files/release/6.3/$(VTK)LargeData-$(VTK_VERSION).tar.gz
+	$(WGET) -O $@ -c http://www.vtk.org/files/release/8.1/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 	touch $@
 
 USE_GIT_VTK=0
@@ -4073,9 +4077,9 @@ $(VTK)-$(VTK_VERSION_GIT)/README.md: $(DN_SRC)/$(VTK_SRC)
 VTK_VERSION:=$(VTK_VERSION_GIT)
 
 else # use released files
-VTK_VERSION=6.3.0
+VTK_VERSION=8.1.0
 VTK_SRC=$(VTK)-$(VTK_VERSION).tar.gz
-VTK_URL=http://www.vtk.org/files/release/6.3/$(VTK_SRC)
+VTK_URL=http://www.vtk.org/files/release/8.1/$(VTK_SRC)
 
 $(DN_SRC)/$(VTK_SRC): $(DN_SRC)/created $(DN_SRC)/$(VTK)Data-$(VTK_VERSION).tar.gz #$(DN_SRC)/$(VTK)LargeData-$(VTK_VERSION).tar.gz
 	$(WGET) -O $@ -c $(VTK_URL)
@@ -4246,14 +4250,13 @@ FL_SOURCES+=$(DN_SRC)/$(IPPICV_SRC)
 OPENCV=opencv
 
 OPENCV_VERSION=2.4.8
-OPENCV_VERSION=2.4.11
-#OPENCV_VERSION=3.1.0
+OPENCV_VERSION=2.4.13.5
+#OPENCV_VERSION=3.3.1
 OPENCV_SRC=$(OPENCV)-$(OPENCV_VERSION).tar.gz
 OPENCV_URL=https://github.com/opencv/opencv/archive/$(OPENCV_VERSION).tar.gz
-#http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.8/opencv-2.4.8.zip
 
 OPENCV_CONTRIB=opencv_contrib
-OPENCV_CONTRIB_VERSION=3.1.0
+OPENCV_CONTRIB_VERSION=3.4.0
 OPENCV_CONTRIB_SRC=$(OPENCV_CONTRIB)-$(OPENCV_CONTRIB_VERSION).tar.gz
 OPENCV_CONTRIB_URL=https://github.com/opencv/opencv_contrib/archive/$(OPENCV_CONTRIB_VERSION).tar.gz
 

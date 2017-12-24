@@ -100,7 +100,7 @@ $(RUBY)-install: $(RUBY)-bin
 
 ######################################################################
 ZLIB=zlib
-ZLIB_VERSION=1.2.8
+ZLIB_VERSION=1.2.11
 ZLIB_SRC=$(ZLIB)-$(ZLIB_VERSION).tar.gz
 ZLIB_URL=http://zlib.net/$(ZLIB_SRC)
 
@@ -154,8 +154,8 @@ FL_UNINSTALL+=$(BZIP2)-uninstall
 
 ########################################
 EXPAT=expat
-EXPAT_VERSION=2.1.0
-EXPAT_SRC=$(EXPAT)-$(EXPAT_VERSION).tar.gz
+EXPAT_VERSION=2.2.5
+EXPAT_SRC=$(EXPAT)-$(EXPAT_VERSION).tar.bz2
 EXPAT_URL=http://sourceforge.net/projects/expat/files/expat/$(EXPAT_VERSION)/$(EXPAT_SRC)
 
 $(DN_SRC)/$(EXPAT_SRC): $(DN_SRC)/created
@@ -166,14 +166,14 @@ $(EXPAT)-$(EXPAT_VERSION)/README: $(DN_SRC)/$(EXPAT_SRC)
 	touch $@
 $(EXPAT)-$(EXPAT_VERSION)/Makefile: $(EXPAT)-$(EXPAT_VERSION)/README
 	cd $(EXPAT)-$(EXPAT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --enable-static --enable-shared
-$(EXPAT)-$(EXPAT_VERSION)/libexpat.la: $(EXPAT)-$(EXPAT_VERSION)/Makefile
+$(EXPAT)-$(EXPAT_VERSION)/expat.pc: $(EXPAT)-$(EXPAT_VERSION)/Makefile
 	cd $(EXPAT)-$(EXPAT_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libexpat.a: $(EXPAT)-$(EXPAT_VERSION)/libexpat.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/expat.pc: $(EXPAT)-$(EXPAT_VERSION)/expat.pc
 	cd $(EXPAT)-$(EXPAT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(EXPAT)-uninstall: $(EXPAT)-$(EXPAT_VERSION)/libexpat.la
+$(EXPAT)-uninstall: $(EXPAT)-$(EXPAT_VERSION)/expat.pc
 	cd $(EXPAT)-$(EXPAT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(EXPAT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libexpat.a
+$(EXPAT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/expat.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(EXPAT_SRC)
@@ -181,7 +181,7 @@ FL_UNINSTALL+=$(EXPAT)-uninstall
 
 ########################################
 SWIG=swig
-SWIG_VERSION=3.0.8
+SWIG_VERSION=3.0.12
 SWIG_SRC=$(SWIG)-$(SWIG_VERSION).tar.gz
 SWIG_URL=https://sourceforge.net/projects/swig/files/swig/swig-$(SWIG_VERSION)/$(SWIG_SRC)
 
@@ -207,14 +207,100 @@ $(SWIG)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/swig
 FL_SOURCES+=$(DN_SRC)/$(SWIG_SRC)
 FL_UNINSTALL+=$(SWIG)-uninstall
 
+
+########################################
+# The Open Source toolkit for Secure Sockets Layer and Transport Layer Security
+# https://wiki.openssl.org/index.php/Compilation_and_Installation
+OPENSSL=openssl
+
+FL_DEP_OPENSSL= \
+	$(ZLIB)-install \
+	$(NULL)
+
+ifeq ($(OSTYP),x86_64)
+openssltarget=linux-x86_64
+optflags=enable-ec_nistp_64_gcc_128
+else
+openssltarget=linux-elf
+optflags=
+endif
+
+
+USE_GIT_OPENSSL=0
+
+ifeq ($(USE_GIT_OPENSSL),1) # use git instead
+
+OPENSSL_VERSION=git
+OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION)/.git
+OPENSSL_URL=https://github.com/openssl/openssl.git
+
+$(DN_SRC)/$(OPENSSL_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(OPENSSL_SRC)" ]; then \
+        git clone $(OPENSSL_URL) $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION); \
+    fi
+	cd $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
+	if [ ! -d "$(OPENSSL)-$(OPENSSL_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION)/ $(OPENSSL)-$(OPENSSL_VERSION); \
+    fi
+	cd $(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else
+
+OPENSSL_VERSION=1.1.0g
+OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION).tar.gz
+OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_SRC)
+
+$(DN_SRC)/$(OPENSSL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OPENSSL_URL)
+	touch $@
+
+$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
+	tar -xf $(DN_SRC)/$(OPENSSL_SRC)
+	touch $@
+endif
+
+$(OPENSSL)-$(OPENSSL_VERSION)/mypatched: $(OPENSSL)-$(OPENSSL_VERSION)/Configure
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.svn ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && svn revert -R . ; fi
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.hg ];  then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && hg update -C . ; fi
+	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.git ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && find . -name "Makefile*" | while read a ; do \
+            sed -e 's|^INCLUDES=|INCLUDES=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include |g'   -i $$a; \
+            sed -e 's|^CFLAG=.*$$|CFLAG= -Os -I$(PREFIX_DEST)/$(PREFIX_CONF)/include|g' -i $$a; \
+        done
+	touch $@
+
+$(OPENSSL)-$(OPENSSL_VERSION)/Makefile: $(OPENSSL)-$(OPENSSL_VERSION)/mypatched $(FL_DEP_OPENSSL)
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) ./Configure \
+	        -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lz \
+	        shared zlib no-ssl3-method \
+	        --prefix=$(PREFIX_CONF) --openssldir=$(PREFIX_CONF)/etc/ssl --libdir=lib \
+	        $(optflags) $(openssltarget)
+	touch $@
+
+$(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/Makefile
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make -j1 depend
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && make -j1 INSTALL_PREFIX=$(PREFIX_DEST) MANDIR=$(PREFIX_CONF)/share/man MANSUFFIX=ssl install_sw
+
+$(OPENSSL)-uninstall: $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc
+	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && make uninstall
+$(OPENSSL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libcrypto.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OPENSSL_SRC)
+FL_UNINSTALL+=$(OPENSSL)-uninstall
+
 ########################################
 CMAKE=cmake
 
-CMAKE_VERSION=2.8.12.2
-CMAKE_VERSION_CONN=v2.8
-
-CMAKE_VERSION=3.2.3
-CMAKE_VERSION_CONN=v3.2
+CMAKE_VERSION=3.10.1
+CMAKE_VERSION_CONN=v3.10
 
 CMAKE_SRC=$(CMAKE)-$(CMAKE_VERSION).tar.gz
 CMAKE_URL=http://www.cmake.org/files/$(CMAKE_VERSION_CONN)/$(CMAKE_SRC)
@@ -223,6 +309,7 @@ FL_DEP_CMAKE= \
 	$(ZLIB)-install \
 	$(BZIP2)-install \
 	$(EXPAT)-install \
+	$(OPENSSL)-install \
 	#$(JSONCPP)-install \
 	$(NULL)
 
@@ -282,7 +369,7 @@ FL_UNINSTALL+=$(YASM)-uninstall
 # An 80x86 assembler designed for portability and modularity
 # http://www.nasm.us
 NASM=nasm
-NASM_VERSION=2.11.08
+NASM_VERSION=2.13
 NASM_SRC=$(NASM)-$(NASM_VERSION).tar.gz
 NASM_URL=http://www.nasm.us/pub/nasm/releasebuilds/$(NASM_VERSION)/$(NASM_SRC)
 
@@ -396,7 +483,7 @@ FL_DEP_M4= \
 	#$(M4)-install \
 	$(NULL)
 
-M4_VERSION=1.4.17
+M4_VERSION=1.4.18
 M4_SRC=$(M4)-$(M4_VERSION).tar.xz
 M4_URL=ftp://ftp.gnu.org/gnu/$(M4)/$(M4_SRC)
 
@@ -551,131 +638,10 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/
 $(AUTOMAKE)-uninstall: $(AUTOMAKE)-$(AUTOMAKE_VERSION)/bin/automake
 	cd $(AUTOMAKE)-$(AUTOMAKE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(AUTOMAKE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/automake
-	touch $@
+	touch $(AUTOMAKE)-install
 
 FL_SOURCES+=$(DN_SRC)/$(AUTOMAKE_SRC)
 FL_UNINSTALL+=$(AUTOMAKE)-uninstall
-
-
-########################################
-GNUAWK=gawk
-GNUAWK_VERSION=4.1.3
-GNUAWK_SRC=$(GNUAWK)-$(GNUAWK_VERSION).tar.gz
-GNUAWK_URL=http://ftp.gnu.org/gnu/gawk/$(GNUAWK_SRC)
-
-$(DN_SRC)/$(GNUAWK_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(GNUAWK_URL)
-	touch $@
-$(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
-	tar -xf $(DN_SRC)/$(GNUAWK_SRC)
-	touch $@
-
-#$(GNUAWK)-$(GNUAWK_VERSION)/mypatched: $(DN_PATCH)/pbs-GNUAWK-lua.patch $(GNUAWK)-$(GNUAWK_VERSION)/configure
-#	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-GNUAWK-lua.patch
-#	touch $@
-
-$(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
-$(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-
-$(GNUAWK)-uninstall: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
-	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(GNUAWK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(GNUAWK_SRC)
-FL_UNINSTALL+=$(GNUAWK)-uninstall
-
-########################################
-# The Open Source toolkit for Secure Sockets Layer and Transport Layer Security
-# https://wiki.openssl.org/index.php/Compilation_and_Installation
-OPENSSL=openssl
-
-FL_DEP_OPENSSL= \
-	$(ZLIB)-install \
-	$(NULL)
-
-ifeq ($(OSTYP),x86_64)
-openssltarget=linux-x86_64
-optflags=enable-ec_nistp_64_gcc_128
-else
-openssltarget=linux-elf
-optflags=
-endif
-
-
-USE_GIT_OPENSSL=0
-
-ifeq ($(USE_GIT_OPENSSL),1) # use git instead
-
-OPENSSL_VERSION=git
-OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION)/.git
-OPENSSL_URL=https://github.com/openssl/openssl.git
-
-$(DN_SRC)/$(OPENSSL_SRC): $(DN_SRC)/created
-	if [ ! -d "$(DN_SRC)/$(OPENSSL_SRC)" ]; then \
-        git clone $(OPENSSL_URL) $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION); \
-    fi
-	cd $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
-	touch $@
-
-$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
-	if [ ! -d "$(OPENSSL)-$(OPENSSL_VERSION)" ]; then \
-        cp -r $(DN_SRC)/$(OPENSSL)-$(OPENSSL_VERSION)/ $(OPENSSL)-$(OPENSSL_VERSION); \
-    fi
-	cd $(OPENSSL)-$(OPENSSL_VERSION) && git pull #&& git submodule update --init --recursive
-	touch $@
-
-else
-
-OPENSSL_VERSION=1.0.2g
-OPENSSL_SRC=$(OPENSSL)-$(OPENSSL_VERSION).tar.gz
-OPENSSL_URL=https://www.openssl.org/source/$(OPENSSL_SRC)
-
-$(DN_SRC)/$(OPENSSL_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(OPENSSL_URL)
-	touch $@
-
-$(OPENSSL)-$(OPENSSL_VERSION)/Configure: $(DN_SRC)/$(OPENSSL_SRC)
-	tar -xf $(DN_SRC)/$(OPENSSL_SRC)
-	touch $@
-endif
-
-$(OPENSSL)-$(OPENSSL_VERSION)/mypatched: $(OPENSSL)-$(OPENSSL_VERSION)/Configure
-	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.svn ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && svn revert -R . ; fi
-	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.hg ];  then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && hg update -C . ; fi
-	if [ -d $(OPENSSL)-$(OPENSSL_VERSION)/.git ]; then cd $(OPENSSL)-$(OPENSSL_VERSION)/ && git status | grep modified | awk '{print $$2}' | xargs git checkout ; fi
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && find . -name "Makefile*" | while read a ; do \
-            sed -e 's|^INCLUDES=|INCLUDES=-I$(PREFIX_DEST)/$(PREFIX_CONF)/include |g'   -i $$a; \
-            sed -e 's|^CFLAG=.*$$|CFLAG= -Os -I$(PREFIX_DEST)/$(PREFIX_CONF)/include|g' -i $$a; \
-        done
-	touch $@
-
-$(OPENSSL)-$(OPENSSL_VERSION)/Makefile: $(OPENSSL)-$(OPENSSL_VERSION)/mypatched $(FL_DEP_OPENSSL)
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) ./Configure \
-	        -L$(PREFIX_DEST)/$(PREFIX_CONF)/lib -lz \
-	        shared zlib \
-	        --prefix=$(PREFIX_CONF) --openssldir=$(PREFIX_CONF)/etc/ssl --libdir=lib \
-	        $(optflags) $(openssltarget)
-	touch $@
-
-$(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/Makefile
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make -j1 depend
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libcrypto.pc: $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && make -j1 INSTALL_PREFIX=$(PREFIX_DEST) MANDIR=$(PREFIX_CONF)/share/man MANSUFFIX=ssl install
-
-$(OPENSSL)-uninstall: $(OPENSSL)-$(OPENSSL_VERSION)/libcrypto.pc
-	cd $(OPENSSL)-$(OPENSSL_VERSION)/ && make uninstall
-$(OPENSSL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libcrypto.pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(OPENSSL_SRC)
-FL_UNINSTALL+=$(OPENSSL)-uninstall
 
 ########################################
 # System V Release 4.0 curses emulation library
@@ -683,7 +649,7 @@ NCURSES=ncurses
 
 FL_DEP_NCURSES= \
 	$(AUTOMAKE)-install \
-	$(GNUAWK)-install \
+	#$(GNUAWK)-install \
 	$(NULL)
 
 NCURSES_VERSION=6.0
@@ -726,6 +692,147 @@ $(NCURSES)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/ncursesw.pc
 
 FL_SOURCES+=$(DN_SRC)/$(NCURSES_SRC)
 FL_UNINSTALL+=$(NCURSES)-uninstall
+
+########################################
+# Enables programs to use display computer terminals in a device-independent manner
+TERMCAP=termcap
+
+FL_DEP_TERMCAP= \
+	$(NCURSES)-install \
+	$(NULL)
+
+TERMCAP_VERSION=1.3.1
+#TERMCAP_SRC=$(TERMCAP)-$(TERMCAP_VERSION).tar.gz
+#TERMCAP_URL="http://ftp.gnu.org/gnu/$(TERMCAP)/$(TERMCAP_SRC)"
+
+#$(DN_SRC)/$(TERMCAP_SRC): $(DN_SRC)/created
+#	$(WGET) -O $@ -c $(TERMCAP_URL)
+#	touch $@
+#$(TERMCAP)-$(TERMCAP_VERSION)/configure: $(DN_SRC)/$(TERMCAP_SRC)
+#	tar -xf $(DN_SRC)/$(TERMCAP_SRC)
+#	#mv $(TERMCAP)$(TERMCAP_VERSION) $(TERMCAP)-$(TERMCAP_VERSION)/
+#	touch $@
+#$(TERMCAP)-$(TERMCAP_VERSION)/Makefile: $(TERMCAP)-$(TERMCAP_VERSION)/configure $(FL_DEP_TERMCAP)
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+#$(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+#	touch $@
+#$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+#$(TERMCAP)-uninstall: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
+#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+#$(TERMCAP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a
+#	touch $@
+
+#FL_SOURCES+=$(DN_SRC)/$(TERMCAP_SRC)
+#FL_UNINSTALL+=$(TERMCAP)-uninstall
+
+$(TERMCAP)-uninstall:
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.a
+	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
+$(TERMCAP)-install: $(FL_DEP_TERMCAP)
+	mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/
+	ln -s libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.a
+	ln -s libncursesw.so  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.so
+	ln -s ../libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/libtermcap.a
+	ln -s libncursesw.so $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
+	touch $@
+
+
+########################################
+READLINE=readline
+
+FL_DEP_READLINE= \
+	$(TERMCAP)-install \
+	#$(GNUAWK)-install \
+	$(NULL)
+
+READLINE_VERSION=7.0
+READLINE_SRC=$(READLINE)-$(READLINE_VERSION).tar.gz
+READLINE_URL="http://ftp.gnu.org/gnu/$(READLINE)/$(READLINE_SRC)"
+
+$(DN_SRC)/$(READLINE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(READLINE_URL)
+	touch $@
+$(READLINE)-$(READLINE_VERSION)/configure.ac: $(DN_SRC)/$(READLINE_SRC)
+	tar -xf $(DN_SRC)/$(READLINE_SRC)
+	#mv $(READLINE)$(READLINE_VERSION) $(READLINE)-$(READLINE_VERSION)/
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/mypatched: $(READLINE)-$(READLINE_VERSION)/configure.ac #$(DN_PATCH)/pbs-readline-pkgconfig.patch
+	# create readline.pc
+	cd $(READLINE)-$(READLINE_VERSION)/ \
+        && sed -i 's/-L$${libdir} -lreadline.*$$/-L$${libdir} -lreadline -lncursesw/' $(READLINE).pc.in
+	# ncurses
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|SHLIB_LIBS=.*$$|SHLIB_LIBS=-lncursesw|'    -i support/shobj-conf
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw|' -i shlib/Makefile.in
+	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw @TERMCAP_LIB@|' -i Makefile.in
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/configure: $(READLINE)-$(READLINE_VERSION)/mypatched $(FL_DEP_READLINE)
+	#cd $(READLINE)-$(READLINE_VERSION) && $(ENV_COMPILE) autoreconf -if
+	touch $@
+
+$(READLINE)-$(READLINE_VERSION)/Makefile: $(READLINE)-$(READLINE_VERSION)/configure
+	cd $(READLINE)-$(READLINE_VERSION)/ && $(ENV_COMPILE) TERMCAP_LIB="-lncursesw" ./configure --prefix=$(PREFIX_CONF) --with-curses
+
+$(READLINE)-$(READLINE_VERSION)/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
+	cd $(READLINE)-$(READLINE_VERSION)/ && make $(MAKE_ARG)
+	readelf -a $(READLINE)-$(READLINE_VERSION)/shlib/libreadline.so.$(READLINE_VERSION) | grep NEEDED | grep curses; \
+	    if [ ! "$$?" = "0" ]; then echo "Error in compile readline lib!!"; exit 1; fi
+	touch $@
+# other commands to view shared lib:
+# readelf -a /usr/lib/libncurses.so | grep UP
+# ldd -r /usr/lib/libreadline.so.5 | grep und
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/$(READLINE).pc
+	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	touch $@
+
+$(READLINE)-uninstall: $(READLINE)-$(READLINE_VERSION)/Makefile
+	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(READLINE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(READLINE_SRC)
+FL_UNINSTALL+=$(READLINE)-uninstall
+
+########################################
+GNUAWK=gawk
+
+FL_DEP_GNUAWK= \
+	$(READLINE)-install  \
+	$(NULL)
+
+GNUAWK_VERSION=4.2.0
+GNUAWK_SRC=$(GNUAWK)-$(GNUAWK_VERSION).tar.gz
+GNUAWK_URL=http://ftp.gnu.org/gnu/gawk/$(GNUAWK_SRC)
+
+$(DN_SRC)/$(GNUAWK_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(GNUAWK_URL)
+	touch $@
+$(GNUAWK)-$(GNUAWK_VERSION)/configure: $(DN_SRC)/$(GNUAWK_SRC)
+	tar -xf $(DN_SRC)/$(GNUAWK_SRC)
+	touch $@
+
+#$(GNUAWK)-$(GNUAWK_VERSION)/mypatched: $(DN_PATCH)/pbs-GNUAWK-lua.patch $(GNUAWK)-$(GNUAWK_VERSION)/configure
+#	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && patch -p1 < $(DN_PATCH)/pbs-GNUAWK-lua.patch
+#	touch $@
+
+$(GNUAWK)-$(GNUAWK_VERSION)/Makefile: $(GNUAWK)-$(GNUAWK_VERSION)/configure $(FL_DEP_GNUAWK)
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --libexecdir=$(PREFIX_CONF)/lib  --enable-switch --disable-libsigsegv --with-libsigsegv-prefix=no
+$(GNUAWK)-$(GNUAWK_VERSION)/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/Makefile
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(GNUAWK)-uninstall: $(GNUAWK)-$(GNUAWK_VERSION)/gawk
+	cd $(GNUAWK)-$(GNUAWK_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(GNUAWK)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/gawk
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(GNUAWK_SRC)
+FL_UNINSTALL+=$(GNUAWK)-uninstall
 
 ########################################
 # OpenPGM: implementation of the Pragmatic General Multicast (PGM, RFC3208)
@@ -775,7 +882,7 @@ FL_DEP_LIBPNG= \
 #LIBPNG_VERSION=1.5.26
 #LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
 #LIBPNG_URL=http://downloads.sf.net/project/libpng/libpng15/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
-LIBPNG_VERSION=1.6.21
+LIBPNG_VERSION=1.6.34
 LIBPNG_SRC=$(LIBPNG)-$(LIBPNG_VERSION).tar.gz
 LIBPNG_URL=http://downloads.sourceforge.net/project/libpng/libpng16/$(LIBPNG_VERSION)/$(LIBPNG_SRC)
 
@@ -839,7 +946,7 @@ FL_DEP_LIBJPEG= \
 	$(NASM)-install \
 	$(NULL)
 
-LIBJPEG_VERSION=1.4.2
+LIBJPEG_VERSION=1.5.3
 LIBJPEG_SRC=$(LIBJPEG)-$(LIBJPEG_VERSION).tar.gz
 LIBJPEG_URL=http://sourceforge.net/projects/$(LIBJPEG)/files/$(LIBJPEG_VERSION)/$(LIBJPEG_SRC)
 
@@ -906,7 +1013,7 @@ $(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt: $(DN_SRC)/$(LIBOPENJPEG_SR
 FL_SOURCES+=$(DN_SRC)/$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION)/CMakeLists.txt
 else
 
-LIBOPENJPEG_VERSION=2.1
+LIBOPENJPEG_VERSION=2.3.0
 LIBOPENJPEG_SRC=$(LIBOPENJPEG)-$(LIBOPENJPEG_VERSION).tar.gz
 LIBOPENJPEG_URL=https://github.com/uclouvain/openjpeg/archive/version.$(LIBOPENJPEG_VERSION).tar.gz
 
@@ -1038,7 +1145,7 @@ FL_DEP_LIBWEBP= \
 	$(GIFLIB)-install \
 	$(NULL)
 
-LIBWEBP_VERSION=0.4.4
+LIBWEBP_VERSION=0.6.1
 LIBWEBP_SRC=$(LIBWEBP)-$(LIBWEBP_VERSION).tar.gz
 LIBWEBP_URL=http://downloads.webmproject.org/releases/webp/$(LIBWEBP_SRC)
 
@@ -1079,7 +1186,7 @@ FL_UNINSTALL+=$(LIBWEBP)-uninstall
 ########################################
 FREETYPE=freetype
 FREETYPE_VERSION=2.5.3
-FREETYPE_VERSION=2.5.5
+FREETYPE_VERSION=2.8.1
 FREETYPE_SRC=$(FREETYPE)-$(FREETYPE_VERSION).tar.bz2
 FREETYPE_URL=http://sourceforge.net/projects/freetype/files/freetype2/$(FREETYPE_VERSION)/$(FREETYPE_SRC)
 
@@ -1125,7 +1232,7 @@ FL_DEP_LIBXML2= \
 	$(ZLIB)-install \
 	$(NULL)
 
-LIBXML2_VERSION=2.9.3
+LIBXML2_VERSION=2.9.7
 LIBXML2_SRC=$(LIBXML2)-$(LIBXML2_VERSION).tar.gz
 LIBXML2_URL=http://xmlsoft.org/sources/$(LIBXML2_SRC)
 
@@ -1157,7 +1264,7 @@ FL_DEP_LIBXSLT= \
 	$(LIBXML2)-install \
 	$(NULL)
 
-LIBXSLT_VERSION=1.1.28
+LIBXSLT_VERSION=1.1.32
 LIBXSLT_SRC=$(LIBXSLT)-$(LIBXSLT_VERSION).tar.gz
 LIBXSLT_URL=http://xmlsoft.org/sources/$(LIBXSLT_SRC)
 
@@ -1184,7 +1291,7 @@ FL_UNINSTALL+=$(LIBXSLT)-uninstall
 
 ########################################
 FONTCONF=fontconfig
-FONTCONF_VERSION=2.11.94
+FONTCONF_VERSION=2.12.91
 FONTCONF_SRC=$(FONTCONF)-$(FONTCONF_VERSION).tar.bz2
 FONTCONF_URL=http://www.freedesktop.org/software/fontconfig/release/$(FONTCONF_SRC)
 
@@ -1221,7 +1328,7 @@ FL_UNINSTALL+=$(FONTCONF)-uninstall
 ########################################
 #http://ftp.gnu.org/pub/gnu/gperf/gperf-3.0.4.tar.gz
 GPERF=gperf
-GPERF_VERSION=3.0.4
+GPERF_VERSION=3.1
 GPERF_SRC=$(GPERF)-$(GPERF_VERSION).tar.gz
 GPERF_URL=http://ftp.gnu.org/pub/gnu/gperf/$(GPERF_SRC)
 
@@ -1250,7 +1357,7 @@ FL_UNINSTALL+=$(GPERF)-uninstall
 
 LIBICONV=libiconv
 
-LIBICONV_VERSION=1.14
+LIBICONV_VERSION=1.15
 LIBICONV_SRC=$(LIBICONV)-$(LIBICONV_VERSION).tar.gz
 LIBICONV_URL=http://ftp.gnu.org/pub/gnu/$(LIBICONV)/$(LIBICONV_SRC)
 
@@ -1295,7 +1402,7 @@ FL_UNINSTALL+=$(LIBICONV)-uninstall
 ########################################
 GETTEXT=gettext
 
-GETTEXT_VERSION=0.19.6
+GETTEXT_VERSION=0.19.8
 GETTEXT_SRC=$(GETTEXT)-$(GETTEXT_VERSION).tar.gz
 GETTEXT_URL=ftp://ftp.gnu.org/pub/gnu/gettext/$(GETTEXT_SRC)
 
@@ -1336,17 +1443,22 @@ FL_UNINSTALL+=$(GETTEXT)-uninstall
 
 
 ########################################
+# PAM (Pluggable Authentication Modules) library
+LIBPAM=libpam
+
+########################################
 # Miscellaneous system utilities for Linux
 UTILLINUX=util-linux
 
 FL_DEP_UTILLINUX= \
     $(GETTEXT)-install \
     $(AUTOMAKE)-install \
+    #$(LIBPAM)-install \
     $(NULL)
 
-UTILLINUX_VERSION=2.27.1
+UTILLINUX_VERSION=2.31.1
 UTILLINUX_SRC=$(UTILLINUX)-$(UTILLINUX_VERSION).tar.gz
-UTILLINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.27/$(UTILLINUX_SRC)
+UTILLINUX_URL=https://www.kernel.org/pub/linux/utils/util-linux/v2.31/$(UTILLINUX_SRC)
 
 $(DN_SRC)/$(UTILLINUX_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(UTILLINUX_URL)
@@ -1370,11 +1482,11 @@ $(UTILLINUX)-$(UTILLINUX_VERSION)/Makefile: $(UTILLINUX)-$(UTILLINUX_VERSION)/co
               --enable-raw \
               --enable-vipw \
               --enable-newgrp \
-              --enable-chfn-chsh \
               --enable-write \
               --enable-mesg \
               --enable-libmount-force-mountinfo \
               --disable-makeinstall-chown --disable-makeinstall-setuid --disable-use-tty-group \
+              #--enable-chfn-chsh \
 		$(NULL)
 	touch $@
 
@@ -1402,9 +1514,9 @@ FL_DEP_LIBKMOD= \
     $(AUTOMAKE)-install \
     $(NULL)
 
-LIBKMOD_VERSION=22
+LIBKMOD_VERSION=24
 LIBKMOD_SRC=$(LIBKMOD)-$(LIBKMOD_VERSION).tar.gz
-LIBKMOD_URL=ftp://ftp.kernel.org/pub/linux/utils/kernel/$(LIBKMOD)/$(LIBKMOD_SRC)
+LIBKMOD_URL=https://www.kernel.org/pub/linux/utils/kernel/kmod/$(LIBKMOD_SRC)
 
 $(DN_SRC)/$(LIBKMOD_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBKMOD_URL)
@@ -1428,14 +1540,14 @@ $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile: $(LIBKMOD)-$(LIBKMOD_VERSION)/configure
 		$(NULL)
 	touch $@
 
-$(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la: $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile
+$(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/Makefile
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libkmod.la: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libkmod.pc: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.pc
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBKMOD)-uninstall: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.la
+$(LIBKMOD)-uninstall: $(LIBKMOD)-$(LIBKMOD_VERSION)/libkmod/libkmod.pc
 	cd $(LIBKMOD)-$(LIBKMOD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBKMOD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libkmod.la
+$(LIBKMOD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libkmod.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBKMOD_SRC)
@@ -1445,7 +1557,7 @@ FL_UNINSTALL+=$(LIBKMOD)-uninstall
 # hardware identification databases
 HWIDS=hwids
 
-HWIDS_VERSION=20150717
+HWIDS_VERSION=20171003
 HWIDS_SRC=$(HWIDS)-$(HWIDS_VERSION).tar.gz
 HWIDS_URL=https://github.com/gentoo/hwids/archive/$(HWIDS_SRC)
 
@@ -1476,10 +1588,6 @@ $(HWIDS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/share/hwdata/pci.ids
 
 FL_SOURCES+=$(DN_SRC)/$(HWIDS_SRC)
 FL_UNINSTALL+=$(HWIDS)-uninstall
-
-########################################
-# PAM (Pluggable Authentication Modules) library
-PAM=pam
 
 ########################################
 # A unit testing framework for C
@@ -1519,11 +1627,11 @@ KBD=kbd
 
 FL_DEP_KBD= \
     $(CHECK)-install \
-    #$(PAM)-install \
+    #$(LIBPAM)-install \
     $(NULL)
 
-KBD_VERSION=2.0.3
-KBD_SRC=$(KBD)-$(KBD_VERSION).tar.gz
+KBD_VERSION=2.0.4
+KBD_SRC=$(KBD)-$(KBD_VERSION).tar.xz
 KBD_URL=ftp://ftp.altlinux.org/pub/people/legion/kbd/$(KBD_SRC)
 
 $(DN_SRC)/$(KBD_SRC): $(DN_SRC)/created
@@ -1542,7 +1650,7 @@ $(KBD)-$(KBD_VERSION)/mypatched: $(DN_SRC)/kbd-fix-euro2.patch $(KBD)-$(KBD_VERS
 	touch $@
 
 $(KBD)-$(KBD_VERSION)/Makefile: $(KBD)-$(KBD_VERSION)/mypatched
-	cd $(KBD)-$(KBD_VERSION)/ && make distclean; $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/share/kbd --mandir=$(PREFIX_CONF)/share/man
+	cd $(KBD)-$(KBD_VERSION)/ && make distclean; $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --datadir=$(PREFIX_CONF)/share/kbd --mandir=$(PREFIX_CONF)/share/man --disable-vlock
 $(KBD)-$(KBD_VERSION)/src/libfont.a: $(KBD)-$(KBD_VERSION)/Makefile
 	cd $(KBD)-$(KBD_VERSION)/ && $(ENV_COMPILE) make KEYCODES_PROGS=yes RESIZECONS_PROGS=yes $(MAKE_ARG)
 $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libfont.a: $(KBD)-$(KBD_VERSION)/src/libfont.a
@@ -1612,7 +1720,7 @@ FL_DEP_ELFUTILS= \
 	$(BZIP2)-install \
 	$(NULL)
 
-ELFUTILS_VERSION=0.164
+ELFUTILS_VERSION=0.170
 ELFUTILS_SRC=$(ELFUTILS)-$(ELFUTILS_VERSION).tar.bz2
 ELFUTILS_URL=https://fedorahosted.org/releases/e/l/elfutils/$(ELFUTILS_VERSION)/$(ELFUTILS_SRC)
 
@@ -1643,18 +1751,78 @@ FL_SOURCES+=$(DN_SRC)/$(ELFUTILS_SRC)
 FL_UNINSTALL+=$(ELFUTILS)-uninstall
 
 ########################################
+# A library that implements Perl 5-style regular expressions
+LIBPCRE=pcre
+
+FL_DEP_LIBPCRE= \
+    $(ZLIB)-install \
+    $(BZIP2)-install \
+    $(AUTOMAKE)-install \
+    $(NULL)
+
+LIBPCRE_VERSION=8.41
+LIBPCRE_SRC=$(LIBPCRE)-$(LIBPCRE_VERSION).tar.bz2
+LIBPCRE_URL=https://ftp.pcre.org/pub/pcre/$(LIBPCRE_SRC)
+
+$(DN_SRC)/$(LIBPCRE_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBPCRE_URL)
+	touch $@
+
+#$(DN_SRC)/LIBPCRE-fix-path-pc.patch: $(DN_SRC)/created
+#	$(WGET) -O $@ https://projects.archlinux.org/svntogit/packages.git/plain/trunk/0001-Fix-paths-in-LIBPCRE.pc.in.patch?h=packages/LIBPCRE
+#	touch $@
+#FL_SOURCES+=$(DN_SRC)/LIBPCRE-fix-path-pc.patch
+
+$(LIBPCRE)-$(LIBPCRE_VERSION)/configure.ac: $(DN_SRC)/$(LIBPCRE_SRC)
+	tar -xf $(DN_SRC)/$(LIBPCRE_SRC)
+	touch $@
+$(LIBPCRE)-$(LIBPCRE_VERSION)/mypatched: $(LIBPCRE)-$(LIBPCRE_VERSION)/configure.ac $(FL_DEP_LIBPCRE) # $(DN_SRC)/LIBPCRE-fix-path-pc.patch
+	#cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+	#cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ && patch -p1 -i $(DN_SRC)/LIBPCRE-fix-path-pc.patch
+	touch $@
+$(LIBPCRE)-$(LIBPCRE_VERSION)/configure: $(LIBPCRE)-$(LIBPCRE_VERSION)/mypatched
+	cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
+$(LIBPCRE)-$(LIBPCRE_VERSION)/Makefile: $(LIBPCRE)-$(LIBPCRE_VERSION)/configure
+	cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) \
+	    --enable-unicode-properties \
+	    --enable-pcre16 \
+	    --enable-pcre32 \
+	    --enable-jit \
+	    --enable-pcregrep-libz \
+	    --enable-pcregrep-libbz2 \
+	    $(NULL)
+	touch $@
+
+$(LIBPCRE)-$(LIBPCRE_VERSION)/libpcre.la: $(LIBPCRE)-$(LIBPCRE_VERSION)/Makefile
+	cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ \
+	    && $(ENV_COMPILE) make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libpcre.la: $(LIBPCRE)-$(LIBPCRE_VERSION)/libpcre.la
+	cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) install
+
+$(LIBPCRE)-uninstall: $(LIBPCRE)-$(LIBPCRE_VERSION)/libpcre.la
+	cd $(LIBPCRE)-$(LIBPCRE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBPCRE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libpcre.la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(LIBPCRE_SRC)
+FL_UNINSTALL+=$(LIBPCRE)-uninstall
+
+########################################
 GLIB2=glib
 
 FL_DEP_GLIB2= \
 	$(AUTOMAKE)-install \
 	$(LIBXSLT)-install \
 	$(LIBFFI)-install \
+	$(LIBPCRE)-install \
 	$(ELFUTILS)-install \
     $(NULL)
 
-GLIB2_VERSION=2.47.3
+GLIB2_VERSION=2.55.0
 GLIB2_SRC=$(GLIB2)-$(GLIB2_VERSION).tar.xz
-GLIB2_URL=http://ftp.gnome.org/pub/GNOME/sources/glib/2.47/$(GLIB2_SRC)
+GLIB2_URL=http://ftp.gnome.org/pub/GNOME/sources/glib/2.55/$(GLIB2_SRC)
 
 $(DN_SRC)/$(GLIB2_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(GLIB2_URL)
@@ -1670,11 +1838,12 @@ $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch: $(DN_SRC)/created
 	touch $@
 FL_SOURCES+=$(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch
 
+
 $(GLIB2)-$(GLIB2_VERSION)/configure.ac: $(DN_SRC)/$(GLIB2_SRC)
 	tar -xf $(DN_SRC)/$(GLIB2_SRC)
 	touch $@
 
-$(GLIB2)-$(GLIB2_VERSION)/mypatched: $(DN_SRC)/glib2-memleak.patch $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch $(GLIB2)-$(GLIB2_VERSION)/configure.ac $(FL_DEP_GLIB2)
+$(GLIB2)-$(GLIB2_VERSION)/mypatched: $(GLIB2)-$(GLIB2_VERSION)/configure.ac $(FL_DEP_GLIB2) $(DN_SRC)/glib2-memleak.patch $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch
 	cd $(GLIB2)-$(GLIB2_VERSION)/ \
 		&& patch -Rp1 -i $(DN_SRC)/glib2-revert-warn-glib-compile-schemas.patch \
         && patch -Np1 -i $(DN_SRC)/glib2-memleak.patch
@@ -1716,9 +1885,9 @@ FL_UNINSTALL+=$(GLIB2)-uninstall
 # https://live.gnome.org/GObjectIntrospection
 GOBJINTROSPEC=gobject-introspection
 
-GOBJINTROSPEC_VERSION=1.46.0
+GOBJINTROSPEC_VERSION=1.55.0
 GOBJINTROSPEC_SRC=$(GOBJINTROSPEC)-$(GOBJINTROSPEC_VERSION).tar.xz
-GOBJINTROSPEC_URL=http://ftp.gnome.org/pub/gnome/sources/$(GOBJINTROSPEC)/1.46/$(GOBJINTROSPEC_SRC)
+GOBJINTROSPEC_URL=http://ftp.gnome.org/pub/gnome/sources/$(GOBJINTROSPEC)/1.55/$(GOBJINTROSPEC_SRC)
 
 FL_DEP_GOBJINTROSPEC= \
 	$(AUTOMAKE)-install \
@@ -1765,7 +1934,7 @@ FL_DEP_LIBUSB= \
     $(AUTOMAKE)-install \
     $(NULL)
 
-LIBUSB_VERSION=1.0.20
+LIBUSB_VERSION=1.0.21
 LIBUSB_SRC=$(LIBUSB)-$(LIBUSB_VERSION).tar.bz2
 LIBUSB_URL=http://sourceforge.net/projects/libusb/files/libusb-1.0/libusb-$(LIBUSB_VERSION)/$(LIBUSB_SRC)
 
@@ -1851,7 +2020,7 @@ FL_UNINSTALL+=$(LIBUDEV0)-uninstall
 ##########
 # The userspace dev tools (udev) forked by Gentoo
 LIBUDEV1=eudev
-LIBUDEV1_VERSION=3.1.2
+LIBUDEV1_VERSION=3.2.5
 LIBUDEV1_SRC=$(LIBUDEV1)-$(LIBUDEV1_VERSION).tar.gz
 LIBUDEV1_URL=https://github.com/gentoo/eudev/archive/v$(LIBUDEV1_VERSION).tar.gz
 
@@ -1902,17 +2071,17 @@ $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/config
 		$(NULL)
 	touch $@
 
-$(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile
+$(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.pc: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/Makefile
 	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libudev.la: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libudev.pc: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.pc
 	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 	for i in "$(PREFIX_DEST)/$(PREFIX_CONF)/lib/udev/rules.d/"*.rules; do \
 		sed -i -e 's#GROUP="dialout"#GROUP="uucp"#g; s#GROUP="tape"#GROUP="storage"#g; s#GROUP="cdrom"#GROUP="optical"#g' "$${i}" ; \
 	done
 
-$(LIBUDEV1)-uninstall: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.la
+$(LIBUDEV1)-uninstall: $(LIBUDEV1)-$(LIBUDEV1_VERSION)/src/libudev/libudev.pc
 	cd $(LIBUDEV1)-$(LIBUDEV1_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBUDEV1)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libudev.la
+$(LIBUDEV1)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libudev.pc
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBUDEV1_SRC)
@@ -1931,7 +2100,7 @@ FL_DEP_USBUTILS= \
     $(LIBUDEV)-install \
     $(NULL)
 
-USBUTILS_VERSION=008
+USBUTILS_VERSION=009
 USBUTILS_SRC=$(USBUTILS)-$(USBUTILS_VERSION).tar.gz
 USBUTILS_URL=http://www.kernel.org/pub/linux/utils/usb/usbutils/$(USBUTILS_SRC)
 
@@ -1970,9 +2139,9 @@ FL_UNINSTALL+=$(USBUTILS)-uninstall
 ########################################
 # libraw1394
 LIBRAW1394=libraw1394
-LIBRAW1394_VERSION=2.1.1
+LIBRAW1394_VERSION=2.1.2
 LIBRAW1394_SRC=$(LIBRAW1394)-$(LIBRAW1394_VERSION).tar.gz
-LIBRAW1394_URL=ftp://ftp.kernel.org/pub/linux/libs/ieee1394/$(LIBRAW1394_SRC)
+LIBRAW1394_URL=https://www.kernel.org/pub/linux/libs/ieee1394/$(LIBRAW1394_SRC)
 
 $(DN_SRC)/$(LIBRAW1394_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBRAW1394_URL)
@@ -2005,7 +2174,7 @@ FL_DEP_LIBDC1394= \
 	#$(LIBUSB)-install \
 	$(NULL)
 
-LIBDC1394_VERSION=2.2.3
+LIBDC1394_VERSION=2.2.5
 LIBDC1394_SRC=$(LIBDC1394)-$(LIBDC1394_VERSION).tar.gz
 LIBDC1394_URL=http://sourceforge.net/projects/libdc1394/files/libdc1394-2/$(LIBDC1394_VERSION)/$(LIBDC1394_SRC)
 
@@ -2081,7 +2250,7 @@ $(LVPX)-$(LVPX_VERSION)/configure: $(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
 
 FL_SOURCES+=$(DN_SRC)/$(LVPX)-$(LVPX_VERSION)/configure
 else
-LVPX_VERSION=1.5.0
+LVPX_VERSION=1.6.1
 LVPX_SRC=$(LVPX)-$(LVPX_VERSION).tar.gz
 LVPX_URL=https://github.com/webmproject/libvpx/archive/v$(LVPX_VERSION).tar.gz
 
@@ -2117,119 +2286,15 @@ FL_UNINSTALL+=$(LVPX)-uninstall
 
 
 ########################################
-# Enables programs to use display computer terminals in a device-independent manner
-TERMCAP=termcap
-
-FL_DEP_TERMCAP= \
-	$(NCURSES)-install \
-	$(NULL)
-
-TERMCAP_VERSION=1.3.1
-#TERMCAP_SRC=$(TERMCAP)-$(TERMCAP_VERSION).tar.gz
-#TERMCAP_URL="http://ftp.gnu.org/gnu/$(TERMCAP)/$(TERMCAP_SRC)"
-
-#$(DN_SRC)/$(TERMCAP_SRC): $(DN_SRC)/created
-#	$(WGET) -O $@ -c $(TERMCAP_URL)
-#	touch $@
-#$(TERMCAP)-$(TERMCAP_VERSION)/configure: $(DN_SRC)/$(TERMCAP_SRC)
-#	tar -xf $(DN_SRC)/$(TERMCAP_SRC)
-#	#mv $(TERMCAP)$(TERMCAP_VERSION) $(TERMCAP)-$(TERMCAP_VERSION)/
-#	touch $@
-#$(TERMCAP)-$(TERMCAP_VERSION)/Makefile: $(TERMCAP)-$(TERMCAP_VERSION)/configure $(FL_DEP_TERMCAP)
-#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
-#$(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
-#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-#	touch $@
-#$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a: $(TERMCAP)-$(TERMCAP_VERSION)/libtermcap.a
-#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-#$(TERMCAP)-uninstall: $(TERMCAP)-$(TERMCAP_VERSION)/Makefile
-#	cd $(TERMCAP)-$(TERMCAP_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-#$(TERMCAP)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libtermcap.a
-#	touch $@
-
-#FL_SOURCES+=$(DN_SRC)/$(TERMCAP_SRC)
-#FL_UNINSTALL+=$(TERMCAP)-uninstall
-
-$(TERMCAP)-uninstall:
-	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.a
-	rm -f $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
-$(TERMCAP)-install: $(FL_DEP_TERMCAP)
-	mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/
-	ln -s libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.a
-	ln -s libncursesw.so  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libcurses.so
-	ln -s ../libncursesw.a  $(PREFIX_DEST)/$(PREFIX_CONF)/lib/termcap/libtermcap.a
-	ln -s libncursesw.so $(PREFIX_DEST)/$(PREFIX_CONF)/libtermcap.so
-	touch $@
-
-########################################
-READLINE=readline
-
-FL_DEP_READLINE= \
-	$(TERMCAP)-install \
-	$(GNUAWK)-install \
-	$(NULL)
-
-READLINE_VERSION=6.3
-READLINE_SRC=$(READLINE)-$(READLINE_VERSION).tar.gz
-READLINE_URL="http://ftp.gnu.org/gnu/$(READLINE)/$(READLINE_SRC)"
-
-$(DN_SRC)/$(READLINE_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(READLINE_URL)
-	touch $@
-$(READLINE)-$(READLINE_VERSION)/configure.ac: $(DN_SRC)/$(READLINE_SRC)
-	tar -xf $(DN_SRC)/$(READLINE_SRC)
-	#mv $(READLINE)$(READLINE_VERSION) $(READLINE)-$(READLINE_VERSION)/
-	touch $@
-
-$(READLINE)-$(READLINE_VERSION)/mypatched: $(DN_PATCH)/pbs-readline-pkgconfig.patch $(READLINE)-$(READLINE_VERSION)/configure.ac
-	# create readline.pc
-	cd $(READLINE)-$(READLINE_VERSION)/ \
-        && patch -Np1 -i $(DN_PATCH)/pbs-readline-pkgconfig.patch \
-        && sed -i 's/-L$${libdir} -lreadline.*$$/-L$${libdir} -lreadline -lncursesw/' $(READLINE).pc.in
-	# ncurses
-	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|SHLIB_LIBS=.*$$|SHLIB_LIBS=-lncursesw|'    -i support/shobj-conf
-	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw|' -i shlib/Makefile.in
-	cd $(READLINE)-$(READLINE_VERSION)/ && sed -e 's|TERMCAP_LIB =.*$$|TERMCAP_LIB=-lncursesw @TERMCAP_LIB@|' -i Makefile.in
-	touch $@
-
-$(READLINE)-$(READLINE_VERSION)/configure: $(READLINE)-$(READLINE_VERSION)/mypatched $(FL_DEP_READLINE)
-	#cd $(READLINE)-$(READLINE_VERSION) && $(ENV_COMPILE) autoreconf -if
-	touch $@
-
-$(READLINE)-$(READLINE_VERSION)/Makefile: $(READLINE)-$(READLINE_VERSION)/configure
-	cd $(READLINE)-$(READLINE_VERSION)/ && $(ENV_COMPILE) TERMCAP_LIB="-lncursesw" ./configure --prefix=$(PREFIX_CONF) --with-curses
-
-$(READLINE)-$(READLINE_VERSION)/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/Makefile
-	cd $(READLINE)-$(READLINE_VERSION)/ && make $(MAKE_ARG)
-	readelf -a $(READLINE)-$(READLINE_VERSION)/shlib/libreadline.so.$(READLINE_VERSION) | grep NEEDED | grep curses; \
-	    if [ ! "$$?" = "0" ]; then echo "Error in compile readline lib!!"; exit 1; fi
-	touch $@
-# other commands to view shared lib:
-# readelf -a /usr/lib/libncurses.so | grep UP
-# ldd -r /usr/lib/libreadline.so.5 | grep und
-
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc: $(READLINE)-$(READLINE_VERSION)/$(READLINE).pc
-	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
-	touch $@
-
-$(READLINE)-uninstall: $(READLINE)-$(READLINE_VERSION)/Makefile
-	cd $(READLINE)-$(READLINE_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(READLINE)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/$(READLINE).pc
-	touch $@
-
-FL_SOURCES+=$(DN_SRC)/$(READLINE_SRC)
-FL_UNINSTALL+=$(READLINE)-uninstall
-
-########################################
 SQLITE=sqlite
 
 FL_DEP_SQLITE= \
 	$(READLINE)-install \
 	$(NULL)
 
-SQLITE_VERSION=3090200
+SQLITE_VERSION=3210000
 SQLITE_SRC=$(SQLITE)-autoconf-$(SQLITE_VERSION).tar.gz
-SQLITE_URL="http://www.sqlite.org/2015/$(SQLITE_SRC)"
+SQLITE_URL="http://www.sqlite.org/2017/$(SQLITE_SRC)"
 
 $(DN_SRC)/$(SQLITE_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(SQLITE_URL)
@@ -2271,7 +2336,7 @@ FL_DEP_LUA= \
 	#$(TERMCAP)-install \
 	$(NULL)
 
-LUA_VERSION=5.3.1
+LUA_VERSION=5.3.4
 LUA_SRC=$(LUA)-$(LUA_VERSION).tar.gz
 LUA_URL="http://www.lua.org/ftp/$(LUA_SRC)"
 
@@ -2312,7 +2377,7 @@ FL_DEP_WAYLAND= \
 	$(EXPAT)-install \
 	$(NULL)
 
-WAYLAND_VERSION=1.9.0
+WAYLAND_VERSION=1.14.0
 WAYLAND_SRC=$(WAYLAND)-$(WAYLAND_VERSION).tar.xz
 WAYLAND_URL="http://wayland.freedesktop.org/releases/$(WAYLAND_SRC)"
 
@@ -2340,10 +2405,45 @@ FL_SOURCES+=$(DN_SRC)/$(WAYLAND_SRC)
 FL_UNINSTALL+=$(WAYLAND)-uninstall
 
 ########################################
+WAYLANDPROTOCOL=wayland-protocols
+
+FL_DEP_WAYLANDPROTOCOL= \
+	$(WAYLAND)-install \
+	$(NULL)
+
+WAYLANDPROTOCOL_VERSION=1.12
+WAYLANDPROTOCOL_SRC=$(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION).tar.xz
+WAYLANDPROTOCOL_URL="https://wayland.freedesktop.org/releases/$(WAYLANDPROTOCOL_SRC)"
+
+$(DN_SRC)/$(WAYLANDPROTOCOL_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(WAYLANDPROTOCOL_URL)
+	touch $@
+$(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/configure: $(DN_SRC)/$(WAYLANDPROTOCOL_SRC)
+	tar -xf $(DN_SRC)/$(WAYLANDPROTOCOL_SRC)
+	#mv $(WAYLANDPROTOCOL)$(WAYLANDPROTOCOL_VERSION) $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/
+	touch $@
+$(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/Makefile: $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/configure $(FL_DEP_WAYLANDPROTOCOL)
+	cd $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --disable-static --disable-documentation
+$(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/wayland-protocols.pc: $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/Makefile
+	cd $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/ && make $(MAKE_ARG)
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/wayland-protocols.pc: $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/wayland-protocols.pc
+	cd $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
+	#touch $@
+
+$(WAYLANDPROTOCOL)-uninstall: $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/wayland-protocols.pc
+	cd $(WAYLANDPROTOCOL)-$(WAYLANDPROTOCOL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(WAYLANDPROTOCOL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/wayland-protocols.pc
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(WAYLANDPROTOCOL_SRC)
+FL_UNINSTALL+=$(WAYLANDPROTOCOL)-uninstall
+
+
+########################################
 # X.Org Autotools macros
 XUTILMACRO=util-macros
 
-XUTILMACRO_VERSION=1.19.0
+XUTILMACRO_VERSION=1.19.1
 XUTILMACRO_SRC=$(XUTILMACRO)-$(XUTILMACRO_VERSION).tar.gz
 XUTILMACRO_URL="http://www.x.org/releases/individual/util/$(XUTILMACRO_SRC)"
 
@@ -2374,7 +2474,7 @@ FL_DEP_LIBPCIACCESS= \
 	$(XUTILMACRO)-install \
 	$(NULL)
 
-LIBPCIACCESS_VERSION=0.13.4
+LIBPCIACCESS_VERSION=0.14
 LIBPCIACCESS_SRC=$(LIBPCIACCESS)-$(LIBPCIACCESS_VERSION).tar.gz
 LIBPCIACCESS_URL="http://www.x.org/releases/individual/lib/$(LIBPCIACCESS_SRC)"
 
@@ -2408,7 +2508,7 @@ FL_DEP_LIBDRM= \
 	$(LIBPCIACCESS)-install \
 	$(NULL)
 
-LIBDRM_VERSION=2.4.67
+LIBDRM_VERSION=2.4.89
 LIBDRM_SRC=$(LIBDRM)-$(LIBDRM_VERSION).tar.gz
 LIBDRM_URL="http://dri.freedesktop.org/libdrm/$(LIBDRM_SRC)"
 
@@ -2546,7 +2646,7 @@ FL_DEP_PRESENTPROTO= \
 	$(XUTILMACRO)-install \
 	$(NULL)
 
-PRESENTPROTO_VERSION=1.0
+PRESENTPROTO_VERSION=1.1
 PRESENTPROTO_SRC=$(PRESENTPROTO)-$(PRESENTPROTO_VERSION).tar.gz
 PRESENTPROTO_URL="http://www.x.org/releases/individual/proto/$(PRESENTPROTO_SRC)"
 
@@ -2578,7 +2678,7 @@ FL_DEP_XPROTO= \
 	$(XUTILMACRO)-install \
 	$(NULL)
 
-XPROTO_VERSION=7.0.28
+XPROTO_VERSION=7.0.31
 XPROTO_SRC=$(XPROTO)-$(XPROTO_VERSION).tar.gz
 XPROTO_URL="http://www.x.org/releases/individual/proto/$(XPROTO_SRC)"
 
@@ -2668,7 +2768,7 @@ FL_UNINSTALL+=$(FIXESPROTO)-uninstall
 ########################################
 # X11 various extension wire protocol
 INPUTPROTO=inputproto
-INPUTPROTO_VERSION=2.3
+INPUTPROTO_VERSION=2.3.2
 INPUTPROTO_SRC=$(INPUTPROTO)-$(INPUTPROTO_VERSION).tar.gz
 INPUTPROTO_URL="http://www.x.org/releases/individual/proto/$(INPUTPROTO_SRC)"
 
@@ -2696,7 +2796,7 @@ FL_UNINSTALL+=$(INPUTPROTO)-uninstall
 # X11 Video extension wire protocol
 VIDEOPROTO=videoproto
 
-VIDEOPROTO_VERSION=2.3.2
+VIDEOPROTO_VERSION=2.3.3
 VIDEOPROTO_SRC=$(VIDEOPROTO)-$(VIDEOPROTO_VERSION).tar.gz
 VIDEOPROTO_URL="http://www.x.org/releases/individual/proto/$(VIDEOPROTO_SRC)"
 
@@ -2724,7 +2824,7 @@ FL_UNINSTALL+=$(VIDEOPROTO)-uninstall
 ########################################
 RENDERPROTO=renderproto
 
-RENDERPROTO_VERSION=0.11
+RENDERPROTO_VERSION=0.11.1
 RENDERPROTO_SRC=$(RENDERPROTO)-$(RENDERPROTO_VERSION).tar.gz
 RENDERPROTO_URL="http://www.x.org/releases/individual/proto/$(RENDERPROTO_SRC)"
 
@@ -2812,7 +2912,7 @@ FL_DEP_XCBPROTO= \
 	$(LIBXML2)-install \
 	$(NULL)
 
-XCBPROTO_VERSION=1.11
+XCBPROTO_VERSION=1.12
 XCBPROTO_SRC=$(XCBPROTO)-$(XCBPROTO_VERSION).tar.gz
 XCBPROTO_URL="http://xcb.freedesktop.org/dist/$(XCBPROTO_SRC)"
 
@@ -2919,7 +3019,7 @@ FL_DEP_LIBXRENDER= \
 	$(RENDERPROTO)-install \
 	$(NULL)
 
-LIBXRENDER_VERSION=0.9.9
+LIBXRENDER_VERSION=0.9.10
 LIBXRENDER_SRC=$(LIBXRENDER)-$(LIBXRENDER_VERSION).tar.gz
 LIBXRENDER_URL="http://www.x.org/releases/individual/lib/$(LIBXRENDER_SRC)"
 
@@ -3100,7 +3200,7 @@ FL_DEP_LIBPTHREADSTUBS= \
 	#$(aaaaa)-install \
 	$(NULL)
 
-LIBPTHREADSTUBS_VERSION=0.3
+LIBPTHREADSTUBS_VERSION=0.4
 LIBPTHREADSTUBS_SRC=$(LIBPTHREADSTUBS)-$(LIBPTHREADSTUBS_VERSION).tar.gz
 LIBPTHREADSTUBS_URL="http://xcb.freedesktop.org/dist/$(LIBPTHREADSTUBS_SRC)"
 
@@ -3223,7 +3323,7 @@ FL_DEP_LIBXCB= \
 	$(LIBXDMCP)-install \
 	$(NULL)
 
-LIBXCB_VERSION=1.11.1
+LIBXCB_VERSION=1.12
 LIBXCB_SRC=$(LIBXCB)-$(LIBXCB_VERSION).tar.gz
 LIBXCB_URL="http://xcb.freedesktop.org/dist/$(LIBXCB_SRC)"
 
@@ -3267,7 +3367,7 @@ FL_DEP_LIBX11= \
 	$(LIBXCB)-install \
 	$(NULL)
 
-LIBX11_VERSION=1.6.3
+LIBX11_VERSION=1.6.5
 LIBX11_SRC=$(LIBX11)-$(LIBX11_VERSION).tar.gz
 LIBX11_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBX11_SRC)"
 
@@ -3307,7 +3407,7 @@ FL_DEP_LIBXPM= \
 	$(XPROTO)-install \
 	$(NULL)
 
-LIBXPM_VERSION=3.5.11
+LIBXPM_VERSION=3.5.12
 LIBXPM_SRC=$(LIBXPM)-$(LIBXPM_VERSION).tar.gz
 LIBXPM_URL="http://xorg.freedesktop.org/releases/individual/lib/$(LIBXPM_SRC)"
 
@@ -3358,19 +3458,20 @@ $(LIBXT)-$(LIBXT_VERSION)/configure: $(DN_SRC)/$(LIBXT_SRC)
 $(LIBXT)-$(LIBXT_VERSION)/Makefile: $(LIBXT)-$(LIBXT_VERSION)/configure $(FL_DEP_LIBXT)
 	cd $(LIBXT)-$(LIBXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
+$(LIBXT)-$(LIBXT_VERSION)/src/libXt.la: $(LIBXT)-$(LIBXT_VERSION)/Makefile
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).la: $(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXt.la: $(LIBXT)-$(LIBXT_VERSION)/src/libXt.la
 	cd $(LIBXT)-$(LIBXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXT)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXT)"
 
-$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/src/$(LIBXT).la
+$(LIBXT)-uninstall: $(LIBXT)-$(LIBXT_VERSION)/src/libXt.la
 	cd $(LIBXT)-$(LIBXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXT).la
-	touch $@
+$(LIBXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXt.la
+	echo "about to touch $(LIBXT)-install"
+	touch $(LIBXT)-install
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXT_SRC)
 FL_UNINSTALL+=$(LIBXT)-uninstall
@@ -3398,19 +3499,20 @@ $(LIBXEXT)-$(LIBXEXT_VERSION)/configure: $(DN_SRC)/$(LIBXEXT_SRC)
 $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile: $(LIBXEXT)-$(LIBXEXT_VERSION)/configure $(FL_DEP_LIBXEXT)
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --sysconfdir=$(PREFIX_CONF)/etc/ --disable-static
 	touch $@
-$(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
+$(LIBXEXT)-$(LIBXEXT_VERSION)/src/libXext.la: $(LIBXEXT)-$(LIBXEXT_VERSION)/Makefile
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).la: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXext.la: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/libXext.la
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install \
 	    && install -m755 -d "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXEXT)" \
 	    && install -m644 COPYING "$(PREFIX_DEST)/$(PREFIX_CONF)/share/licenses/$(LIBXEXT)"
 
-$(LIBXEXT)-uninstall: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/$(LIBXEXT).la
+$(LIBXEXT)-uninstall: $(LIBXEXT)-$(LIBXEXT_VERSION)/src/libXext.la
 	cd $(LIBXEXT)-$(LIBXEXT_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBXEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXEXT).la
-	touch $@
+	rm -f $(LIBXEXT)-install
+$(LIBXEXT)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libXext.la
+	touch $(LIBXEXT)-install
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXEXT_SRC)
 FL_UNINSTALL+=$(LIBXEXT)-uninstall
@@ -3444,7 +3546,7 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXXF86VM).la: $(LIBXXF86VM)-$(LIBXXF86VM_V
 $(LIBXXF86VM)-uninstall: $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/src/$(LIBXXF86VM).la
 	cd $(LIBXXF86VM)-$(LIBXXF86VM_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
 $(LIBXXF86VM)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBXXF86VM).la
-	touch $@
+	touch $(LIBXXF86VM)-install
 
 FL_SOURCES+=$(DN_SRC)/$(LIBXXF86VM_SRC)
 FL_UNINSTALL+=$(LIBXXF86VM)-uninstall
@@ -3460,7 +3562,7 @@ FL_DEP_LIBXFIXES= \
 	$(LIBX11)-install \
 	$(NULL)
 
-LIBXFIXES_VERSION=5.0.1
+LIBXFIXES_VERSION=5.0.3
 LIBXFIXES_SRC=$(LIBXFIXES)-$(LIBXFIXES_VERSION).tar.gz
 LIBXFIXES_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXFIXES_SRC)
 
@@ -3571,7 +3673,7 @@ FL_UNINSTALL+=$(LIBXMU)-uninstall
 # libxi, X11 Input extension library
 # http://xorg.freedesktop.org/
 LIBXI=libXi
-LIBXI_VERSION=1.7.5
+LIBXI_VERSION=1.7.9
 LIBXI_SRC=$(LIBXI)-$(LIBXI_VERSION).tar.gz
 LIBXI_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXI_SRC)
 
@@ -3617,7 +3719,7 @@ FL_DEP_LIBXV= \
 	$(VIDEOPROTO)-install \
 	$(NULL)
 
-LIBXV_VERSION=1.0.10
+LIBXV_VERSION=1.0.11
 LIBXV_SRC=$(LIBXV)-$(LIBXV_VERSION).tar.gz
 LIBXV_URL=http://xorg.freedesktop.org/releases/individual/lib/$(LIBXV_SRC)
 
@@ -3720,7 +3822,7 @@ FL_UNINSTALL+=$(LIBXDAMAGE)-uninstall
 
 ########################################
 TCL=tcl
-TCL_VERSION=8.6.4
+TCL_VERSION=8.6.7
 #TCL_SRC=$(TCL)-core$(TCL_VERSION)-src.tar.gz
 #TCL_URL="http://downloads.sourceforge.net/sourceforge/tcl/$(TCL_SRC)"
 TCL_SRC=$(TCL)$(TCL_VERSION)-src.tar.gz
@@ -3764,7 +3866,7 @@ FL_UNINSTALL+=$(TCL)-uninstall
 
 ########################################
 TK=tk
-TK_VERSION=8.6.4
+TK_VERSION=8.6.7
 TK_SRC=$(TK)$(TK_VERSION)-src.tar.gz
 TK_URL="http://sourceforge.net/projects/tcl/files/Tcl/$(TK_VERSION)/$(TK_SRC)"
 
@@ -3960,11 +4062,11 @@ CUDASDK_URL=http://developer.download.nvidia.com/compute/cuda/$(CUDASDK_VERSION_
 CUDASDK=cuda8
 CUDASDK_VERSION=8.0.44
 # https://developer.nvidia.com/compute/cuda/8.0/prod/local_installers/cuda_8.0.44_linux-run
+# https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda_9.1.85_387.26_linux
 CUDASDK_VERSION_CONN=8.0
 CUDASDK_SRC=cuda_$(CUDASDK_VERSION)_linux-run
 CUDASDK_LIBSUFFIX=64
 CUDASDK_URL=https://developer.nvidia.com/compute/cuda/$(CUDASDK_VERSION_CONN)/prod/local_installers/$(CUDASDK_SRC)
-
 
 else # 32 bit?
 # Since NVIDIA (>6.0.37) only provides cufft, nvblas, nppc, nppi, npps libs for x64, it's naturally impossible for CMAKE to find these libs for configuring a 32bit OpenCV library.
@@ -4086,21 +4188,23 @@ $(LIBOMXILB)-$(LIBOMXILB_VERSION)/mypatched: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/c
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ \
 		&& sed -e 's|^CFLAGS=.*$$|CFLAGS="$${CFLAGS} -Wall"|' -i configure.ac \
 		&& sed -e 's|^omxregister_bellagio_LDFLAGS.*$$|omxregister_bellagio_LDFLAGS=-L$${builddir} -L$${top_builddir}/src/ -lomxil-bellagio|' -i src/Makefile.am \
-		&& patch -p1 -i $(DN_PATCH)/pbs-libomxil-bellagio-emnu.patch
+		&& patch -p1 -i $(DN_PATCH)/pbs-libomxil-bellagio-emnu.patch \
+		&& echo "omxregister_bellagio_LDADD = libomxil-bellagio.la" >> src/Makefile.am \
+		$(NULL)
 	touch $@
 $(LIBOMXILB)-$(LIBOMXILB_VERSION)/configure: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/mypatched
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && $(ENV_COMPILE) autoreconf -if
 	touch $@
 $(LIBOMXILB)-$(LIBOMXILB_VERSION)/Makefile: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/configure
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF) --docdir=$(PREFIX_CONF)/share/doc/$(LIBOMXILB) --disable-static
-$(LIBOMXILB)-$(LIBOMXILB_VERSION)/libomxil-bellagio.pc: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/Makefile
+$(LIBOMXILB)-$(LIBOMXILB_VERSION)/src/libomxil-bellagio.la: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/Makefile
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libomxil-bellagio.pc: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/libomxil-bellagio.pc
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/libomxil-bellagio.la: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/src/libomxil-bellagio.la
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBOMXILB)-uninstall: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/libomxil-bellagio.pc
+$(LIBOMXILB)-uninstall: $(LIBOMXILB)-$(LIBOMXILB_VERSION)/src/libomxil-bellagio.la
 	cd $(LIBOMXILB)-$(LIBOMXILB_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBOMXILB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/pkgconfig/libomxil-bellagio.pc
+$(LIBOMXILB)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/libomxil-bellagio.la
 	touch $@
 
 FL_SOURCES+=$(DN_SRC)/$(LIBOMXILB_SRC)
@@ -4116,9 +4220,9 @@ FL_DEP_OCAML= \
 	$(LIBX11)-install \
 	$(NULL)
 
-OCAML_VERSION=4.02.3
+OCAML_VERSION=4.06.0
 OCAML_SRC=$(OCAML)-$(OCAML_VERSION).tar.gz
-OCAML_URL=http://caml.inria.fr/distrib/ocaml-4.02/$(OCAML_SRC)
+OCAML_URL=http://caml.inria.fr/distrib/ocaml-4.06/$(OCAML_SRC)
 
 $(DN_SRC)/$(OCAML_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(OCAML_URL)
@@ -4158,6 +4262,52 @@ FL_SOURCES+=$(DN_SRC)/$(OCAML_SRC)
 FL_UNINSTALL+=$(OCAML)-uninstall
 
 ########################################
+OCAMLFIND=findlib
+
+FL_DEP_OCAMLFIND= \
+	$(OCAML)-install \
+	$(NULL)
+
+OCAMLFIND_VERSION=1.7.3
+OCAMLFIND_SRC=$(OCAMLFIND)-$(OCAMLFIND_VERSION).tar.gz
+OCAMLFIND_URL=http://download.camlcity.org/download/$(OCAMLFIND_SRC)
+
+$(DN_SRC)/$(OCAMLFIND_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(OCAMLFIND_URL)
+	touch $@
+$(OCAMLFIND)-$(OCAMLFIND_VERSION)/configure: $(DN_SRC)/$(OCAMLFIND_SRC) $(FL_DEP_OCAMLFIND)
+	tar -xf $(DN_SRC)/$(OCAMLFIND_SRC)
+	touch $@
+#$(OCAMLFIND)-$(OCAMLFIND_VERSION)/mypatched: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/configure.ac $(FL_DEP_OCAMLFIND)
+#	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
+#	touch $@
+#$(OCAMLFIND)-$(OCAMLFIND_VERSION)/configure: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/mypatched
+#	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+#	touch $@
+$(OCAMLFIND)-$(OCAMLFIND_VERSION)/Makefile: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/configure
+	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ && make distclean; $(ENV_COMPILE) ./configure \
+	    -sitelib $(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml \
+	    -config  $(PREFIX_DEST)/$(PREFIX_CONF)/etc/findlib.conf \
+	    -mandir  $(PREFIX_DEST)/$(PREFIX_CONF)/share/man
+	touch $@
+$(OCAMLFIND)-$(OCAMLFIND_VERSION)/src/$(OCAMLFIND).la: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/Makefile
+	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ \
+	    && make clean; $(ENV_COMPILE) make $(MAKE_ARG) all opt
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(OCAMLFIND).la: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/src/$(OCAMLFIND).la
+	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ \
+	    && make -j1 DESTDIR=$(PREFIX_DEST) prefix=$(PREFIX_DEST) install \
+	    && cp src/findlib/ocamlfind_opt "$(PREFIX_DEST)/$(PREFIX_CONF)/bin/" && chmod 755 "$(PREFIX_DEST)/$(PREFIX_CONF)/bin/"
+
+$(OCAMLFIND)-uninstall: $(OCAMLFIND)-$(OCAMLFIND_VERSION)/src/$(OCAMLFIND).la
+	cd $(OCAMLFIND)-$(OCAMLFIND_VERSION)/ && make -j1 prefix=$(PREFIX_DEST) uninstall
+$(OCAMLFIND)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(OCAMLFIND).la
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(OCAMLFIND_SRC)
+FL_UNINSTALL+=$(OCAMLFIND)-uninstall
+
+########################################
 # Command line editor library providing generic line editing, history, and tokenization functions
 LIBEDIT=libedit
 
@@ -4165,7 +4315,7 @@ FL_DEP_LIBEDIT= \
 	$(NCURSES)-install \
 	$(NULL)
 
-LIBEDIT_VERSION=20150325-3.1
+LIBEDIT_VERSION=20170329-3.1
 LIBEDIT_SRC=$(LIBEDIT)-$(LIBEDIT_VERSION).tar.gz
 LIBEDIT_URL=http://www.thrysoee.dk/editline/$(LIBEDIT_SRC)
 
@@ -4249,6 +4399,90 @@ $(BINUTILS)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(BINUTILS).la
 #FL_SOURCES+=$(DN_SRC)/$(BINUTILS_SRC)
 FL_UNINSTALL+=$(BINUTILS)-uninstall
 
+
+########################################
+DOXYGEN=doxygen
+
+FL_DEP_DOXYGEN= \
+	$(CMAKE)-install \
+	#$(PYTHON2)-install \
+	$(NULL)
+
+USE_GIT_DOXYGEN=1
+
+ifeq ($(USE_GIT_DOXYGEN),1) # use git instead
+DOXYGEN_VERSION=git
+DOXYGEN_SRC=$(DOXYGEN)-$(DOXYGEN_VERSION)/.git
+DOXYGEN_URL=https://github.com/doxygen/doxygen.git
+
+$(DN_SRC)/$(DOXYGEN_SRC): $(DN_SRC)/created
+	if [ ! -d "$(DN_SRC)/$(DOXYGEN_SRC)" ]; then \
+        git clone $(DOXYGEN_URL) $(DN_SRC)/$(DOXYGEN)-$(DOXYGEN_VERSION); \
+    fi
+	cd $(DN_SRC)/$(DOXYGEN)-$(DOXYGEN_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+$(DOXYGEN)-$(DOXYGEN_VERSION)/CMakeLists.txt: $(DN_SRC)/$(DOXYGEN_SRC)
+	cd $(DN_SRC)/$(DOXYGEN)-$(DOXYGEN_VERSION) && git pull #&& git submodule update --init --recursive
+	if [ ! -d "$(DOXYGEN)-$(DOXYGEN_VERSION)" ]; then \
+        cp -r $(DN_SRC)/$(DOXYGEN)-$(DOXYGEN_VERSION)/ $(DOXYGEN)-$(DOXYGEN_VERSION); \
+    fi
+	cd $(DOXYGEN)-$(DOXYGEN_VERSION) && git pull #&& git submodule update --init --recursive
+	touch $@
+
+else # use released files
+
+DOXYGEN_VERSION=1.8.13
+DOXYGEN_SRC=$(DOXYGEN)-$(DOXYGEN_VERSION).src.tar.gz
+DOXYGEN_URL=http://ftp.stack.nl/pub/users/dimitri/$(DOXYGEN_SRC)
+
+$(DN_SRC)/$(DOXYGEN_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(DOXYGEN_URL)
+	touch $@
+
+$(DOXYGEN)-$(DOXYGEN_VERSION)/CMakeLists.txt: $(DN_SRC)/$(DOXYGEN_SRC)
+	tar -xf $(DN_SRC)/$(DOXYGEN_SRC)
+	touch $@
+
+endif
+
+$(DOXYGEN)-$(DOXYGEN_VERSION)/mypatched: $(DOXYGEN)-$(DOXYGEN_VERSION)/CMakeLists.txt #$(DN_PATCH)/pbs-DOXYGEN-nodonate.patch
+#	cd $(DOXYGEN)-$(DOXYGEN_VERSION)/ \
+#	    && patch -uNp1 -i $(DN_PATCH)/pbs-DOXYGEN-nodonate.patch \
+#	    $(NULL)
+	touch $@
+
+$(DOXYGEN)-$(DOXYGEN_VERSION)/build/Makefile: $(DOXYGEN)-$(DOXYGEN_VERSION)/mypatched $(FL_DEP_DOXYGEN)
+	cd $(DOXYGEN)-$(DOXYGEN_VERSION)/ && mkdir -p build && cd build \
+		&& $(ENV_COMPILE) cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+	    -DCMAKE_INSTALL_PREFIX:PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/ \
+	    -DDOC_INSTALL_DIR:PATH=share/doc/doxygen \
+	    -Dbuild_doc:BOOL=OFF \
+	    -Dbuild_wizard:BOOL=OFF \
+            ..
+#	    -DPYTHON_EXECUTABLE:FILE=/usr/bin/python2 \
+#	    -DCMAKE_CXX_FLAGS="-std=c++11" \
+
+$(DOXYGEN)-$(DOXYGEN_VERSION)/build/doxygen: $(DOXYGEN)-$(DOXYGEN_VERSION)/build/Makefile
+	cd $(DOXYGEN)-$(DOXYGEN_VERSION)/build && CXXFLAG="-std=c++11" $(ENV_COMPILE) make $(MAKE_ARG)
+	touch $@
+
+$(PREFIX_DEST)/$(PREFIX_CONF)/bin/doxygen: $(DOXYGEN)-$(DOXYGEN_VERSION)/build/doxygen
+	cd $(DOXYGEN)-$(DOXYGEN_VERSION)/build \
+		&& make DESTDIR=$(PREFIX_DEST) install \
+		$(NULL)
+	touch $@
+
+$(DOXYGEN)-uninstall: $(DOXYGEN)-$(DOXYGEN_VERSION)/build/doxygen
+	cd $(DOXYGEN)-$(DOXYGEN_VERSION)/build && make DESTDIR=$(PREFIX_DEST) uninstall
+$(DOXYGEN)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/bin/doxygen
+	touch $@
+
+FL_SOURCES+=$(DN_SRC)/$(DOXYGEN_SRC)
+FL_UNINSTALL+=$(DOXYGEN)-uninstall
+
+
 ########################################
 LLVM=llvm
 CLANG=clang
@@ -4266,10 +4500,12 @@ LLVMTESTSUITE_DIR=test-suite
 FL_DEP_LLVM= \
 	$(CMAKE)-install \
 	$(ZLIB)-install \
-	$(OCAML)-install \
 	$(LIBFFI)-install \
 	$(LIBEDIT)-install \
 	$(SWIG)-install \
+	$(DOXYGEN)-install \
+	$(OCAML)-install \
+	#$(OCAMLFIND)-install \
 	$(NULL)
 
 USE_GIT_LLVM=1
@@ -4650,19 +4886,23 @@ $(LLVM)-$(LLVM_VERSION)/build/Makefile: $(LLVM)-$(LLVM_VERSION)/mypatched
 			-DLLVM_LINK_LLVM_DYLIB=ON \
 			-DLLVM_ENABLE_RTTI=ON \
 			-DLLVM_ENABLE_FFI=ON \
-			-DLLVM_BUILD_DOCS=OFF \
+			-DLLVM_BUILD_DOCS=OFF -DLLVM_INCLUDE_DOCS=OFF -DLLVM_ENABLE_OCAMLDOC=OFF \
 			-DLLVM_ENABLE_SPHINX=OFF \
-			-DLLVM_ENABLE_DOXYGEN=OFF \
+			-DDOXYGEN_EXECUTABLE=$(PREFIX_DEST)/$(PREFIX_CONF)/bin/doxygen \
+			-DLLVM_ENABLE_DOXYGEN=OFF -DLLDB_DISABLE_PYTHON=ON \
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF \
-			-DDOXYGEN_EXECUTABLE=doxygen \
 			-DFFI_INCLUDE_DIR=`$(ENV_COMPILE) pkg-config --variable=includedir libffi` \
-			-DLLVM_BINUTILS_INCDIR=$(PREFIX_DEST)/$(PREFIX_CONF)/usr/include \
+			-DLLVM_BINUTILS_INCDIR=$(PREFIX_DEST)/$(PREFIX_CONF)/include \
 			-D CMAKE_CXX_FLAGS=" -I$(PREFIX_DEST)/$(PREFIX_CONF)/include `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libedit`" \
 			-D CMAKE_C_FLAGS=" -I$(PREFIX_DEST)/$(PREFIX_CONF)/include `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --cflags libedit`" \
 			-D CMAKE_EXE_LINKER_FLAGS="-L1 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
 			-D CMAKE_EXE_LINKER_FLAGS_RELEASE="-L2 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
 			-D CMAKE_SHARED_LINKER_FLAGS="-L3 `$(ENV_COMPILE) $(PREFIX_DEST)/$(PREFIX_CONF)/bin/pkg-config --libs libedit`" \
             ..
+
+#			-DOCAML_STDLIB_PATH=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/ocaml/ -DOCAML_VERSION=$(OCAML_VERSION) -DOCAMLFIND=camlfind \
+
+
 $(LLVM)-$(LLVM_VERSION)/build/lib/LLVMgold.so: $(LLVM)-$(LLVM_VERSION)/build/Makefile
 	cd $(LLVM)-$(LLVM_VERSION)/build/ && $(ENV_COMPILE) make $(MAKE_ARG)
 	#cd $(LLVM)-$(LLVM_VERSION)/build/ && $(ENV_COMPILE) make $(MAKE_ARG) ocaml_doc
@@ -4700,9 +4940,11 @@ $(PREFIX_DEST)/$(PREFIX_CONF)/bin/clang: $(LLVM)-$(LLVM_VERSION)/build/bin/clang
         "$(PREFIX_DEST)/$(PREFIX_CONF)/share/clang/clang-format-diff.py"
     # clang-analyzer:
 	cd $(LLVM)-$(LLVM_VERSION)/tools/clang \
-		&& install -d $(PREFIX_DEST)/$(PREFIX_CONF)/{bin,lib/clang-analyzer} \
-		&& for _tool in scan-{build,view} ; do \
+		&& install -d $(PREFIX_DEST)/$(PREFIX_CONF)/bin \
+		&& install -d $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer \
+		&& for _tool in scan-build scan-view ; do \
 				cp -a tools/$$_tool $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/ ; \
+				mkdir -p $(PREFIX_DEST)/$(PREFIX_CONF)/lib/clang-analyzer/$$_tool ; \
 				rm -f "$(PREFIX_DEST)/$(PREFIX_CONF)/bin/$$_tool" ; \
 				ln -s ../lib/clang-analyzer/$$_tool/$$_tool $(PREFIX_DEST)/$(PREFIX_CONF)/bin/$$_tool ; \
 			done
@@ -4851,22 +5093,22 @@ FL_DEP_LIBVA= \
 	#$(LIBGL)-install \
 	$(NULL)
 
-LIBVA_VERSION=1.6.1
-LIBVA_SRC=$(LIBVA)-$(LIBVA_VERSION).tar.bz2
-LIBVA_URL=http://freedesktop.org/software/vaapi/releases/$(LIBVA)/$(LIBVA_SRC)
+LIBVA_VERSION=2.0.0
+LIBVA_SRC=$(LIBVA)-$(LIBVA_VERSION).tar.gz
+LIBVA_URL=https://github.com/01org/libva/archive/$(LIBVA_VERSION).tar.gz
 
 $(DN_SRC)/$(LIBVA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(LIBVA_URL)
 	touch $@
-$(LIBVA)-$(LIBVA_VERSION)/configure: $(DN_SRC)/$(LIBVA_SRC) $(FL_DEP_LIBVA)
+$(LIBVA)-$(LIBVA_VERSION)/configure.ac: $(DN_SRC)/$(LIBVA_SRC) $(FL_DEP_LIBVA)
 	tar -xf $(DN_SRC)/$(LIBVA_SRC)
 	touch $@
 #$(LIBVA)-$(LIBVA_VERSION)/mypatched: $(LIBVA)-$(LIBVA_VERSION)/configure.ac
 #	cd $(LIBVA)-$(LIBVA_VERSION)/ && sed -e 's|^AX_ENABLE_BUILDDIR|\#AX_ENABLE_BUILDDIR|' -i configure.ac
 #	touch $@
-#$(LIBVA)-$(LIBVA_VERSION)/configure: $(LIBVA)-$(LIBVA_VERSION)/configure.ac
-#	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
-#	touch $@
+$(LIBVA)-$(LIBVA_VERSION)/configure: $(LIBVA)-$(LIBVA_VERSION)/configure.ac
+	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) autoreconf -if
+	touch $@
 $(LIBVA)-$(LIBVA_VERSION)/Makefile: $(LIBVA)-$(LIBVA_VERSION)/configure
 	cd $(LIBVA)-$(LIBVA_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
 	touch $@
@@ -4901,19 +5143,19 @@ FL_DEP_MESA= \
 	$(LIBXDAMAGE)-install \
 	$(ELFUTILS)-install \
 	$(LIBOMXILB)-install \
-	$(LIBCLC)-install \
-	$(LLVM)-install \
 	$(LIBUDEV)-install \
 	$(LIBVDPAU)-install \
 	$(LIBVA)-install \
 	$(WAYLAND)-install \
+	$(WAYLANDPROTOCOL)-install \
+	$(LIBCLC)-install \
+	$(LLVM)-install \
 	#$(systemd)-install \
 	$(NULL)
 
-MESA_VERSION=11.0.7
-MESA_VERSION=11.2.0
+MESA_VERSION=17.3.1
 MESA_SRC=$(MESA)-$(MESA_VERSION).tar.xz
-MESA_URL=ftp://ftp.freedesktop.org/pub/mesa/$(MESA_VERSION)/$(MESA_SRC)
+MESA_URL=https://mesa.freedesktop.org/archive/$(MESA_SRC)
 
 $(DN_SRC)/$(MESA_SRC): $(DN_SRC)/created
 	$(WGET) -O $@ -c $(MESA_URL)
@@ -4925,6 +5167,7 @@ $(MESA)-$(MESA_VERSION)/configure.ac: $(DN_SRC)/$(MESA_SRC)
 $(MESA)-$(MESA_VERSION)/mypatched: $(MESA)-$(MESA_VERSION)/configure.ac $(FL_DEP_MESA)
 	cd $(MESA)-$(MESA_VERSION)/ \
             && sed -i 's/LLVM_SO_NAME=.*/LLVM_SO_NAME=LLVM/' configure.ac \
+            && sed -i 's/flags.setUnsafeAlgebra()/flags.setFast()/' src/gallium/auxiliary/gallivm/lp_bld_misc.cpp \
             && sed -i 's|icddir =.*|icddir=$$(DESTDIR)/$$(sysconfdir)/OpenCL/vendors/|' src/gallium/targets/opencl/Makefile.am \
             && sed -i 's|#include <nouveau_drm.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau_drm.h>\n|' src/mesa/drivers/dri/nouveau/nouveau_screen.c \
             && sed -i 's|#include <nouveau_drm.h>|#include <libdrm/nouveau/nouveau.h>\n#include <nouveau_drm.h>\n|' src/gallium/drivers/nouveau/nouveau_screen.c \
@@ -4944,7 +5187,7 @@ $(MESA)-$(MESA_VERSION)/Makefile: $(MESA)-$(MESA_VERSION)/configure
             --with-dri-driverdir=$(PREFIX_DEST)/$(PREFIX_CONF)/lib/xorg/modules/dri \
             --with-gallium-drivers=r300,r600,radeonsi,nouveau,svga,swrast \
             --with-dri-drivers=i915,i965,r200,radeon,nouveau,swrast \
-            --with-egl-platforms=x11,drm,wayland \
+            --with-platforms=x11,drm,wayland \
             --enable-llvm-shared-libs \
             --enable-egl \
             --enable-gbm \
@@ -4960,7 +5203,7 @@ $(MESA)-$(MESA_VERSION)/Makefile: $(MESA)-$(MESA_VERSION)/configure
             --enable-texture-float \
             --enable-xa \
             --enable-vdpau \
-            --enable-omx \
+            --enable-omx-bellagio \
             --enable-nine \
             --enable-opencl --enable-opencl-icd \
             --with-clang-libdir=$(PREFIX_DEST)/$(PREFIX_CONF)/lib
@@ -5125,41 +5368,50 @@ $(OPENCLHEADER)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/include/CL/opencl.h
 FL_UNINSTALL+=$(OPENCLHEADER)-uninstall
 
 ########################################
-LIBCL=ocl-icd
+LIBOCLICD=ocl-icd
 
-FL_DEP_LIBCL= \
-	$(RUBY)-install \
+FL_DEP_LIBOCLICD= \
 	$(MESA)-install \
+	#$(RUBY)-install \
 	#$(OPENCLHEADER)-install \
 	$(NULL)
 
-LIBCL_VERSION=2.2.8
-LIBCL_SRC=$(LIBCL)-$(LIBCL_VERSION).tar.gz
-LIBCL_URL=http://forge.imag.fr/frs/download.php/698/$(LIBCL_SRC)
+LIBOCLICD_VERSION=2.2.12
+LIBOCLICD_SRC=$(LIBOCLICD)-$(LIBOCLICD_VERSION).tar.gz
+LIBOCLICD_URL=https://github.com/OCL-dev/ocl-icd/archive/v$(LIBOCLICD_VERSION).tar.gz
 
-$(DN_SRC)/$(LIBCL_SRC): $(DN_SRC)/created
-	$(WGET) -O $@ -c $(LIBCL_URL)
+$(DN_SRC)/$(LIBOCLICD_SRC): $(DN_SRC)/created
+	$(WGET) -O $@ -c $(LIBOCLICD_URL)
 	touch $@
-$(LIBCL)-$(LIBCL_VERSION)/configure: $(DN_SRC)/$(LIBCL_SRC)
-	tar -xf $(DN_SRC)/$(LIBCL_SRC)
+
+$(LIBOCLICD)-$(LIBOCLICD_VERSION)/configure: $(DN_SRC)/$(LIBOCLICD_SRC)
+	tar -xf $(DN_SRC)/$(LIBOCLICD_SRC)
 	touch $@
-$(LIBCL)-$(LIBCL_VERSION)/Makefile: $(LIBCL)-$(LIBCL_VERSION)/configure $(FL_DEP_LIBCL)
-	cd $(LIBCL)-$(LIBCL_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+
+$(LIBOCLICD)-$(LIBOCLICD_VERSION)/mypatched: $(LIBOCLICD)-$(LIBOCLICD_VERSION)/configure #$(DN_PATCH)/pbs-LIBOCLICD-nodonate.patch
+	cd $(LIBOCLICD)-$(LIBOCLICD_VERSION)/ \
+	    && sed -e "s|^inline void dump_vendor_icd|static void dump_vendor_icd|g" -i ocl_icd_loader.c \
+	    #&& patch -uNp1 -i $(DN_PATCH)/pbs-LIBOCLICD-nodonate.patch \
+	    $(NULL)
 	touch $@
-$(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la: $(LIBCL)-$(LIBCL_VERSION)/Makefile
-	cd $(LIBCL)-$(LIBCL_VERSION)/ \
+
+$(LIBOCLICD)-$(LIBOCLICD_VERSION)/Makefile: $(LIBOCLICD)-$(LIBOCLICD_VERSION)/configure $(FL_DEP_LIBOCLICD)
+	cd $(LIBOCLICD)-$(LIBOCLICD_VERSION)/ && $(ENV_COMPILE) ./configure --prefix=$(PREFIX_CONF)
+	touch $@
+$(LIBOCLICD)-$(LIBOCLICD_VERSION)/src/$(LIBOCLICD).la: $(LIBOCLICD)-$(LIBOCLICD_VERSION)/Makefile
+	cd $(LIBOCLICD)-$(LIBOCLICD_VERSION)/ \
 	    && $(ENV_COMPILE) make $(MAKE_ARG)
-$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCL).la: $(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la
-	cd $(LIBCL)-$(LIBCL_VERSION)/ \
+$(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBOCLICD).la: $(LIBOCLICD)-$(LIBOCLICD_VERSION)/src/$(LIBOCLICD).la
+	cd $(LIBOCLICD)-$(LIBOCLICD_VERSION)/ \
 	    && make -j1 DESTDIR=$(PREFIX_DEST) install
 
-$(LIBCL)-uninstall: $(LIBCL)-$(LIBCL_VERSION)/src/$(LIBCL).la
-	cd $(LIBCL)-$(LIBCL_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
-$(LIBCL)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBCL).la
+$(LIBOCLICD)-uninstall: $(LIBOCLICD)-$(LIBOCLICD_VERSION)/src/$(LIBOCLICD).la
+	cd $(LIBOCLICD)-$(LIBOCLICD_VERSION)/ && make -j1 DESTDIR=$(PREFIX_DEST) uninstall
+$(LIBOCLICD)-install: $(PREFIX_DEST)/$(PREFIX_CONF)/lib/$(LIBOCLICD).la
 	touch $@
 
-FL_SOURCES+=$(DN_SRC)/$(LIBCL_SRC)
-FL_UNINSTALL+=$(LIBCL)-uninstall
+FL_SOURCES+=$(DN_SRC)/$(LIBOCLICD_SRC)
+FL_UNINSTALL+=$(LIBOCLICD)-uninstall
 
 ########################################
 # $(call create_so_links,"$(DN_PWD)")
@@ -5176,7 +5428,7 @@ create_so_links =  cd "$(1)" \
 NVIDIAUTILS=nvidia-utils
 
 FL_DEP_NVIDIAUTILS= \
-	$(LIBCL)-install \
+	$(LIBOCLICD)-install \
 	$(NULL)
 
 NVIDIAUTILS_VERSION=358.16
@@ -5331,6 +5583,7 @@ FL_DEP_GLU= \
 	$(DEPENDS_GL) \
 	$(LIBX11)-install \
 	$(LIBXEXT)-install \
+	$(OPENCL)-install \
 	#$(GLIB2)-install \
 	#$(MESA)-install \
 	$(NULL)
@@ -5371,7 +5624,7 @@ FL_UNINSTALL+=$(GLU)-uninstall
 # http://glew.sourceforge.net
 GLEW=glew
 
-GLEW_VERSION=1.13.0
+GLEW_VERSION=2.1.0
 GLEW_SRC=$(GLEW)-$(GLEW_VERSION).tgz
 GLEW_URL=http://sourceforge.net/projects/glew/files/glew/$(GLEW_VERSION)/$(GLEW_SRC)
 
@@ -5403,13 +5656,13 @@ FL_SOURCES+=$(DN_SRC)/$(GLEW_SRC)
 FL_UNINSTALL+=$(GLEW)-uninstall
 
 ########################################
-GD=gd
-GD_VERSION=2.1.1
+GD=libgd
+GD_VERSION=2.2.5
 GD_SRC=$(GD)-$(GD_VERSION).tar.gz
-GD_URL="https://github.com/libgd/libgd/archive/$(GD_SRC)"
+GD_URL="https://github.com/libgd/libgd/releases/download/gd-$(LIBGD_VERSION)/$(GD_SRC)"
 
 LIBGD=libgd
-LIBGD_VERSION=2.1.1
+LIBGD_VERSION=2.2.5
 LIBGD_SRC=$(LIBGD)-$(LIBGD_VERSION).tar.gz
 LIBGD_URL="https://github.com/libgd/libgd/releases/download/gd-$(LIBGD_VERSION)/$(GD_SRC)"
 
@@ -5456,7 +5709,7 @@ FL_UNINSTALL+=$(GD)-uninstall
 
 ########################################
 GNUPLOT=gnuplot
-GNUPLOT_VERSION=5.0.1
+GNUPLOT_VERSION=5.2.2
 GNUPLOT_SRC=$(GNUPLOT)-$(GNUPLOT_VERSION).tar.gz
 GNUPLOT_URL=http://sourceforge.net/projects/gnuplot/files/gnuplot/$(GNUPLOT_VERSION)/$(GNUPLOT_SRC)
 
