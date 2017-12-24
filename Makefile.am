@@ -21,8 +21,6 @@ include_HEADERS = \
     $(top_srcdir)/bin/mod-setenv-hadoop.sh \
     $(top_srcdir)/bin/mod-share-worker.sh \
     $(top_srcdir)/bin/run-hadoop.sh \
-    $(top_srcdir)/bin/run-hadooppbs.sh \
-    $(top_srcdir)/bin/run-hadooplan.sh \
     $(top_srcdir)/bin/run-sh1.sh \
     $(top_srcdir)/lib/libbash.sh \
     $(top_srcdir)/lib/libconfig.sh \
